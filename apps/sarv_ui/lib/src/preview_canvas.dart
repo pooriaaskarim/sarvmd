@@ -69,13 +69,13 @@ class _ManuscriptPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     // Top paper edge hint
-    canvas.drawLine(const Offset(-1000, 0), Offset(size.width + 1000, 0), hintPaint);
+    canvas.drawLine(const Offset(-100000, 0), Offset(size.width + 100000, 0), hintPaint);
     // Bottom paper edge hint
-    canvas.drawLine(Offset(-1000, size.height), Offset(size.width + 1000, size.height), hintPaint);
+    canvas.drawLine(Offset(-100000, size.height), Offset(size.width + 100000, size.height), hintPaint);
     // Left paper edge hint
-    canvas.drawLine(const Offset(0, -1000), Offset(0, size.height + 1000), hintPaint);
+    canvas.drawLine(const Offset(0, -100000), Offset(0, size.height + 100000), hintPaint);
     // Right paper edge hint
-    canvas.drawLine(Offset(size.width, -1000), Offset(size.width, size.height + 1000), hintPaint);
+    canvas.drawLine(Offset(size.width, -100000), Offset(size.width, size.height + 100000), hintPaint);
 
     for (final system in layout.systems) {
       for (final staff in system.staves) {

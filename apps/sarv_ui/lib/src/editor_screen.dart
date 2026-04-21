@@ -16,12 +16,11 @@ class _EditorScreenState extends State<EditorScreen> {
   final ConfigNotifier _notifier = ConfigNotifier();
   final TransformationController _transformationController = TransformationController();
   double _zoom = 0.5;
+  bool _hasCentered = false;
 
   @override
   void initState() {
     super.initState();
-    // Set initial zoom
-    _transformationController.value = Matrix4.diagonal3Values(_zoom, _zoom, 1.0);
   }
 
   @override
@@ -72,15 +71,15 @@ class _EditorScreenState extends State<EditorScreen> {
                           _SliderSetting(
                             label: 'Vertical',
                             value: _notifier.config.margins.top,
-                            min: 0.0,
-                            max: 50.0,
+                            min: 5.0,
+                            max: 40.0,
                             onChanged: (v) => _notifier.updateVerticalMargins(v),
                           ),
                           _SliderSetting(
                             label: 'Horizontal',
                             value: _notifier.config.margins.left,
-                            min: 0.0,
-                            max: 50.0,
+                            min: 5.0,
+                            max: 40.0,
                             onChanged: (v) => _notifier.updateHorizontalMargins(v),
                           ),
                           const Divider(color: Colors.white24, height: 32),
@@ -165,22 +164,41 @@ class _EditorScreenState extends State<EditorScreen> {
               Expanded(
                 child: Container(
                   color: const Color(0xFF121212),
-                  child: RulerBox(
-                    transformationController: _transformationController,
-                    paperSizeMm: Size(
-                      layout.config.pageSize.width,
-                      layout.config.pageSize.height,
-                    ),
-                    child: InteractiveViewer(
-                      transformationController: _transformationController,
-                      boundaryMargin: const EdgeInsets.all(1000),
-                      minScale: 0.1,
-                      maxScale: 4.0,
-                      constrained: false,
-                      child: PreviewCanvas(
-                        layout: layout,
-                      ),
-                    ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (!_hasCentered) {
+                        _hasCentered = true;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          final double lpmm = 96 / 25.4;
+                          final paperWidth = _notifier.layout.config.pageSize.width * lpmm;
+                          final paperHeight = _notifier.layout.config.pageSize.height * lpmm;
+
+                          final dx = (constraints.maxWidth - paperWidth * _zoom) / 2;
+                          final dy = (constraints.maxHeight - paperHeight * _zoom) / 2;
+
+                          _transformationController.value = Matrix4.translationValues(dx, dy, 0.0)
+                            ..multiply(Matrix4.diagonal3Values(_zoom, _zoom, 1.0));
+                        });
+                      }
+                      
+                      return RulerBox(
+                        transformationController: _transformationController,
+                        paperSizeMm: Size(
+                          layout.config.pageSize.width,
+                          layout.config.pageSize.height,
+                        ),
+                        child: InteractiveViewer(
+                          transformationController: _transformationController,
+                          boundaryMargin: const EdgeInsets.all(100000),
+                          minScale: 0.1,
+                          maxScale: 4.0,
+                          constrained: false,
+                          child: PreviewCanvas(
+                            layout: layout,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -284,7 +302,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SliderSetting extends StatelessWidget {
+class _SliderSetting extends StatefulWidget {
   const _SliderSetting({
     required this.label,
     required this.value,
@@ -300,21 +318,84 @@ class _SliderSetting extends StatelessWidget {
   final double max;
 
   @override
+  State<_SliderSetting> createState() => _SliderSettingState();
+}
+
+class _SliderSettingState extends State<_SliderSetting> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toStringAsFixed(1));
+  }
+
+  @override
+  void didUpdateWidget(_SliderSetting oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _controller.text = widget.value.toStringAsFixed(1);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit(String? text) {
+    if (text == null) return;
+    final parsed = double.tryParse(text);
+    if (parsed != null) {
+      final clamped = parsed.clamp(widget.min, widget.max);
+      widget.onChanged(clamped);
+      _controller.text = clamped.toStringAsFixed(1);
+    } else {
+      _controller.text = widget.value.toStringAsFixed(1);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-            Text(value.toStringAsFixed(1), style: const TextStyle(color: Colors.white, fontSize: 13)),
+            Text(widget.label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            Container(
+              width: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: TextField(
+                controller: _controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  border: InputBorder.none,
+                ),
+                onSubmitted: _submit,
+                onTapOutside: (_) {
+                  _submit(_controller.text);
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+              ),
+            ),
           ],
         ),
         Slider(
-          value: value,
-          min: min,
-          max: max,
-          onChanged: onChanged,
+          value: widget.value,
+          min: widget.min,
+          max: widget.max,
+          onChanged: widget.onChanged,
           activeColor: const Color(0xFF64B5F6),
           inactiveColor: Colors.white10,
         ),
