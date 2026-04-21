@@ -1,0 +1,7 @@
+analyzer:
+  errors:
+    deprecated_member_use: info
+linter:
+  rules:
+    - prefer_const_constructors
+    - prefer_const_literals_to_create_immutables

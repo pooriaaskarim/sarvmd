@@ -1,0 +1,19 @@
+name: sarv_ui
+description: "A new Flutter project."
+publish_to: 'none'
+resolution: workspace
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sarv_core:
+    path: ../../packages/sarv_core
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
