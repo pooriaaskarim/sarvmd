@@ -54,18 +54,34 @@ class _EditorScreenState extends State<EditorScreen> {
                           const SizedBox(height: 48),
                           const _Header(),
                           const SizedBox(height: 32),
-                          const _SectionHeader(title: 'Page Size'),
-                          _SegmentedSetting<core.PageSize>(
+                          const _SectionHeader(title: 'Document'),
+                          const SizedBox(height: 8),
+                          _DropdownSetting<core.PageSize>(
                             value: _notifier.config.pageSize,
                             options: core.PageSize.values,
                             onChanged: (v) => _notifier.updatePageSize(v),
                           ),
-                          const SizedBox(height: 24),
-                          const _SectionHeader(title: 'Layout Type'),
+                          const SizedBox(height: 16),
                           _SegmentedSetting<core.LayoutType>(
                             value: _notifier.config.layoutType,
                             options: core.LayoutType.values,
                             onChanged: (v) => _notifier.updateLayoutType(v),
+                          ),
+                          const Divider(color: Colors.white24, height: 32),
+                          const _SectionHeader(title: 'Margins (mm)'),
+                          _SliderSetting(
+                            label: 'Vertical',
+                            value: _notifier.config.margins.top,
+                            min: 0.0,
+                            max: 50.0,
+                            onChanged: (v) => _notifier.updateVerticalMargins(v),
+                          ),
+                          _SliderSetting(
+                            label: 'Horizontal',
+                            value: _notifier.config.margins.left,
+                            min: 0.0,
+                            max: 50.0,
+                            onChanged: (v) => _notifier.updateHorizontalMargins(v),
                           ),
                           const Divider(color: Colors.white24, height: 32),
                           const _SectionHeader(title: 'Spacing (mm)'),
@@ -111,8 +127,15 @@ class _EditorScreenState extends State<EditorScreen> {
                             },
                           ),
                           const Divider(color: Colors.white24, height: 32),
-                          const _SectionHeader(title: 'Export'),
+                          const _SectionHeader(title: 'Actions & Export'),
                           const SizedBox(height: 8),
+                          _ExportButton(
+                            label: 'Reset to Defaults',
+                            icon: Icons.restore,
+                            onPressed: () => _notifier.resetToDefaults(),
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(height: 12),
                           _ExportButton(
                             label: 'Generate LaTeX',
                             icon: Icons.code,
@@ -356,11 +379,13 @@ class _ExportButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onPressed,
+    this.color = const Color(0xFF64B5F6),
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -369,15 +394,67 @@ class _ExportButton extends StatelessWidget {
       icon: Icon(icon, size: 18),
       label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF64B5F6).withValues(alpha: 0.1),
-        foregroundColor: const Color(0xFF64B5F6),
+        backgroundColor: color.withValues(alpha: 0.1),
+        foregroundColor: color,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0xFF64B5F6), width: 1),
+          side: BorderSide(color: color, width: 1),
         ),
         elevation: 0,
         alignment: Alignment.centerLeft,
+      ),
+    );
+  }
+}
+
+class _DropdownSetting<T extends Enum> extends StatelessWidget {
+  const _DropdownSetting({
+    super.key,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final T value;
+  final List<T> options;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          dropdownColor: const Color(0xFF252525),
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+          isExpanded: true,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 1.1,
+          ),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+          items: options.map((opt) {
+            return DropdownMenuItem<T>(
+              value: opt,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Text(opt.name.toUpperCase()),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

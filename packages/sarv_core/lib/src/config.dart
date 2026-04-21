@@ -2,8 +2,12 @@
 
 /// Supported paper sizes with dimensions in millimeters.
 enum PageSize {
+  a3(width: 297.0, height: 420.0),
   a4(width: 210.0, height: 297.0),
-  b4(width: 250.0, height: 353.0);
+  a5(width: 148.0, height: 210.0),
+  b4(width: 250.0, height: 353.0),
+  b5(width: 176.0, height: 250.0),
+  letter(width: 215.9, height: 279.4);
 
   const PageSize({required this.width, required this.height});
 

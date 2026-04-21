@@ -74,4 +74,26 @@ class ConfigNotifier extends ChangeNotifier {
       interStaffGapMm: mm,
     ));
   }
+  void updateVerticalMargins(double mm) {
+    updateMargins(core.Margins(
+      top: mm,
+      bottom: mm,
+      left: _config.margins.left,
+      right: _config.margins.right,
+    ));
+  }
+
+  void updateHorizontalMargins(double mm) {
+    updateMargins(core.Margins(
+      top: _config.margins.top,
+      bottom: _config.margins.bottom,
+      left: mm,
+      right: mm,
+    ));
+  }
+
+  void resetToDefaults() {
+    _config = const core.PageConfig();
+    notifyListeners();
+  }
 }
