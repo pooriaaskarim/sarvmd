@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:sarv_core/sarv_core.dart' as core;
+import 'view_notifier.dart';
 
 class PreviewCanvas extends StatelessWidget {
   const PreviewCanvas({
     super.key,
     required this.layout,
+    required this.viewNotifier,
   });
 
   final core.PageLayout layout;
+  final ViewNotifier viewNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -30,19 +33,25 @@ class PreviewCanvas extends StatelessWidget {
           ),
         ],
       ),
-      child: CustomPaint(
-        size: sizePx,
-        painter: _ManuscriptPainter(layout, lpmm),
+      child: ListenableBuilder(
+        listenable: viewNotifier,
+        builder: (context, _) {
+          return CustomPaint(
+            size: sizePx,
+            painter: _ManuscriptPainter(layout, lpmm, viewNotifier),
+          );
+        },
       ),
     );
   }
 }
 
 class _ManuscriptPainter extends CustomPainter {
-  _ManuscriptPainter(this.layout, this.scale);
+  _ManuscriptPainter(this.layout, this.scale, this.viewNotifier);
 
   final core.PageLayout layout;
   final double scale;
+  final ViewNotifier viewNotifier;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -62,24 +71,67 @@ class _ManuscriptPainter extends CustomPainter {
     final leftMm = layout.config.margins.left;
     final rightMm = layout.config.pageSize.width - layout.config.margins.right;
 
-    // Hint lines for paper edges (faint dashed-like lines)
-    final hintPaint = Paint()
-      ..color = Colors.blue.withValues(alpha: 0.3)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
+    // Hint lines for paper edges
+    if (viewNotifier.isGuideActive(GuideType.paperEdges)) {
+      final hintPaint = Paint()
+        ..color = Colors.blue.withValues(alpha: 0.3)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke;
 
-    // Top paper edge hint
-    canvas.drawLine(const Offset(-100000, 0), Offset(size.width + 100000, 0), hintPaint);
-    // Bottom paper edge hint
-    canvas.drawLine(Offset(-100000, size.height), Offset(size.width + 100000, size.height), hintPaint);
-    // Left paper edge hint
-    canvas.drawLine(const Offset(0, -100000), Offset(0, size.height + 100000), hintPaint);
-    // Right paper edge hint
-    canvas.drawLine(Offset(size.width, -100000), Offset(size.width, size.height + 100000), hintPaint);
+      canvas.drawLine(const Offset(-100000, 0), Offset(size.width + 100000, 0), hintPaint);
+      canvas.drawLine(Offset(-100000, size.height), Offset(size.width + 100000, size.height), hintPaint);
+      canvas.drawLine(const Offset(0, -100000), Offset(0, size.height + 100000), hintPaint);
+      canvas.drawLine(Offset(size.width, -100000), Offset(size.width, size.height + 100000), hintPaint);
+    }
+
+    if (viewNotifier.isGuideActive(GuideType.paperCenters)) {
+      final hintPaint = Paint()
+        ..color = Colors.blue.withValues(alpha: 0.3)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke;
+      
+      final centerX = size.width / 2;
+      final centerY = size.height / 2;
+      canvas.drawLine(Offset(centerX, -100000), Offset(centerX, size.height + 100000), hintPaint);
+      canvas.drawLine(Offset(-100000, centerY), Offset(size.width + 100000, centerY), hintPaint);
+    }
+    
+    // Margin guides
+    if (viewNotifier.isGuideActive(GuideType.margins)) {
+      final marginPaint = Paint()
+        ..color = Colors.red.withValues(alpha: 0.5)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke;
+      
+      final marginLeft = layout.config.margins.left * scale;
+      final marginRight = size.width - layout.config.margins.right * scale;
+      final marginTop = layout.config.margins.top * scale;
+      final marginBottom = size.height - layout.config.margins.bottom * scale;
+      
+      canvas.drawLine(Offset(marginLeft, 0), Offset(marginLeft, size.height), marginPaint);
+      canvas.drawLine(Offset(marginRight, 0), Offset(marginRight, size.height), marginPaint);
+      canvas.drawLine(Offset(0, marginTop), Offset(size.width, marginTop), marginPaint);
+      canvas.drawLine(Offset(0, marginBottom), Offset(size.width, marginBottom), marginPaint);
+    }
 
     for (final system in layout.systems) {
       for (final staff in system.staves) {
         final topYPx = staff.topY * scale;
+        
+        // Staff bounding box guides
+        if (viewNotifier.isGuideActive(GuideType.staffBounds)) {
+          final boundsPaint = Paint()
+            ..color = Colors.green.withValues(alpha: 0.2)
+            ..style = PaintingStyle.fill;
+          
+          final rect = Rect.fromLTRB(
+            leftMm * scale,
+            topYPx - (lineGapPx / 2),
+            rightMm * scale,
+            topYPx + (4 * lineGapPx) + (lineGapPx / 2)
+          );
+          canvas.drawRect(rect, boundsPaint);
+        }
         
         // Draw 5 lines
         for (var i = 0; i < 5; i++) {
@@ -99,7 +151,7 @@ class _ManuscriptPainter extends CustomPainter {
         canvas.drawLine(
           Offset(leftMm * scale, topY),
           Offset(leftMm * scale, bottomY),
-          staffPaint..strokeWidth = thicknessPx * 2, // Slightly thicker connecting line
+          staffPaint..strokeWidth = thicknessPx * 2,
         );
       }
     }
@@ -107,6 +159,8 @@ class _ManuscriptPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ManuscriptPainter oldDelegate) {
-    return oldDelegate.layout != layout || oldDelegate.scale != scale;
+    return oldDelegate.layout != layout || 
+           oldDelegate.scale != scale || 
+           oldDelegate.viewNotifier != viewNotifier;
   }
 }

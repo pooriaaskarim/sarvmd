@@ -4,9 +4,13 @@ import 'config_notifier.dart';
 import 'preview_canvas.dart';
 import 'export_service.dart';
 import 'ruler_box.dart';
+import 'view_notifier.dart';
+import 'view_panel.dart';
 
 class EditorScreen extends StatefulWidget {
-  const EditorScreen({super.key});
+  const EditorScreen({super.key, required this.viewNotifier});
+  
+  final ViewNotifier viewNotifier;
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
@@ -37,13 +41,13 @@ class _EditorScreenState extends State<EditorScreen> {
       builder: (context, _) {
         final layout = _notifier.layout;
         return Scaffold(
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Row(
             children: [
               // Sidebar
               Container(
                 width: 320,
-                color: const Color(0xFF252525),
+                color: Theme.of(context).colorScheme.surfaceContainer,
                 child: Column(
                   children: [
                     Expanded(
@@ -66,7 +70,7 @@ class _EditorScreenState extends State<EditorScreen> {
                             options: core.LayoutType.values,
                             onChanged: (v) => _notifier.updateLayoutType(v),
                           ),
-                          const Divider(color: Colors.white24, height: 32),
+                          Divider(color: Theme.of(context).colorScheme.outline, height: 32),
                           const _SectionHeader(title: 'Margins (mm)'),
                           _SliderSetting(
                             label: 'Vertical',
@@ -82,7 +86,7 @@ class _EditorScreenState extends State<EditorScreen> {
                             max: 40.0,
                             onChanged: (v) => _notifier.updateHorizontalMargins(v),
                           ),
-                          const Divider(color: Colors.white24, height: 32),
+                          Divider(color: Theme.of(context).colorScheme.outline, height: 32),
                           const _SectionHeader(title: 'Spacing (mm)'),
                           _SliderSetting(
                             label: 'Line Gap',
@@ -106,33 +110,14 @@ class _EditorScreenState extends State<EditorScreen> {
                               max: 20.0,
                               onChanged: (v) => _notifier.updateInterStaffGap(v),
                             ),
-                          const Divider(color: Colors.white24, height: 32),
-                          const _SectionHeader(title: 'View'),
-                          ListenableBuilder(
-                            listenable: _transformationController,
-                            builder: (context, _) {
-                              final currentZoom = _transformationController.value.getMaxScaleOnAxis();
-                              return _SliderSetting(
-                                label: 'Preview Zoom',
-                                value: currentZoom.clamp(0.1, 4.0),
-                                min: 0.1,
-                                max: 4.0,
-                                onChanged: (v) {
-                                  final t = _transformationController.value.getTranslation();
-                                  _transformationController.value = Matrix4.translationValues(t.x, t.y, 0.0)
-                                    ..multiply(Matrix4.diagonal3Values(v, v, 1.0));
-                                },
-                              );
-                            },
-                          ),
-                          const Divider(color: Colors.white24, height: 32),
+                          Divider(color: Theme.of(context).colorScheme.outline, height: 32),
                           const _SectionHeader(title: 'Actions & Export'),
                           const SizedBox(height: 8),
                           _ExportButton(
                             label: 'Reset to Defaults',
                             icon: Icons.restore,
                             onPressed: () => _notifier.resetToDefaults(),
-                            color: Colors.white70,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 12),
                           _ExportButton(
@@ -154,7 +139,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       padding: const EdgeInsets.all(24.0),
                       child: Text(
                         '${layout.systemCount} Systems',
-                        style: const TextStyle(color: Colors.white54),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -163,7 +148,7 @@ class _EditorScreenState extends State<EditorScreen> {
               // Preview Area
               Expanded(
                 child: Container(
-                  color: const Color(0xFF121212),
+                  color: Theme.of(context).colorScheme.surface,
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       if (!_hasCentered) {
@@ -195,12 +180,18 @@ class _EditorScreenState extends State<EditorScreen> {
                           constrained: false,
                           child: PreviewCanvas(
                             layout: layout,
+                            viewNotifier: widget.viewNotifier,
                           ),
                         ),
                       );
                     },
                   ),
                 ),
+              ),
+              // View Panel (Right)
+              ViewPanel(
+                viewNotifier: widget.viewNotifier,
+                transformationController: _transformationController,
               ),
             ],
           ),
@@ -258,10 +249,10 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'SARV',
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 28,
             fontWeight: FontWeight.w900,
             letterSpacing: 4,
@@ -270,7 +261,7 @@ class _Header extends StatelessWidget {
         Text(
           'MANUSCRIPT DESIGNER',
           style: TextStyle(
-            color: const Color(0xFF64B5F6).withValues(alpha: 0.7),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
             fontSize: 10,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.5,
@@ -291,8 +282,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
-          color: Color(0xFF64B5F6),
+        style: TextStyle(color: Theme.of(context).colorScheme.primary,
           fontSize: 11,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -363,20 +353,20 @@ class _SliderSettingState extends State<_SliderSetting> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(widget.label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            Text(widget.label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
             Container(
               width: 56,
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black26,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: Theme.of(context).colorScheme.outline),
               ),
               child: TextField(
                 controller: _controller,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.bold),
                 decoration: const InputDecoration(
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
@@ -396,8 +386,8 @@ class _SliderSettingState extends State<_SliderSetting> {
           min: widget.min,
           max: widget.max,
           onChanged: widget.onChanged,
-          activeColor: const Color(0xFF64B5F6),
-          inactiveColor: Colors.white10,
+          activeColor: Theme.of(context).colorScheme.primary,
+          inactiveColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
       ],
     );
@@ -420,7 +410,7 @@ class _SegmentedSetting<T extends Enum> extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -434,13 +424,13 @@ class _SegmentedSetting<T extends Enum> extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF64B5F6).withValues(alpha: 0.2) : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
-                  border: isSelected ? Border.all(color: const Color(0xFF64B5F6), width: 1) : null,
+                  border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1) : null,
                 ),
                 child: Center(
                   child: Text(
                     opt.name.toUpperCase(),
                     style: TextStyle(
-                      color: isSelected ? const Color(0xFF64B5F6) : Colors.white38,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -460,13 +450,13 @@ class _ExportButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onPressed,
-    this.color = const Color(0xFF64B5F6),
+    this.color,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -475,12 +465,12 @@ class _ExportButton extends StatelessWidget {
       icon: Icon(icon, size: 18),
       label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: color.withValues(alpha: 0.1),
-        foregroundColor: color,
+        backgroundColor: (color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.1),
+        foregroundColor: color ?? Theme.of(context).colorScheme.primary,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: color, width: 1),
+          side: BorderSide(color: color ?? Theme.of(context).colorScheme.primary, width: 1),
         ),
         elevation: 0,
         alignment: Alignment.centerLeft,
@@ -507,18 +497,17 @@ class _DropdownSetting<T extends Enum> extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,
-          dropdownColor: const Color(0xFF252525),
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+          dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
+          icon: Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurfaceVariant),
           isExpanded: true,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface,
             fontSize: 13,
             fontWeight: FontWeight.w500,
             letterSpacing: 1.1,
