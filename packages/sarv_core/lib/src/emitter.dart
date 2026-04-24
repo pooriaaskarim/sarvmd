@@ -73,7 +73,7 @@ String emit(PageConfig config, PageLayout layout) {
     );
 
     // Piano brace.
-    if (config.layoutType == LayoutType.piano) {
+    if (config.layoutType == LayoutType.doubleLine) {
       _emitBrace(draw, staffLeftBp, sysTopPdfY, sysBottomPdfY);
     }
   }
@@ -90,7 +90,7 @@ String emit(PageConfig config, PageLayout layout) {
   for (final system in layout.systems) {
     for (var i = 0; i < system.staves.length; i++) {
       final staff = system.staves[i];
-      final clef = (config.layoutType == LayoutType.piano && i == 1)
+      final clef = (config.layoutType == LayoutType.doubleLine && i == 1)
           ? config.secondaryClef
           : config.primaryClef;
       

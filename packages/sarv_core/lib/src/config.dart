@@ -20,11 +20,17 @@ enum PageSize {
 
 /// Layout types for manuscript paper.
 enum LayoutType {
-  /// Single 5-line staves.
-  standard,
+  /// Single 5-line stave.
+  singleLine,
 
-  /// Grand staff: paired treble + bass staves joined by brace.
-  piano,
+  /// Grand staff: paired treble + bass staves joined by barline.
+  doubleLine;
+
+  /// Human-readable display label.
+  String get label => switch (this) {
+    LayoutType.singleLine => 'Single Line',
+    LayoutType.doubleLine => 'Double Line',
+  };
 }
 
 /// The type of clef symbol.
@@ -81,7 +87,7 @@ class StaffConfig {
   final double systemGapMm;
 
   /// Gap between treble and bass staves within a piano system, in mm.
-  /// Only relevant for [LayoutType.piano].
+  /// Only relevant for [LayoutType.doubleLine].
   final double interStaffGapMm;
 
   /// Height of a single 5-line staff in mm.
@@ -108,7 +114,7 @@ class Margins {
 class PageConfig {
   const PageConfig({
     this.pageSize = PageSize.a4,
-    this.layoutType = LayoutType.standard,
+    this.layoutType = LayoutType.singleLine,
     this.staffConfig = const StaffConfig(),
     this.margins = const Margins(),
     this.primaryClef,
@@ -157,8 +163,8 @@ class PageConfig {
   double get systemHeight {
     final singleStaff = staffConfig.staffHeightMm;
     return switch (layoutType) {
-      LayoutType.standard => singleStaff,
-      LayoutType.piano =>
+      LayoutType.singleLine => singleStaff,
+      LayoutType.doubleLine =>
         singleStaff * 2 + staffConfig.interStaffGapMm,
     };
   }

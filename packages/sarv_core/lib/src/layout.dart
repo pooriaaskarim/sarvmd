@@ -71,9 +71,9 @@ PageLayout computeLayout(PageConfig config) {
 
     final staves = <StaffPosition>[];
     switch (config.layoutType) {
-      case LayoutType.standard:
+      case LayoutType.singleLine:
         staves.add(StaffPosition(topY: systemTopY));
-      case LayoutType.piano:
+      case LayoutType.doubleLine:
         // Treble staff (top).
         staves.add(StaffPosition(topY: systemTopY));
         // Bass staff (below treble + inter-staff gap).

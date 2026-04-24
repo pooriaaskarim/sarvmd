@@ -12,8 +12,8 @@ void main(List<String> arguments) async {
       'layout',
       abbr: 'l',
       help: 'Layout type.',
-      allowed: ['piano', 'standard'],
-      defaultsTo: 'standard',
+      allowed: ['doubleLine', 'singleLine', 'piano', 'standard'],
+      defaultsTo: 'singleLine',
     )
     ..addOption(
       'size',
@@ -51,9 +51,8 @@ void main(List<String> arguments) async {
   }
 
   final layoutType = switch (results.option('layout')) {
-    'piano' => core.LayoutType.piano,
-    'standard' => core.LayoutType.standard,
-    _ => core.LayoutType.standard,
+    'doubleLine' || 'piano' => core.LayoutType.doubleLine,
+    _ => core.LayoutType.singleLine,
   };
 
   final pageSize = switch (results.option('size')) {

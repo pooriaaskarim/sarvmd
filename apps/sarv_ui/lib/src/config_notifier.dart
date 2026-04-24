@@ -128,4 +128,11 @@ class ConfigNotifier extends ChangeNotifier {
     );
     notifyListeners();
   }
+
+  /// Apply a [StaffProfile], overriding layout type and clefs while
+  /// preserving all spacing and margin settings.
+  void applyProfile(core.StaffProfile profile) {
+    _config = profile.applyTo(_config);
+    notifyListeners();
+  }
 }
