@@ -564,126 +564,186 @@ class _ClefConfigWidget extends StatelessWidget {
 
   Widget _buildPresetChip(BuildContext context, String title, core.ClefSymbol sym, int line) {
     final selected = _isPreset(sym, line);
-    return Padding(
-      padding: const EdgeInsets.only(right: 6, bottom: 6),
-      child: FilterChip(
-        label: Text(title, style: const TextStyle(fontSize: 11)),
-        selected: selected,
-        showCheckmark: false, // Prevents the chip from expanding/jumping when selected
-        onSelected: (_) => onChanged(core.ClefConfig(symbol: sym, anchorLine: line)),
-        padding: EdgeInsets.zero,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
+    return FilterChip(
+      label: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+      selected: selected,
+      showCheckmark: false,
+      onSelected: (_) => onChanged(core.ClefConfig(symbol: sym, anchorLine: line)),
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (value == null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.bold)),
+          Switch(value: false, onChanged: (on) => onChanged(const core.ClefConfig(symbol: core.ClefSymbol.g, anchorLine: 2))),
+        ],
+      );
+    }
+    
+    final selectedSym = value!.symbol;
+    
+    Widget buildVerticalTab(core.ClefSymbol sym, String glyph, String tabLabel) {
+      final isSelected = sym == selectedSym;
+      final colorScheme = Theme.of(context).colorScheme;
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            if (isSelected) return;
+            int defaultLine = 3;
+            if (sym == core.ClefSymbol.g) defaultLine = 2; // Treble
+            if (sym == core.ClefSymbol.f) defaultLine = 4; // Bass
+            onChanged(core.ClefConfig(symbol: sym, anchorLine: defaultLine));
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  glyph, 
+                  style: TextStyle(
+                    fontFamily: 'NotoMusic', 
+                    fontSize: 34, 
+                    height: 1.0, 
+                    color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.bold)),
-            Switch(
-              value: value != null,
-              onChanged: (on) {
-                if (on) {
-                  onChanged(const core.ClefConfig(symbol: core.ClefSymbol.g, anchorLine: 2));
-                } else {
-                  onChanged(null);
-                }
-              },
+            Switch(value: true, onChanged: (on) => onChanged(null)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left Tabs Column - Soft Pills
+            SizedBox(
+              width: 56,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  buildVerticalTab(core.ClefSymbol.g, '\u{1D11E}', 'G'),
+                  const SizedBox(height: 8),
+                  buildVerticalTab(core.ClefSymbol.c, '\u{1D121}', 'C'),
+                  const SizedBox(height: 8),
+                  buildVerticalTab(core.ClefSymbol.f, '\u{1D122}', 'F'),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Right Content Area
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Presets specific to this symbol
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (selectedSym == core.ClefSymbol.g) ...[
+                        _buildPresetChip(context, 'Treble', core.ClefSymbol.g, 2),
+                      ],
+                      if (selectedSym == core.ClefSymbol.c) ...[
+                        _buildPresetChip(context, 'Alto', core.ClefSymbol.c, 3),
+                        _buildPresetChip(context, 'Tenor', core.ClefSymbol.c, 4),
+                        _buildPresetChip(context, 'Soprano', core.ClefSymbol.c, 1),
+                        _buildPresetChip(context, 'Mezzo', core.ClefSymbol.c, 2),
+                      ],
+                      if (selectedSym == core.ClefSymbol.f) ...[
+                        _buildPresetChip(context, 'Bass', core.ClefSymbol.f, 4),
+                        _buildPresetChip(context, 'Baritone', core.ClefSymbol.f, 3),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Interactive Mini Staff Canvas
+                  LayoutBuilder(builder: (context, constraints) {
+                    final gap = constraints.maxWidth / 10;
+                    return Container(
+                      clipBehavior: Clip.hardEdge,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      ),
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTapUp: (details) {
+                              final tappedY = details.localPosition.dy;
+                              final staffTop = gap * 2.5; 
+                              final i = ((tappedY - staffTop) / gap).round();
+                              if (i >= 0 && i <= 4) {
+                                onChanged(core.ClefConfig(symbol: value!.symbol, anchorLine: 5 - i));
+                              }
+                            },
+                            child: CustomPaint(
+                              size: Size(constraints.maxWidth, gap * 8.5),
+                              painter: _MiniStaffClefPainter(value!, gap, Theme.of(context).colorScheme),
+                            ),
+                          ),
+                          // Elegant overlay label
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: IgnorePointer(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                                ),
+                                child: Text(
+                                  'Line ${value!.anchorLine}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
           ],
         ),
-        if (value != null) ...[
-          const SizedBox(height: 4),
-          // Scrollable row prevents multi-line wrap jumping when interacting
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildPresetChip(context, 'Treble', core.ClefSymbol.g, 2),
-                _buildPresetChip(context, 'Bass', core.ClefSymbol.f, 4),
-                _buildPresetChip(context, 'Baritone', core.ClefSymbol.f, 3),
-                _buildPresetChip(context, 'Alto', core.ClefSymbol.c, 3),
-                _buildPresetChip(context, 'Tenor', core.ClefSymbol.c, 4),
-                _buildPresetChip(context, 'Soprano', core.ClefSymbol.c, 1),
-                _buildPresetChip(context, 'Mezzo', core.ClefSymbol.c, 2),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // Symbol toggles
-          Row(children: [
-            Expanded(
-              child: _SegmentedSetting<core.ClefSymbol>(
-                value: value!.symbol,
-                options: core.ClefSymbol.values,
-                onChanged: (sym) => onChanged(core.ClefConfig(symbol: sym, anchorLine: value!.anchorLine)),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 12),
-          
-          // Mini staff preview
-          LayoutBuilder(builder: (context, constraints) {
-            final gap = constraints.maxWidth / 10;
-            return Column(children: [
-              Container(
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                ),
-                child: GestureDetector(
-                  onTapUp: (details) {
-                    final tappedY = details.localPosition.dy;
-                    final staffTop = gap * 2.5; // Updated staff vertical origin
-                    final i = ((tappedY - staffTop) / gap).round();
-                    if (i >= 0 && i <= 4) {
-                      onChanged(core.ClefConfig(symbol: value!.symbol, anchorLine: 5 - i));
-                    }
-                  },
-                  child: CustomPaint(
-                    size: Size(constraints.maxWidth, gap * 8.5), // Taller preview box
-                    painter: _MiniStaffClefPainter(value!, gap, Theme.of(context).colorScheme),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              // Anchor stepper
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                IconButton(
-                  icon: const Icon(Icons.keyboard_arrow_down),
-                  tooltip: 'Lower line',
-                  onPressed: value!.anchorLine > 1
-                      ? () => onChanged(core.ClefConfig(symbol: value!.symbol, anchorLine: value!.anchorLine - 1))
-                      : null,
-                ),
-                SizedBox(
-                  width: 72,
-                  child: Text(
-                    'Line ${value!.anchorLine}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.keyboard_arrow_up),
-                  tooltip: 'Higher line',
-                  onPressed: value!.anchorLine < 5
-                      ? () => onChanged(core.ClefConfig(symbol: value!.symbol, anchorLine: value!.anchorLine + 1))
-                      : null,
-                ),
-              ]),
-            ]);
-          }),
-        ]
       ],
     );
   }
