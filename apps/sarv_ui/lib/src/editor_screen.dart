@@ -20,6 +20,7 @@ class _EditorScreenState extends State<EditorScreen> {
   final ConfigNotifier _notifier = ConfigNotifier();
   final TransformationController _transformationController =
       TransformationController();
+  final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
   double _zoom = 0.5;
   bool _hasCentered = false;
 
@@ -32,6 +33,7 @@ class _EditorScreenState extends State<EditorScreen> {
   void dispose() {
     _notifier.dispose();
     _transformationController.dispose();
+    _cursorNotifier.dispose();
     super.dispose();
   }
 
@@ -212,19 +214,29 @@ class _EditorScreenState extends State<EditorScreen> {
 
                       return RulerBox(
                         transformationController: _transformationController,
+                        viewNotifier: widget.viewNotifier,
+                        cursorNotifier: _cursorNotifier,
                         paperSizeMm: Size(
                           layout.config.pageSize.width,
                           layout.config.pageSize.height,
                         ),
-                        child: InteractiveViewer(
-                          transformationController: _transformationController,
-                          boundaryMargin: const EdgeInsets.all(100000),
-                          minScale: 0.1,
-                          maxScale: 4.0,
-                          constrained: false,
-                          child: PreviewCanvas(
-                            layout: layout,
-                            viewNotifier: widget.viewNotifier,
+                        child: MouseRegion(
+                          onHover: (event) {
+                            _cursorNotifier.value = event.localPosition;
+                          },
+                          onExit: (_) {
+                            _cursorNotifier.value = null;
+                          },
+                          child: InteractiveViewer(
+                            transformationController: _transformationController,
+                            boundaryMargin: const EdgeInsets.all(100000),
+                            minScale: 0.1,
+                            maxScale: 4.0,
+                            constrained: false,
+                            child: PreviewCanvas(
+                              layout: layout,
+                              viewNotifier: widget.viewNotifier,
+                            ),
                           ),
                         ),
                       );

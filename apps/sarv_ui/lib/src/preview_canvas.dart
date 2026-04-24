@@ -38,7 +38,11 @@ class PreviewCanvas extends StatelessWidget {
         builder: (context, _) {
           return CustomPaint(
             size: sizePx,
-            painter: _ManuscriptPainter(layout, lpmm, viewNotifier),
+            painter: _ManuscriptPainter(
+              layout,
+              lpmm,
+              viewNotifier,
+            ),
           );
         },
       ),

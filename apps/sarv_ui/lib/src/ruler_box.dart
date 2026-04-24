@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-
+import 'view_notifier.dart';
 
 class RulerBox extends StatefulWidget {
   const RulerBox({
@@ -8,12 +8,19 @@ class RulerBox extends StatefulWidget {
     required this.child,
     required this.transformationController,
     required this.paperSizeMm,
+    required this.viewNotifier,
+    required this.cursorNotifier,
     this.rulerSize = 25.0,
   });
 
   final Widget child;
   final TransformationController transformationController;
   final Size paperSizeMm;
+  final ViewNotifier viewNotifier;
+  /// Dedicated high-frequency notifier for cursor position. Kept separate
+  /// from ViewNotifier intentionally so that every mouse-move only repaints
+  /// the rulers, NOT the whole widget tree.
+  final ValueNotifier<Offset?> cursorNotifier;
   final double rulerSize;
 
   @override
@@ -58,7 +65,11 @@ class _RulerBoxState extends State<RulerBox> {
                 child: GestureDetector(
                   onTap: _toggleOrigin,
                   child: ListenableBuilder(
-                    listenable: widget.transformationController,
+                    listenable: Listenable.merge([
+                      widget.transformationController,
+                      widget.cursorNotifier,
+                      widget.viewNotifier,
+                    ]),
                     builder: (context, _) {
                       final colorScheme = Theme.of(context).colorScheme;
                       return ClipRect(
@@ -69,6 +80,8 @@ class _RulerBoxState extends State<RulerBox> {
                             centerOrigin: _centerOrigin,
                             paperSizeMm: widget.paperSizeMm,
                             colorScheme: colorScheme,
+                            cursorPos: widget.cursorNotifier.value,
+                            showWings: widget.viewNotifier.isGuideActive(GuideType.rulerWings),
                           ),
                         ),
                       );
@@ -89,7 +102,11 @@ class _RulerBoxState extends State<RulerBox> {
                 child: GestureDetector(
                   onTap: _toggleOrigin,
                   child: ListenableBuilder(
-                    listenable: widget.transformationController,
+                    listenable: Listenable.merge([
+                      widget.transformationController,
+                      widget.cursorNotifier,
+                      widget.viewNotifier,
+                    ]),
                     builder: (context, _) {
                       final colorScheme = Theme.of(context).colorScheme;
                       return ClipRect(
@@ -100,6 +117,8 @@ class _RulerBoxState extends State<RulerBox> {
                             centerOrigin: _centerOrigin,
                             paperSizeMm: widget.paperSizeMm,
                             colorScheme: colorScheme,
+                            cursorPos: widget.cursorNotifier.value,
+                            showWings: widget.viewNotifier.isGuideActive(GuideType.rulerWings),
                           ),
                         ),
                       );
@@ -123,6 +142,8 @@ class RulerPainter extends CustomPainter {
     required this.centerOrigin,
     required this.paperSizeMm,
     required this.colorScheme,
+    required this.cursorPos,
+    required this.showWings,
   });
 
   final Axis axis;
@@ -130,6 +151,8 @@ class RulerPainter extends CustomPainter {
   final bool centerOrigin;
   final Size paperSizeMm;
   final ColorScheme colorScheme;
+  final Offset? cursorPos;
+  final bool showWings;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -174,16 +197,11 @@ class RulerPainter extends CustomPainter {
       offset += (paperSpanMm / 2) * effectiveScale;
     }
 
-    // We want to calculate the range of mm visible in the viewport.
-    // viewport_pos = matrix_pos * paper_pos
-    // mm_val = (viewport_pos - offset) / effectiveScale
-
     final double startMm = -offset / effectiveScale;
     final double endMm =
         (axis == Axis.horizontal ? size.width - offset : size.height - offset) /
             effectiveScale;
 
-    // Limit ticks to avoid performance issues if zoomed out too much
     // Adaptive step logic
     final double minPixelsPerLabel = 40.0;
     final double targetGapMm = minPixelsPerLabel / effectiveScale;
@@ -209,14 +227,12 @@ class RulerPainter extends CustomPainter {
       stepMm = 2;
     }
 
-    // Adjust startTick to be a multiple of stepMm (or at least calculate cleanly)
     final int startTick = startMm.floor();
     final int endTick = endMm.ceil();
 
     for (int i = startTick; i <= endTick; i++) {
       final double pos = i * effectiveScale + offset;
 
-      // Skip if off-screen (due to floating point or padding)
       if (pos < -0.1 ||
           (axis == Axis.horizontal
               ? pos > size.width + 0.1
@@ -272,12 +288,31 @@ class RulerPainter extends CustomPainter {
         }
       }
     }
+
+    // Draw cursor "wing" indicator — painted last so it's always on top of tick marks
+    if (showWings && cursorPos != null) {
+      final wingPaint = Paint()
+        ..color = colorScheme.primary.withValues(alpha: 0.7)
+        ..strokeWidth = 1.5;
+
+      final pos = axis == Axis.horizontal ? cursorPos!.dx : cursorPos!.dy;
+      
+      if (axis == Axis.horizontal) {
+        // Solid line along full height of the horizontal ruler
+        canvas.drawLine(Offset(pos, 0), Offset(pos, size.height), wingPaint);
+      } else {
+        // Solid line along full width of the vertical ruler
+        canvas.drawLine(Offset(0, pos), Offset(size.width, pos), wingPaint);
+      }
+    }
   }
 
   @override
   bool shouldRepaint(covariant RulerPainter oldDelegate) {
-    return oldDelegate.matrix != matrix || 
-           oldDelegate.axis != axis || 
-           oldDelegate.colorScheme != colorScheme;
+    return oldDelegate.matrix != matrix ||
+           oldDelegate.axis != axis ||
+           oldDelegate.colorScheme != colorScheme ||
+           oldDelegate.cursorPos != cursorPos ||
+           oldDelegate.showWings != showWings;
   }
 }

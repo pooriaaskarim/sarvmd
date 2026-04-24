@@ -5,6 +5,7 @@ enum GuideType {
   paperCenters,
   margins,
   staffBounds,
+  rulerWings,
 }
 
 class ViewNotifier extends ChangeNotifier {
@@ -27,7 +28,7 @@ class ViewNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  final Set<GuideType> _activeGuides = {GuideType.paperEdges};
+  final Set<GuideType> _activeGuides = {GuideType.paperEdges, GuideType.rulerWings};
   Set<GuideType> get activeGuides => _activeGuides;
 
   void toggleGuide(GuideType guide, bool active) {
