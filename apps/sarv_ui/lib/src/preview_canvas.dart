@@ -138,12 +138,10 @@ class _ManuscriptPainter extends CustomPainter {
           canvas.drawRect(rect, boundsPaint);
         }
         
-        // Draw 5 lines (pixel-snapped to prevent blurry sub-pixel strokes)
+        // Draw 5 lines (pixel-snapped for maximum crispness)
         for (var i = 0; i < 5; i++) {
           final y = topYPx + i * lineGapPx;
-          // To get sharp 1px equivalent strokes, snapping to int + 0.5 is often required in logical space,
-          // but since scale is arbitrary, simply rounding Y can reduce "fuzz" relative to clef anti-aliasing.
-          final snappedY = (y * scale).round() / scale;
+          final snappedY = y.roundToDouble();
           canvas.drawLine(
             Offset(leftMm * scale, snappedY),
             Offset(rightMm * scale, snappedY),
@@ -152,7 +150,7 @@ class _ManuscriptPainter extends CustomPainter {
         }
 
         // ── Draw Clef ─────────────────────────────────────────
-        final clef = (layout.config.layoutType == core.LayoutType.piano && sIdx == 1)
+        final clef = (layout.config.layoutType == core.LayoutType.doubleLine && sIdx == 1)
             ? layout.config.secondaryClef
             : layout.config.primaryClef;
 
@@ -195,20 +193,25 @@ class _ManuscriptPainter extends CustomPainter {
           final glyphX = leftMm * scale + lineGapPx * 0.15;
           final glyphY = baselineY - baselineDelta + microOffset;
           
-          // Snap exact top left for the TextPainter to match staff crispness
-          tp.paint(canvas, Offset((glyphX * scale).round() / scale, (glyphY * scale).round() / scale));
+          tp.paint(canvas, Offset(glyphX.roundToDouble(), glyphY.roundToDouble()));
         }
       }
 
-      // If piano, draw vertical line connecting staves on the left
-      if (layout.config.layoutType == core.LayoutType.piano && system.staves.length >= 2) {
-        final topY = system.staves[0].topY * scale;
-        final bottomY = (system.staves[1].topY + layout.config.staffConfig.staffHeightMm) * scale;
-        final startX = (leftMm * scale).round() / scale;
+      // If piano, draw a bold vertical line connecting the two staves
+      if (layout.config.layoutType == core.LayoutType.doubleLine && system.staves.length >= 2) {
+        final topY = (system.staves[0].topY * scale).roundToDouble();
+        final bottomY = ((system.staves[1].topY + layout.config.staffConfig.staffHeightMm) * scale).roundToDouble();
+        final startX = (leftMm * scale).roundToDouble();
+        
+        final connectorPaint = Paint()
+          ..color = Colors.black
+          ..strokeWidth = thicknessPx * 2.5 // Bolder as requested
+          ..style = PaintingStyle.stroke;
+
         canvas.drawLine(
-          Offset(startX, (topY * scale).round() / scale),
-          Offset(startX, (bottomY * scale).round() / scale),
-          staffPaint..strokeWidth = thicknessPx * 2,
+          Offset(startX, topY),
+          Offset(startX, bottomY),
+          connectorPaint,
         );
       }
     }
