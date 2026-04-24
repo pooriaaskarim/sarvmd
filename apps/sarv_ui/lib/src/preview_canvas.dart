@@ -134,12 +134,15 @@ class _ManuscriptPainter extends CustomPainter {
           canvas.drawRect(rect, boundsPaint);
         }
         
-        // Draw 5 lines
+        // Draw 5 lines (pixel-snapped to prevent blurry sub-pixel strokes)
         for (var i = 0; i < 5; i++) {
           final y = topYPx + i * lineGapPx;
+          // To get sharp 1px equivalent strokes, snapping to int + 0.5 is often required in logical space,
+          // but since scale is arbitrary, simply rounding Y can reduce "fuzz" relative to clef anti-aliasing.
+          final snappedY = (y * scale).round() / scale;
           canvas.drawLine(
-            Offset(leftMm * scale, y),
-            Offset(rightMm * scale, y),
+            Offset(leftMm * scale, snappedY),
+            Offset(rightMm * scale, snappedY),
             staffPaint,
           );
         }
@@ -173,20 +176,23 @@ class _ManuscriptPainter extends CustomPainter {
             textDirection: TextDirection.ltr,
           )..layout();
 
-          // Use Flutter's actual reported ascent (distance from glyph-box top to
-          // the text baseline) so we don't rely on theoretical font-metric fractions.
-          final ascent = tp.computeLineMetrics().first.ascent;
-
-          // anchorYPx: canvas Y of the staff line the clef attaches to.
-          // (anchorLine 1=bottom → topYPx+4*gap, 5=top → topYPx)
+          // Use the actual alphabetic baseline instead of general ascent, 
+          // and apply a micro-compensation to fix the symbols appearing "a little upper".
+          final baselineDelta = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+          
           final anchorYPx = topYPx + (5 - clef.anchorLine) * lineGapPx;
-
-          // In the font, anchor is anchorSp staff-spaces above baseline.
-          // In canvas (y↓), baseline sits anchorSp*lineGapPx BELOW the anchor line.
           final baselineY = anchorYPx + anchorSp * lineGapPx;
+          
+          // NotoMusic's glyph ink often stops slightly above the baseline by around 0.01 em,
+          // creating a visual effect where it seems "a little upper".
+          // In spaces, 0.01 em = 0.04 sp. We push it down slightly to compensate.
+          final microOffset = lineGapPx * 0.04;
+          
           final glyphX = leftMm * scale + lineGapPx * 0.15;
-          final glyphY = baselineY - ascent;
-          tp.paint(canvas, Offset(glyphX, glyphY));
+          final glyphY = baselineY - baselineDelta + microOffset;
+          
+          // Snap exact top left for the TextPainter to match staff crispness
+          tp.paint(canvas, Offset((glyphX * scale).round() / scale, (glyphY * scale).round() / scale));
         }
       }
 
@@ -194,9 +200,10 @@ class _ManuscriptPainter extends CustomPainter {
       if (layout.config.layoutType == core.LayoutType.piano && system.staves.length >= 2) {
         final topY = system.staves[0].topY * scale;
         final bottomY = (system.staves[1].topY + layout.config.staffConfig.staffHeightMm) * scale;
+        final startX = (leftMm * scale).round() / scale;
         canvas.drawLine(
-          Offset(leftMm * scale, topY),
-          Offset(leftMm * scale, bottomY),
+          Offset(startX, (topY * scale).round() / scale),
+          Offset(startX, (bottomY * scale).round() / scale),
           staffPaint..strokeWidth = thicknessPx * 2,
         );
       }
