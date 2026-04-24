@@ -14,6 +14,8 @@ class ConfigNotifier extends ChangeNotifier {
       layoutType: _config.layoutType,
       staffConfig: _config.staffConfig,
       margins: _config.margins,
+      primaryClef: _config.primaryClef,
+      secondaryClef: _config.secondaryClef,
     );
     notifyListeners();
   }
@@ -24,6 +26,8 @@ class ConfigNotifier extends ChangeNotifier {
       layoutType: type,
       staffConfig: _config.staffConfig,
       margins: _config.margins,
+      primaryClef: _config.primaryClef,
+      secondaryClef: _config.secondaryClef,
     );
     notifyListeners();
   }
@@ -34,6 +38,8 @@ class ConfigNotifier extends ChangeNotifier {
       layoutType: _config.layoutType,
       staffConfig: staff,
       margins: _config.margins,
+      primaryClef: _config.primaryClef,
+      secondaryClef: _config.secondaryClef,
     );
     notifyListeners();
   }
@@ -44,6 +50,8 @@ class ConfigNotifier extends ChangeNotifier {
       layoutType: _config.layoutType,
       staffConfig: _config.staffConfig,
       margins: margins,
+      primaryClef: _config.primaryClef,
+      secondaryClef: _config.secondaryClef,
     );
     notifyListeners();
   }
@@ -94,6 +102,30 @@ class ConfigNotifier extends ChangeNotifier {
 
   void resetToDefaults() {
     _config = const core.PageConfig();
+    notifyListeners();
+  }
+
+  void updatePrimaryClef(core.ClefConfig? clef) {
+    _config = core.PageConfig(
+      pageSize: _config.pageSize,
+      layoutType: _config.layoutType,
+      staffConfig: _config.staffConfig,
+      margins: _config.margins,
+      primaryClef: clef,
+      secondaryClef: _config.secondaryClef,
+    );
+    notifyListeners();
+  }
+
+  void updateSecondaryClef(core.ClefConfig? clef) {
+    _config = core.PageConfig(
+      pageSize: _config.pageSize,
+      layoutType: _config.layoutType,
+      staffConfig: _config.staffConfig,
+      margins: _config.margins,
+      primaryClef: _config.primaryClef,
+      secondaryClef: clef,
+    );
     notifyListeners();
   }
 }

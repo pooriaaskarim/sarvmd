@@ -44,12 +44,12 @@ class _RulerBoxState extends State<RulerBox> {
                 child: Container(
                   width: widget.rulerSize,
                   height: widget.rulerSize,
-                  color: const Color(0xFF1E1E1E),
+                  color: Theme.of(context).colorScheme.surfaceContainer,
                   child: Center(
                     child: Text(
                       _centerOrigin ? 'mm\nCTR' : 'mm\nTOP',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white30, fontSize: 8),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 8),
                     ),
                   ),
                 ),
@@ -60,6 +60,7 @@ class _RulerBoxState extends State<RulerBox> {
                   child: ListenableBuilder(
                     listenable: widget.transformationController,
                     builder: (context, _) {
+                      final colorScheme = Theme.of(context).colorScheme;
                       return ClipRect(
                         child: CustomPaint(
                           painter: RulerPainter(
@@ -67,6 +68,7 @@ class _RulerBoxState extends State<RulerBox> {
                             matrix: widget.transformationController.value,
                             centerOrigin: _centerOrigin,
                             paperSizeMm: widget.paperSizeMm,
+                            colorScheme: colorScheme,
                           ),
                         ),
                       );
@@ -89,6 +91,7 @@ class _RulerBoxState extends State<RulerBox> {
                   child: ListenableBuilder(
                     listenable: widget.transformationController,
                     builder: (context, _) {
+                      final colorScheme = Theme.of(context).colorScheme;
                       return ClipRect(
                         child: CustomPaint(
                           painter: RulerPainter(
@@ -96,6 +99,7 @@ class _RulerBoxState extends State<RulerBox> {
                             matrix: widget.transformationController.value,
                             centerOrigin: _centerOrigin,
                             paperSizeMm: widget.paperSizeMm,
+                            colorScheme: colorScheme,
                           ),
                         ),
                       );
@@ -118,21 +122,23 @@ class RulerPainter extends CustomPainter {
     required this.matrix,
     required this.centerOrigin,
     required this.paperSizeMm,
+    required this.colorScheme,
   });
 
   final Axis axis;
   final Matrix4 matrix;
   final bool centerOrigin;
   final Size paperSizeMm;
+  final ColorScheme colorScheme;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white30
+      ..color = colorScheme.outlineVariant
       ..strokeWidth = 1.0;
 
-    final textStyle = const TextStyle(
-      color: Colors.white60,
+    final textStyle = TextStyle(
+      color: colorScheme.onSurfaceVariant,
       fontSize: 9,
     );
 
@@ -147,7 +153,7 @@ class RulerPainter extends CustomPainter {
     // Draw background
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = const Color(0xFF1E1E1E),
+      Paint()..color = colorScheme.surfaceContainer,
     );
 
     // Draw border
@@ -270,6 +276,8 @@ class RulerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant RulerPainter oldDelegate) {
-    return oldDelegate.matrix != matrix || oldDelegate.axis != axis;
+    return oldDelegate.matrix != matrix || 
+           oldDelegate.axis != axis || 
+           oldDelegate.colorScheme != colorScheme;
   }
 }

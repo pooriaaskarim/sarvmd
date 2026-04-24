@@ -115,7 +115,8 @@ class _ManuscriptPainter extends CustomPainter {
     }
 
     for (final system in layout.systems) {
-      for (final staff in system.staves) {
+      for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
+        final staff = system.staves[sIdx];
         final topYPx = staff.topY * scale;
         
         // Staff bounding box guides
@@ -141,6 +142,51 @@ class _ManuscriptPainter extends CustomPainter {
             Offset(rightMm * scale, y),
             staffPaint,
           );
+        }
+
+        // ── Draw Clef ─────────────────────────────────────────
+        final clef = (layout.config.layoutType == core.LayoutType.piano && sIdx == 1)
+            ? layout.config.secondaryClef
+            : layout.config.primaryClef;
+
+        if (clef != null) {
+          // Glyph-centroid anchors (from fontTools contour analysis):
+          //   G U+1D11E : lower-oval centre   = 0.876 sp above baseline
+          //   C U+1D121 : bracket midpoint     = 2.004 sp ≈ 2.0 sp  ✓ (confirmed)
+          //   F U+1D122 : dot midpoint         = (3.018+2.138)/2 = 2.578 sp
+          const fontScale = 4.0;
+          final (String glyph, double anchorSp) = switch (clef.symbol) {
+            core.ClefSymbol.g => ('\u{1D11E}', 0.876),
+            core.ClefSymbol.c => ('\u{1D121}', 2.0),
+            core.ClefSymbol.f => ('\u{1D122}', 2.578),
+          };
+
+          final tp = TextPainter(
+            text: TextSpan(
+              text: glyph,
+              style: TextStyle(
+                fontFamily: 'NotoMusic',
+                fontSize: lineGapPx * fontScale,
+                color: Colors.black,
+              ),
+            ),
+            textDirection: TextDirection.ltr,
+          )..layout();
+
+          // Use Flutter's actual reported ascent (distance from glyph-box top to
+          // the text baseline) so we don't rely on theoretical font-metric fractions.
+          final ascent = tp.computeLineMetrics().first.ascent;
+
+          // anchorYPx: canvas Y of the staff line the clef attaches to.
+          // (anchorLine 1=bottom → topYPx+4*gap, 5=top → topYPx)
+          final anchorYPx = topYPx + (5 - clef.anchorLine) * lineGapPx;
+
+          // In the font, anchor is anchorSp staff-spaces above baseline.
+          // In canvas (y↓), baseline sits anchorSp*lineGapPx BELOW the anchor line.
+          final baselineY = anchorYPx + anchorSp * lineGapPx;
+          final glyphX = leftMm * scale + lineGapPx * 0.15;
+          final glyphY = baselineY - ascent;
+          tp.paint(canvas, Offset(glyphX, glyphY));
         }
       }
 

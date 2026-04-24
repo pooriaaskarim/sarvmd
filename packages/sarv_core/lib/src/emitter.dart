@@ -80,10 +80,48 @@ String emit(PageConfig config, PageLayout layout) {
 
   draw.writeln('Q'); // Restore graphics state.
 
-  // Use \pdfliteral direct to write at absolute page coordinates.
-  // We place an empty hbox so TeX doesn't complain about missing content,
-  // then inject the drawing commands directly into the page stream.
+  // 1) Empty hbox to set current point (top-left for 0 margin).
   buf.writeln('\\hbox{}');
+  
+  // 2) Emitted text labels (Clefs) via picture environment
+  // We place it at (0,0) so it doesn't disrupt the flow.
+  buf.writeln('\\unitlength 1bp');
+  buf.writeln('\\begin{picture}(0,0)');
+  for (final system in layout.systems) {
+    for (var i = 0; i < system.staves.length; i++) {
+      final staff = system.staves[i];
+      final clef = (config.layoutType == LayoutType.piano && i == 1)
+          ? config.secondaryClef
+          : config.primaryClef;
+      
+      if (clef != null) {
+        final topLinePdfY = pageHBp - _mmToBp(staff.topY);
+        // Anchor line: 1 is bottom, 5 is top.
+        // Line 5 = topLinePdfY
+        // Line 4 = topLinePdfY - lineGapBp
+        // Line y = topLinePdfY - (5 - anchorLine) * lineGapBp
+        final cy = topLinePdfY - (5 - clef.anchorLine) * lineGapBp;
+        
+        // Place just right of the barline. Left margin + roughly 15 bp.
+        final cx = staffLeftBp + 15.0;
+        
+        // Use a stylized text.
+        final latexScale = switch (clef.symbol) {
+          ClefSymbol.g => r'\huge',
+          ClefSymbol.c => r'\LARGE',
+          ClefSymbol.f => r'\Large',
+        };
+        
+        buf.writeln(
+          '\\put(${_f(cx)},${_f(cy)}){'
+          '\\makebox(0,0){$latexScale\\textit{${clef.symbol.label}}}}'
+        );
+      }
+    }
+  }
+  buf.writeln('\\end{picture}');
+
+  // 3) Use \pdfliteral direct to write graphics at absolute page coordinates.
   buf.writeln('\\pdfliteral direct {${draw.toString()}}');
   buf.writeln(r'\end{document}');
 

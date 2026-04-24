@@ -111,6 +111,21 @@ class _EditorScreenState extends State<EditorScreen> {
                               onChanged: (v) => _notifier.updateInterStaffGap(v),
                             ),
                           Divider(color: Theme.of(context).colorScheme.outline, height: 32),
+                          const _SectionHeader(title: 'Clefs & Symbols'),
+                          _ClefConfigWidget(
+                            label: layout.config.layoutType == core.LayoutType.piano ? 'Upper Staff' : 'Staff Clef',
+                            value: _notifier.config.primaryClef,
+                            onChanged: (v) => _notifier.updatePrimaryClef(v),
+                          ),
+                          if (layout.config.layoutType == core.LayoutType.piano) ...[
+                            const SizedBox(height: 16),
+                            _ClefConfigWidget(
+                              label: 'Lower Staff',
+                              value: _notifier.config.secondaryClef,
+                              onChanged: (v) => _notifier.updateSecondaryClef(v),
+                            ),
+                          ],
+                          Divider(color: Theme.of(context).colorScheme.outline, height: 32),
                           const _SectionHeader(title: 'Actions & Export'),
                           const SizedBox(height: 8),
                           _ExportButton(
@@ -528,4 +543,203 @@ class _DropdownSetting<T extends Enum> extends StatelessWidget {
       ),
     );
   }
+}
+
+
+
+class _ClefConfigWidget extends StatelessWidget {
+  const _ClefConfigWidget({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final core.ClefConfig? value;
+  final ValueChanged<core.ClefConfig?> onChanged;
+
+  bool _isPreset(core.ClefSymbol sym, int line) {
+    return value?.symbol == sym && value?.anchorLine == line;
+  }
+
+  Widget _buildPresetChip(BuildContext context, String title, core.ClefSymbol sym, int line) {
+    final selected = _isPreset(sym, line);
+    return Padding(
+      padding: const EdgeInsets.only(right: 6, bottom: 6),
+      child: FilterChip(
+        label: Text(title, style: const TextStyle(fontSize: 11)),
+        selected: selected,
+        showCheckmark: false, // Prevents the chip from expanding/jumping when selected
+        onSelected: (_) => onChanged(core.ClefConfig(symbol: sym, anchorLine: line)),
+        padding: EdgeInsets.zero,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.bold)),
+            Switch(
+              value: value != null,
+              onChanged: (on) {
+                if (on) {
+                  onChanged(const core.ClefConfig(symbol: core.ClefSymbol.g, anchorLine: 2));
+                } else {
+                  onChanged(null);
+                }
+              },
+            ),
+          ],
+        ),
+        if (value != null) ...[
+          const SizedBox(height: 4),
+          // Scrollable row prevents multi-line wrap jumping when interacting
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildPresetChip(context, 'Treble', core.ClefSymbol.g, 2),
+                _buildPresetChip(context, 'Bass', core.ClefSymbol.f, 4),
+                _buildPresetChip(context, 'Baritone', core.ClefSymbol.f, 3),
+                _buildPresetChip(context, 'Alto', core.ClefSymbol.c, 3),
+                _buildPresetChip(context, 'Tenor', core.ClefSymbol.c, 4),
+                _buildPresetChip(context, 'Soprano', core.ClefSymbol.c, 1),
+                _buildPresetChip(context, 'Mezzo', core.ClefSymbol.c, 2),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Symbol toggles
+          Row(children: [
+            Expanded(
+              child: _SegmentedSetting<core.ClefSymbol>(
+                value: value!.symbol,
+                options: core.ClefSymbol.values,
+                onChanged: (sym) => onChanged(core.ClefConfig(symbol: sym, anchorLine: value!.anchorLine)),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          
+          // Mini staff preview
+          LayoutBuilder(builder: (context, constraints) {
+            final gap = constraints.maxWidth / 10;
+            return Column(children: [
+              Container(
+                clipBehavior: Clip.hardEdge,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                ),
+                child: GestureDetector(
+                  onTapUp: (details) {
+                    final tappedY = details.localPosition.dy;
+                    final staffTop = gap * 2.5; // Updated staff vertical origin
+                    final i = ((tappedY - staffTop) / gap).round();
+                    if (i >= 0 && i <= 4) {
+                      onChanged(core.ClefConfig(symbol: value!.symbol, anchorLine: 5 - i));
+                    }
+                  },
+                  child: CustomPaint(
+                    size: Size(constraints.maxWidth, gap * 8.5), // Taller preview box
+                    painter: _MiniStaffClefPainter(value!, gap, Theme.of(context).colorScheme),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Anchor stepper
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                IconButton(
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  tooltip: 'Lower line',
+                  onPressed: value!.anchorLine > 1
+                      ? () => onChanged(core.ClefConfig(symbol: value!.symbol, anchorLine: value!.anchorLine - 1))
+                      : null,
+                ),
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    'Line ${value!.anchorLine}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.keyboard_arrow_up),
+                  tooltip: 'Higher line',
+                  onPressed: value!.anchorLine < 5
+                      ? () => onChanged(core.ClefConfig(symbol: value!.symbol, anchorLine: value!.anchorLine + 1))
+                      : null,
+                ),
+              ]),
+            ]);
+          }),
+        ]
+      ],
+    );
+  }
+}
+
+class _MiniStaffClefPainter extends CustomPainter {
+  const _MiniStaffClefPainter(this.clef, this.gap, this.scheme);
+  final core.ClefConfig clef;
+  final double gap;
+  final ColorScheme scheme;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final staffColor = scheme.onSurface;
+    final highlightColor = scheme.primary;
+    final staffTop = gap * 2.5;
+
+    for (var i = 0; i < 5; i++) {
+      final lineNum = 5 - i;
+      final y = staffTop + i * gap;
+      final isAnchor = lineNum == clef.anchorLine;
+      canvas.drawLine(
+        Offset(gap * 1.6, y),
+        Offset(size.width - gap * 0.2, y),
+        Paint()
+          ..color = isAnchor ? highlightColor : staffColor.withValues(alpha: 0.4)
+          ..strokeWidth = isAnchor ? gap * 0.12 : gap * 0.05
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+
+    final double anchorSp = switch (clef.symbol) {
+      core.ClefSymbol.g => 0.876,
+      core.ClefSymbol.c => 2.0,
+      core.ClefSymbol.f => 2.578,
+    };
+    final String glyph = switch (clef.symbol) {
+      core.ClefSymbol.g => '\u{1D11E}',
+      core.ClefSymbol.c => '\u{1D121}',
+      core.ClefSymbol.f => '\u{1D122}',
+    };
+
+    final tp = TextPainter(
+      text: TextSpan(
+        text: glyph,
+        style: TextStyle(fontFamily: 'NotoMusic', fontSize: gap * 4.0, color: staffColor),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final ascent = tp.computeLineMetrics().first.ascent;
+    final anchorYPx = staffTop + (5 - clef.anchorLine) * gap;
+    tp.paint(canvas, Offset(gap * 0.05, anchorYPx + anchorSp * gap - ascent));
+  }
+
+  @override
+  bool shouldRepaint(_MiniStaffClefPainter old) =>
+      old.clef != clef || old.gap != gap;
 }
