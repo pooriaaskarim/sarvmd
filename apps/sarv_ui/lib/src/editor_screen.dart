@@ -60,18 +60,25 @@ class _EditorScreenState extends State<EditorScreen> {
                           const SizedBox(height: 48),
                           const _Header(),
                           const SizedBox(height: 32),
-                          const _SectionHeader(title: 'Document'),
+                          const _SectionHeaderWithSubtitle(
+                            title: 'Profiles',
+                            subtitle: 'Preset layout & clef configuration',
+                          ),
+                          const SizedBox(height: 10),
+                          _ProfilePicker(
+                            currentConfig: _notifier.config,
+                            onProfileSelected: (p) => _notifier.applyProfile(p),
+                            onLayoutTypeChanged: (t) => _notifier.updateLayoutType(t),
+                          ),
+                          Divider(
+                              color: Theme.of(context).colorScheme.outline,
+                              height: 32),
+                          const _SectionHeader(title: 'Page'),
                           const SizedBox(height: 8),
                           _DropdownSetting<core.PageSize>(
                             value: _notifier.config.pageSize,
                             options: core.PageSize.values,
                             onChanged: (v) => _notifier.updatePageSize(v),
-                          ),
-                          const SizedBox(height: 16),
-                          _SegmentedSetting<core.LayoutType>(
-                            value: _notifier.config.layoutType,
-                            options: core.LayoutType.values,
-                            onChanged: (v) => _notifier.updateLayoutType(v),
                           ),
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
@@ -111,7 +118,7 @@ class _EditorScreenState extends State<EditorScreen> {
                             max: 30.0,
                             onChanged: (v) => _notifier.updateSystemGap(v),
                           ),
-                          if (layout.config.layoutType == core.LayoutType.piano)
+                          if (layout.config.layoutType == core.LayoutType.doubleLine)
                             _SliderSetting(
                               label: 'Inter-staff Gap',
                               value:
@@ -127,14 +134,14 @@ class _EditorScreenState extends State<EditorScreen> {
                           const _SectionHeader(title: 'Clefs & Symbols'),
                           _ClefConfigWidget(
                             label: layout.config.layoutType ==
-                                    core.LayoutType.piano
+                                    core.LayoutType.doubleLine
                                 ? 'Upper Staff'
                                 : 'Staff Clef',
                             value: _notifier.config.primaryClef,
                             onChanged: (v) => _notifier.updatePrimaryClef(v),
                           ),
                           if (layout.config.layoutType ==
-                              core.LayoutType.piano) ...[
+                              core.LayoutType.doubleLine) ...[
                             const SizedBox(height: 16),
                             _ClefConfigWidget(
                               label: 'Lower Staff',
@@ -350,6 +357,43 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+class _SectionHeaderWithSubtitle extends StatelessWidget {
+  const _SectionHeaderWithSubtitle({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SliderSetting extends StatefulWidget {
   const _SliderSetting({
     required this.label,
@@ -461,68 +505,6 @@ class _SliderSettingState extends State<_SliderSetting> {
   }
 }
 
-class _SegmentedSetting<T extends Enum> extends StatelessWidget {
-  const _SegmentedSetting({
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-
-  final T value;
-  final List<T> options;
-  final ValueChanged<T> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: options.map((opt) {
-          final isSelected = opt == value;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(opt),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF64B5F6).withValues(alpha: 0.2)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: isSelected
-                      ? Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 1)
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    opt.name.toUpperCase(),
-                    style: TextStyle(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant
-                              .withValues(alpha: 0.5),
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
 class _ExportButton extends StatelessWidget {
   const _ExportButton({
     required this.label,
@@ -555,6 +537,138 @@ class _ExportButton extends StatelessWidget {
         elevation: 0,
         alignment: Alignment.centerLeft,
       ),
+    );
+  }
+}
+
+class _ProfilePicker extends StatelessWidget {
+  const _ProfilePicker({
+    required this.currentConfig,
+    required this.onProfileSelected,
+    required this.onLayoutTypeChanged,
+  });
+
+  final core.PageConfig currentConfig;
+  final ValueChanged<core.StaffProfile> onProfileSelected;
+  final ValueChanged<core.LayoutType> onLayoutTypeChanged;
+
+  /// Returns the first matching profile, or null if the config is custom.
+  core.StaffProfile? get _activeProfile {
+    for (final p in core.StaffProfiles.all) {
+      if (currentConfig.layoutType == p.layoutType &&
+          currentConfig.primaryClef == p.primaryClef &&
+          currentConfig.secondaryClef == p.secondaryClef) {
+        return p;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final activeProfile = _activeProfile;
+    final isCustom = activeProfile == null;
+
+    // Glyph for each profile.
+    String _glyph(core.StaffProfile p) => switch (p.id) {
+      'piano'  => '\u{1D11E}\u{1D122}',
+      'treble' => '\u{1D11E}',
+      'bass'   => '\u{1D122}',
+      'alto'   => '\u{1D121}',
+      _        => '—',
+    };
+
+    Widget _chip({
+      required String glyph,
+      required String label,
+      required bool active,
+      required bool isCustomChip,
+      required VoidCallback onTap,
+    }) {
+      return GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          decoration: BoxDecoration(
+            color: active
+                ? (isCustomChip
+                    ? colorScheme.secondaryContainer
+                    : colorScheme.primaryContainer)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: active
+                  ? (isCustomChip ? colorScheme.secondary : colorScheme.primary)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: active ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (!isCustomChip) ...
+                [
+                  Text(
+                    glyph,
+                    style: TextStyle(
+                      fontFamily: 'NotoMusic',
+                      fontSize: 18,
+                      height: 1.0,
+                      color: active
+                          ? colorScheme.onPrimaryContainer
+                          : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: active ? FontWeight.bold : FontWeight.w500,
+                  color: active
+                      ? (isCustomChip
+                          ? colorScheme.onSecondaryContainer
+                          : colorScheme.onPrimaryContainer)
+                      : colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Build all profile chips + the Custom chip in a uniform grid.
+    final chips = [
+      ...core.StaffProfiles.all.map((p) => _chip(
+            glyph: _glyph(p),
+            label: p.label,
+            active: activeProfile?.id == p.id,
+            isCustomChip: false,
+            onTap: () => onProfileSelected(p),
+          )),
+      _chip(
+        glyph: '',
+        label: 'Custom',
+        active: isCustom,
+        isCustomChip: true,
+        onTap: () {}, // Custom is informational; tapping does nothing
+      ),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 3.0,
+      children: chips,
     );
   }
 }
