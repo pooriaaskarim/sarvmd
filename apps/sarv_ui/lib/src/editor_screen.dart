@@ -4,7 +4,6 @@ import 'components/inputs/section_header.dart';
 import 'components/inputs/precision_slider.dart';
 import 'components/inputs/dropdown_setting.dart';
 import 'components/inputs/segmented_setting.dart';
-import 'components/inputs/export_button.dart';
 import 'components/specialized/profile_picker.dart';
 import 'components/specialized/clef_config_widget.dart';
 import 'components/specialized/zoom_feedback_overlay.dart';
@@ -12,7 +11,7 @@ import 'components/specialized/zoom_feedback_overlay.dart';
 import 'package:sarv_core/sarv_core.dart' as core;
 import 'config_notifier.dart';
 import 'preview_canvas.dart';
-import 'export_service.dart';
+
 import 'ruler_box.dart';
 import 'view_notifier.dart';
 import 'view_panel.dart';
@@ -187,32 +186,6 @@ class _EditorScreenState extends State<EditorScreen> {
                                   _notifier.updateSecondaryClef(v),
                             ),
                           ],
-                          Divider(
-                              color: Theme.of(context).colorScheme.outline,
-                              height: 32),
-                          const SectionHeader(title: 'Actions & Export'),
-                          const SizedBox(height: AppSpacing.itemGapSmall),
-                          ExportButton(
-                            label: 'Reset to Defaults',
-                            icon: Icons.restore,
-                            onPressed: () => _notifier.resetToDefaults(),
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(height: AppSpacing.itemGap),
-                          ExportButton(
-                            label: 'Generate LaTeX',
-                            icon: Icons.code,
-                            onPressed: () =>
-                                _handleExport(context, isPdf: false),
-                          ),
-                          const SizedBox(height: AppSpacing.itemGap),
-                          ExportButton(
-                            label: 'Generate PDF',
-                            icon: Icons.picture_as_pdf,
-                            onPressed: () =>
-                                _handleExport(context, isPdf: true),
-                          ),
                           const SizedBox(height: AppSpacing.paddingLarge),
                         ],
                       ),
@@ -298,53 +271,14 @@ class _EditorScreenState extends State<EditorScreen> {
                 onFitToScreen: () {
                   if (_lastConstraints != null) _fitToScreen();
                 },
+                configNotifier: _notifier,
+                layoutGetter: () => _notifier.layout,
               ),
             ],
           ),
         );
       },
     );
-  }
-
-  Future<void> _handleExport(BuildContext context,
-      {required bool isPdf}) async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        content: Text('Generating ${isPdf ? 'PDF' : 'LaTeX'}...'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-
-    try {
-      final path = isPdf
-          ? await ExportService.exportPdf(_notifier.config, _notifier.layout)
-          : await ExportService.exportTex(_notifier.config, _notifier.layout);
-
-      scaffoldMessenger.clearSnackBars();
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Exported to: $path'),
-          backgroundColor: Colors.green.withValues(alpha: 0.8),
-          duration: const Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
-        ),
-      );
-    } catch (e) {
-      scaffoldMessenger.clearSnackBars();
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Export failed: $e'),
-          backgroundColor: Colors.red.withValues(alpha: 0.8),
-          duration: const Duration(seconds: 10),
-        ),
-      );
-    }
   }
 }
 

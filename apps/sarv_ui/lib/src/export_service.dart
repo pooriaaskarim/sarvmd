@@ -24,6 +24,19 @@ class ExportService {
     return await core.compile(texPath, outputDir: outputDir);
   }
 
+  /// Export the layout to an SVG file.
+  static Future<String> exportSvg(
+      core.PageConfig config, core.PageLayout layout) async {
+    final svg = core.emitSvg(config, layout);
+    final outputDir = _getOutputDir();
+    final fileName = _getFileName(config);
+    final filePath = p.join(outputDir, '$fileName.svg');
+
+    await Directory(outputDir).create(recursive: true);
+    await File(filePath).writeAsString(svg);
+    return filePath;
+  }
+
   static String _getOutputDir() {
     // Current working directory / output
     return p.join(Directory.current.path, 'output');

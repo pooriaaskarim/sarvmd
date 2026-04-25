@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:sarv_core/sarv_core.dart' as core;
 import 'theme/app_metrics.dart';
 import 'components/inputs/section_header.dart';
 import 'components/inputs/zoom_control.dart';
 import 'components/inputs/guide_toggle.dart';
-
+import 'export_panel.dart';
+import 'config_notifier.dart';
 import 'view_notifier.dart';
 
 class ViewPanel extends StatelessWidget {
@@ -12,11 +14,15 @@ class ViewPanel extends StatelessWidget {
     required this.viewNotifier,
     required this.transformationController,
     required this.onFitToScreen,
+    required this.configNotifier,
+    required this.layoutGetter,
   });
 
   final ViewNotifier viewNotifier;
   final TransformationController transformationController;
   final VoidCallback onFitToScreen;
+  final ConfigNotifier configNotifier;
+  final core.PageLayout Function() layoutGetter;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +155,10 @@ class ViewPanel extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          ExportPanel(
+            configNotifier: configNotifier,
+            layoutGetter: layoutGetter,
           ),
         ],
       ),
