@@ -5,8 +5,8 @@ import 'config_notifier.dart';
 
 /// A compact export footer pinned at the bottom of the right view panel.
 ///
-/// Shows three export actions (TeX / PDF / SVG) plus a Reset button.
-/// Handles its own loading state and success/failure feedback.
+/// Shows three export actions: TeX / PDF / SVG.
+/// Handles its own loading state and success/failure feedback via snackbar.
 class ExportPanel extends StatefulWidget {
   const ExportPanel({
     super.key,
@@ -78,55 +78,38 @@ class _ExportPanelState extends State<ExportPanel> {
     return Container(
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
-        border: Border(top: BorderSide(color: cs.outline.withValues(alpha: 0.4))),
+        border:
+            Border(top: BorderSide(color: cs.outline.withValues(alpha: 0.4))),
       ),
       padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
         children: [
-          // Reset row
-          _ActionRow(
-            icon: Icons.restore,
-            label: 'Reset to Defaults',
-            color: cs.onSurfaceVariant,
-            loading: false,
-            onPressed: () => widget.configNotifier.resetToDefaults(),
+          Expanded(
+            child: _ExportChip(
+              label: 'TeX',
+              icon: Icons.code,
+              loading: _loading == _ExportKind.tex,
+              onPressed: () => _export(_ExportKind.tex),
+            ),
           ),
-          const SizedBox(height: 10),
-          const Divider(height: 1),
-          const SizedBox(height: 10),
-          // Export buttons
-          Row(
-            children: [
-              Expanded(
-                child: _ExportChip(
-                  label: 'TeX',
-                  icon: Icons.code,
-                  loading: _loading == _ExportKind.tex,
-                  onPressed: () => _export(_ExportKind.tex),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ExportChip(
-                  label: 'PDF',
-                  icon: Icons.picture_as_pdf,
-                  primary: true,
-                  loading: _loading == _ExportKind.pdf,
-                  onPressed: () => _export(_ExportKind.pdf),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ExportChip(
-                  label: 'SVG',
-                  icon: Icons.image_outlined,
-                  loading: _loading == _ExportKind.svg,
-                  onPressed: () => _export(_ExportKind.svg),
-                ),
-              ),
-            ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ExportChip(
+              label: 'PDF',
+              icon: Icons.picture_as_pdf,
+              primary: true,
+              loading: _loading == _ExportKind.pdf,
+              onPressed: () => _export(_ExportKind.pdf),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ExportChip(
+              label: 'SVG',
+              icon: Icons.image_outlined,
+              loading: _loading == _ExportKind.svg,
+              onPressed: () => _export(_ExportKind.svg),
+            ),
           ),
         ],
       ),
@@ -135,42 +118,6 @@ class _ExportPanelState extends State<ExportPanel> {
 }
 
 enum _ExportKind { tex, pdf, svg }
-
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.loading,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool loading;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: loading ? null : onPressed,
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _ExportChip extends StatelessWidget {
   const _ExportChip({
@@ -226,7 +173,9 @@ class _ExportChip extends StatelessWidget {
                     Text(
                       label,
                       style: TextStyle(
-                          fontSize: 12, color: fg, fontWeight: FontWeight.w600),
+                          fontSize: 12,
+                          color: fg,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

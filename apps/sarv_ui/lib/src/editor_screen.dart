@@ -118,7 +118,10 @@ class _EditorScreenState extends State<EditorScreen> {
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const SectionHeader(title: 'Margins (mm)'),
+                          SectionHeader(
+                            title: 'Margins (mm)',
+                            onReset: _notifier.resetMargins,
+                          ),
                           PrecisionSlider(
                             label: 'Vertical',
                             value: _notifier.config.margins.top,
@@ -138,7 +141,10 @@ class _EditorScreenState extends State<EditorScreen> {
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const SectionHeader(title: 'Spacing (mm)'),
+                          SectionHeader(
+                            title: 'Spacing (mm)',
+                            onReset: _notifier.resetSpacing,
+                          ),
                           PrecisionSlider(
                             label: 'Line Gap',
                             value: _notifier.config.staffConfig.lineGapMm,
@@ -167,7 +173,10 @@ class _EditorScreenState extends State<EditorScreen> {
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const SectionHeader(title: 'Clefs & Symbols'),
+                          SectionHeader(
+                            title: 'Clefs & Symbols',
+                            onReset: _notifier.resetClefs,
+                          ),
                           ClefConfigWidget(
                             label: layout.config.layoutType ==
                                     core.LayoutType.doubleLine
@@ -190,13 +199,43 @@ class _EditorScreenState extends State<EditorScreen> {
                         ],
                       ),
                     ),
+                    Divider(
+                        color: Theme.of(context).colorScheme.outline,
+                        height: 1),
                     Padding(
-                      padding: const EdgeInsets.all(AppSpacing.paddingLarge),
-                      child: Text(
-                        '${layout.systemCount} Systems',
-                        style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.paddingLarge,
+                          vertical: AppSpacing.paddingMedium),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${layout.systemCount} Systems',
+                            style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
+                          ),
+                          Tooltip(
+                            message: 'Reset ALL settings to defaults',
+                            child: TextButton.icon(
+                              onPressed: _notifier.resetToDefaults,
+                              icon: const Icon(Icons.restore, size: 14),
+                              label: const Text('Reset',
+                                  style: TextStyle(fontSize: 12)),
+                              style: TextButton.styleFrom(
+                                minimumSize: Size.zero,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4)),
+                                foregroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

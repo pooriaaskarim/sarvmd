@@ -106,6 +106,29 @@ class ConfigNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reset only margins to their default values.
+  void resetMargins() {
+    updateMargins(const core.Margins());
+  }
+
+  /// Reset only staff spacing to default values.
+  void resetSpacing() {
+    updateStaffConfig(const core.StaffConfig());
+  }
+
+  /// Reset only clef configuration to defaults (no clef).
+  void resetClefs() {
+    _config = core.PageConfig(
+      pageSize: _config.pageSize,
+      layoutType: _config.layoutType,
+      staffConfig: _config.staffConfig,
+      margins: _config.margins,
+      primaryClef: null,
+      secondaryClef: null,
+    );
+    notifyListeners();
+  }
+
   void updatePrimaryClef(core.ClefConfig? clef) {
     _config = core.PageConfig(
       pageSize: _config.pageSize,
