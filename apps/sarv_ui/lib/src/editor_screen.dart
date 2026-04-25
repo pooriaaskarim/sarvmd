@@ -31,8 +31,31 @@ class _EditorScreenState extends State<EditorScreen> {
   final TransformationController _transformationController =
       TransformationController();
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
-  double _zoom = 0.5;
+  BoxConstraints? _lastConstraints;
   bool _hasCentered = false;
+
+  void _fitToScreen() {
+    final constraints = _lastConstraints;
+    if (constraints == null) return;
+    
+    final double lpmm = 96 / 25.4;
+    final paperWidth = _notifier.layout.config.pageSize.width * lpmm;
+    final paperHeight = _notifier.layout.config.pageSize.height * lpmm;
+
+    const padding = 40.0;
+    final availableWidth = constraints.maxWidth - padding * 2;
+    final availableHeight = constraints.maxHeight - padding * 2;
+    
+    final scaleX = availableWidth / paperWidth;
+    final scaleY = availableHeight / paperHeight;
+    final fitScale = (scaleX < scaleY ? scaleX : scaleY).clamp(0.1, 4.0);
+
+    final dx = (constraints.maxWidth - paperWidth * fitScale) / 2;
+    final dy = (constraints.maxHeight - paperHeight * fitScale) / 2;
+
+    _transformationController.value = Matrix4.translationValues(dx, dy, 0.0)
+      ..multiply(Matrix4.diagonal3Values(fitScale, fitScale, 1.0));
+  }
 
   @override
   void initState() {
@@ -212,24 +235,11 @@ class _EditorScreenState extends State<EditorScreen> {
                   color: Theme.of(context).colorScheme.surface,
                   child: LayoutBuilder(
                     builder: (context, constraints) {
+                      _lastConstraints = constraints;
                       if (!_hasCentered) {
                         _hasCentered = true;
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          final double lpmm = 96 / 25.4;
-                          final paperWidth =
-                              _notifier.layout.config.pageSize.width * lpmm;
-                          final paperHeight =
-                              _notifier.layout.config.pageSize.height * lpmm;
-
-                          final dx =
-                              (constraints.maxWidth - paperWidth * _zoom) / 2;
-                          final dy =
-                              (constraints.maxHeight - paperHeight * _zoom) / 2;
-
-                          _transformationController.value =
-                              Matrix4.translationValues(dx, dy, 0.0)
-                                ..multiply(
-                                    Matrix4.diagonal3Values(_zoom, _zoom, 1.0));
+                          _fitToScreen();
                         });
                       }
 
@@ -285,6 +295,9 @@ class _EditorScreenState extends State<EditorScreen> {
               ViewPanel(
                 viewNotifier: widget.viewNotifier,
                 transformationController: _transformationController,
+                onFitToScreen: () {
+                  if (_lastConstraints != null) _fitToScreen();
+                },
               ),
             ],
           ),

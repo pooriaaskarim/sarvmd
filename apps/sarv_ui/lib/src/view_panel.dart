@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'theme/app_metrics.dart';
 import 'components/inputs/section_header.dart';
-import 'components/inputs/precision_slider.dart';
+import 'components/inputs/zoom_control.dart';
 import 'components/inputs/guide_toggle.dart';
 
 import 'view_notifier.dart';
@@ -11,10 +11,12 @@ class ViewPanel extends StatelessWidget {
     super.key,
     required this.viewNotifier,
     required this.transformationController,
+    required this.onFitToScreen,
   });
 
   final ViewNotifier viewNotifier;
   final TransformationController transformationController;
+  final VoidCallback onFitToScreen;
 
   @override
   Widget build(BuildContext context) {
@@ -83,12 +85,12 @@ class ViewPanel extends StatelessWidget {
                 ListenableBuilder(
                   listenable: transformationController,
                   builder: (context, _) {
-                    final currentZoom =
-                        transformationController.value.getMaxScaleOnAxis();
-                    return ZoomSliderControls(
+                    final currentZoom = transformationController.value.row0[0];
+                    return ZoomControl(
                       value: currentZoom.clamp(0.1, 4.0),
                       min: 0.1,
                       max: 4.0,
+                      onFit: onFitToScreen,
                       onChanged: (v) {
                         final t =
                             transformationController.value.getTranslation();
