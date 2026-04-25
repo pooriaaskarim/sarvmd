@@ -4,7 +4,8 @@ import 'package:sarv_core/sarv_core.dart' as core;
 
 class ExportService {
   /// Export the configuration to a LaTeX file.
-  static Future<String> exportTex(core.PageConfig config, core.PageLayout layout) async {
+  static Future<String> exportTex(
+      core.PageConfig config, core.PageLayout layout) async {
     final tex = core.emit(config, layout);
     final outputDir = _getOutputDir();
     final fileName = _getFileName(config);
@@ -16,7 +17,8 @@ class ExportService {
   }
 
   /// Export the configuration to a PDF file.
-  static Future<String> exportPdf(core.PageConfig config, core.PageLayout layout) async {
+  static Future<String> exportPdf(
+      core.PageConfig config, core.PageLayout layout) async {
     final texPath = await exportTex(config, layout);
     final outputDir = _getOutputDir();
     return await core.compile(texPath, outputDir: outputDir);

@@ -1,4 +1,14 @@
 import 'package:flutter/material.dart';
+import 'theme/app_metrics.dart';
+import 'components/inputs/section_header.dart';
+import 'components/inputs/precision_slider.dart';
+import 'components/inputs/dropdown_setting.dart';
+import 'components/inputs/segmented_setting.dart';
+import 'components/inputs/export_button.dart';
+import 'components/specialized/profile_picker.dart';
+import 'components/specialized/clef_config_widget.dart';
+import 'components/specialized/zoom_feedback_overlay.dart';
+
 import 'package:sarv_core/sarv_core.dart' as core;
 import 'config_notifier.dart';
 import 'preview_canvas.dart';
@@ -55,36 +65,39 @@ class _EditorScreenState extends State<EditorScreen> {
                   children: [
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.paddingLarge),
                         children: [
                           const SizedBox(height: 48),
                           const _Header(),
-                          const SizedBox(height: 32),
-                          const _SectionHeaderWithSubtitle(
-                            title: 'Profiles',
-                            subtitle: 'Preset layout & clef configuration',
-                          ),
-                          const SizedBox(height: 10),
-                          _ProfilePicker(
+                          const SizedBox(height: AppSpacing.sectionGap),
+                          const SectionHeader(title: 'Profiles'),
+                          const SizedBox(height: AppSpacing.itemGapSmall),
+                          ProfilePicker(
                             currentConfig: _notifier.config,
                             onProfileSelected: (p) => _notifier.applyProfile(p),
-                            onLayoutTypeChanged: (t) => _notifier.updateLayoutType(t),
                           ),
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const _SectionHeader(title: 'Page'),
-                          const SizedBox(height: 8),
-                          _DropdownSetting<core.PageSize>(
+                          const SectionHeader(title: 'Document'),
+                          const SizedBox(height: AppSpacing.itemGapSmall),
+                          DropdownSetting<core.PageSize>(
                             value: _notifier.config.pageSize,
                             options: core.PageSize.values,
                             onChanged: (v) => _notifier.updatePageSize(v),
                           ),
+                          const SizedBox(height: AppSpacing.paddingMedium),
+                          SegmentedSetting<core.LayoutType>(
+                            value: _notifier.config.layoutType,
+                            options: core.LayoutType.values,
+                            onChanged: (v) => _notifier.updateLayoutType(v),
+                          ),
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const _SectionHeader(title: 'Margins (mm)'),
-                          _SliderSetting(
+                          const SectionHeader(title: 'Margins (mm)'),
+                          PrecisionSlider(
                             label: 'Vertical',
                             value: _notifier.config.margins.top,
                             min: 5.0,
@@ -92,7 +105,7 @@ class _EditorScreenState extends State<EditorScreen> {
                             onChanged: (v) =>
                                 _notifier.updateVerticalMargins(v),
                           ),
-                          _SliderSetting(
+                          PrecisionSlider(
                             label: 'Horizontal',
                             value: _notifier.config.margins.left,
                             min: 5.0,
@@ -103,23 +116,24 @@ class _EditorScreenState extends State<EditorScreen> {
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const _SectionHeader(title: 'Spacing (mm)'),
-                          _SliderSetting(
+                          const SectionHeader(title: 'Spacing (mm)'),
+                          PrecisionSlider(
                             label: 'Line Gap',
                             value: _notifier.config.staffConfig.lineGapMm,
                             min: 1.0,
                             max: 3.0,
                             onChanged: (v) => _notifier.updateLineGap(v),
                           ),
-                          _SliderSetting(
+                          PrecisionSlider(
                             label: 'System Gap',
                             value: _notifier.config.staffConfig.systemGapMm,
                             min: 5.0,
                             max: 30.0,
                             onChanged: (v) => _notifier.updateSystemGap(v),
                           ),
-                          if (layout.config.layoutType == core.LayoutType.doubleLine)
-                            _SliderSetting(
+                          if (layout.config.layoutType ==
+                              core.LayoutType.doubleLine)
+                            PrecisionSlider(
                               label: 'Inter-staff Gap',
                               value:
                                   _notifier.config.staffConfig.interStaffGapMm,
@@ -131,8 +145,8 @@ class _EditorScreenState extends State<EditorScreen> {
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const _SectionHeader(title: 'Clefs & Symbols'),
-                          _ClefConfigWidget(
+                          const SectionHeader(title: 'Clefs & Symbols'),
+                          ClefConfigWidget(
                             label: layout.config.layoutType ==
                                     core.LayoutType.doubleLine
                                 ? 'Upper Staff'
@@ -142,8 +156,8 @@ class _EditorScreenState extends State<EditorScreen> {
                           ),
                           if (layout.config.layoutType ==
                               core.LayoutType.doubleLine) ...[
-                            const SizedBox(height: 16),
-                            _ClefConfigWidget(
+                            const SizedBox(height: AppSpacing.paddingMedium),
+                            ClefConfigWidget(
                               label: 'Lower Staff',
                               value: _notifier.config.secondaryClef,
                               onChanged: (v) =>
@@ -153,35 +167,35 @@ class _EditorScreenState extends State<EditorScreen> {
                           Divider(
                               color: Theme.of(context).colorScheme.outline,
                               height: 32),
-                          const _SectionHeader(title: 'Actions & Export'),
-                          const SizedBox(height: 8),
-                          _ExportButton(
+                          const SectionHeader(title: 'Actions & Export'),
+                          const SizedBox(height: AppSpacing.itemGapSmall),
+                          ExportButton(
                             label: 'Reset to Defaults',
                             icon: Icons.restore,
                             onPressed: () => _notifier.resetToDefaults(),
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 12),
-                          _ExportButton(
+                          const SizedBox(height: AppSpacing.itemGap),
+                          ExportButton(
                             label: 'Generate LaTeX',
                             icon: Icons.code,
                             onPressed: () =>
                                 _handleExport(context, isPdf: false),
                           ),
-                          const SizedBox(height: 12),
-                          _ExportButton(
+                          const SizedBox(height: AppSpacing.itemGap),
+                          ExportButton(
                             label: 'Generate PDF',
                             icon: Icons.picture_as_pdf,
                             onPressed: () =>
                                 _handleExport(context, isPdf: true),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.paddingLarge),
                         ],
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(AppSpacing.paddingLarge),
                       child: Text(
                         '${layout.systemCount} Systems',
                         style: TextStyle(
@@ -234,16 +248,32 @@ class _EditorScreenState extends State<EditorScreen> {
                           onExit: (_) {
                             _cursorNotifier.value = null;
                           },
-                          child: InteractiveViewer(
-                            transformationController: _transformationController,
-                            boundaryMargin: const EdgeInsets.all(100000),
-                            minScale: 0.1,
-                            maxScale: 4.0,
-                            constrained: false,
-                            child: PreviewCanvas(
-                              layout: layout,
-                              viewNotifier: widget.viewNotifier,
-                            ),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: InteractiveViewer(
+                                  transformationController:
+                                      _transformationController,
+                                  boundaryMargin: const EdgeInsets.all(100000),
+                                  minScale: 0.1,
+                                  maxScale: 4.0,
+                                  constrained: false,
+                                  child: PreviewCanvas(
+                                    layout: layout,
+                                    viewNotifier: widget.viewNotifier,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 24,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: ZoomFeedbackOverlay(
+                                      controller: _transformationController),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -334,679 +364,4 @@ class _Header extends StatelessWidget {
       ],
     );
   }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeaderWithSubtitle extends StatelessWidget {
-  const _SectionHeaderWithSubtitle({
-    required this.title,
-    required this.subtitle,
-  });
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            color: colorScheme.primary,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          subtitle,
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-            fontSize: 11,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SliderSetting extends StatefulWidget {
-  const _SliderSetting({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    required this.min,
-    required this.max,
-  });
-
-  final String label;
-  final double value;
-  final ValueChanged<double> onChanged;
-  final double min;
-  final double max;
-
-  @override
-  State<_SliderSetting> createState() => _SliderSettingState();
-}
-
-class _SliderSettingState extends State<_SliderSetting> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.value.toStringAsFixed(1));
-  }
-
-  @override
-  void didUpdateWidget(_SliderSetting oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value) {
-      _controller.text = widget.value.toStringAsFixed(1);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit(String? text) {
-    if (text == null) return;
-    final parsed = double.tryParse(text);
-    if (parsed != null) {
-      final clamped = parsed.clamp(widget.min, widget.max);
-      widget.onChanged(clamped);
-      _controller.text = clamped.toStringAsFixed(1);
-    } else {
-      _controller.text = widget.value.toStringAsFixed(1);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(widget.label,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 13)),
-            Container(
-              width: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(6),
-                border:
-                    Border.all(color: Theme.of(context).colorScheme.outline),
-              ),
-              child: TextField(
-                controller: _controller,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  border: InputBorder.none,
-                ),
-                onSubmitted: _submit,
-                onTapOutside: (_) {
-                  _submit(_controller.text);
-                  FocusManager.instance.primaryFocus?.unfocus();
-                },
-              ),
-            ),
-          ],
-        ),
-        Slider(
-          value: widget.value,
-          min: widget.min,
-          max: widget.max,
-          onChanged: widget.onChanged,
-          activeColor: Theme.of(context).colorScheme.primary,
-          inactiveColor:
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
-        ),
-      ],
-    );
-  }
-}
-
-class _ExportButton extends StatelessWidget {
-  const _ExportButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-    this.color,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: (color ?? Theme.of(context).colorScheme.primary)
-            .withValues(alpha: 0.1),
-        foregroundColor: color ?? Theme.of(context).colorScheme.primary,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(
-              color: color ?? Theme.of(context).colorScheme.primary, width: 1),
-        ),
-        elevation: 0,
-        alignment: Alignment.centerLeft,
-      ),
-    );
-  }
-}
-
-class _ProfilePicker extends StatelessWidget {
-  const _ProfilePicker({
-    required this.currentConfig,
-    required this.onProfileSelected,
-    required this.onLayoutTypeChanged,
-  });
-
-  final core.PageConfig currentConfig;
-  final ValueChanged<core.StaffProfile> onProfileSelected;
-  final ValueChanged<core.LayoutType> onLayoutTypeChanged;
-
-  /// Returns the first matching profile, or null if the config is custom.
-  core.StaffProfile? get _activeProfile {
-    for (final p in core.StaffProfiles.all) {
-      if (currentConfig.layoutType == p.layoutType &&
-          currentConfig.primaryClef == p.primaryClef &&
-          currentConfig.secondaryClef == p.secondaryClef) {
-        return p;
-      }
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final activeProfile = _activeProfile;
-    final isCustom = activeProfile == null;
-
-    // Glyph for each profile.
-    String _glyph(core.StaffProfile p) => switch (p.id) {
-      'piano'  => '\u{1D11E}\u{1D122}',
-      'treble' => '\u{1D11E}',
-      'bass'   => '\u{1D122}',
-      'alto'   => '\u{1D121}',
-      _        => '—',
-    };
-
-    Widget _chip({
-      required String glyph,
-      required String label,
-      required bool active,
-      required bool isCustomChip,
-      required VoidCallback onTap,
-    }) {
-      return GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-          decoration: BoxDecoration(
-            color: active
-                ? (isCustomChip
-                    ? colorScheme.secondaryContainer
-                    : colorScheme.primaryContainer)
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: active
-                  ? (isCustomChip ? colorScheme.secondary : colorScheme.primary)
-                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
-              width: active ? 1.5 : 1.0,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (!isCustomChip) ...
-                [
-                  Text(
-                    glyph,
-                    style: TextStyle(
-                      fontFamily: 'NotoMusic',
-                      fontSize: 18,
-                      height: 1.0,
-                      color: active
-                          ? colorScheme.onPrimaryContainer
-                          : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                ],
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: active ? FontWeight.bold : FontWeight.w500,
-                  color: active
-                      ? (isCustomChip
-                          ? colorScheme.onSecondaryContainer
-                          : colorScheme.onPrimaryContainer)
-                      : colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Build all profile chips + the Custom chip in a uniform grid.
-    final chips = [
-      ...core.StaffProfiles.all.map((p) => _chip(
-            glyph: _glyph(p),
-            label: p.label,
-            active: activeProfile?.id == p.id,
-            isCustomChip: false,
-            onTap: () => onProfileSelected(p),
-          )),
-      _chip(
-        glyph: '',
-        label: 'Custom',
-        active: isCustom,
-        isCustomChip: true,
-        onTap: () {}, // Custom is informational; tapping does nothing
-      ),
-    ];
-
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      childAspectRatio: 3.0,
-      children: chips,
-    );
-  }
-}
-
-class _DropdownSetting<T extends Enum> extends StatelessWidget {
-  const _DropdownSetting({
-    super.key,
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-
-  final T value;
-  final List<T> options;
-  final ValueChanged<T> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
-          icon: Icon(Icons.arrow_drop_down,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
-          isExpanded: true,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.1,
-          ),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-          items: options.map((opt) {
-            return DropdownMenuItem<T>(
-              value: opt,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: Text(opt.name.toUpperCase()),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-class _ClefConfigWidget extends StatelessWidget {
-  const _ClefConfigWidget({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String label;
-  final core.ClefConfig? value;
-  final ValueChanged<core.ClefConfig?> onChanged;
-
-  bool _isPreset(core.ClefSymbol sym, int line) {
-    return value?.symbol == sym && value?.anchorLine == line;
-  }
-
-  Widget _buildPresetChip(
-      BuildContext context, String title, core.ClefSymbol sym, int line) {
-    final selected = _isPreset(sym, line);
-    return FilterChip(
-      label: Text(title,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-      selected: selected,
-      showCheckmark: false,
-      onSelected: (_) =>
-          onChanged(core.ClefConfig(symbol: sym, anchorLine: line)),
-      padding: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = value == null;
-    final activeValue = value ??
-        const core.ClefConfig(symbol: core.ClefSymbol.g, anchorLine: 2);
-    final selectedSym = activeValue.symbol;
-
-    Widget buildHorizontalTab(core.ClefSymbol sym, String glyph) {
-      final isSelected = sym == selectedSym;
-      final colorScheme = Theme.of(context).colorScheme;
-      return Expanded(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              if (isSelected) return;
-              int defaultLine = 3;
-              if (sym == core.ClefSymbol.g) defaultLine = 2; // Treble
-              if (sym == core.ClefSymbol.f) defaultLine = 4; // Bass
-              onChanged(core.ClefConfig(symbol: sym, anchorLine: defaultLine));
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                glyph,
-                style: TextStyle(
-                    fontFamily: 'NotoMusic',
-                    fontSize: 34,
-                    height: 1.0,
-                    color: isSelected
-                        ? colorScheme.onPrimaryContainer
-                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Horizontal Tabs Row
-        Row(
-          children: [
-            buildHorizontalTab(core.ClefSymbol.g, '\u{1D11E}'),
-            const SizedBox(width: 8),
-            buildHorizontalTab(core.ClefSymbol.c, '\u{1D121}'),
-            const SizedBox(width: 8),
-            buildHorizontalTab(core.ClefSymbol.f, '\u{1D122}'),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Interactive Mini Staff Canvas
-        LayoutBuilder(builder: (context, constraints) {
-          final gap = constraints.maxWidth / 10;
-          return Container(
-            clipBehavior: Clip.hardEdge,
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .outlineVariant
-                      .withValues(alpha: 0.5)),
-            ),
-            child: Stack(
-              children: [
-                GestureDetector(
-                  onTapUp: (details) {
-                    final tappedY = details.localPosition.dy;
-                    final staffTop = gap * 2.5;
-                    final i = ((tappedY - staffTop) / gap).round();
-                    if (i >= 0 && i <= 4) {
-                      onChanged(core.ClefConfig(
-                          symbol: activeValue.symbol, anchorLine: 5 - i));
-                    }
-                  },
-                  child: CustomPaint(
-                    size: Size(constraints.maxWidth, gap * 8.5),
-                    painter: _MiniStaffClefPainter(
-                        activeValue, gap, Theme.of(context).colorScheme),
-                  ),
-                ),
-                // Elegant overlay label
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surface
-                            .withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant
-                                .withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        'Line ${activeValue.anchorLine}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-        const SizedBox(height: 12),
-
-        // Presets specific to this symbol
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (selectedSym == core.ClefSymbol.g) ...[
-              _buildPresetChip(context, 'Treble', core.ClefSymbol.g, 2),
-            ],
-            if (selectedSym == core.ClefSymbol.c) ...[
-              _buildPresetChip(context, 'Alto', core.ClefSymbol.c, 3),
-              _buildPresetChip(context, 'Tenor', core.ClefSymbol.c, 4),
-              _buildPresetChip(context, 'Soprano', core.ClefSymbol.c, 1),
-              _buildPresetChip(context, 'Mezzo', core.ClefSymbol.c, 2),
-            ],
-            if (selectedSym == core.ClefSymbol.f) ...[
-              _buildPresetChip(context, 'Bass', core.ClefSymbol.f, 4),
-              _buildPresetChip(context, 'Baritone', core.ClefSymbol.f, 3),
-            ],
-          ],
-        ),
-      ],
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold)),
-            Switch(
-                value: !disabled,
-                onChanged: (on) {
-                  if (on) {
-                    onChanged(const core.ClefConfig(
-                        symbol: core.ClefSymbol.g, anchorLine: 2));
-                  } else {
-                    onChanged(null);
-                  }
-                }),
-          ],
-        ),
-        const SizedBox(height: 12),
-        AnimatedOpacity(
-          opacity: disabled ? 0.4 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: IgnorePointer(
-            ignoring: disabled,
-            child: content,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MiniStaffClefPainter extends CustomPainter {
-  const _MiniStaffClefPainter(this.clef, this.gap, this.scheme);
-  final core.ClefConfig clef;
-  final double gap;
-  final ColorScheme scheme;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final staffColor = scheme.onSurface;
-    final highlightColor = scheme.primary;
-    final staffTop = gap * 2.5;
-
-    for (var i = 0; i < 5; i++) {
-      final lineNum = 5 - i;
-      final y = staffTop + i * gap;
-      final isAnchor = lineNum == clef.anchorLine;
-      canvas.drawLine(
-        Offset(gap * 1.6, y),
-        Offset(size.width - gap * 0.2, y),
-        Paint()
-          ..color =
-              isAnchor ? highlightColor : staffColor.withValues(alpha: 0.4)
-          ..strokeWidth = isAnchor ? gap * 0.12 : gap * 0.05
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-
-    final double anchorSp = switch (clef.symbol) {
-      core.ClefSymbol.g => 0.876,
-      core.ClefSymbol.c => 2.0,
-      core.ClefSymbol.f => 2.578,
-    };
-    final String glyph = switch (clef.symbol) {
-      core.ClefSymbol.g => '\u{1D11E}',
-      core.ClefSymbol.c => '\u{1D121}',
-      core.ClefSymbol.f => '\u{1D122}',
-    };
-
-    final tp = TextPainter(
-      text: TextSpan(
-        text: glyph,
-        style: TextStyle(
-            fontFamily: 'NotoMusic', fontSize: gap * 4.0, color: staffColor),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    final ascent = tp.computeLineMetrics().first.ascent;
-    final anchorYPx = staffTop + (5 - clef.anchorLine) * gap;
-    tp.paint(canvas, Offset(gap * 0.05, anchorYPx + anchorSp * gap - ascent));
-  }
-
-  @override
-  bool shouldRepaint(_MiniStaffClefPainter old) =>
-      old.clef != clef || old.gap != gap;
 }

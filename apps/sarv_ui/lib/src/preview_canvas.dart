@@ -61,14 +61,19 @@ class _ManuscriptPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final staffPaint = Paint()
       ..color = Colors.black
-      ..strokeWidth = layout.config.staffConfig.lineThicknessPt * (96 / 72) * scale / scale // This is tricky.
+      ..strokeWidth = layout.config.staffConfig.lineThicknessPt *
+          (96 / 72) *
+          scale /
+          scale // This is tricky.
       // Thickness in pt. 1pt = 1.333 logic pixels at scale 1.0.
       ..style = PaintingStyle.stroke;
 
     // Actually, stroke width should be scaled by our internal scale too.
-    // thicknessPt * (96/72) gives logic pixels at default DPI. 
+    // thicknessPt * (96/72) gives logic pixels at default DPI.
     // Then we multiply by zoom/scale.
-    final thicknessPx = layout.config.staffConfig.lineThicknessPt * (96 / 72) * (scale / (96 / 25.4));
+    final thicknessPx = layout.config.staffConfig.lineThicknessPt *
+        (96 / 72) *
+        (scale / (96 / 25.4));
     staffPaint.strokeWidth = thicknessPx;
 
     final lineGapPx = layout.config.staffConfig.lineGapMm * scale;
@@ -82,10 +87,14 @@ class _ManuscriptPainter extends CustomPainter {
         ..strokeWidth = 1.0
         ..style = PaintingStyle.stroke;
 
-      canvas.drawLine(const Offset(-100000, 0), Offset(size.width + 100000, 0), hintPaint);
-      canvas.drawLine(Offset(-100000, size.height), Offset(size.width + 100000, size.height), hintPaint);
-      canvas.drawLine(const Offset(0, -100000), Offset(0, size.height + 100000), hintPaint);
-      canvas.drawLine(Offset(size.width, -100000), Offset(size.width, size.height + 100000), hintPaint);
+      canvas.drawLine(
+          const Offset(-100000, 0), Offset(size.width + 100000, 0), hintPaint);
+      canvas.drawLine(Offset(-100000, size.height),
+          Offset(size.width + 100000, size.height), hintPaint);
+      canvas.drawLine(
+          const Offset(0, -100000), Offset(0, size.height + 100000), hintPaint);
+      canvas.drawLine(Offset(size.width, -100000),
+          Offset(size.width, size.height + 100000), hintPaint);
     }
 
     if (viewNotifier.isGuideActive(GuideType.paperCenters)) {
@@ -93,51 +102,53 @@ class _ManuscriptPainter extends CustomPainter {
         ..color = Colors.blue.withValues(alpha: 0.3)
         ..strokeWidth = 1.0
         ..style = PaintingStyle.stroke;
-      
+
       final centerX = size.width / 2;
       final centerY = size.height / 2;
-      canvas.drawLine(Offset(centerX, -100000), Offset(centerX, size.height + 100000), hintPaint);
-      canvas.drawLine(Offset(-100000, centerY), Offset(size.width + 100000, centerY), hintPaint);
+      canvas.drawLine(Offset(centerX, -100000),
+          Offset(centerX, size.height + 100000), hintPaint);
+      canvas.drawLine(Offset(-100000, centerY),
+          Offset(size.width + 100000, centerY), hintPaint);
     }
-    
+
     // Margin guides
     if (viewNotifier.isGuideActive(GuideType.margins)) {
       final marginPaint = Paint()
         ..color = Colors.red.withValues(alpha: 0.5)
         ..strokeWidth = 1.0
         ..style = PaintingStyle.stroke;
-      
+
       final marginLeft = layout.config.margins.left * scale;
       final marginRight = size.width - layout.config.margins.right * scale;
       final marginTop = layout.config.margins.top * scale;
       final marginBottom = size.height - layout.config.margins.bottom * scale;
-      
-      canvas.drawLine(Offset(marginLeft, 0), Offset(marginLeft, size.height), marginPaint);
-      canvas.drawLine(Offset(marginRight, 0), Offset(marginRight, size.height), marginPaint);
-      canvas.drawLine(Offset(0, marginTop), Offset(size.width, marginTop), marginPaint);
-      canvas.drawLine(Offset(0, marginBottom), Offset(size.width, marginBottom), marginPaint);
+
+      canvas.drawLine(
+          Offset(marginLeft, 0), Offset(marginLeft, size.height), marginPaint);
+      canvas.drawLine(Offset(marginRight, 0), Offset(marginRight, size.height),
+          marginPaint);
+      canvas.drawLine(
+          Offset(0, marginTop), Offset(size.width, marginTop), marginPaint);
+      canvas.drawLine(Offset(0, marginBottom), Offset(size.width, marginBottom),
+          marginPaint);
     }
 
     for (final system in layout.systems) {
       for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
         final staff = system.staves[sIdx];
         final topYPx = staff.topY * scale;
-        
+
         // Staff bounding box guides
         if (viewNotifier.isGuideActive(GuideType.staffBounds)) {
           final boundsPaint = Paint()
             ..color = Colors.green.withValues(alpha: 0.2)
             ..style = PaintingStyle.fill;
-          
-          final rect = Rect.fromLTRB(
-            leftMm * scale,
-            topYPx - (lineGapPx / 2),
-            rightMm * scale,
-            topYPx + (4 * lineGapPx) + (lineGapPx / 2)
-          );
+
+          final rect = Rect.fromLTRB(leftMm * scale, topYPx - (lineGapPx / 2),
+              rightMm * scale, topYPx + (4 * lineGapPx) + (lineGapPx / 2));
           canvas.drawRect(rect, boundsPaint);
         }
-        
+
         // Draw 5 lines (pixel-snapped for maximum crispness)
         for (var i = 0; i < 5; i++) {
           final y = topYPx + i * lineGapPx;
@@ -150,7 +161,8 @@ class _ManuscriptPainter extends CustomPainter {
         }
 
         // ── Draw Clef ─────────────────────────────────────────
-        final clef = (layout.config.layoutType == core.LayoutType.doubleLine && sIdx == 1)
+        final clef = (layout.config.layoutType == core.LayoutType.doubleLine &&
+                sIdx == 1)
             ? layout.config.secondaryClef
             : layout.config.primaryClef;
 
@@ -178,31 +190,37 @@ class _ManuscriptPainter extends CustomPainter {
             textDirection: TextDirection.ltr,
           )..layout();
 
-          // Use the actual alphabetic baseline instead of general ascent, 
+          // Use the actual alphabetic baseline instead of general ascent,
           // and apply a micro-compensation to fix the symbols appearing "a little upper".
-          final baselineDelta = tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
-          
+          final baselineDelta =
+              tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+
           final anchorYPx = topYPx + (5 - clef.anchorLine) * lineGapPx;
           final baselineY = anchorYPx + anchorSp * lineGapPx;
-          
+
           // NotoMusic's glyph ink often stops slightly above the baseline by around 0.01 em,
           // creating a visual effect where it seems "a little upper".
           // In spaces, 0.01 em = 0.04 sp. We push it down slightly to compensate.
           final microOffset = lineGapPx * 0.04;
-          
+
           final glyphX = leftMm * scale + lineGapPx * 0.15;
           final glyphY = baselineY - baselineDelta + microOffset;
-          
-          tp.paint(canvas, Offset(glyphX.roundToDouble(), glyphY.roundToDouble()));
+
+          tp.paint(
+              canvas, Offset(glyphX.roundToDouble(), glyphY.roundToDouble()));
         }
       }
 
       // If piano, draw a bold vertical line connecting the two staves
-      if (layout.config.layoutType == core.LayoutType.doubleLine && system.staves.length >= 2) {
+      if (layout.config.layoutType == core.LayoutType.doubleLine &&
+          system.staves.length >= 2) {
         final topY = (system.staves[0].topY * scale).roundToDouble();
-        final bottomY = ((system.staves[1].topY + layout.config.staffConfig.staffHeightMm) * scale).roundToDouble();
+        final bottomY =
+            ((system.staves[1].topY + layout.config.staffConfig.staffHeightMm) *
+                    scale)
+                .roundToDouble();
         final startX = (leftMm * scale).roundToDouble();
-        
+
         final connectorPaint = Paint()
           ..color = Colors.black
           ..strokeWidth = thicknessPx * 2.5 // Bolder as requested
@@ -219,8 +237,8 @@ class _ManuscriptPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ManuscriptPainter oldDelegate) {
-    return oldDelegate.layout != layout || 
-           oldDelegate.scale != scale || 
-           oldDelegate.viewNotifier != viewNotifier;
+    return oldDelegate.layout != layout ||
+        oldDelegate.scale != scale ||
+        oldDelegate.viewNotifier != viewNotifier;
   }
 }

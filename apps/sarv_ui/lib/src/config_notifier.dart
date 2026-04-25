@@ -82,6 +82,7 @@ class ConfigNotifier extends ChangeNotifier {
       interStaffGapMm: mm,
     ));
   }
+
   void updateVerticalMargins(double mm) {
     updateMargins(core.Margins(
       top: mm,

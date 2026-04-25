@@ -17,6 +17,7 @@ class RulerBox extends StatefulWidget {
   final TransformationController transformationController;
   final Size paperSizeMm;
   final ViewNotifier viewNotifier;
+
   /// Dedicated high-frequency notifier for cursor position. Kept separate
   /// from ViewNotifier intentionally so that every mouse-move only repaints
   /// the rulers, NOT the whole widget tree.
@@ -56,7 +57,9 @@ class _RulerBoxState extends State<RulerBox> {
                     child: Text(
                       _centerOrigin ? 'mm\nCTR' : 'mm\nTOP',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 8),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 8),
                     ),
                   ),
                 ),
@@ -81,7 +84,8 @@ class _RulerBoxState extends State<RulerBox> {
                             paperSizeMm: widget.paperSizeMm,
                             colorScheme: colorScheme,
                             cursorPos: widget.cursorNotifier.value,
-                            showWings: widget.viewNotifier.isGuideActive(GuideType.rulerWings),
+                            showWings: widget.viewNotifier
+                                .isGuideActive(GuideType.rulerWings),
                           ),
                         ),
                       );
@@ -118,7 +122,8 @@ class _RulerBoxState extends State<RulerBox> {
                             paperSizeMm: widget.paperSizeMm,
                             colorScheme: colorScheme,
                             cursorPos: widget.cursorNotifier.value,
-                            showWings: widget.viewNotifier.isGuideActive(GuideType.rulerWings),
+                            showWings: widget.viewNotifier
+                                .isGuideActive(GuideType.rulerWings),
                           ),
                         ),
                       );
@@ -248,9 +253,9 @@ class RulerPainter extends CustomPainter {
         tickLength = 7.0;
       } else if (stepMm < 10) {
         if (i % 5 == 0) {
-           tickLength = 7.0;
+          tickLength = 7.0;
         } else if (stepMm <= 2) {
-           tickLength = 4.0;
+          tickLength = 4.0;
         }
       }
 
@@ -296,7 +301,7 @@ class RulerPainter extends CustomPainter {
         ..strokeWidth = 1.5;
 
       final pos = axis == Axis.horizontal ? cursorPos!.dx : cursorPos!.dy;
-      
+
       if (axis == Axis.horizontal) {
         // Solid line along full height of the horizontal ruler
         canvas.drawLine(Offset(pos, 0), Offset(pos, size.height), wingPaint);
@@ -310,9 +315,9 @@ class RulerPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant RulerPainter oldDelegate) {
     return oldDelegate.matrix != matrix ||
-           oldDelegate.axis != axis ||
-           oldDelegate.colorScheme != colorScheme ||
-           oldDelegate.cursorPos != cursorPos ||
-           oldDelegate.showWings != showWings;
+        oldDelegate.axis != axis ||
+        oldDelegate.colorScheme != colorScheme ||
+        oldDelegate.cursorPos != cursorPos ||
+        oldDelegate.showWings != showWings;
   }
 }

@@ -28,7 +28,10 @@ class ViewNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  final Set<GuideType> _activeGuides = {GuideType.paperEdges, GuideType.rulerWings};
+  final Set<GuideType> _activeGuides = {
+    GuideType.paperEdges,
+    GuideType.rulerWings
+  };
   Set<GuideType> get activeGuides => _activeGuides;
 
   void toggleGuide(GuideType guide, bool active) {
