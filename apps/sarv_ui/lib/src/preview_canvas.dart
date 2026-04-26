@@ -149,13 +149,13 @@ class _ManuscriptPainter extends CustomPainter {
           canvas.drawRect(rect, boundsPaint);
         }
 
-        // Draw 5 lines (pixel-snapped for maximum crispness)
+        // Draw 5 lines (Top line snapped, others relative for equal gaps)
+        final topSnappedY = topYPx.roundToDouble();
         for (var i = 0; i < 5; i++) {
-          final y = topYPx + i * lineGapPx;
-          final snappedY = y.roundToDouble();
+          final y = topSnappedY + i * lineGapPx;
           canvas.drawLine(
-            Offset(leftMm * scale, snappedY),
-            Offset(rightMm * scale, snappedY),
+            Offset(leftMm * scale, y),
+            Offset(rightMm * scale, y),
             staffPaint,
           );
         }
