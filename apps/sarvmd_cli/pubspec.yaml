@@ -1,0 +1,10 @@
+name: sarvmd_cli
+description: CLI application for Sarv music score notebook.
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.6.0
+dependencies:
+  sarvmd_core:
+    path: ../../packages/sarvmd_core
+  args: ^2.5.0

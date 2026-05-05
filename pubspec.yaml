@@ -1,8 +1,8 @@
-name: sarv_workspace
+name: sarvmd_workspace
 publish_to: none
 environment:
   sdk: ^3.6.0
 workspace:
-  - packages/sarv_core
-  - apps/sarv_cli
-  - apps/sarv_ui
+  - packages/sarvmd_core
+  - apps/sarvmd_cli
+  - apps/sarvmd_ui

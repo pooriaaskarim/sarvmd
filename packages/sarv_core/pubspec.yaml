@@ -1,8 +1,0 @@
-name: sarv_core
-description: Core library for Sarv music score notebook — config, layout, LaTeX emitter, compiler.
-publish_to: none
-resolution: workspace
-environment:
-  sdk: ^3.6.0
-dependencies:
-  path: ^1.9.0

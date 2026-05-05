@@ -1,0 +1,23 @@
+name: sarvmd_ui
+description: "A new Flutter project."
+publish_to: 'none'
+resolution: workspace
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sarvmd_core:
+    path: ../../packages/sarvmd_core
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: NotoMusic
+      fonts:
+        - asset: assets/fonts/NotoMusic-Regular.ttf
