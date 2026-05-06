@@ -11,6 +11,8 @@ dependencies:
   sarvmd_core:
     path: ../../packages/sarvmd_core
   flutter_svg: ^2.0.10
+  flutter_driver:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

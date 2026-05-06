@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_driver/driver_extension.dart';
 import 'src/editor_screen.dart';
 import 'src/view_notifier.dart';
 import 'src/theme/app_theme.dart';
 
 void main() {
+  enableFlutterDriverExtension();
   runApp(const SarvApp());
 }
 
