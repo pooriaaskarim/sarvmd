@@ -20,14 +20,18 @@ class PreviewCanvas extends StatelessWidget {
       layout.config.pageSize.height * lpmm,
     );
 
+    // Manuscript paper is ALWAYS white for print-fidelity.
+    const Color paperColor = Colors.white;
+    const Color inkColor = Colors.black;
+
     return Container(
       width: sizePx.width,
       height: sizePx.height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: paperColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -39,9 +43,11 @@ class PreviewCanvas extends StatelessWidget {
           return CustomPaint(
             size: sizePx,
             painter: _ManuscriptPainter(
-              layout,
-              lpmm,
-              viewNotifier,
+              layout: layout,
+              scale: lpmm,
+              viewNotifier: viewNotifier,
+              colorScheme: Theme.of(context).colorScheme,
+              inkColor: inkColor,
             ),
           );
         },
@@ -51,26 +57,26 @@ class PreviewCanvas extends StatelessWidget {
 }
 
 class _ManuscriptPainter extends CustomPainter {
-  _ManuscriptPainter(this.layout, this.scale, this.viewNotifier);
+  _ManuscriptPainter({
+    required this.layout,
+    required this.scale,
+    required this.viewNotifier,
+    required this.colorScheme,
+    required this.inkColor,
+  });
 
   final core.PageLayout layout;
   final double scale;
   final ViewNotifier viewNotifier;
+  final ColorScheme colorScheme;
+  final Color inkColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final staffPaint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = layout.config.staffConfig.lineThicknessPt *
-          (96 / 72) *
-          scale /
-          scale // This is tricky.
-      // Thickness in pt. 1pt = 1.333 logic pixels at scale 1.0.
+      ..color = inkColor
       ..style = PaintingStyle.stroke;
 
-    // Actually, stroke width should be scaled by our internal scale too.
-    // thicknessPt * (96/72) gives logic pixels at default DPI.
-    // Then we multiply by zoom/scale.
     final thicknessPx = layout.config.staffConfig.lineThicknessPt *
         (96 / 72) *
         (scale / (96 / 25.4));
@@ -80,41 +86,36 @@ class _ManuscriptPainter extends CustomPainter {
     final leftMm = layout.config.margins.left;
     final rightMm = layout.config.pageSize.width - layout.config.margins.right;
 
+    final guidePaint = Paint()
+      ..color = colorScheme.primary.withValues(alpha: 0.3)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
     // Hint lines for paper edges
     if (viewNotifier.isGuideActive(GuideType.paperEdges)) {
-      final hintPaint = Paint()
-        ..color = Colors.blue.withValues(alpha: 0.3)
-        ..strokeWidth = 1.0
-        ..style = PaintingStyle.stroke;
-
       canvas.drawLine(
-          const Offset(-100000, 0), Offset(size.width + 100000, 0), hintPaint);
+          const Offset(-100000, 0), Offset(size.width + 100000, 0), guidePaint);
       canvas.drawLine(Offset(-100000, size.height),
-          Offset(size.width + 100000, size.height), hintPaint);
+          Offset(size.width + 100000, size.height), guidePaint);
       canvas.drawLine(
-          const Offset(0, -100000), Offset(0, size.height + 100000), hintPaint);
+          const Offset(0, -100000), Offset(0, size.height + 100000), guidePaint);
       canvas.drawLine(Offset(size.width, -100000),
-          Offset(size.width, size.height + 100000), hintPaint);
+          Offset(size.width, size.height + 100000), guidePaint);
     }
 
     if (viewNotifier.isGuideActive(GuideType.paperCenters)) {
-      final hintPaint = Paint()
-        ..color = Colors.blue.withValues(alpha: 0.3)
-        ..strokeWidth = 1.0
-        ..style = PaintingStyle.stroke;
-
       final centerX = size.width / 2;
       final centerY = size.height / 2;
       canvas.drawLine(Offset(centerX, -100000),
-          Offset(centerX, size.height + 100000), hintPaint);
+          Offset(centerX, size.height + 100000), guidePaint);
       canvas.drawLine(Offset(-100000, centerY),
-          Offset(size.width + 100000, centerY), hintPaint);
+          Offset(size.width + 100000, centerY), guidePaint);
     }
 
     // Margin guides
     if (viewNotifier.isGuideActive(GuideType.margins)) {
       final marginPaint = Paint()
-        ..color = Colors.red.withValues(alpha: 0.5)
+        ..color = colorScheme.primary.withValues(alpha: 0.5)
         ..strokeWidth = 1.0
         ..style = PaintingStyle.stroke;
 
@@ -141,7 +142,7 @@ class _ManuscriptPainter extends CustomPainter {
         // Staff bounding box guides
         if (viewNotifier.isGuideActive(GuideType.staffBounds)) {
           final boundsPaint = Paint()
-            ..color = Colors.green.withValues(alpha: 0.2)
+            ..color = colorScheme.primary.withValues(alpha: 0.1)
             ..style = PaintingStyle.fill;
 
           final rect = Rect.fromLTRB(leftMm * scale, topYPx - (lineGapPx / 2),
@@ -184,7 +185,7 @@ class _ManuscriptPainter extends CustomPainter {
               style: TextStyle(
                 fontFamily: 'NotoMusic',
                 fontSize: lineGapPx * fontScale,
-                color: Colors.black,
+                color: inkColor,
               ),
             ),
             textDirection: TextDirection.ltr,
@@ -222,7 +223,7 @@ class _ManuscriptPainter extends CustomPainter {
         final startX = (leftMm * scale).roundToDouble();
 
         final connectorPaint = Paint()
-          ..color = Colors.black
+          ..color = inkColor
           ..strokeWidth = thicknessPx * 2.5 // Bolder as requested
           ..style = PaintingStyle.stroke;
 

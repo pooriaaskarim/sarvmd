@@ -52,7 +52,7 @@ class SegmentedSetting<T extends Enum> extends StatelessWidget {
                         : opt.name.toUpperCase(),
                     style: TextStyle(
                       color: isSelected
-                          ? Theme.of(context).colorScheme.primary
+                          ? Theme.of(context).colorScheme.onSurface
                           : Theme.of(context)
                               .colorScheme
                               .onSurfaceVariant

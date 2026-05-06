@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'theme/app_metrics.dart';
+import 'theme/app_theme.dart';
 import 'components/inputs/section_header.dart';
 import 'components/inputs/zoom_control.dart';
 import 'components/inputs/guide_toggle.dart';
@@ -47,41 +48,15 @@ class ViewPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
-                const SectionHeader(title: 'Theme'),
+                const SectionHeader(title: 'Appearance'),
                 ListenableBuilder(
                   listenable: viewNotifier,
                   builder: (context, _) {
-                    IconData iconData;
-                    String tooltip;
-                    if (viewNotifier.themeMode == ThemeMode.system) {
-                      iconData = Icons.brightness_auto;
-                      tooltip = 'System Theme';
-                    } else if (viewNotifier.themeMode == ThemeMode.dark) {
-                      iconData = Icons.dark_mode;
-                      tooltip = 'Dark Theme';
-                    } else {
-                      iconData = Icons.light_mode;
-                      tooltip = 'Light Theme';
-                    }
-
-                    return Align(
-                      alignment: Alignment.centerLeft,
-                      child: Tooltip(
-                        message: tooltip,
-                        child: IconButton(
-                          icon: Icon(iconData,
-                              color: Theme.of(context).colorScheme.primary),
-                          onPressed: viewNotifier.toggleThemeMode,
-                          style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.05),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
+                    return _AppearanceSettings(
+                      themeMode: viewNotifier.themeMode,
+                      accent: viewNotifier.accent,
+                      onThemeModeChanged: viewNotifier.updateThemeMode,
+                      onAccentChanged: viewNotifier.updateAccent,
                     );
                   },
                 ),
@@ -162,6 +137,251 @@ class ViewPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AppearanceSettings extends StatelessWidget {
+  const _AppearanceSettings({
+    required this.themeMode,
+    required this.accent,
+    required this.onThemeModeChanged,
+    required this.onAccentChanged,
+  });
+
+  final ThemeMode themeMode;
+  final SarvAccent accent;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<SarvAccent> onAccentChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ThemeModeSwitcher(
+          current: themeMode,
+          onChanged: onThemeModeChanged,
+        ),
+        const SizedBox(height: AppSpacing.itemGap),
+        _AccentPillPicker(
+          selected: accent,
+          onChanged: onAccentChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemeModeSwitcher extends StatelessWidget {
+  const _ThemeModeSwitcher({
+    required this.current,
+    required this.onChanged,
+  });
+
+  final ThemeMode current;
+  final ValueChanged<ThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final int selectedIndex = switch (current) {
+      ThemeMode.light => 0,
+      ThemeMode.dark => 1,
+      ThemeMode.system => 2,
+    };
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double segmentWidth = (constraints.maxWidth) / 3;
+          return Stack(
+            children: [
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                left: selectedIndex * segmentWidth,
+                width: segmentWidth,
+                height: 32,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  _ThemeOption(
+                    icon: Icons.light_mode_outlined,
+                    activeIcon: Icons.light_mode,
+                    isSelected: current == ThemeMode.light,
+                    onTap: () => onChanged(ThemeMode.light),
+                  ),
+                  _ThemeOption(
+                    icon: Icons.dark_mode_outlined,
+                    activeIcon: Icons.dark_mode,
+                    isSelected: current == ThemeMode.dark,
+                    onTap: () => onChanged(ThemeMode.dark),
+                  ),
+                  _ThemeOption(
+                    icon: Icons.brightness_auto_outlined,
+                    activeIcon: Icons.brightness_auto,
+                    isSelected: current == ThemeMode.system,
+                    onTap: () => onChanged(ThemeMode.system),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  const _ThemeOption({
+    required this.icon,
+    required this.activeIcon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData activeIcon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              isSelected ? activeIcon : icon,
+              key: ValueKey(isSelected),
+              size: 18,
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccentPillPicker extends StatefulWidget {
+  const _AccentPillPicker({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final SarvAccent selected;
+  final ValueChanged<SarvAccent> onChanged;
+
+  @override
+  State<_AccentPillPicker> createState() => _AccentPillPickerState();
+}
+
+class _AccentPillPickerState extends State<_AccentPillPicker>
+    with SingleTickerProviderStateMixin {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: SarvAccent.values.map((a) {
+        final isSelected = a == widget.selected;
+        return GestureDetector(
+          onTap: () => widget.onChanged(a),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? a.pastelContainer
+                  : a.seed.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? a.primary : Colors.transparent,
+                width: 1.5,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: a.primary.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? a.onPastelContainer
+                        : a.primary.withValues(alpha: 0.4),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                ClipRect(
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutBack,
+                    child: SizedBox(
+                      width: isSelected ? null : 0,
+                      child: isSelected
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Text(
+                                a.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.clip,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: a.onPastelContainer,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

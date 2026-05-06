@@ -181,7 +181,11 @@ class RulerPainter extends CustomPainter {
     // Draw background
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = colorScheme.surfaceContainer,
+      Paint()
+        ..color = Color.alphaBlend(
+          colorScheme.primary.withValues(alpha: 0.05),
+          colorScheme.surfaceContainer,
+        ),
     );
 
     // Draw border

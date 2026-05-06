@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'theme/app_metrics.dart';
 import 'components/inputs/section_header.dart';
 import 'components/inputs/precision_slider.dart';
@@ -36,7 +37,7 @@ class _EditorScreenState extends State<EditorScreen> {
   void _fitToScreen() {
     final constraints = _lastConstraints;
     if (constraints == null) return;
-    
+
     final double lpmm = 96 / 25.4;
     final paperWidth = _notifier.layout.config.pageSize.width * lpmm;
     final paperHeight = _notifier.layout.config.pageSize.height * lpmm;
@@ -44,7 +45,7 @@ class _EditorScreenState extends State<EditorScreen> {
     const padding = 40.0;
     final availableWidth = constraints.maxWidth - padding * 2;
     final availableHeight = constraints.maxHeight - padding * 2;
-    
+
     final scaleX = availableWidth / paperWidth;
     final scaleY = availableHeight / paperHeight;
     final fitScale = (scaleX < scaleY ? scaleX : scaleY).clamp(0.1, 4.0);
@@ -327,24 +328,24 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          'SARV',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 4,
+        SvgPicture.asset(
+          'assets/handwriting/Sarv Handwriting.svg',
+          height: 64,
+          colorFilter: ColorFilter.mode(
+            Theme.of(context).colorScheme.onSurface,
+            BlendMode.srcIn,
           ),
         ),
+        const SizedBox(height: 16),
         Text(
-          'MANUSCRIPT DESIGNER',
+          'Manuscript Designer',
           style: TextStyle(
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+            fontSize: 16,
+            fontFamily: 'IranNastaliq',
+            letterSpacing: 0.5,
           ),
         ),
       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
 
 enum GuideType {
   paperEdges,
@@ -11,6 +12,9 @@ enum GuideType {
 class ViewNotifier extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
+
+  SarvAccent _accent = SarvAccent.sky;
+  SarvAccent get accent => _accent;
 
   void updateThemeMode(ThemeMode mode) {
     _themeMode = mode;
@@ -25,6 +29,11 @@ class ViewNotifier extends ChangeNotifier {
     } else {
       _themeMode = ThemeMode.system;
     }
+    notifyListeners();
+  }
+
+  void updateAccent(SarvAccent accent) {
+    _accent = accent;
     notifyListeners();
   }
 

@@ -10,6 +10,7 @@ dependencies:
     sdk: flutter
   sarvmd_core:
     path: ../../packages/sarvmd_core
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -21,3 +22,12 @@ flutter:
     - family: NotoMusic
       fonts:
         - asset: assets/fonts/NotoMusic-Regular.ttf
+    - family: IranNastaliq
+      fonts:
+        - asset: assets/fonts/IranNastaliq.ttf
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+
+  assets:
+    - assets/handwriting/
