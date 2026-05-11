@@ -5,6 +5,7 @@ import 'theme/app_theme.dart';
 import 'components/inputs/section_header.dart';
 import 'components/inputs/zoom_control.dart';
 import 'components/inputs/guide_toggle.dart';
+import 'components/animations/fade_in_slide.dart';
 import 'export_panel.dart';
 import 'config_notifier.dart';
 import 'view_notifier.dart';
@@ -38,7 +39,7 @@ class ViewPanel extends StatelessWidget {
                   horizontal: AppSpacing.paddingLarge),
               children: [
                 const SizedBox(height: 48),
-                const _FadeInSlide(
+                const FadeInSlide(
                   delay: 0,
                   child: Text(
                     'VIEW',
@@ -50,8 +51,8 @@ class ViewPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
-                const _FadeInSlide(delay: 1, child: SectionHeader(title: 'Appearance')),
-                _FadeInSlide(
+                const FadeInSlide(delay: 1, child: SectionHeader(title: 'Appearance')),
+                FadeInSlide(
                   delay: 2,
                   child: ListenableBuilder(
                     listenable: viewNotifier,
@@ -65,13 +66,13 @@ class ViewPanel extends StatelessWidget {
                     },
                   ),
                 ),
-                _FadeInSlide(
+                FadeInSlide(
                   delay: 3,
                   child: Divider(
                       color: Theme.of(context).colorScheme.outline, height: 32),
                 ),
-                const _FadeInSlide(delay: 4, child: SectionHeader(title: 'Zoom')),
-                _FadeInSlide(
+                const FadeInSlide(delay: 4, child: SectionHeader(title: 'Zoom')),
+                FadeInSlide(
                   delay: 5,
                   child: ListenableBuilder(
                     listenable: transformationController,
@@ -93,13 +94,13 @@ class ViewPanel extends StatelessWidget {
                     },
                   ),
                 ),
-                _FadeInSlide(
+                FadeInSlide(
                   delay: 6,
                   child: Divider(
                       color: Theme.of(context).colorScheme.outline, height: 32),
                 ),
-                const _FadeInSlide(delay: 7, child: SectionHeader(title: 'Guides')),
-                _FadeInSlide(
+                const FadeInSlide(delay: 7, child: SectionHeader(title: 'Guides')),
+                FadeInSlide(
                   delay: 8,
                   child: ListenableBuilder(
                     listenable: viewNotifier,
@@ -148,7 +149,7 @@ class ViewPanel extends StatelessWidget {
               ],
             ),
           ),
-          _FadeInSlide(
+          FadeInSlide(
             delay: 9,
             child: ExportPanel(
               configNotifier: configNotifier,
@@ -161,36 +162,7 @@ class ViewPanel extends StatelessWidget {
   }
 }
 
-class _FadeInSlide extends StatelessWidget {
-  const _FadeInSlide({
-    required this.delay,
-    required this.child,
-  });
 
-  final int delay;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        // Stagger the start time based on delay (roughly 50ms per delay unit)
-        final effectiveValue = ((value * 1.5) - (delay * 0.1)).clamp(0.0, 1.0);
-        return Opacity(
-          opacity: effectiveValue,
-          child: Transform.translate(
-            offset: Offset(0, 10 * (1 - effectiveValue)),
-            child: child,
-          ),
-        );
-      },
-      child: child,
-    );
-  }
-}
 
 class _AppearanceSettings extends StatelessWidget {
   const _AppearanceSettings({

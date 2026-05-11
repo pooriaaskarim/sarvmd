@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'theme/app_metrics.dart';
 import 'components/inputs/section_header.dart';
 import 'components/inputs/precision_slider.dart';
 import 'components/inputs/dropdown_setting.dart';
 import 'components/inputs/segmented_setting.dart';
+import 'components/animations/fade_in_slide.dart';
+import 'components/layout/sarv_header.dart';
 import 'components/specialized/profile_picker.dart';
 import 'components/specialized/clef_config_widget.dart';
 import 'components/specialized/zoom_feedback_overlay.dart';
-
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'config_notifier.dart';
 import 'preview_canvas.dart';
-
+import 'view_panel.dart';
 import 'ruler_box.dart';
 import 'view_notifier.dart';
-import 'view_panel.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key, required this.viewNotifier});
@@ -101,12 +100,12 @@ class _EditorScreenState extends State<EditorScreen> {
                                 horizontal: AppSpacing.paddingLarge),
                             children: [
                               const SizedBox(height: 48),
-                              const _Header(),
+                              const SarvHeader(),
                               const SizedBox(height: AppSpacing.sectionGap),
-                              const _FadeInSlide(
+                              const FadeInSlide(
                                   delay: 1, child: SectionHeader(title: 'Profiles')),
                               const SizedBox(height: AppSpacing.itemGapSmall),
-                              _FadeInSlide(
+                              FadeInSlide(
                                 delay: 2,
                                 child: ProfilePicker(
                                   currentConfig: _notifier.config,
@@ -115,7 +114,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                 ),
                               ),
                               const Divider(height: 32),
-                              _FadeInSlide(
+                              FadeInSlide(
                                 delay: 3,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,7 +136,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                 ),
                               ),
                               const Divider(height: 32),
-                              _FadeInSlide(
+                              FadeInSlide(
                                 delay: 4,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +165,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                 ),
                               ),
                               const Divider(height: 32),
-                              _FadeInSlide(
+                              FadeInSlide(
                                 delay: 5,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +203,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                 ),
                               ),
                               const Divider(height: 32),
-                              _FadeInSlide(
+                              FadeInSlide(
                                 delay: 6,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,83 +431,4 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header();
 
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 10 * (1 - value)),
-            child: child,
-          ),
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            'assets/handwriting/Sarv Handwriting.svg',
-            height: 64,
-            colorFilter: ColorFilter.mode(
-              Theme.of(context).colorScheme.onSurface,
-              BlendMode.srcIn,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Manuscript Designer',
-            style: TextStyle(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-              fontSize: 18,
-              fontFamily: 'IranNastaliq',
-              letterSpacing: 1.2,
-              height: 1.0,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FadeInSlide extends StatelessWidget {
-  const _FadeInSlide({
-    required this.delay,
-    required this.child,
-  });
-
-  final int delay;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        // More robust stagger math: ensuring items actually appear
-        // Each delay unit shifts the start by 60ms (0.1 * 600ms)
-        final stagger = delay * 0.05; 
-        final effectiveValue = ((value - stagger) / (1.0 - stagger)).clamp(0.0, 1.0);
-        
-        return Opacity(
-          opacity: effectiveValue,
-          child: Transform.translate(
-            offset: Offset(0, 8 * (1 - effectiveValue)),
-            child: child,
-          ),
-        );
-      },
-      child: child,
-    );
-  }
-}
