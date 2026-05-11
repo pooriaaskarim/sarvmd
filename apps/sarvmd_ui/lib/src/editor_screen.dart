@@ -508,3 +508,34 @@ class _Header extends StatelessWidget {
     );
   }
 }
+
+class _FadeInSlide extends StatelessWidget {
+  const _FadeInSlide({
+    required this.delay,
+    required this.child,
+  });
+
+  final int delay;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        // Stagger the start time based on delay (roughly 50ms per delay unit)
+        final effectiveValue = ((value * 1.5) - (delay * 0.1)).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: effectiveValue,
+          child: Transform.translate(
+            offset: Offset(0, 10 * (1 - effectiveValue)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
