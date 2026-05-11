@@ -101,7 +101,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                 horizontal: AppSpacing.paddingLarge),
                             children: [
                               const SizedBox(height: 48),
-                              const _FadeInSlide(delay: 0, child: _Header()),
+                              const _Header(),
                               const SizedBox(height: AppSpacing.sectionGap),
                               const _FadeInSlide(
                                   delay: 1, child: SectionHeader(title: 'Profiles')),
@@ -114,153 +114,126 @@ class _EditorScreenState extends State<EditorScreen> {
                                       _notifier.applyProfile(p),
                                 ),
                               ),
+                              const Divider(height: 32),
                               _FadeInSlide(
                                 delay: 3,
-                                child: Divider(
-                                  color: Theme.of(context).colorScheme.outline,
-                                  height: 32,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SectionHeader(title: 'Document'),
+                                    const SizedBox(height: AppSpacing.itemGapSmall),
+                                    DropdownSetting<core.PageSize>(
+                                      value: _notifier.config.pageSize,
+                                      options: core.PageSize.values,
+                                      onChanged: (v) => _notifier.updatePageSize(v),
+                                    ),
+                                    const SizedBox(height: AppSpacing.paddingMedium),
+                                    SegmentedSetting<core.LayoutType>(
+                                      value: _notifier.config.layoutType,
+                                      options: core.LayoutType.values,
+                                      onChanged: (v) => _notifier.updateLayoutType(v),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const _FadeInSlide(
-                                  delay: 4, child: SectionHeader(title: 'Document')),
-                              const SizedBox(height: AppSpacing.itemGapSmall),
+                              const Divider(height: 32),
+                              _FadeInSlide(
+                                delay: 4,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SectionHeader(
+                                      title: 'Margins (mm)',
+                                      onReset: _notifier.resetMargins,
+                                    ),
+                                    PrecisionSlider(
+                                      label: 'Vertical',
+                                      value: _notifier.config.margins.top,
+                                      min: 5.0,
+                                      max: 40.0,
+                                      onChanged: (v) =>
+                                          _notifier.updateVerticalMargins(v),
+                                    ),
+                                    PrecisionSlider(
+                                      label: 'Horizontal',
+                                      value: _notifier.config.margins.left,
+                                      min: 5.0,
+                                      max: 40.0,
+                                      onChanged: (v) =>
+                                          _notifier.updateHorizontalMargins(v),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Divider(height: 32),
                               _FadeInSlide(
                                 delay: 5,
-                                child: DropdownSetting<core.PageSize>(
-                                  value: _notifier.config.pageSize,
-                                  options: core.PageSize.values,
-                                  onChanged: (v) => _notifier.updatePageSize(v),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SectionHeader(
+                                      title: 'Spacing (mm)',
+                                      onReset: _notifier.resetSpacing,
+                                    ),
+                                    PrecisionSlider(
+                                      label: 'Line Gap',
+                                      value: _notifier.config.staffConfig.lineGapMm,
+                                      min: 1.0,
+                                      max: 3.0,
+                                      onChanged: (v) => _notifier.updateLineGap(v),
+                                    ),
+                                    PrecisionSlider(
+                                      label: 'System Gap',
+                                      value: _notifier.config.staffConfig.systemGapMm,
+                                      min: 5.0,
+                                      max: 30.0,
+                                      onChanged: (v) => _notifier.updateSystemGap(v),
+                                    ),
+                                    if (layout.config.layoutType ==
+                                        core.LayoutType.doubleLine)
+                                      PrecisionSlider(
+                                        label: 'Inter-staff Gap',
+                                        value: _notifier
+                                            .config.staffConfig.interStaffGapMm,
+                                        min: 5.0,
+                                        max: 20.0,
+                                        onChanged: (v) =>
+                                            _notifier.updateInterStaffGap(v),
+                                      ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: AppSpacing.paddingMedium),
+                              const Divider(height: 32),
                               _FadeInSlide(
                                 delay: 6,
-                                child: SegmentedSetting<core.LayoutType>(
-                                  value: _notifier.config.layoutType,
-                                  options: core.LayoutType.values,
-                                  onChanged: (v) => _notifier.updateLayoutType(v),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SectionHeader(title: 'Clefs & Symbols'),
+                                    const SizedBox(height: AppSpacing.itemGapSmall),
+                                    ClefConfigWidget(
+                                      label: layout.config.layoutType ==
+                                              core.LayoutType.doubleLine
+                                          ? 'Upper Staff'
+                                          : 'Staff Clef',
+                                      value: _notifier.config.primaryClef,
+                                      onChanged: (v) =>
+                                          _notifier.updatePrimaryClef(v),
+                                    ),
+                                    if (layout.config.layoutType ==
+                                        core.LayoutType.doubleLine) ...[
+                                      const SizedBox(
+                                          height: AppSpacing.paddingMedium),
+                                      ClefConfigWidget(
+                                        label: 'Lower Staff',
+                                        value: _notifier.config.secondaryClef,
+                                        onChanged: (v) =>
+                                            _notifier.updateSecondaryClef(v),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
-                              _FadeInSlide(
-                                delay: 7,
-                                child: Divider(
-                                  color: Theme.of(context).colorScheme.outline,
-                                  height: 32,
-                                ),
-                              ),
-                              _FadeInSlide(
-                                delay: 8,
-                                child: SectionHeader(
-                                  title: 'Margins (mm)',
-                                  onReset: _notifier.resetMargins,
-                                ),
-                              ),
-                              _FadeInSlide(
-                                delay: 9,
-                                child: PrecisionSlider(
-                                  label: 'Vertical',
-                                  value: _notifier.config.margins.top,
-                                  min: 5.0,
-                                  max: 40.0,
-                                  onChanged: (v) =>
-                                      _notifier.updateVerticalMargins(v),
-                                ),
-                              ),
-                              _FadeInSlide(
-                                delay: 10,
-                                child: PrecisionSlider(
-                                  label: 'Horizontal',
-                                  value: _notifier.config.margins.left,
-                                  min: 5.0,
-                                  max: 40.0,
-                                  onChanged: (v) =>
-                                      _notifier.updateHorizontalMargins(v),
-                                ),
-                              ),
-                              _FadeInSlide(
-                                delay: 11,
-                                child: Divider(
-                                  color: Theme.of(context).colorScheme.outline,
-                                  height: 32,
-                                ),
-                              ),
-                              _FadeInSlide(
-                                delay: 12,
-                                child: SectionHeader(
-                                  title: 'Spacing (mm)',
-                                  onReset: _notifier.resetSpacing,
-                                ),
-                              ),
-                              _FadeInSlide(
-                                delay: 13,
-                                child: PrecisionSlider(
-                                  label: 'Line Gap',
-                                  value: _notifier.config.staffConfig.lineGapMm,
-                                  min: 1.0,
-                                  max: 3.0,
-                                  onChanged: (v) => _notifier.updateLineGap(v),
-                                ),
-                              ),
-                              _FadeInSlide(
-                                delay: 14,
-                                child: PrecisionSlider(
-                                  label: 'System Gap',
-                                  value: _notifier.config.staffConfig.systemGapMm,
-                                  min: 5.0,
-                                  max: 30.0,
-                                  onChanged: (v) => _notifier.updateSystemGap(v),
-                                ),
-                              ),
-                              if (layout.config.layoutType ==
-                                  core.LayoutType.doubleLine)
-                                _FadeInSlide(
-                                  delay: 15,
-                                  child: PrecisionSlider(
-                                    label: 'Inter-staff Gap',
-                                    value: _notifier
-                                        .config.staffConfig.interStaffGapMm,
-                                    min: 5.0,
-                                    max: 20.0,
-                                    onChanged: (v) =>
-                                        _notifier.updateInterStaffGap(v),
-                                  ),
-                                ),
-                              _FadeInSlide(
-                                delay: 16,
-                                child: Divider(
-                                  color: Theme.of(context).colorScheme.outline,
-                                  height: 32,
-                                ),
-                              ),
-                              const _FadeInSlide(
-                                  delay: 17, child: SectionHeader(title: 'Clefs & Symbols')),
-                              const SizedBox(height: AppSpacing.itemGapSmall),
-                              _FadeInSlide(
-                                delay: 18,
-                                child: ClefConfigWidget(
-                                  label: layout.config.layoutType ==
-                                          core.LayoutType.doubleLine
-                                      ? 'Upper Staff'
-                                      : 'Staff Clef',
-                                  value: _notifier.config.primaryClef,
-                                  onChanged: (v) =>
-                                      _notifier.updatePrimaryClef(v),
-                                ),
-                              ),
-                              if (layout.config.layoutType ==
-                                  core.LayoutType.doubleLine) ...[
-                                const SizedBox(
-                                    height: AppSpacing.paddingMedium),
-                                _FadeInSlide(
-                                  delay: 19,
-                                  child: ClefConfigWidget(
-                                    label: 'Lower Staff',
-                                    value: _notifier.config.secondaryClef,
-                                    onChanged: (v) =>
-                                        _notifier.updateSecondaryClef(v),
-                                  ),
-                                ),
-                              ],
                               const SizedBox(height: AppSpacing.paddingLarge),
                             ],
                           ),
@@ -268,43 +241,40 @@ class _EditorScreenState extends State<EditorScreen> {
                         Divider(
                             color: Theme.of(context).colorScheme.outline,
                             height: 1),
-                        _FadeInSlide(
-                          delay: 20,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.paddingLarge,
-                                vertical: AppSpacing.paddingMedium),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${layout.systemCount} Systems',
-                                  style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant),
-                                ),
-                                Tooltip(
-                                  message: 'Reset ALL settings to defaults',
-                                  child: TextButton.icon(
-                                    onPressed: _notifier.resetToDefaults,
-                                    icon: const Icon(Icons.restore, size: 14),
-                                    label: const Text('Reset',
-                                        style: TextStyle(fontSize: 12)),
-                                    style: TextButton.styleFrom(
-                                      minimumSize: Size.zero,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(4)),
-                                      foregroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.paddingLarge,
+                              vertical: AppSpacing.paddingMedium),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${layout.systemCount} Systems',
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
+                              ),
+                              Tooltip(
+                                message: 'Reset ALL settings to defaults',
+                                child: TextButton.icon(
+                                  onPressed: _notifier.resetToDefaults,
+                                  icon: const Icon(Icons.restore, size: 14),
+                                  label: const Text('Reset',
+                                      style: TextStyle(fontSize: 12)),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size.zero,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4)),
+                                    foregroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -525,12 +495,15 @@ class _FadeInSlide extends StatelessWidget {
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
-        // Stagger the start time based on delay (roughly 50ms per delay unit)
-        final effectiveValue = ((value * 1.5) - (delay * 0.1)).clamp(0.0, 1.0);
+        // More robust stagger math: ensuring items actually appear
+        // Each delay unit shifts the start by 60ms (0.1 * 600ms)
+        final stagger = delay * 0.05; 
+        final effectiveValue = ((value - stagger) / (1.0 - stagger)).clamp(0.0, 1.0);
+        
         return Opacity(
           opacity: effectiveValue,
           child: Transform.translate(
-            offset: Offset(0, 10 * (1 - effectiveValue)),
+            offset: Offset(0, 8 * (1 - effectiveValue)),
             child: child,
           ),
         );
