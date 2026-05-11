@@ -25,9 +25,10 @@ class ExportPanel extends StatefulWidget {
 
 class _ExportPanelState extends State<ExportPanel> {
   _ExportKind? _loading;
+  String? _successMessage;
 
   Future<void> _export(_ExportKind kind) async {
-    if (_loading != null) return;
+    if (_loading != null || _successMessage != null) return;
     setState(() => _loading = kind);
 
     final config = widget.configNotifier.config;
@@ -44,30 +45,28 @@ class _ExportPanelState extends State<ExportPanel> {
           path = await ExportService.exportSvg(config, layout);
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Saved: $path'),
-            backgroundColor: Colors.green.withValues(alpha: 0.85),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-                label: 'OK', textColor: Colors.white, onPressed: () {}),
-          ),
-        );
+        setState(() {
+          _loading = null;
+          _successMessage = 'Saved: ${path.split('/').last}';
+        });
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            setState(() => _successMessage = null);
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _loading = null);
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Export failed: $e'),
             backgroundColor: Colors.red.withValues(alpha: 0.85),
-            duration: const Duration(seconds: 10),
+            duration: const Duration(seconds: 5),
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _loading = null);
     }
   }
 
@@ -76,42 +75,74 @@ class _ExportPanelState extends State<ExportPanel> {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
+      height: 70,
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         border:
             Border(top: BorderSide(color: cs.outline.withValues(alpha: 0.4))),
       ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ExportChip(
-              label: 'TeX',
-              icon: Icons.code,
-              loading: _loading == _ExportKind.tex,
-              onPressed: () => _export(_ExportKind.tex),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ExportChip(
-              label: 'PDF',
-              icon: Icons.picture_as_pdf,
-              primary: true,
-              loading: _loading == _ExportKind.pdf,
-              onPressed: () => _export(_ExportKind.pdf),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ExportChip(
-              label: 'SVG',
-              icon: Icons.image_outlined,
-              loading: _loading == _ExportKind.svg,
-              onPressed: () => _export(_ExportKind.svg),
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _successMessage != null
+            ? Container(
+                key: const ValueKey('success'),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        _successMessage!,
+                        style: const TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Row(
+                key: const ValueKey('buttons'),
+                children: [
+                  Expanded(
+                    child: _ExportChip(
+                      label: 'TeX',
+                      icon: Icons.code,
+                      loading: _loading == _ExportKind.tex,
+                      onPressed: () => _export(_ExportKind.tex),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ExportChip(
+                      label: 'PDF',
+                      icon: Icons.picture_as_pdf,
+                      primary: true,
+                      loading: _loading == _ExportKind.pdf,
+                      onPressed: () => _export(_ExportKind.pdf),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ExportChip(
+                      label: 'SVG',
+                      icon: Icons.image_outlined,
+                      loading: _loading == _ExportKind.svg,
+                      onPressed: () => _export(_ExportKind.svg),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

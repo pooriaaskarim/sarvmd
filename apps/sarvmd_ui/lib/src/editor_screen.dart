@@ -33,6 +33,8 @@ class _EditorScreenState extends State<EditorScreen> {
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
   BoxConstraints? _lastConstraints;
   bool _hasCentered = false;
+  bool _sidebarCollapsed = false;
+  bool _viewPanelCollapsed = false;
 
   void _fitToScreen() {
     final constraints = _lastConstraints;
@@ -80,166 +82,234 @@ class _EditorScreenState extends State<EditorScreen> {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Row(
             children: [
-              // Sidebar
-              Container(
-                width: 320,
+              // Sidebar (Left)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                width: _sidebarCollapsed ? 0 : 320,
                 color: Theme.of(context).colorScheme.surfaceContainer,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.paddingLarge),
-                        children: [
-                          const SizedBox(height: 48),
-                          const _Header(),
-                          const SizedBox(height: AppSpacing.sectionGap),
-                          const SectionHeader(title: 'Profiles'),
-                          const SizedBox(height: AppSpacing.itemGapSmall),
-                          ProfilePicker(
-                            currentConfig: _notifier.config,
-                            onProfileSelected: (p) => _notifier.applyProfile(p),
-                          ),
-                          Divider(
-                              color: Theme.of(context).colorScheme.outline,
-                              height: 32),
-                          const SectionHeader(title: 'Document'),
-                          const SizedBox(height: AppSpacing.itemGapSmall),
-                          DropdownSetting<core.PageSize>(
-                            value: _notifier.config.pageSize,
-                            options: core.PageSize.values,
-                            onChanged: (v) => _notifier.updatePageSize(v),
-                          ),
-                          const SizedBox(height: AppSpacing.paddingMedium),
-                          SegmentedSetting<core.LayoutType>(
-                            value: _notifier.config.layoutType,
-                            options: core.LayoutType.values,
-                            onChanged: (v) => _notifier.updateLayoutType(v),
-                          ),
-                          Divider(
-                              color: Theme.of(context).colorScheme.outline,
-                              height: 32),
-                          SectionHeader(
-                            title: 'Margins (mm)',
-                            onReset: _notifier.resetMargins,
-                          ),
-                          PrecisionSlider(
-                            label: 'Vertical',
-                            value: _notifier.config.margins.top,
-                            min: 5.0,
-                            max: 40.0,
-                            onChanged: (v) =>
-                                _notifier.updateVerticalMargins(v),
-                          ),
-                          PrecisionSlider(
-                            label: 'Horizontal',
-                            value: _notifier.config.margins.left,
-                            min: 5.0,
-                            max: 40.0,
-                            onChanged: (v) =>
-                                _notifier.updateHorizontalMargins(v),
-                          ),
-                          Divider(
-                              color: Theme.of(context).colorScheme.outline,
-                              height: 32),
-                          SectionHeader(
-                            title: 'Spacing (mm)',
-                            onReset: _notifier.resetSpacing,
-                          ),
-                          PrecisionSlider(
-                            label: 'Line Gap',
-                            value: _notifier.config.staffConfig.lineGapMm,
-                            min: 1.0,
-                            max: 3.0,
-                            onChanged: (v) => _notifier.updateLineGap(v),
-                          ),
-                          PrecisionSlider(
-                            label: 'System Gap',
-                            value: _notifier.config.staffConfig.systemGapMm,
-                            min: 5.0,
-                            max: 30.0,
-                            onChanged: (v) => _notifier.updateSystemGap(v),
-                          ),
-                          if (layout.config.layoutType ==
-                              core.LayoutType.doubleLine)
-                            PrecisionSlider(
-                              label: 'Inter-staff Gap',
-                              value:
-                                  _notifier.config.staffConfig.interStaffGapMm,
-                              min: 5.0,
-                              max: 20.0,
-                              onChanged: (v) =>
-                                  _notifier.updateInterStaffGap(v),
-                            ),
-                          Divider(
-                              color: Theme.of(context).colorScheme.outline,
-                              height: 32),
-                          SectionHeader(
-                            title: 'Clefs & Symbols',
-                            onReset: _notifier.resetClefs,
-                          ),
-                          ClefConfigWidget(
-                            label: layout.config.layoutType ==
-                                    core.LayoutType.doubleLine
-                                ? 'Upper Staff'
-                                : 'Staff Clef',
-                            value: _notifier.config.primaryClef,
-                            onChanged: (v) => _notifier.updatePrimaryClef(v),
-                          ),
-                          if (layout.config.layoutType ==
-                              core.LayoutType.doubleLine) ...[
-                            const SizedBox(height: AppSpacing.paddingMedium),
-                            ClefConfigWidget(
-                              label: 'Lower Staff',
-                              value: _notifier.config.secondaryClef,
-                              onChanged: (v) =>
-                                  _notifier.updateSecondaryClef(v),
-                            ),
-                          ],
-                          const SizedBox(height: AppSpacing.paddingLarge),
-                        ],
-                      ),
-                    ),
-                    Divider(
-                        color: Theme.of(context).colorScheme.outline,
-                        height: 1),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.paddingLarge,
-                          vertical: AppSpacing.paddingMedium),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${layout.systemCount} Systems',
-                            style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant),
-                          ),
-                          Tooltip(
-                            message: 'Reset ALL settings to defaults',
-                            child: TextButton.icon(
-                              onPressed: _notifier.resetToDefaults,
-                              icon: const Icon(Icons.restore, size: 14),
-                              label: const Text('Reset',
-                                  style: TextStyle(fontSize: 12)),
-                              style: TextButton.styleFrom(
-                                minimumSize: Size.zero,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4)),
-                                foregroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                child: ClipRect(
+                  child: OverflowBox(
+                    minWidth: 0,
+                    maxWidth: 320,
+                    alignment: Alignment.topLeft,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.paddingLarge),
+                            children: [
+                              const SizedBox(height: 48),
+                              const _FadeInSlide(delay: 0, child: _Header()),
+                              const SizedBox(height: AppSpacing.sectionGap),
+                              const _FadeInSlide(
+                                  delay: 1, child: SectionHeader(title: 'Profiles')),
+                              const SizedBox(height: AppSpacing.itemGapSmall),
+                              _FadeInSlide(
+                                delay: 2,
+                                child: ProfilePicker(
+                                  currentConfig: _notifier.config,
+                                  onProfileSelected: (p) =>
+                                      _notifier.applyProfile(p),
+                                ),
                               ),
+                              _FadeInSlide(
+                                delay: 3,
+                                child: Divider(
+                                  color: Theme.of(context).colorScheme.outline,
+                                  height: 32,
+                                ),
+                              ),
+                              const _FadeInSlide(
+                                  delay: 4, child: SectionHeader(title: 'Document')),
+                              const SizedBox(height: AppSpacing.itemGapSmall),
+                              _FadeInSlide(
+                                delay: 5,
+                                child: DropdownSetting<core.PageSize>(
+                                  value: _notifier.config.pageSize,
+                                  options: core.PageSize.values,
+                                  onChanged: (v) => _notifier.updatePageSize(v),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.paddingMedium),
+                              _FadeInSlide(
+                                delay: 6,
+                                child: SegmentedSetting<core.LayoutType>(
+                                  value: _notifier.config.layoutType,
+                                  options: core.LayoutType.values,
+                                  onChanged: (v) => _notifier.updateLayoutType(v),
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 7,
+                                child: Divider(
+                                  color: Theme.of(context).colorScheme.outline,
+                                  height: 32,
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 8,
+                                child: SectionHeader(
+                                  title: 'Margins (mm)',
+                                  onReset: _notifier.resetMargins,
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 9,
+                                child: PrecisionSlider(
+                                  label: 'Vertical',
+                                  value: _notifier.config.margins.top,
+                                  min: 5.0,
+                                  max: 40.0,
+                                  onChanged: (v) =>
+                                      _notifier.updateVerticalMargins(v),
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 10,
+                                child: PrecisionSlider(
+                                  label: 'Horizontal',
+                                  value: _notifier.config.margins.left,
+                                  min: 5.0,
+                                  max: 40.0,
+                                  onChanged: (v) =>
+                                      _notifier.updateHorizontalMargins(v),
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 11,
+                                child: Divider(
+                                  color: Theme.of(context).colorScheme.outline,
+                                  height: 32,
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 12,
+                                child: SectionHeader(
+                                  title: 'Spacing (mm)',
+                                  onReset: _notifier.resetSpacing,
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 13,
+                                child: PrecisionSlider(
+                                  label: 'Line Gap',
+                                  value: _notifier.config.staffConfig.lineGapMm,
+                                  min: 1.0,
+                                  max: 3.0,
+                                  onChanged: (v) => _notifier.updateLineGap(v),
+                                ),
+                              ),
+                              _FadeInSlide(
+                                delay: 14,
+                                child: PrecisionSlider(
+                                  label: 'System Gap',
+                                  value: _notifier.config.staffConfig.systemGapMm,
+                                  min: 5.0,
+                                  max: 30.0,
+                                  onChanged: (v) => _notifier.updateSystemGap(v),
+                                ),
+                              ),
+                              if (layout.config.layoutType ==
+                                  core.LayoutType.doubleLine)
+                                _FadeInSlide(
+                                  delay: 15,
+                                  child: PrecisionSlider(
+                                    label: 'Inter-staff Gap',
+                                    value: _notifier
+                                        .config.staffConfig.interStaffGapMm,
+                                    min: 5.0,
+                                    max: 20.0,
+                                    onChanged: (v) =>
+                                        _notifier.updateInterStaffGap(v),
+                                  ),
+                                ),
+                              _FadeInSlide(
+                                delay: 16,
+                                child: Divider(
+                                  color: Theme.of(context).colorScheme.outline,
+                                  height: 32,
+                                ),
+                              ),
+                              const _FadeInSlide(
+                                  delay: 17, child: SectionHeader(title: 'Clefs & Symbols')),
+                              const SizedBox(height: AppSpacing.itemGapSmall),
+                              _FadeInSlide(
+                                delay: 18,
+                                child: ClefConfigWidget(
+                                  label: layout.config.layoutType ==
+                                          core.LayoutType.doubleLine
+                                      ? 'Upper Staff'
+                                      : 'Staff Clef',
+                                  value: _notifier.config.primaryClef,
+                                  onChanged: (v) =>
+                                      _notifier.updatePrimaryClef(v),
+                                ),
+                              ),
+                              if (layout.config.layoutType ==
+                                  core.LayoutType.doubleLine) ...[
+                                const SizedBox(
+                                    height: AppSpacing.paddingMedium),
+                                _FadeInSlide(
+                                  delay: 19,
+                                  child: ClefConfigWidget(
+                                    label: 'Lower Staff',
+                                    value: _notifier.config.secondaryClef,
+                                    onChanged: (v) =>
+                                        _notifier.updateSecondaryClef(v),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: AppSpacing.paddingLarge),
+                            ],
+                          ),
+                        ),
+                        Divider(
+                            color: Theme.of(context).colorScheme.outline,
+                            height: 1),
+                        _FadeInSlide(
+                          delay: 20,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.paddingLarge,
+                                vertical: AppSpacing.paddingMedium),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${layout.systemCount} Systems',
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant),
+                                ),
+                                Tooltip(
+                                  message: 'Reset ALL settings to defaults',
+                                  child: TextButton.icon(
+                                    onPressed: _notifier.resetToDefaults,
+                                    icon: const Icon(Icons.restore, size: 14),
+                                    label: const Text('Reset',
+                                        style: TextStyle(fontSize: 12)),
+                                    style: TextButton.styleFrom(
+                                      minimumSize: Size.zero,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(4)),
+                                      foregroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
               // Preview Area
@@ -296,6 +366,63 @@ class _EditorScreenState extends State<EditorScreen> {
                                       controller: _transformationController),
                                 ),
                               ),
+                              // Sidebar Toggle (Left)
+                              Positioned(
+                                top: 16,
+                                left: 16,
+                                child: FloatingActionButton.small(
+                                  heroTag: 'left_toggle',
+                                  onPressed: () {
+                                    setState(() {
+                                      _sidebarCollapsed = !_sidebarCollapsed;
+                                    });
+                                  },
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.surface,
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  elevation: 2,
+                                  tooltip: _sidebarCollapsed
+                                      ? 'Expand Left Sidebar'
+                                      : 'Collapse Left Sidebar',
+                                  child: Icon(
+                                    _sidebarCollapsed
+                                        ? Icons.menu
+                                        : Icons.arrow_back_ios_new,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              // View Panel Toggle (Right)
+                              Positioned(
+                                top: 16,
+                                right: 16,
+                                child: FloatingActionButton.small(
+                                  heroTag: 'right_toggle',
+                                  onPressed: () {
+                                    setState(() {
+                                      _viewPanelCollapsed =
+                                          !_viewPanelCollapsed;
+                                    });
+                                  },
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.surface,
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  elevation: 2,
+                                  tooltip: _viewPanelCollapsed
+                                      ? 'Expand Settings'
+                                      : 'Collapse Settings',
+                                  child: Icon(
+                                    _viewPanelCollapsed
+                                        ? Icons.tune
+                                        : Icons.arrow_forward_ios,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -305,14 +432,27 @@ class _EditorScreenState extends State<EditorScreen> {
                 ),
               ),
               // View Panel (Right)
-              ViewPanel(
-                viewNotifier: widget.viewNotifier,
-                transformationController: _transformationController,
-                onFitToScreen: () {
-                  if (_lastConstraints != null) _fitToScreen();
-                },
-                configNotifier: _notifier,
-                layoutGetter: () => _notifier.layout,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                width: _viewPanelCollapsed ? 0 : 280,
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                child: ClipRect(
+                  child: OverflowBox(
+                    minWidth: 0,
+                    maxWidth: 280,
+                    alignment: Alignment.topRight,
+                    child: ViewPanel(
+                      viewNotifier: widget.viewNotifier,
+                      transformationController: _transformationController,
+                      onFitToScreen: () {
+                        _fitToScreen();
+                      },
+                      configNotifier: _notifier,
+                      layoutGetter: () => _notifier.layout,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -327,28 +467,44 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SvgPicture.asset(
-          'assets/handwriting/Sarv Handwriting.svg',
-          height: 64,
-          colorFilter: ColorFilter.mode(
-            Theme.of(context).colorScheme.onSurface,
-            BlendMode.srcIn,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 10 * (1 - value)),
+            child: child,
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Manuscript Designer',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-            fontSize: 16,
-            fontFamily: 'IranNastaliq',
-            letterSpacing: 0.5,
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'assets/handwriting/Sarv Handwriting.svg',
+            height: 64,
+            colorFilter: ColorFilter.mode(
+              Theme.of(context).colorScheme.onSurface,
+              BlendMode.srcIn,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            'Manuscript Designer',
+            style: TextStyle(
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+              fontSize: 18,
+              fontFamily: 'IranNastaliq',
+              letterSpacing: 1.2,
+              height: 1.0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

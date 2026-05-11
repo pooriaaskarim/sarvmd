@@ -38,105 +38,156 @@ class ViewPanel extends StatelessWidget {
                   horizontal: AppSpacing.paddingLarge),
               children: [
                 const SizedBox(height: 48),
-                Text(
-                  'VIEW',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
+                const _FadeInSlide(
+                  delay: 0,
+                  child: Text(
+                    'VIEW',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sectionGap),
-                const SectionHeader(title: 'Appearance'),
-                ListenableBuilder(
-                  listenable: viewNotifier,
-                  builder: (context, _) {
-                    return _AppearanceSettings(
-                      themeMode: viewNotifier.themeMode,
-                      accent: viewNotifier.accent,
-                      onThemeModeChanged: viewNotifier.updateThemeMode,
-                      onAccentChanged: viewNotifier.updateAccent,
-                    );
-                  },
+                const _FadeInSlide(delay: 1, child: SectionHeader(title: 'Appearance')),
+                _FadeInSlide(
+                  delay: 2,
+                  child: ListenableBuilder(
+                    listenable: viewNotifier,
+                    builder: (context, _) {
+                      return _AppearanceSettings(
+                        themeMode: viewNotifier.themeMode,
+                        accent: viewNotifier.accent,
+                        onThemeModeChanged: viewNotifier.updateThemeMode,
+                        onAccentChanged: viewNotifier.updateAccent,
+                      );
+                    },
+                  ),
                 ),
-                Divider(
-                    color: Theme.of(context).colorScheme.outline, height: 32),
-                const SectionHeader(title: 'Zoom'),
-                ListenableBuilder(
-                  listenable: transformationController,
-                  builder: (context, _) {
-                    final currentZoom = transformationController.value.row0[0];
-                    return ZoomControl(
-                      value: currentZoom.clamp(0.1, 4.0),
-                      min: 0.1,
-                      max: 4.0,
-                      onFit: onFitToScreen,
-                      onChanged: (v) {
-                        final t =
-                            transformationController.value.getTranslation();
-                        transformationController.value =
-                            Matrix4.translationValues(t.x, t.y, 0.0)
-                              ..multiply(Matrix4.diagonal3Values(v, v, 1.0));
-                      },
-                    );
-                  },
+                _FadeInSlide(
+                  delay: 3,
+                  child: Divider(
+                      color: Theme.of(context).colorScheme.outline, height: 32),
                 ),
-                Divider(
-                    color: Theme.of(context).colorScheme.outline, height: 32),
-                const SectionHeader(title: 'Guides'),
-                ListenableBuilder(
-                  listenable: viewNotifier,
-                  builder: (context, _) {
-                    return Column(
-                      children: [
-                        GuideToggle(
-                          label: 'Mouse Wings',
-                          value:
-                              viewNotifier.isGuideActive(GuideType.rulerWings),
-                          onChanged: (v) => viewNotifier.toggleGuide(
-                              GuideType.rulerWings, v ?? false),
-                        ),
-                        GuideToggle(
-                          label: 'Paper Edges',
-                          value:
-                              viewNotifier.isGuideActive(GuideType.paperEdges),
-                          onChanged: (v) => viewNotifier.toggleGuide(
-                              GuideType.paperEdges, v ?? false),
-                        ),
-                        GuideToggle(
-                          label: 'Paper Centers',
-                          value: viewNotifier
-                              .isGuideActive(GuideType.paperCenters),
-                          onChanged: (v) => viewNotifier.toggleGuide(
-                              GuideType.paperCenters, v ?? false),
-                        ),
-                        GuideToggle(
-                          label: 'Document Margins',
-                          value: viewNotifier.isGuideActive(GuideType.margins),
-                          onChanged: (v) => viewNotifier.toggleGuide(
-                              GuideType.margins, v ?? false),
-                        ),
-                        GuideToggle(
-                          label: 'Staff Bounds',
-                          value:
-                              viewNotifier.isGuideActive(GuideType.staffBounds),
-                          onChanged: (v) => viewNotifier.toggleGuide(
-                              GuideType.staffBounds, v ?? false),
-                        ),
-                      ],
-                    );
-                  },
+                const _FadeInSlide(delay: 4, child: SectionHeader(title: 'Zoom')),
+                _FadeInSlide(
+                  delay: 5,
+                  child: ListenableBuilder(
+                    listenable: transformationController,
+                    builder: (context, _) {
+                      final currentZoom = transformationController.value.row0[0];
+                      return ZoomControl(
+                        value: currentZoom.clamp(0.1, 4.0),
+                        min: 0.1,
+                        max: 4.0,
+                        onFit: onFitToScreen,
+                        onChanged: (v) {
+                          final t =
+                              transformationController.value.getTranslation();
+                          transformationController.value =
+                              Matrix4.translationValues(t.x, t.y, 0.0)
+                                ..multiply(Matrix4.diagonal3Values(v, v, 1.0));
+                        },
+                      );
+                    },
+                  ),
+                ),
+                _FadeInSlide(
+                  delay: 6,
+                  child: Divider(
+                      color: Theme.of(context).colorScheme.outline, height: 32),
+                ),
+                const _FadeInSlide(delay: 7, child: SectionHeader(title: 'Guides')),
+                _FadeInSlide(
+                  delay: 8,
+                  child: ListenableBuilder(
+                    listenable: viewNotifier,
+                    builder: (context, _) {
+                      return Column(
+                        children: [
+                          GuideToggle(
+                            label: 'Mouse Wings',
+                            value:
+                                viewNotifier.isGuideActive(GuideType.rulerWings),
+                            onChanged: (v) => viewNotifier.toggleGuide(
+                                GuideType.rulerWings, v ?? false),
+                          ),
+                          GuideToggle(
+                            label: 'Paper Edges',
+                            value:
+                                viewNotifier.isGuideActive(GuideType.paperEdges),
+                            onChanged: (v) => viewNotifier.toggleGuide(
+                                GuideType.paperEdges, v ?? false),
+                          ),
+                          GuideToggle(
+                            label: 'Paper Centers',
+                            value: viewNotifier
+                                .isGuideActive(GuideType.paperCenters),
+                            onChanged: (v) => viewNotifier.toggleGuide(
+                                GuideType.paperCenters, v ?? false),
+                          ),
+                          GuideToggle(
+                            label: 'Document Margins',
+                            value: viewNotifier.isGuideActive(GuideType.margins),
+                            onChanged: (v) => viewNotifier.toggleGuide(
+                                GuideType.margins, v ?? false),
+                          ),
+                          GuideToggle(
+                            label: 'Staff Bounds',
+                            value:
+                                viewNotifier.isGuideActive(GuideType.staffBounds),
+                            onChanged: (v) => viewNotifier.toggleGuide(
+                                GuideType.staffBounds, v ?? false),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
           ),
-          ExportPanel(
-            configNotifier: configNotifier,
-            layoutGetter: layoutGetter,
+          _FadeInSlide(
+            delay: 9,
+            child: ExportPanel(
+              configNotifier: configNotifier,
+              layoutGetter: layoutGetter,
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FadeInSlide extends StatelessWidget {
+  const _FadeInSlide({
+    required this.delay,
+    required this.child,
+  });
+
+  final int delay;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        // Stagger the start time based on delay (roughly 50ms per delay unit)
+        final effectiveValue = ((value * 1.5) - (delay * 0.1)).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: effectiveValue,
+          child: Transform.translate(
+            offset: Offset(0, 10 * (1 - effectiveValue)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 }
@@ -315,7 +366,7 @@ class _AccentPillPickerState extends State<_AccentPillPicker>
         return GestureDetector(
           onTap: () => widget.onChanged(a),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 350),
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(
               horizontal: 10,
