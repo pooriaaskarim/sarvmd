@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 
+enum ZoomPreset {
+  actualSize,
+  fitScreen,
+  fitWidth,
+}
+
 class ZoomControl extends StatefulWidget {
   const ZoomControl({
     super.key,
     required this.value,
     required this.onChanged,
-    required this.onFit,
+    required this.onZoomPreset,
     required this.min,
     required this.max,
   });
 
   final double value;
   final ValueChanged<double> onChanged;
-  final VoidCallback onFit;
+  final ValueChanged<ZoomPreset> onZoomPreset;
   final double min;
   final double max;
 
@@ -146,20 +152,47 @@ class _ZoomControlState extends State<ZoomControl> {
             ),
           ],
         ),
-        Tooltip(
-          message: 'Fit to Viewport',
-          child: TextButton.icon(
-            onPressed: widget.onFit,
-            icon: const Icon(Icons.fit_screen, size: 14),
-            label: const Text('Fit', style: TextStyle(fontSize: 12)),
-            style: TextButton.styleFrom(
-              minimumSize: Size.zero,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        MenuAnchor(
+          builder: (BuildContext context, MenuController controller, Widget? child) {
+            return Tooltip(
+              message: 'Zoom Options',
+              child: TextButton.icon(
+                onPressed: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+                icon: const Icon(Icons.fit_screen, size: 14),
+                label: const Icon(Icons.arrow_drop_down, size: 14),
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
+          },
+          menuChildren: [
+            MenuItemButton(
+              onPressed: () => widget.onZoomPreset(ZoomPreset.actualSize),
+              leadingIcon: const Icon(Icons.zoom_in_map, size: 16),
+              child: const Text('Actual Size', style: TextStyle(fontSize: 13)),
             ),
-          ),
+            MenuItemButton(
+              onPressed: () => widget.onZoomPreset(ZoomPreset.fitScreen),
+              leadingIcon: const Icon(Icons.fit_screen, size: 16),
+              child: const Text('Fit Page', style: TextStyle(fontSize: 13)),
+            ),
+            MenuItemButton(
+              onPressed: () => widget.onZoomPreset(ZoomPreset.fitWidth),
+              leadingIcon: const Icon(Icons.width_full, size: 16),
+              child: const Text('Fit Width', style: TextStyle(fontSize: 13)),
+            ),
+          ],
         ),
       ],
     );

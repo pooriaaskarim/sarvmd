@@ -18,6 +18,12 @@ class SarvApp extends StatefulWidget {
 
 class _SarvAppState extends State<SarvApp> {
   final ViewNotifier _viewNotifier = ViewNotifier();
+  
+  @override
+  void initState() {
+    super.initState();
+    _viewNotifier.initialize();
+  }
 
   @override
   void dispose() {

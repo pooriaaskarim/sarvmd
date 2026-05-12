@@ -6,6 +6,7 @@ import 'components/inputs/section_header.dart';
 import 'components/inputs/zoom_control.dart';
 import 'components/inputs/guide_toggle.dart';
 import 'components/animations/fade_in_slide.dart';
+import 'components/dialogs/calibration_dialog.dart';
 import 'export_panel.dart';
 import 'config_notifier.dart';
 import 'view_notifier.dart';
@@ -15,14 +16,14 @@ class ViewPanel extends StatelessWidget {
     super.key,
     required this.viewNotifier,
     required this.transformationController,
-    required this.onFitToScreen,
+    required this.onZoomPreset,
     required this.configNotifier,
     required this.layoutGetter,
   });
 
   final ViewNotifier viewNotifier;
   final TransformationController transformationController;
-  final VoidCallback onFitToScreen;
+  final ValueChanged<ZoomPreset> onZoomPreset;
   final ConfigNotifier configNotifier;
   final core.PageLayout Function() layoutGetter;
 
@@ -82,7 +83,7 @@ class ViewPanel extends StatelessWidget {
                         value: currentZoom.clamp(0.1, 4.0),
                         min: 0.1,
                         max: 4.0,
-                        onFit: onFitToScreen,
+                        onZoomPreset: onZoomPreset,
                         onChanged: (v) {
                           final t =
                               transformationController.value.getTranslation();
@@ -99,9 +100,30 @@ class ViewPanel extends StatelessWidget {
                   child: Divider(
                       color: Theme.of(context).colorScheme.outline, height: 32),
                 ),
-                const FadeInSlide(delay: 7, child: SectionHeader(title: 'Guides')),
+                const FadeInSlide(delay: 7, child: SectionHeader(title: 'Display')),
                 FadeInSlide(
                   delay: 8,
+                  child: ListenableBuilder(
+                    listenable: viewNotifier,
+                    builder: (context, _) {
+                      return _DisplayStatus(
+                        calibrationFactor: viewNotifier.calibrationFactor,
+                        onCalibrate: () => showCalibrationDialog(
+                          context,
+                          viewNotifier,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                FadeInSlide(
+                  delay: 9,
+                  child: Divider(
+                      color: Theme.of(context).colorScheme.outline, height: 32),
+                ),
+                const FadeInSlide(delay: 10, child: SectionHeader(title: 'Guides')),
+                FadeInSlide(
+                  delay: 11,
                   child: ListenableBuilder(
                     listenable: viewNotifier,
                     builder: (context, _) {
@@ -408,3 +430,69 @@ class _AccentPillPickerState extends State<_AccentPillPicker>
     );
   }
 }
+
+/// Compact Display section row shown in the View panel.
+///
+/// Shows the current effective PPI and a "Calibrate..." button that opens
+/// the [CalibrationDialog]. All calibration logic lives in the dialog.
+class _DisplayStatus extends StatelessWidget {
+  const _DisplayStatus({
+    required this.calibrationFactor,
+    required this.onCalibrate,
+  });
+
+  final double calibrationFactor;
+  final VoidCallback onCalibrate;
+
+  int get _effectivePpi => (calibrationFactor * 96).round();
+  bool get _isDefault => (calibrationFactor - 1.0).abs() < 0.001;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Row(
+      children: [
+        Icon(
+          Icons.straighten_rounded,
+          size: 15,
+          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Align(
+              key: ValueKey(_effectivePpi),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _isDefault
+                    ? '96 PPI (default)'
+                    : '$_effectivePpi PPI (calibrated)',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _isDefault
+                      ? cs.onSurfaceVariant.withValues(alpha: 0.7)
+                      : cs.primary,
+                  fontWeight: _isDefault ? FontWeight.normal : FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: onCalibrate,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: const TextStyle(fontSize: 12),
+            foregroundColor: cs.primary,
+          ),
+          child: const Text('Calibrate…'),
+        ),
+      ],
+    );
+  }
+}
+

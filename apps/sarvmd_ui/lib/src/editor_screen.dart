@@ -15,6 +15,7 @@ import 'preview_canvas.dart';
 import 'view_panel.dart';
 import 'ruler_box.dart';
 import 'view_notifier.dart';
+import 'components/inputs/zoom_control.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key, required this.viewNotifier});
@@ -35,11 +36,11 @@ class _EditorScreenState extends State<EditorScreen> {
   bool _sidebarCollapsed = false;
   bool _viewPanelCollapsed = false;
 
-  void _fitToScreen() {
+  void _applyZoomPreset(ZoomPreset preset) {
     final constraints = _lastConstraints;
     if (constraints == null) return;
 
-    final double lpmm = 96 / 25.4;
+    const double lpmm = 96 / 25.4; // canvas internal scale
     final paperWidth = _notifier.layout.config.pageSize.width * lpmm;
     final paperHeight = _notifier.layout.config.pageSize.height * lpmm;
 
@@ -47,12 +48,38 @@ class _EditorScreenState extends State<EditorScreen> {
     final availableWidth = constraints.maxWidth - padding * 2;
     final availableHeight = constraints.maxHeight - padding * 2;
 
-    final scaleX = availableWidth / paperWidth;
-    final scaleY = availableHeight / paperHeight;
-    final fitScale = (scaleX < scaleY ? scaleX : scaleY).clamp(0.1, 4.0);
+    double fitScale;
+
+    switch (preset) {
+      case ZoomPreset.actualSize:
+        // Zoom so that 1 mm of paper = 1 mm on the physical screen.
+        // The calibrationFactor is set by the user via the on-screen ruler
+        // in the Display section of the View panel.
+        fitScale = widget.viewNotifier.calibrationFactor.clamp(0.1, 4.0);
+        break;
+      case ZoomPreset.fitWidth:
+        fitScale = (availableWidth / paperWidth).clamp(0.1, 4.0);
+        break;
+      case ZoomPreset.fitScreen:
+        final scaleX = availableWidth / paperWidth;
+        final scaleY = availableHeight / paperHeight;
+        fitScale = (scaleX < scaleY ? scaleX : scaleY).clamp(0.1, 4.0);
+        break;
+    }
 
     final dx = (constraints.maxWidth - paperWidth * fitScale) / 2;
-    final dy = (constraints.maxHeight - paperHeight * fitScale) / 2;
+    double dy;
+
+    if (preset == ZoomPreset.fitScreen) {
+      dy = (constraints.maxHeight - paperHeight * fitScale) / 2;
+    } else {
+      final scaledHeight = paperHeight * fitScale;
+      if (scaledHeight < availableHeight) {
+        dy = (constraints.maxHeight - scaledHeight) / 2;
+      } else {
+        dy = padding;
+      }
+    }
 
     _transformationController.value = Matrix4.translationValues(dx, dy, 0.0)
       ..multiply(Matrix4.diagonal3Values(fitScale, fitScale, 1.0));
@@ -291,7 +318,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       if (!_hasCentered) {
                         _hasCentered = true;
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _fitToScreen();
+                          _applyZoomPreset(ZoomPreset.fitScreen);
                         });
                       }
 
@@ -414,9 +441,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     child: ViewPanel(
                       viewNotifier: widget.viewNotifier,
                       transformationController: _transformationController,
-                      onFitToScreen: () {
-                        _fitToScreen();
-                      },
+                      onZoomPreset: _applyZoomPreset,
                       configNotifier: _notifier,
                       layoutGetter: () => _notifier.layout,
                     ),
