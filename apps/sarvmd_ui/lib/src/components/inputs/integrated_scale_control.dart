@@ -290,9 +290,9 @@ class _ZoomSlider extends StatelessWidget {
         thumbColor: cs.primary,
       ),
       child: Slider(
-        value: value.clamp(0.1, 4.0),
-        min: 0.1,
-        max: 4.0,
+        value: value.clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom),
+        min: ScaleMetrics.minZoom,
+        max: ScaleMetrics.maxZoom,
         onChanged: onChanged,
       ),
     );

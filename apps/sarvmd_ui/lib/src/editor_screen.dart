@@ -55,15 +55,18 @@ class _EditorScreenState extends State<EditorScreen> {
         // Zoom so that 1 mm of paper = 1 mm on the physical screen.
         // The calibrationFactor is set by the user via the on-screen ruler
         // in the Display section of the View panel.
-        fitScale = widget.viewNotifier.calibrationFactor.clamp(0.1, 4.0);
+        fitScale = widget.viewNotifier.calibrationFactor
+            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
         break;
       case ZoomPreset.fitWidth:
-        fitScale = (availableWidth / paperWidth).clamp(0.1, 4.0);
+        fitScale = (availableWidth / paperWidth)
+            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
         break;
       case ZoomPreset.fitScreen:
         final scaleX = availableWidth / paperWidth;
         final scaleY = availableHeight / paperHeight;
-        fitScale = (scaleX < scaleY ? scaleX : scaleY).clamp(0.1, 4.0);
+        fitScale = (scaleX < scaleY ? scaleX : scaleY)
+            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
         break;
     }
 
@@ -344,8 +347,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                   transformationController:
                                       _transformationController,
                                   boundaryMargin: const EdgeInsets.all(100000),
-                                  minScale: 0.1,
-                                  maxScale: 4.0,
+                                  minScale: ScaleMetrics.minZoom,
+                                  maxScale: ScaleMetrics.maxZoom,
                                   constrained: false,
                                   child: PreviewCanvas(
                                     layout: layout,

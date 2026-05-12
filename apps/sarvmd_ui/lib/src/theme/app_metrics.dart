@@ -18,3 +18,9 @@ class AppOpacities {
   static const double surfaceHint = 0.5;
   static const double surfaceEmphasized = 0.6;
 }
+
+class ScaleMetrics {
+  static const double minZoom = 0.5; // 50%
+  static const double maxZoom = 4.0; // 400%
+  static const double defaultZoom = 1.0; // 100%
+}
