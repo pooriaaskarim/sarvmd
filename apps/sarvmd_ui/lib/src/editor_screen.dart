@@ -15,7 +15,7 @@ import 'preview_canvas.dart';
 import 'view_panel.dart';
 import 'ruler_box.dart';
 import 'view_notifier.dart';
-import 'components/inputs/zoom_control.dart';
+import 'components/inputs/integrated_scale_control.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key, required this.viewNotifier});
