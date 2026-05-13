@@ -3,6 +3,7 @@ import 'components/inputs/document_settings_group.dart';
 import 'theme/app_metrics.dart';
 import 'components/inputs/section_header.dart';
 import 'components/inputs/precision_slider.dart';
+import 'components/inputs/staff_spacing_group.dart';
 import 'components/animations/fade_in_slide.dart';
 import 'components/layout/sarv_header.dart';
 import 'components/specialized/profile_picker.dart';
@@ -221,41 +222,25 @@ class _EditorScreenState extends State<EditorScreen> {
                               FadeInSlide(
                                 delay: 5,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     SectionHeader(
-                                      title: 'Spacing (mm)',
+                                      title: 'Staff Spacing',
                                       onReset: _notifier.resetSpacing,
                                     ),
-                                    PrecisionSlider(
-                                      label: 'Line Gap',
-                                      value: _notifier
-                                          .config.staffConfig.lineGapMm,
-                                      min: 1.0,
-                                      max: 3.0,
-                                      onChanged: (v) =>
-                                          _notifier.updateLineGap(v),
+                                    StaffSpacingGroup(
+                                      staffConfig:
+                                          _notifier.config.staffConfig,
+                                      layoutType:
+                                          _notifier.config.layoutType,
+                                      onLineGapChanged:
+                                          _notifier.updateLineGap,
+                                      onSystemGapChanged:
+                                          _notifier.updateSystemGap,
+                                      onInterStaffGapChanged:
+                                          _notifier.updateInterStaffGap,
                                     ),
-                                    PrecisionSlider(
-                                      label: 'System Gap',
-                                      value: _notifier
-                                          .config.staffConfig.systemGapMm,
-                                      min: 5.0,
-                                      max: 30.0,
-                                      onChanged: (v) =>
-                                          _notifier.updateSystemGap(v),
-                                    ),
-                                    if (layout.config.layoutType ==
-                                        core.LayoutType.doubleLine)
-                                      PrecisionSlider(
-                                        label: 'Inter-staff Gap',
-                                        value: _notifier
-                                            .config.staffConfig.interStaffGapMm,
-                                        min: 5.0,
-                                        max: 20.0,
-                                        onChanged: (v) =>
-                                            _notifier.updateInterStaffGap(v),
-                                      ),
                                   ],
                                 ),
                               ),

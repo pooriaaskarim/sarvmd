@@ -79,11 +79,54 @@ class ClefConfig {
   int get hashCode => symbol.hashCode ^ anchorLine.hashCode;
 }
 
+/// Pragmatic staff size presets based on engraving standards and handwriting
+/// legibility research. Sizes are named for their practical use case rather
+/// than the abstract Rastral numbering system.
+enum StaffSizePreset {
+  /// 12.0 mm staff (3.0 mm gap). For children's education and classrooms.
+  jumbo(lineGapMm: 3.00),
+
+  /// 8.5 mm staff (2.125 mm gap). Standard for orchestral performance parts.
+  large(lineGapMm: 2.125),
+
+  /// 7.2 mm staff (1.8 mm gap). Professional default — piano, solo, sketching.
+  medium(lineGapMm: 1.80),
+
+  /// 5.8 mm staff (1.45 mm gap). Dense scores. Lower practical limit for
+  /// handwriting; below this, fine details become difficult to notate.
+  small(lineGapMm: 1.45);
+
+  const StaffSizePreset({required this.lineGapMm});
+
+  /// The canonical line-gap value for this preset in mm.
+  final double lineGapMm;
+
+  /// Total height of a five-line staff (4 × lineGapMm) in mm.
+  double get staffHeightMm => lineGapMm * 4;
+
+  /// Human-readable label.
+  String get label => '${name[0].toUpperCase()}${name.substring(1)}';
+
+  /// Finds the identifying preset for a given [lineGapMm] based on pragmatic
+  /// height ranges. This ensures the UI remains contextually aware even if
+  /// values are adjusted slightly from their canonical defaults.
+  static StaffSizePreset? fromLineGap(double mm) {
+    final h = mm * 4; // Total staff height
+
+    if (h >= 9.5) return jumbo;
+    if (h >= 8.0) return large;
+    if (h >= 6.8) return medium;
+    if (h >= 5.4) return small;
+    
+    return null; // Below practical handwriting limit
+  }
+}
+
 /// Dimensional configuration for staff drawing.
 class StaffConfig {
   const StaffConfig({
     this.lineThicknessPt = 0.4,
-    this.lineGapMm = 2.5,
+    this.lineGapMm = 1.80,
     this.systemGapMm = 15.0,
     this.interStaffGapMm = 8.0,
   });
@@ -104,6 +147,23 @@ class StaffConfig {
   /// Height of a single 5-line staff in mm.
   /// 4 gaps between 5 lines.
   double get staffHeightMm => lineGapMm * 4;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StaffConfig &&
+          runtimeType == other.runtimeType &&
+          lineThicknessPt == other.lineThicknessPt &&
+          lineGapMm == other.lineGapMm &&
+          systemGapMm == other.systemGapMm &&
+          interStaffGapMm == other.interStaffGapMm;
+
+  @override
+  int get hashCode =>
+      lineThicknessPt.hashCode ^
+      lineGapMm.hashCode ^
+      systemGapMm.hashCode ^
+      interStaffGapMm.hashCode;
 }
 
 /// Page margin configuration in mm.
