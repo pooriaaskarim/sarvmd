@@ -19,7 +19,7 @@ class MiniStaffPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = active ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final color = active ? colorScheme.onSurface : colorScheme.onSurfaceVariant;
 
     return CustomPaint(
       size: const Size(double.infinity, 40),

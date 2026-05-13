@@ -38,6 +38,7 @@ class StaffProfile {
   /// and margin settings while overriding layout and clefs.
   PageConfig applyTo(PageConfig config) => PageConfig(
         pageSize: config.pageSize,
+        orientation: config.orientation,
         layoutType: layoutType,
         staffConfig: config.staffConfig,
         margins: config.margins,

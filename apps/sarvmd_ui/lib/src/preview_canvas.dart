@@ -16,8 +16,8 @@ class PreviewCanvas extends StatelessWidget {
   Widget build(BuildContext context) {
     const double lpmm = 96 / 25.4;
     final sizePx = Size(
-      layout.config.pageSize.width * lpmm,
-      layout.config.pageSize.height * lpmm,
+      layout.config.effectiveWidth * lpmm,
+      layout.config.effectiveHeight * lpmm,
     );
 
     // Manuscript paper is ALWAYS white for print-fidelity.
@@ -84,7 +84,7 @@ class _ManuscriptPainter extends CustomPainter {
 
     final lineGapPx = layout.config.staffConfig.lineGapMm * scale;
     final leftMm = layout.config.margins.left;
-    final rightMm = layout.config.pageSize.width - layout.config.margins.right;
+    final rightMm = layout.config.effectiveWidth - layout.config.margins.right;
 
     final guidePaint = Paint()
       ..color = colorScheme.primary.withValues(alpha: 0.3)

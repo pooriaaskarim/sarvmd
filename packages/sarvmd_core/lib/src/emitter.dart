@@ -19,8 +19,8 @@ String _f(double v) => v.toStringAsFixed(3);
 String emit(PageConfig config, PageLayout layout) {
   final buf = StringBuffer();
 
-  final pageW = config.pageSize.width;
-  final pageH = config.pageSize.height;
+  final pageW = config.effectiveWidth;
+  final pageH = config.effectiveHeight;
 
   // Document preamble.
   buf.writeln(r'\documentclass{article}');

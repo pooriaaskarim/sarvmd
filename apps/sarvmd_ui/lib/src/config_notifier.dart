@@ -11,6 +11,20 @@ class ConfigNotifier extends ChangeNotifier {
   void updatePageSize(core.PageSize size) {
     _config = core.PageConfig(
       pageSize: size,
+      orientation: _config.orientation,
+      layoutType: _config.layoutType,
+      staffConfig: _config.staffConfig,
+      margins: _config.margins,
+      primaryClef: _config.primaryClef,
+      secondaryClef: _config.secondaryClef,
+    );
+    notifyListeners();
+  }
+
+  void updateOrientation(core.PageOrientation orientation) {
+    _config = core.PageConfig(
+      pageSize: _config.pageSize,
+      orientation: orientation,
       layoutType: _config.layoutType,
       staffConfig: _config.staffConfig,
       margins: _config.margins,
@@ -23,6 +37,7 @@ class ConfigNotifier extends ChangeNotifier {
   void updateLayoutType(core.LayoutType type) {
     _config = core.PageConfig(
       pageSize: _config.pageSize,
+      orientation: _config.orientation,
       layoutType: type,
       staffConfig: _config.staffConfig,
       margins: _config.margins,
@@ -35,6 +50,7 @@ class ConfigNotifier extends ChangeNotifier {
   void updateStaffConfig(core.StaffConfig staff) {
     _config = core.PageConfig(
       pageSize: _config.pageSize,
+      orientation: _config.orientation,
       layoutType: _config.layoutType,
       staffConfig: staff,
       margins: _config.margins,
@@ -47,6 +63,7 @@ class ConfigNotifier extends ChangeNotifier {
   void updateMargins(core.Margins margins) {
     _config = core.PageConfig(
       pageSize: _config.pageSize,
+      orientation: _config.orientation,
       layoutType: _config.layoutType,
       staffConfig: _config.staffConfig,
       margins: margins,
@@ -120,6 +137,7 @@ class ConfigNotifier extends ChangeNotifier {
   void resetClefs() {
     _config = core.PageConfig(
       pageSize: _config.pageSize,
+      orientation: _config.orientation,
       layoutType: _config.layoutType,
       staffConfig: _config.staffConfig,
       margins: _config.margins,
@@ -132,6 +150,7 @@ class ConfigNotifier extends ChangeNotifier {
   void updatePrimaryClef(core.ClefConfig? clef) {
     _config = core.PageConfig(
       pageSize: _config.pageSize,
+      orientation: _config.orientation,
       layoutType: _config.layoutType,
       staffConfig: _config.staffConfig,
       margins: _config.margins,
@@ -144,6 +163,7 @@ class ConfigNotifier extends ChangeNotifier {
   void updateSecondaryClef(core.ClefConfig? clef) {
     _config = core.PageConfig(
       pageSize: _config.pageSize,
+      orientation: _config.orientation,
       layoutType: _config.layoutType,
       staffConfig: _config.staffConfig,
       margins: _config.margins,

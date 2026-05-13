@@ -1,5 +1,16 @@
 /// Configuration models for Sarv manuscript paper generation.
 
+/// Supported page orientations.
+enum PageOrientation {
+  portrait,
+  landscape;
+
+  String get label => switch (this) {
+        PageOrientation.portrait => 'Portrait',
+        PageOrientation.landscape => 'Landscape',
+      };
+}
+
 /// Supported paper sizes with dimensions in millimeters.
 enum PageSize {
   a3(width: 297.0, height: 420.0),
@@ -114,6 +125,7 @@ class Margins {
 class PageConfig {
   const PageConfig({
     this.pageSize = PageSize.a4,
+    this.orientation = PageOrientation.portrait,
     this.layoutType = LayoutType.singleLine,
     this.staffConfig = const StaffConfig(),
     this.margins = const Margins(),
@@ -122,6 +134,7 @@ class PageConfig {
   });
 
   final PageSize pageSize;
+  final PageOrientation orientation;
   final LayoutType layoutType;
   final StaffConfig staffConfig;
   final Margins margins;
@@ -138,6 +151,7 @@ class PageConfig {
       other is PageConfig &&
           runtimeType == other.runtimeType &&
           pageSize == other.pageSize &&
+          orientation == other.orientation &&
           layoutType == other.layoutType &&
           staffConfig == other.staffConfig &&
           margins == other.margins &&
@@ -147,17 +161,26 @@ class PageConfig {
   @override
   int get hashCode =>
       pageSize.hashCode ^
+      orientation.hashCode ^
       layoutType.hashCode ^
       staffConfig.hashCode ^
       margins.hashCode ^
       primaryClef.hashCode ^
       secondaryClef.hashCode;
 
+  /// The width of the page in mm, accounting for orientation.
+  double get effectiveWidth =>
+      orientation == PageOrientation.portrait ? pageSize.width : pageSize.height;
+
+  /// The height of the page in mm, accounting for orientation.
+  double get effectiveHeight =>
+      orientation == PageOrientation.portrait ? pageSize.height : pageSize.width;
+
   /// Usable width after subtracting margins, in mm.
-  double get usableWidth => pageSize.width - margins.left - margins.right;
+  double get usableWidth => effectiveWidth - margins.left - margins.right;
 
   /// Usable height after subtracting margins, in mm.
-  double get usableHeight => pageSize.height - margins.top - margins.bottom;
+  double get usableHeight => effectiveHeight - margins.top - margins.bottom;
 
   /// Height of one complete system in mm, depending on layout type.
   double get systemHeight {

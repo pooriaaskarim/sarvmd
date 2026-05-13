@@ -12,8 +12,8 @@ String _f(double v) => v.toStringAsFixed(3);
 /// Emit a complete standalone SVG string for the given config and layout.
 String emitSvg(PageConfig config, PageLayout layout) {
   final buf = StringBuffer();
-  final w = config.pageSize.width;
-  final h = config.pageSize.height;
+  final w = config.effectiveWidth;
+  final h = config.effectiveHeight;
 
   buf.writeln('<?xml version="1.0" encoding="UTF-8"?>');
   buf.writeln(

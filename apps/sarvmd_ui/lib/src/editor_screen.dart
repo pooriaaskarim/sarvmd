@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'components/inputs/document_settings_group.dart';
 import 'theme/app_metrics.dart';
 import 'components/inputs/section_header.dart';
 import 'components/inputs/precision_slider.dart';
-import 'components/inputs/dropdown_setting.dart';
-import 'components/inputs/segmented_setting.dart';
 import 'components/animations/fade_in_slide.dart';
 import 'components/layout/sarv_header.dart';
 import 'components/specialized/profile_picker.dart';
@@ -16,6 +15,7 @@ import 'view_panel.dart';
 import 'ruler_box.dart';
 import 'view_notifier.dart';
 import 'components/inputs/integrated_scale_control.dart';
+import 'components/inputs/layout_type_switcher.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key, required this.viewNotifier});
@@ -133,7 +133,8 @@ class _EditorScreenState extends State<EditorScreen> {
                               const SarvHeader(),
                               const SizedBox(height: AppSpacing.sectionGap),
                               const FadeInSlide(
-                                  delay: 1, child: SectionHeader(title: 'Profiles')),
+                                  delay: 1,
+                                  child: SectionHeader(title: 'Profiles')),
                               const SizedBox(height: AppSpacing.itemGapSmall),
                               FadeInSlide(
                                 delay: 2,
@@ -150,17 +151,20 @@ class _EditorScreenState extends State<EditorScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const SectionHeader(title: 'Document'),
-                                    const SizedBox(height: AppSpacing.itemGapSmall),
-                                    DropdownSetting<core.PageSize>(
-                                      value: _notifier.config.pageSize,
-                                      options: core.PageSize.values,
-                                      onChanged: (v) => _notifier.updatePageSize(v),
+                                    const SizedBox(
+                                        height: AppSpacing.itemGapSmall),
+                                    DocumentSettingsGroup(
+                                      pageSize: _notifier.config.pageSize,
+                                      onPageSizeChanged:
+                                          _notifier.updatePageSize,
+                                      orientation: _notifier.config.orientation,
+                                      onOrientationChanged:
+                                          _notifier.updateOrientation,
                                     ),
-                                    const SizedBox(height: AppSpacing.paddingMedium),
-                                    SegmentedSetting<core.LayoutType>(
+                                    const SizedBox(height: AppSpacing.itemGap),
+                                    LayoutTypeSwitcher(
                                       value: _notifier.config.layoutType,
-                                      options: core.LayoutType.values,
-                                      onChanged: (v) => _notifier.updateLayoutType(v),
+                                      onChanged: _notifier.updateLayoutType,
                                     ),
                                   ],
                                 ),
@@ -206,17 +210,21 @@ class _EditorScreenState extends State<EditorScreen> {
                                     ),
                                     PrecisionSlider(
                                       label: 'Line Gap',
-                                      value: _notifier.config.staffConfig.lineGapMm,
+                                      value: _notifier
+                                          .config.staffConfig.lineGapMm,
                                       min: 1.0,
                                       max: 3.0,
-                                      onChanged: (v) => _notifier.updateLineGap(v),
+                                      onChanged: (v) =>
+                                          _notifier.updateLineGap(v),
                                     ),
                                     PrecisionSlider(
                                       label: 'System Gap',
-                                      value: _notifier.config.staffConfig.systemGapMm,
+                                      value: _notifier
+                                          .config.staffConfig.systemGapMm,
                                       min: 5.0,
                                       max: 30.0,
-                                      onChanged: (v) => _notifier.updateSystemGap(v),
+                                      onChanged: (v) =>
+                                          _notifier.updateSystemGap(v),
                                     ),
                                     if (layout.config.layoutType ==
                                         core.LayoutType.doubleLine)
@@ -238,8 +246,10 @@ class _EditorScreenState extends State<EditorScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const SectionHeader(title: 'Clefs & Symbols'),
-                                    const SizedBox(height: AppSpacing.itemGapSmall),
+                                    const SectionHeader(
+                                        title: 'Clefs & Symbols'),
+                                    const SizedBox(
+                                        height: AppSpacing.itemGapSmall),
                                     ClefConfigWidget(
                                       label: layout.config.layoutType ==
                                               core.LayoutType.doubleLine
@@ -458,5 +468,3 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 }
-
-
