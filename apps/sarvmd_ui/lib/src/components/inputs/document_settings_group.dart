@@ -86,15 +86,13 @@ class OrientationSwitcher extends StatelessWidget {
               Row(
                 children: [
                   _OrientationOption(
-                    icon: Icons.portrait_outlined,
-                    activeIcon: Icons.portrait,
+                    orientation: core.PageOrientation.portrait,
                     label: 'Portrait',
                     isSelected: current == core.PageOrientation.portrait,
                     onTap: () => onChanged(core.PageOrientation.portrait),
                   ),
                   _OrientationOption(
-                    icon: Icons.landscape_outlined,
-                    activeIcon: Icons.landscape,
+                    orientation: core.PageOrientation.landscape,
                     label: 'Landscape',
                     isSelected: current == core.PageOrientation.landscape,
                     onTap: () => onChanged(core.PageOrientation.landscape),
@@ -111,15 +109,13 @@ class OrientationSwitcher extends StatelessWidget {
 
 class _OrientationOption extends StatelessWidget {
   const _OrientationOption({
-    required this.icon,
-    required this.activeIcon,
+    required this.orientation,
     required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
-  final IconData icon;
-  final IconData activeIcon;
+  final core.PageOrientation orientation;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
@@ -137,13 +133,10 @@ class _OrientationOption extends StatelessWidget {
             children: [
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  isSelected ? activeIcon : icon,
+                child: _MiniPaperOrientationIcon(
                   key: ValueKey(isSelected),
-                  size: 16,
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  orientation: orientation,
+                  isSelected: isSelected,
                 ),
               ),
               const SizedBox(width: 8),
@@ -159,6 +152,49 @@ class _OrientationOption extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniPaperOrientationIcon extends StatelessWidget {
+  const _MiniPaperOrientationIcon({
+    super.key,
+    required this.orientation,
+    required this.isSelected,
+  });
+
+  final core.PageOrientation orientation;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isPortrait = orientation == core.PageOrientation.portrait;
+
+    final color = isSelected
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
+
+    return Container(
+      width: isPortrait ? 12 : 16,
+      height: isPortrait ? 16 : 12,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: color, width: 1.2),
+        color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(
+          3,
+          (_) => Container(
+            height: 0.8,
+            width: double.infinity,
+            color: color.withValues(alpha: 0.5),
           ),
         ),
       ),
