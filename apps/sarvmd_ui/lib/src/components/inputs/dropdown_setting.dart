@@ -7,11 +7,13 @@ class DropdownSetting<T extends Enum> extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    this.labelMapper,
   });
 
   final T value;
   final List<T> options;
   final ValueChanged<T> onChanged;
+  final String Function(T)? labelMapper;
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +45,12 @@ class DropdownSetting<T extends Enum> extends StatelessWidget {
             if (v != null) onChanged(v);
           },
           items: options.map((opt) {
+            final label = labelMapper?.call(opt) ?? opt.name.toUpperCase();
             return DropdownMenuItem<T>(
               value: opt,
               child: Padding(
                 padding: const EdgeInsets.only(left: 8.0),
-                child: Text(opt.name.toUpperCase()),
+                child: Text(label),
               ),
             );
           }).toList(),

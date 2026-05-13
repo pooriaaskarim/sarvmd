@@ -25,6 +25,16 @@ class DocumentSettingsGroup extends StatelessWidget {
             value: pageSize,
             options: core.PageSize.values,
             onChanged: onPageSizeChanged,
+            labelMapper: (size) {
+              final isPortrait = orientation == core.PageOrientation.portrait;
+              final w = isPortrait ? size.width : size.height;
+              final h = isPortrait ? size.height : size.width;
+
+              String fmt(double v) =>
+                  v.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+
+              return '${size.name.toUpperCase()}  (${fmt(w)} × ${fmt(h)} mm)';
+            },
           ),
           OrientationSwitcher(
             current: orientation,

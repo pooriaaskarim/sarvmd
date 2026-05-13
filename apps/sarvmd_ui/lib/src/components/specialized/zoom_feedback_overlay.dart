@@ -17,7 +17,9 @@ class _ZoomFeedbackOverlayState extends State<ZoomFeedbackOverlay> {
   @override
   void initState() {
     super.initState();
-    _scale = widget.controller.value.getMaxScaleOnAxis();
+    // storage[0] is the X-axis scale. getMaxScaleOnAxis() would return 1.0
+    // when zoom < 100% because Z-scale is always 1.0 and it takes the max.
+    _scale = widget.controller.value.storage[0];
     widget.controller.addListener(_onScaleChanged);
   }
 
@@ -28,7 +30,7 @@ class _ZoomFeedbackOverlayState extends State<ZoomFeedbackOverlay> {
   }
 
   void _onScaleChanged() {
-    final newScale = widget.controller.value.getMaxScaleOnAxis();
+    final newScale = widget.controller.value.storage[0];
     // Only show if scale actually changed to avoid triggering on pure panning.
     if ((newScale - _scale).abs() > 0.001) {
       setState(() {

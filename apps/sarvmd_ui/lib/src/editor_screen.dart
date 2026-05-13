@@ -44,9 +44,14 @@ class _EditorScreenState extends State<EditorScreen> {
     final paperWidth = _notifier.layout.config.effectiveWidth * lpmm;
     final paperHeight = _notifier.layout.config.effectiveHeight * lpmm;
 
-    const padding = 40.0;
-    final availableWidth = constraints.maxWidth - padding * 2;
-    final availableHeight = constraints.maxHeight - padding * 2;
+    // constraints wraps the full RulerBox (ruler strips + canvas area).
+    // Subtract rulerSize so scale is computed against the canvas-only area.
+    const double rulerSize = 25.0;
+    const double padding = 40.0;
+    final canvasWidth = constraints.maxWidth - rulerSize;
+    final canvasHeight = constraints.maxHeight - rulerSize;
+    final availableWidth = canvasWidth - padding * 2;
+    final availableHeight = canvasHeight - padding * 2;
 
     double fitScale;
 
@@ -70,15 +75,18 @@ class _EditorScreenState extends State<EditorScreen> {
         break;
     }
 
-    final dx = (constraints.maxWidth - paperWidth * fitScale) / 2;
+    // dx/dy go into the TransformationController which is in canvas-local
+    // coordinates (InteractiveViewer's own space, after the ruler strips).
+    // Center within the canvas area — no rulerSize offset needed.
+    final double dx = (canvasWidth - paperWidth * fitScale) / 2;
     double dy;
 
     if (preset == ZoomPreset.fitScreen) {
-      dy = (constraints.maxHeight - paperHeight * fitScale) / 2;
+      dy = (canvasHeight - paperHeight * fitScale) / 2;
     } else {
       final scaledHeight = paperHeight * fitScale;
       if (scaledHeight < availableHeight) {
-        dy = (constraints.maxHeight - scaledHeight) / 2;
+        dy = (canvasHeight - scaledHeight) / 2;
       } else {
         dy = padding;
       }
@@ -91,10 +99,21 @@ class _EditorScreenState extends State<EditorScreen> {
   @override
   void initState() {
     super.initState();
+    // Re-center the view whenever the document configuration changes
+    // (e.g. paper size, orientation) so the matrix stays in sync with
+    // the new paper dimensions.
+    _notifier.addListener(_onConfigChanged);
+  }
+
+  void _onConfigChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applyZoomPreset(ZoomPreset.fitScreen);
+    });
   }
 
   @override
   void dispose() {
+    _notifier.removeListener(_onConfigChanged);
     _notifier.dispose();
     _transformationController.dispose();
     _cursorNotifier.dispose();
@@ -360,6 +379,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                   minScale: ScaleMetrics.minZoom,
                                   maxScale: ScaleMetrics.maxZoom,
                                   constrained: false,
+                                  alignment: Alignment.topLeft,
                                   child: PreviewCanvas(
                                     layout: layout,
                                     viewNotifier: widget.viewNotifier,
@@ -375,6 +395,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                       controller: _transformationController),
                                 ),
                               ),
+
                               // Sidebar Toggle (Left)
                               Positioned(
                                 top: 16,

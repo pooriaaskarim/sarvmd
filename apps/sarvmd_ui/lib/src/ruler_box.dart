@@ -173,8 +173,11 @@ class RulerPainter extends CustomPainter {
     // Standard pixels per mm
     const double lpmm = 96 / 25.4;
 
-    // Extract scale and translation from matrix
-    final double scale = matrix.getMaxScaleOnAxis();
+    // Extract scale and translation from matrix.
+    // NOTE: getMaxScaleOnAxis() returns max(scaleX, scaleY, scaleZ). Since Z is
+    // always 1.0 in our 2-D matrix, it would return 1.0 whenever zoom < 100%.
+    // Read storage[0] directly — it's the X-axis (= visual zoom) scale.
+    final double scale = matrix.storage[0];
     final double tx = matrix.getTranslation().x;
     final double ty = matrix.getTranslation().y;
 
@@ -198,6 +201,10 @@ class RulerPainter extends CustomPainter {
     }
 
     final double effectiveScale = lpmm * scale;
+
+    // The InteractiveViewer and each ruler painter share the same coordinate
+    // origin (both begin after the ruler strip). tx/ty from the matrix already
+    // represent the paper position in painter-local space — no offset needed.
     double offset = axis == Axis.horizontal ? tx : ty;
 
     if (centerOrigin) {
@@ -211,33 +218,35 @@ class RulerPainter extends CustomPainter {
         (axis == Axis.horizontal ? size.width - offset : size.height - offset) /
             effectiveScale;
 
-    // Adaptive step logic
+    // Adaptive step logic for Labels (Major Ticks)
+    // We want labels to be at least 40 logical pixels apart.
     final double minPixelsPerLabel = 40.0;
     final double targetGapMm = minPixelsPerLabel / effectiveScale;
 
-    int stepMm = 1;
-    if (targetGapMm > 500) {
-      stepMm = 1000;
-    } else if (targetGapMm > 200) {
-      stepMm = 500;
-    } else if (targetGapMm > 100) {
-      stepMm = 200;
+    int labelStep = 1;
+    if (targetGapMm > 100) {
+      labelStep = 200;
     } else if (targetGapMm > 50) {
-      stepMm = 100;
+      labelStep = 100;
     } else if (targetGapMm > 20) {
-      stepMm = 50;
+      labelStep = 50;
     } else if (targetGapMm > 10) {
-      stepMm = 20;
+      labelStep = 20;
     } else if (targetGapMm > 5) {
-      stepMm = 10;
+      labelStep = 10;
     } else if (targetGapMm > 2) {
-      stepMm = 5;
+      labelStep = 5;
     } else if (targetGapMm > 1) {
-      stepMm = 2;
+      labelStep = 2;
     }
 
     final int startTick = startMm.floor();
     final int endTick = endMm.ceil();
+
+    // Visual thresholds for minor ticks (in logical pixels)
+    final double pixelsPer10mm = effectiveScale * 10;
+    final double pixelsPer5mm = effectiveScale * 5;
+    final double pixelsPer1mm = effectiveScale * 1;
 
     for (int i = startTick; i <= endTick; i++) {
       final double pos = i * effectiveScale + offset;
@@ -250,17 +259,22 @@ class RulerPainter extends CustomPainter {
       double tickLength = 0.0;
       bool showLabel = false;
 
-      if (i % stepMm == 0) {
+      // 1. Major Ticks (Labels)
+      if (i % labelStep == 0) {
         tickLength = 10.0;
         showLabel = true;
-      } else if (stepMm >= 10 && i % (stepMm ~/ 2) == 0) {
+      }
+      // 2. 10mm Ticks
+      else if (i % 10 == 0 && pixelsPer10mm >= 12) {
         tickLength = 7.0;
-      } else if (stepMm < 10) {
-        if (i % 5 == 0) {
-          tickLength = 7.0;
-        } else if (stepMm <= 2) {
-          tickLength = 4.0;
-        }
+      }
+      // 3. 5mm Ticks
+      else if (i % 5 == 0 && pixelsPer5mm >= 10) {
+        tickLength = 5.0;
+      }
+      // 4. 1mm Ticks
+      else if (pixelsPer1mm >= 4) {
+        tickLength = 3.0;
       }
 
       if (tickLength == 0.0) continue;
@@ -322,6 +336,8 @@ class RulerPainter extends CustomPainter {
         oldDelegate.axis != axis ||
         oldDelegate.colorScheme != colorScheme ||
         oldDelegate.cursorPos != cursorPos ||
-        oldDelegate.showWings != showWings;
+        oldDelegate.showWings != showWings ||
+        oldDelegate.paperSizeMm != paperSizeMm ||
+        oldDelegate.centerOrigin != centerOrigin;
   }
 }
