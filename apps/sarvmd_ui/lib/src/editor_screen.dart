@@ -41,8 +41,8 @@ class _EditorScreenState extends State<EditorScreen> {
     if (constraints == null) return;
 
     const double lpmm = 96 / 25.4; // canvas internal scale
-    final paperWidth = _notifier.layout.config.pageSize.width * lpmm;
-    final paperHeight = _notifier.layout.config.pageSize.height * lpmm;
+    final paperWidth = _notifier.layout.config.effectiveWidth * lpmm;
+    final paperHeight = _notifier.layout.config.effectiveHeight * lpmm;
 
     const padding = 40.0;
     final availableWidth = constraints.maxWidth - padding * 2;
@@ -340,8 +340,8 @@ class _EditorScreenState extends State<EditorScreen> {
                         viewNotifier: widget.viewNotifier,
                         cursorNotifier: _cursorNotifier,
                         paperSizeMm: Size(
-                          layout.config.pageSize.width,
-                          layout.config.pageSize.height,
+                          layout.config.effectiveWidth,
+                          layout.config.effectiveHeight,
                         ),
                         child: MouseRegion(
                           onHover: (event) {
