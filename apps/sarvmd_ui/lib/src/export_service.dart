@@ -44,6 +44,7 @@ class ExportService {
 
   static String _getFileName(core.PageConfig config) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'sarvmd_${config.layoutType.name}_${config.pageSize.name}_$timestamp';
+    final type = config.staffCount > 1 ? 'ensemble' : 'standard';
+    return 'sarvmd_${type}_${config.pageSize.name}_$timestamp';
   }
 }

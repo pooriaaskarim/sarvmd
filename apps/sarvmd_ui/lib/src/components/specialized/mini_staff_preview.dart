@@ -5,15 +5,11 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 class MiniStaffPreview extends StatelessWidget {
   const MiniStaffPreview({
     super.key,
-    required this.layoutType,
-    this.primaryClef,
-    this.secondaryClef,
+    required this.systemLayout,
     required this.active,
   });
 
-  final core.LayoutType layoutType;
-  final core.ClefSymbol? primaryClef;
-  final core.ClefSymbol? secondaryClef;
+  final core.SystemLayout systemLayout;
   final bool active;
 
   @override
@@ -24,9 +20,7 @@ class MiniStaffPreview extends StatelessWidget {
     return CustomPaint(
       size: const Size(double.infinity, 40),
       painter: _MiniStaffPainter(
-        layoutType: layoutType,
-        primaryClef: primaryClef,
-        secondaryClef: secondaryClef,
+        systemLayout: systemLayout,
         color: color,
       ),
     );
@@ -35,15 +29,11 @@ class MiniStaffPreview extends StatelessWidget {
 
 class _MiniStaffPainter extends CustomPainter {
   _MiniStaffPainter({
-    required this.layoutType,
-    this.primaryClef,
-    this.secondaryClef,
+    required this.systemLayout,
     required this.color,
   });
 
-  final core.LayoutType layoutType;
-  final core.ClefSymbol? primaryClef;
-  final core.ClefSymbol? secondaryClef;
+  final core.SystemLayout systemLayout;
   final Color color;
 
   @override
@@ -55,19 +45,19 @@ class _MiniStaffPainter extends CustomPainter {
 
     const lineGap = 2.0;
 
-    void drawStaff(double topY) {
-      for (int i = 0; i < 5; i++) {
+    void drawStaff(double topY, int lines) {
+      for (int i = 0; i < lines; i++) {
         final y = topY + (i * lineGap);
         canvas.drawLine(Offset(10, y), Offset(size.width - 10, y), paint);
       }
     }
 
-    void drawClefProxy(core.ClefSymbol symbol, double topY) {
+    void drawClefProxy(core.ClefSymbol symbol, double topY, int lines) {
       final textPainter = TextPainter(
         text: TextSpan(
           text: symbol.name.toUpperCase(),
           style: TextStyle(
-            fontSize: 8,
+            fontSize: 7,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -75,49 +65,68 @@ class _MiniStaffPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       );
       textPainter.layout();
+      final centerY = topY + ((lines - 1) * lineGap) / 2;
       textPainter.paint(
         canvas,
-        Offset(12, topY + (lineGap * 2) - (textPainter.height / 2)),
+        Offset(12, centerY - (textPainter.height / 2)),
       );
     }
 
-    if (layoutType == core.LayoutType.singleLine) {
-      final staffTop = (size.height - (4 * lineGap)) / 2;
-      drawStaff(staffTop);
-      if (primaryClef != null) {
-        drawClefProxy(primaryClef!, staffTop);
+    final root = systemLayout.rootGroup;
+    final staves = root.children.whereType<core.StaffDefinition>().toList();
+    if (staves.isEmpty) return;
+
+    if (staves.length == 1) {
+      final staff = staves.first;
+      final staffTop = (size.height - ((staff.lines - 1) * lineGap)) / 2;
+      drawStaff(staffTop, staff.lines);
+      if (staff.clef != null) {
+        drawClefProxy(staff.clef!.symbol, staffTop, staff.lines);
       }
     } else {
-      // Double line (Piano)
-      const totalHeight = (4 * lineGap) * 2 + 6.0; // two staffs + 6px gap
-      final topStaffY = (size.height - totalHeight) / 2;
-      final bottomStaffY = topStaffY + (4 * lineGap) + 6.0;
+      // Multiple staves
+      const gap = 8.0;
+      double totalHeight = 0;
+      for (final staff in staves) {
+        totalHeight += (staff.lines > 0 ? staff.lines - 1 : 0) * lineGap;
+      }
+      totalHeight += (staves.length - 1) * gap;
+      
+      double currentTopY = (size.height - totalHeight) / 2;
 
-      // Draw brace proxy
-      final bracePaint = Paint()
-        ..color = color
-        ..strokeWidth = 1.0
-        ..style = PaintingStyle.stroke;
+      // Draw brace/bracket proxy if needed
+      if (root.connector != core.SystemConnector.none) {
+        final connectorPaint = Paint()
+          ..color = color
+          ..strokeWidth = 1.0
+          ..style = PaintingStyle.stroke;
 
-      final bracePath = Path()
-        ..moveTo(8, topStaffY)
-        ..quadraticBezierTo(
-            4, topStaffY + totalHeight / 2, 8, topStaffY + totalHeight);
-      canvas.drawPath(bracePath, bracePaint);
+        if (root.connector == core.SystemConnector.brace) {
+          final bracePath = Path()
+            ..moveTo(8, currentTopY)
+            ..quadraticBezierTo(
+                4, currentTopY + totalHeight / 2, 8, currentTopY + totalHeight);
+          canvas.drawPath(bracePath, connectorPaint);
+        } else {
+          canvas.drawLine(Offset(8, currentTopY), Offset(8, currentTopY + totalHeight), connectorPaint);
+          canvas.drawLine(Offset(8, currentTopY), Offset(10, currentTopY), connectorPaint);
+          canvas.drawLine(Offset(8, currentTopY + totalHeight), Offset(10, currentTopY + totalHeight), connectorPaint);
+        }
+      }
 
-      drawStaff(topStaffY);
-      drawStaff(bottomStaffY);
-
-      if (primaryClef != null) drawClefProxy(primaryClef!, topStaffY);
-      if (secondaryClef != null) drawClefProxy(secondaryClef!, bottomStaffY);
+      for (final staff in staves) {
+        drawStaff(currentTopY, staff.lines);
+        if (staff.clef != null) {
+          drawClefProxy(staff.clef!.symbol, currentTopY, staff.lines);
+        }
+        currentTopY += (staff.lines > 0 ? staff.lines - 1 : 0) * lineGap + gap;
+      }
     }
   }
 
   @override
   bool shouldRepaint(covariant _MiniStaffPainter oldDelegate) {
-    return oldDelegate.layoutType != layoutType ||
-        oldDelegate.primaryClef != primaryClef ||
-        oldDelegate.secondaryClef != secondaryClef ||
+    return oldDelegate.systemLayout != systemLayout ||
         oldDelegate.color != color;
   }
 }

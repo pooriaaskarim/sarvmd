@@ -35,13 +35,14 @@ class SarvHeader extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Manuscript Designer',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color:
                   Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
               fontSize: 18,
               fontFamily: 'IranNastaliq',
               letterSpacing: 1.2,
-              height: 1.0,
+              height: 1.3,
             ),
           ),
         ],

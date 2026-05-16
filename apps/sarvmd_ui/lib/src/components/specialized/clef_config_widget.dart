@@ -7,11 +7,19 @@ class ClefConfigWidget extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.canChangeSymbol = true,
+    this.canChangeLine = true,
+    this.fallbackValue,
+    this.staffLines = 5,
   });
 
   final String label;
   final core.ClefConfig? value;
   final ValueChanged<core.ClefConfig?> onChanged;
+  final bool canChangeSymbol;
+  final bool canChangeLine;
+  final core.ClefConfig? fallbackValue;
+  final int staffLines;
 
   bool _isPreset(core.ClefSymbol sym, int line) {
     return value?.symbol == sym && value?.anchorLine == line;
@@ -40,7 +48,7 @@ class ClefConfigWidget extends StatelessWidget {
         const core.ClefConfig(symbol: core.ClefSymbol.g, anchorLine: 2);
     final selectedSym = activeValue.symbol;
 
-    Widget buildHorizontalTab(core.ClefSymbol sym, String glyph) {
+    Widget buildHorizontalTab(core.ClefSymbol sym, String glyph, [String? label]) {
       final isSelected = sym == selectedSym;
       final colorScheme = Theme.of(context).colorScheme;
       return Expanded(
@@ -53,6 +61,7 @@ class ClefConfigWidget extends StatelessWidget {
               int defaultLine = 3;
               if (sym == core.ClefSymbol.g) defaultLine = 2; // Treble
               if (sym == core.ClefSymbol.f) defaultLine = 4; // Bass
+              if (sym == core.ClefSymbol.percussion) defaultLine = 2;
               onChanged(core.ClefConfig(symbol: sym, anchorLine: defaultLine));
             },
             child: AnimatedContainer(
@@ -67,16 +76,26 @@ class ClefConfigWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
-              child: Text(
-                glyph,
-                style: TextStyle(
-                    fontFamily: 'NotoMusic',
-                    fontSize: 34,
-                    height: 1.0,
-                    color: isSelected
-                        ? colorScheme.onPrimaryContainer
-                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
-              ),
+              child: label != null
+                  ? Text(label,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6)))
+                  : Text(
+                      glyph,
+                      style: TextStyle(
+                          fontFamily: 'NotoMusic',
+                          fontSize: 34,
+                          height: 1.0,
+                          color: isSelected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6)),
+                    ),
             ),
           ),
         ),
@@ -87,20 +106,28 @@ class ClefConfigWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Horizontal Tabs Row
-        Row(
-          children: [
-            buildHorizontalTab(core.ClefSymbol.g, '\u{1D11E}'),
-            const SizedBox(width: 8),
-            buildHorizontalTab(core.ClefSymbol.c, '\u{1D121}'),
-            const SizedBox(width: 8),
-            buildHorizontalTab(core.ClefSymbol.f, '\u{1D122}'),
-          ],
-        ),
-        const SizedBox(height: 12),
+        if (canChangeSymbol) ...[
+          Row(
+            children: [
+              buildHorizontalTab(core.ClefSymbol.g, '\u{1D11E}'),
+              const SizedBox(width: 8),
+              buildHorizontalTab(core.ClefSymbol.c, '\u{1D121}'),
+              const SizedBox(width: 8),
+              buildHorizontalTab(core.ClefSymbol.f, '\u{1D122}'),
+              const SizedBox(width: 8),
+              buildHorizontalTab(core.ClefSymbol.tab, '', 'TAB'),
+              const SizedBox(width: 8),
+              buildHorizontalTab(core.ClefSymbol.percussion, '', 'PERC'),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
 
         // Interactive Mini Staff Canvas
         LayoutBuilder(builder: (context, constraints) {
           final gap = constraints.maxWidth / 10;
+          final lines = staffLines;
+
           return Container(
             clipBehavior: Clip.hardEdge,
             decoration: BoxDecoration(
@@ -117,20 +144,23 @@ class ClefConfigWidget extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                GestureDetector(
-                  onTapUp: (details) {
-                    final tappedY = details.localPosition.dy;
-                    final staffTop = gap * 2.5;
-                    final i = ((tappedY - staffTop) / gap).round();
-                    if (i >= 0 && i <= 4) {
-                      onChanged(core.ClefConfig(
-                          symbol: activeValue.symbol, anchorLine: 5 - i));
-                    }
-                  },
-                  child: CustomPaint(
-                    size: Size(constraints.maxWidth, gap * 8.5),
-                    painter: MiniStaffClefPainter(
-                        activeValue, gap, Theme.of(context).colorScheme),
+                IgnorePointer(
+                  ignoring: !canChangeLine,
+                  child: GestureDetector(
+                    onTapUp: (details) {
+                      final tappedY = details.localPosition.dy;
+                      final staffTop = gap * 2.5;
+                      final i = ((tappedY - staffTop) / gap).round();
+                      if (i >= 0 && i < lines) {
+                        onChanged(core.ClefConfig(
+                            symbol: activeValue.symbol, anchorLine: lines - i));
+                      }
+                    },
+                    child: CustomPaint(
+                      size: Size(constraints.maxWidth, gap * 8.5),
+                      painter: MiniStaffClefPainter(
+                          activeValue, lines, gap, Theme.of(context).colorScheme),
+                    ),
                   ),
                 ),
                 // Elegant overlay label
@@ -154,7 +184,7 @@ class ClefConfigWidget extends StatelessWidget {
                                 .withValues(alpha: 0.3)),
                       ),
                       child: Text(
-                        'Line ${activeValue.anchorLine}',
+                        'Line ${activeValue.anchorLine} / $lines',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -171,25 +201,32 @@ class ClefConfigWidget extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Presets specific to this symbol
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (selectedSym == core.ClefSymbol.g) ...[
-              _buildPresetChip(context, 'Treble', core.ClefSymbol.g, 2),
+        if (canChangeLine)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (selectedSym == core.ClefSymbol.g) ...[
+                _buildPresetChip(context, 'Treble', core.ClefSymbol.g, 2),
+              ],
+              if (selectedSym == core.ClefSymbol.c) ...[
+                _buildPresetChip(context, 'Alto', core.ClefSymbol.c, 3),
+                _buildPresetChip(context, 'Tenor', core.ClefSymbol.c, 4),
+                _buildPresetChip(context, 'Soprano', core.ClefSymbol.c, 1),
+                _buildPresetChip(context, 'Mezzo', core.ClefSymbol.c, 2),
+              ],
+              if (selectedSym == core.ClefSymbol.f) ...[
+                _buildPresetChip(context, 'Bass', core.ClefSymbol.f, 4),
+                _buildPresetChip(context, 'Baritone', core.ClefSymbol.f, 3),
+              ],
+              if (selectedSym == core.ClefSymbol.tab) ...[
+                _buildPresetChip(context, 'Guitar TAB', core.ClefSymbol.tab, 3),
+              ],
+              if (selectedSym == core.ClefSymbol.percussion) ...[
+                _buildPresetChip(context, 'Percussion', core.ClefSymbol.percussion, 2),
+              ],
             ],
-            if (selectedSym == core.ClefSymbol.c) ...[
-              _buildPresetChip(context, 'Alto', core.ClefSymbol.c, 3),
-              _buildPresetChip(context, 'Tenor', core.ClefSymbol.c, 4),
-              _buildPresetChip(context, 'Soprano', core.ClefSymbol.c, 1),
-              _buildPresetChip(context, 'Mezzo', core.ClefSymbol.c, 2),
-            ],
-            if (selectedSym == core.ClefSymbol.f) ...[
-              _buildPresetChip(context, 'Bass', core.ClefSymbol.f, 4),
-              _buildPresetChip(context, 'Baritone', core.ClefSymbol.f, 3),
-            ],
-          ],
-        ),
+          ),
       ],
     );
 
@@ -208,8 +245,9 @@ class ClefConfigWidget extends StatelessWidget {
                 value: !disabled,
                 onChanged: (on) {
                   if (on) {
-                    onChanged(const core.ClefConfig(
-                        symbol: core.ClefSymbol.g, anchorLine: 2));
+                    onChanged(fallbackValue ??
+                        const core.ClefConfig(
+                            symbol: core.ClefSymbol.g, anchorLine: 2));
                   } else {
                     onChanged(null);
                   }
@@ -231,8 +269,9 @@ class ClefConfigWidget extends StatelessWidget {
 }
 
 class MiniStaffClefPainter extends CustomPainter {
-  const MiniStaffClefPainter(this.clef, this.gap, this.scheme);
+  const MiniStaffClefPainter(this.clef, this.lines, this.gap, this.scheme);
   final core.ClefConfig clef;
+  final int lines;
   final double gap;
   final ColorScheme scheme;
 
@@ -242,8 +281,8 @@ class MiniStaffClefPainter extends CustomPainter {
     final highlightColor = scheme.primary;
     final staffTop = gap * 2.5;
 
-    for (var i = 0; i < 5; i++) {
-      final lineNum = 5 - i;
+    for (var i = 0; i < lines; i++) {
+      final lineNum = lines - i;
       final y = staffTop + i * gap;
       final isAnchor = lineNum == clef.anchorLine;
       canvas.drawLine(
@@ -257,32 +296,96 @@ class MiniStaffClefPainter extends CustomPainter {
       );
     }
 
+    if (clef.symbol == core.ClefSymbol.tab) {
+      _paintTabClef(canvas, gap * 0.2, staffTop, lines, gap, staffColor);
+    } else if (clef.symbol == core.ClefSymbol.percussion) {
+      _paintPercussionClef(canvas, gap * 0.2, staffTop, lines, gap, staffColor);
+    } else {
+      _paintStandardClef(canvas, staffTop, staffColor);
+    }
+  }
+
+  void _paintStandardClef(Canvas canvas, double staffTop, Color color) {
     final double anchorSp = switch (clef.symbol) {
       core.ClefSymbol.g => 0.876,
       core.ClefSymbol.c => 2.0,
       core.ClefSymbol.f => 2.578,
+      _ => 0.0,
     };
     final String glyph = switch (clef.symbol) {
       core.ClefSymbol.g => '\u{1D11E}',
       core.ClefSymbol.c => '\u{1D121}',
       core.ClefSymbol.f => '\u{1D122}',
+      _ => '',
     };
 
     final tp = TextPainter(
       text: TextSpan(
         text: glyph,
         style: TextStyle(
-            fontFamily: 'NotoMusic', fontSize: gap * 4.0, color: staffColor),
+            fontFamily: 'NotoMusic', fontSize: gap * 4.0, color: color),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
 
     final ascent = tp.computeLineMetrics().first.ascent;
-    final anchorYPx = staffTop + (5 - clef.anchorLine) * gap;
+    final anchorYPx = staffTop + (lines - clef.anchorLine) * gap;
     tp.paint(canvas, Offset(gap * 0.05, anchorYPx + anchorSp * gap - ascent));
+  }
+
+  void _paintTabClef(Canvas canvas, double x, double topY, int lines, double gap,
+      Color color) {
+    final staffHeight = (lines - 1) * gap;
+    final centerY = topY + staffHeight / 2;
+    final fontSize = gap * 1.4;
+
+    final textStyle = TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight.bold,
+      color: color,
+      height: 0.8,
+    );
+
+    final List<String> letters = ['T', 'A', 'B'];
+    double currentY = centerY - (fontSize * 1.5 * 0.8);
+
+    for (final char in letters) {
+      final tp = TextPainter(
+        text: TextSpan(text: char, style: textStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.layout();
+      tp.paint(canvas, Offset(x, currentY));
+      currentY += fontSize * 0.8;
+    }
+  }
+
+  void _paintPercussionClef(Canvas canvas, double x, double topY, int lines,
+      double gap, Color color) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final barWidth = gap * 0.4;
+    final barHeight = (lines > 1) ? gap * 2.0 : gap * 0.8;
+    final staffHeight = (lines - 1) * gap;
+    final centerY = topY + staffHeight / 2;
+
+    canvas.drawRect(
+        Rect.fromCenter(
+            center: Offset(x + gap * 0.4, centerY),
+            width: barWidth,
+            height: barHeight),
+        paint);
+    canvas.drawRect(
+        Rect.fromCenter(
+            center: Offset(x + gap * 1.0, centerY),
+            width: barWidth,
+            height: barHeight),
+        paint);
   }
 
   @override
   bool shouldRepaint(MiniStaffClefPainter old) =>
-      old.clef != clef || old.gap != gap;
+      old.clef != clef || old.gap != gap || old.lines != lines;
 }

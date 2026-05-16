@@ -10,17 +10,21 @@ class StaffSpacingGroup extends StatefulWidget {
   const StaffSpacingGroup({
     super.key,
     required this.staffConfig,
-    required this.layoutType,
+    required this.isDoubleLine,
+    required this.lines,
     required this.onLineGapChanged,
     required this.onSystemGapChanged,
     required this.onInterStaffGapChanged,
+    this.hints = const core.StaffUIHints(),
   });
 
   final core.StaffConfig staffConfig;
-  final core.LayoutType layoutType;
+  final bool isDoubleLine;
+  final int lines;
   final ValueChanged<double> onLineGapChanged;
   final ValueChanged<double> onSystemGapChanged;
   final ValueChanged<double> onInterStaffGapChanged;
+  final core.StaffUIHints hints;
 
   @override
   State<StaffSpacingGroup> createState() => _StaffSpacingGroupState();
@@ -34,8 +38,8 @@ class _StaffSpacingGroupState extends State<StaffSpacingGroup> {
   Widget build(BuildContext context) {
     final preset =
         core.StaffSizePreset.fromLineGap(widget.staffConfig.lineGapMm);
-    final staffHeight = widget.staffConfig.staffHeightMm;
-    final isDoubleLine = widget.layoutType == core.LayoutType.doubleLine;
+    final staffHeight = widget.staffConfig.height(widget.lines);
+    final isDoubleLine = widget.isDoubleLine;
     final showGuidance = _isGuidancePinned || _isHovering;
 
     return Column(
@@ -77,19 +81,18 @@ class _StaffSpacingGroupState extends State<StaffSpacingGroup> {
 
         // ── Tier 3a: Line Gap Slider ──────────────────────────────────────
         _AnnotatedSlider(
-          label: 'Line Gap',
+          label: widget.hints.lineGapLabel,
           value: widget.staffConfig.lineGapMm,
-          min: 1.2,
+          min: 1.0,
           max: 3.8,
           unit: 'mm',
-          tickPositions:
-              core.StaffSizePreset.values.map((p) => p.lineGapMm).toList(),
+          tickPositions: const [1.0, 1.75, 2.125, 3.0], // 4mm, 7mm, 8.5mm, 12mm
           onChanged: widget.onLineGapChanged,
         ),
 
         // ── Tier 3b: System Gap Slider ────────────────────────────────────
         _AnnotatedSlider(
-          label: 'System Gap',
+          label: widget.hints.systemGapLabel,
           value: widget.staffConfig.systemGapMm,
           min: 8.0,
           max: 35.0,
@@ -99,7 +102,7 @@ class _StaffSpacingGroupState extends State<StaffSpacingGroup> {
 
         // ── Tier 3c: Staff Gap (Piano) — greyed when not applicable ───────
         _AnnotatedSlider(
-          label: 'Staff Gap (Piano)',
+          label: widget.hints.interStaffGapLabel,
           value: widget.staffConfig.interStaffGapMm,
           min: 4.0,
           max: 20.0,
@@ -135,8 +138,8 @@ class _LiveStatsChip extends StatelessWidget {
     final rangeTint = _getRangeTint(staffHeightMm);
 
     return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      // height: 48,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       decoration: BoxDecoration(
         color: cs.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(10),
@@ -260,10 +263,11 @@ class _LiveStatsChip extends StatelessWidget {
   }
 
   Color _getRangeTint(double h) {
-    if (h >= 10.0) return const Color(0xFF7C3AED); // violet
-    if (h >= 7.0) return const Color(0xFF059669); // emerald
-    if (h >= 5.8) return const Color(0xFFF59E0B); // amber
-    return const Color(0xFFEF4444); // red
+    if (h >= 10.0) return const Color(0xFF7C3AED); // violet (Educational)
+    if (h >= 8.4) return const Color(0xFF0EA5E9); // sky blue (MOLA Optimal)
+    if (h >= 7.0) return const Color(0xFF059669); // emerald (MOLA Minimum)
+    if (h >= 5.8) return const Color(0xFFF59E0B); // amber (Study)
+    return const Color(0xFFEF4444); // red (Score/Sub-handwriting)
   }
 }
 
@@ -717,28 +721,35 @@ class _SpacingGuidanceCard extends StatelessWidget {
       return (
         Icons.school_rounded,
         'Educational Standard',
-        'Ideal for children\'s "Teaching Pieces" and beginners. The large scale supports developing motor skills and clear visual recognition of intervals.',
+        'Large-scale staff for beginners and children. Ensures high legibility for educational materials and teaching pieces.',
         const Color(0xFF7C3AED), // violet
+      );
+    } else if (h >= 8.4) {
+      return (
+        Icons.stars_rounded,
+        'MOLA Optimal Part (8.5mm)',
+        'The gold standard for orchestral parts. Highly recommended by Major Orchestra Librarians for maximum readability on a music stand.',
+        const Color(0xFF0EA5E9), // sky blue
       );
     } else if (h >= 7.0) {
       return (
         Icons.check_circle_outline_rounded,
-        'Professional Performance',
-        'Meets the gold standard for orchestral performance. Excellent for handwriting and ensures parts remain clear for players on a busy music stand.',
+        'MOLA Minimum Part (7.0mm)',
+        'The acceptable minimum for orchestral players. Anything smaller is considered unacceptable by professional standards for parts.',
         const Color(0xFF059669), // emerald
       );
-    } else if (h >= 5.8) {
+    } else if (h >= 4.0) {
       return (
-        Icons.info_outline_rounded,
-        'Study & Piano Scores',
-        'Optimized for private study and piano scores where space is limited. Note that this scale is below the minimum recommended for professional orchestral parts.',
+        Icons.menu_book_rounded,
+        'Study & Score Scale',
+        'Legible for printed study scores and piano music. Below the 7.0mm limit, these are not suitable for professional orchestral parts.',
         const Color(0xFFF59E0B), // amber
       );
     } else {
       return (
         Icons.warning_amber_rounded,
-        'Technical Score Only',
-        'Below the practical handwriting limit. Engraving at this scale is suitable for printed pocket scores, but becomes difficult to notate by hand (sharps and ornaments collide).',
+        'Technical Miniature',
+        'Below the legible score limit (4.0mm). Suitable only for pocket scores or specific technical diagrams, not for performance.',
         const Color(0xFFEF4444), // red
       );
     }

@@ -15,9 +15,7 @@ class ProfilePicker extends StatelessWidget {
   /// Check if a profile is currently active.
   /// A profile is "active" if the layout type and clefs match.
   bool _isActive(core.StaffProfile profile) {
-    return currentConfig.layoutType == profile.layoutType &&
-        currentConfig.primaryClef == profile.primaryClef &&
-        currentConfig.secondaryClef == profile.secondaryClef;
+    return currentConfig.systemLayout == profile.systemLayout;
   }
 
   @override
@@ -30,23 +28,69 @@ class ProfilePicker extends StatelessWidget {
         final spacing = 8.0;
         final itemWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
 
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: core.StaffProfiles.all.map((profile) {
-            final active = _isActive(profile);
-            return SizedBox(
-              width: itemWidth,
-              child: _ProfileCard(
-                profile: profile,
-                active: active,
-                onTap: () => onProfileSelected(profile),
-              ),
+        // Group profiles by category
+        final grouped = <core.ProfileCategory, List<core.StaffProfile>>{};
+        for (final profile in core.StaffProfiles.all) {
+          grouped.putIfAbsent(profile.category, () => []).add(profile);
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: grouped.entries.map((entry) {
+            final category = entry.key;
+            final profiles = entry.value;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+                  child: Text(
+                    _getCategoryLabel(category),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.primary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: profiles.map((profile) {
+                    final active = _isActive(profile);
+                    return SizedBox(
+                      width: itemWidth,
+                      child: _ProfileCard(
+                        profile: profile,
+                        active: active,
+                        onTap: () => onProfileSelected(profile),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             );
           }).toList(),
         );
       },
     );
+  }
+
+  String _getCategoryLabel(core.ProfileCategory category) {
+    switch (category) {
+      case core.ProfileCategory.standard:
+        return 'STANDARD';
+      case core.ProfileCategory.ensemble:
+        return 'ENSEMBLE';
+      case core.ProfileCategory.tablature:
+        return 'TABLATURE';
+      case core.ProfileCategory.percussion:
+        return 'PERCUSSION';
+      case core.ProfileCategory.blank:
+        return 'OTHER';
+    }
   }
 }
 
@@ -99,9 +143,7 @@ class _ProfileCard extends StatelessWidget {
               height: 40,
               child: Center(
                 child: MiniStaffPreview(
-                  layoutType: profile.layoutType,
-                  primaryClef: profile.primaryClef?.symbol,
-                  secondaryClef: profile.secondaryClef?.symbol,
+                  systemLayout: profile.systemLayout,
                   active: active,
                 ),
               ),

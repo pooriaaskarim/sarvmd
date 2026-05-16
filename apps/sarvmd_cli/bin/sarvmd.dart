@@ -50,9 +50,9 @@ void main(List<String> arguments) async {
     exit(0);
   }
 
-  final layoutType = switch (results.option('layout')) {
-    'doubleLine' || 'piano' => core.LayoutType.doubleLine,
-    _ => core.LayoutType.singleLine,
+  final profile = switch (results.option('layout')) {
+    'doubleLine' || 'piano' => core.StaffProfiles.piano,
+    _ => core.StaffProfiles.treble,
   };
 
   final pageSize = switch (results.option('size')) {
@@ -66,21 +66,21 @@ void main(List<String> arguments) async {
   // Build config.
   final config = core.PageConfig(
     pageSize: pageSize,
-    layoutType: layoutType,
+    systemLayout: profile.systemLayout,
   );
 
   // Compute layout.
   final layout = core.computeLayout(config);
 
   stdout.writeln(
-    'Sarv: ${layoutType.name} layout, '
+    'Sarv: ${profile.label} layout, '
     '${pageSize.name.toUpperCase()} — '
     '${layout.systemCount} systems',
   );
 
   // Emit LaTeX source.
   final tex = core.emit(config, layout);
-  final fileName = 'sarvmd_${layoutType.name}_${pageSize.name}';
+  final fileName = 'sarvmd_${profile.id}_${pageSize.name}';
   final texPath = p.join(outputDir, '$fileName.tex');
 
   Directory(outputDir).createSync(recursive: true);

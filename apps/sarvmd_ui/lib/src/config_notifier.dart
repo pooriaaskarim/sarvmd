@@ -1,76 +1,97 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ConfigNotifier extends ChangeNotifier {
-  core.PageConfig _config = const core.PageConfig();
+  late core.PageConfig _config;
+  core.StaffProfile? _activeProfile;
+  Timer? _saveTimer;
+
+  ConfigNotifier() {
+    _activeProfile = core.StaffProfiles.treble;
+    _config = _activeProfile!.applyTo(const core.PageConfig());
+    _loadFromPrefs();
+  }
+
+  static const _prefKey = 'sarvmd_config';
+
+  Future<void> _loadFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(_prefKey);
+    if (jsonStr != null) {
+      try {
+        final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
+        _config = core.PageConfig.fromJson(jsonMap);
+        
+        // Restore active profile if it matches
+        _activeProfile = null;
+        for (final p in core.StaffProfiles.all) {
+          if (p.systemLayout == _config.systemLayout) {
+            _activeProfile = p;
+            break;
+          }
+        }
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Error loading config from prefs: $e');
+      }
+    }
+  }
+
+  void _save() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 500), () async {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = jsonEncode(_config.toJson());
+      await prefs.setString(_prefKey, jsonStr);
+    });
+  }
+
+  @override
+  void dispose() {
+    _saveTimer?.cancel();
+    super.dispose();
+  }
 
   core.PageConfig get config => _config;
+  core.StaffProfile? get activeProfile => _activeProfile;
+
+  core.StaffUIHints get uiHints {
+    // Contextual hints: if current layout matches a profile, use its hints.
+    for (final profile in core.StaffProfiles.all) {
+      if (profile.systemLayout == _config.systemLayout) {
+        return profile.uiHints;
+      }
+    }
+    return const core.StaffUIHints();
+  }
 
   core.PageLayout get layout => core.computeLayout(_config);
 
   void updatePageSize(core.PageSize size) {
-    _config = core.PageConfig(
-      pageSize: size,
-      orientation: _config.orientation,
-      layoutType: _config.layoutType,
-      staffConfig: _config.staffConfig,
-      margins: _config.margins,
-      primaryClef: _config.primaryClef,
-      secondaryClef: _config.secondaryClef,
-    );
+    _config = _config.copyWith(pageSize: size);
     notifyListeners();
+    _save();
   }
 
   void updateOrientation(core.PageOrientation orientation) {
-    _config = core.PageConfig(
-      pageSize: _config.pageSize,
-      orientation: orientation,
-      layoutType: _config.layoutType,
-      staffConfig: _config.staffConfig,
-      margins: _config.margins,
-      primaryClef: _config.primaryClef,
-      secondaryClef: _config.secondaryClef,
-    );
+    _config = _config.copyWith(orientation: orientation);
     notifyListeners();
-  }
-
-  void updateLayoutType(core.LayoutType type) {
-    _config = core.PageConfig(
-      pageSize: _config.pageSize,
-      orientation: _config.orientation,
-      layoutType: type,
-      staffConfig: _config.staffConfig,
-      margins: _config.margins,
-      primaryClef: _config.primaryClef,
-      secondaryClef: _config.secondaryClef,
-    );
-    notifyListeners();
+    _save();
   }
 
   void updateStaffConfig(core.StaffConfig staff) {
-    _config = core.PageConfig(
-      pageSize: _config.pageSize,
-      orientation: _config.orientation,
-      layoutType: _config.layoutType,
-      staffConfig: staff,
-      margins: _config.margins,
-      primaryClef: _config.primaryClef,
-      secondaryClef: _config.secondaryClef,
-    );
+    _config = _config.copyWith(staffConfig: staff);
     notifyListeners();
+    _save();
   }
 
   void updateMargins(core.Margins margins) {
-    _config = core.PageConfig(
-      pageSize: _config.pageSize,
-      orientation: _config.orientation,
-      layoutType: _config.layoutType,
-      staffConfig: _config.staffConfig,
-      margins: margins,
-      primaryClef: _config.primaryClef,
-      secondaryClef: _config.secondaryClef,
-    );
+    _config = _config.copyWith(margins: margins);
     notifyListeners();
+    _save();
   }
 
   void updateLineGap(double mm) {
@@ -101,26 +122,15 @@ class ConfigNotifier extends ChangeNotifier {
   }
 
   void updateVerticalMargins(double mm) {
-    updateMargins(core.Margins(
-      top: mm,
-      bottom: mm,
-      left: _config.margins.left,
-      right: _config.margins.right,
-    ));
+    updateMargins(_config.margins.copyWith(top: mm, bottom: mm));
   }
 
   void updateHorizontalMargins(double mm) {
-    updateMargins(core.Margins(
-      top: _config.margins.top,
-      bottom: _config.margins.bottom,
-      left: mm,
-      right: mm,
-    ));
+    updateMargins(_config.margins.copyWith(left: mm, right: mm));
   }
 
   void resetToDefaults() {
-    _config = const core.PageConfig();
-    notifyListeners();
+    applyProfile(core.StaffProfiles.treble);
   }
 
   /// Reset only margins to their default values.
@@ -135,48 +145,130 @@ class ConfigNotifier extends ChangeNotifier {
 
   /// Reset only clef configuration to defaults (no clef).
   void resetClefs() {
-    _config = core.PageConfig(
-      pageSize: _config.pageSize,
-      orientation: _config.orientation,
-      layoutType: _config.layoutType,
-      staffConfig: _config.staffConfig,
-      margins: _config.margins,
-      primaryClef: null,
-      secondaryClef: null,
-    );
-    notifyListeners();
+    final root = _config.systemLayout.rootGroup;
+    final newChildren = root.children.map((c) {
+      if (c is core.StaffDefinition) return c.copyWith(clef: () => null);
+      return c;
+    }).toList();
+    
+    _updateSystemLayout(_config.systemLayout.copyWith(
+      rootGroup: root.copyWith(children: newChildren),
+    ));
   }
 
   void updatePrimaryClef(core.ClefConfig? clef) {
-    _config = core.PageConfig(
-      pageSize: _config.pageSize,
-      orientation: _config.orientation,
-      layoutType: _config.layoutType,
-      staffConfig: _config.staffConfig,
-      margins: _config.margins,
-      primaryClef: clef,
-      secondaryClef: _config.secondaryClef,
-    );
-    notifyListeners();
+    _updateStaffDefinition(0, (staff) => staff.copyWith(clef: () => clef));
   }
 
   void updateSecondaryClef(core.ClefConfig? clef) {
-    _config = core.PageConfig(
-      pageSize: _config.pageSize,
-      orientation: _config.orientation,
-      layoutType: _config.layoutType,
-      staffConfig: _config.staffConfig,
-      margins: _config.margins,
-      primaryClef: _config.primaryClef,
-      secondaryClef: clef,
-    );
-    notifyListeners();
+    _updateStaffDefinition(1, (staff) => staff.copyWith(clef: () => clef));
   }
+
+  void _updateStaffDefinition(int index, core.StaffDefinition Function(core.StaffDefinition) updater) {
+    final root = _config.systemLayout.rootGroup;
+    if (index >= root.children.length) return;
+    
+    final child = root.children[index];
+    if (child is core.StaffDefinition) {
+      final newChildren = List<Object>.from(root.children);
+      newChildren[index] = updater(child);
+      
+      _updateSystemLayout(_config.systemLayout.copyWith(
+        rootGroup: root.copyWith(children: newChildren),
+      ));
+    }
+  }
+
+  // --- Tree Mutation Methods ---
+
+  void addStaff({core.StaffDefinition def = const core.StaffDefinition()}) {
+    final root = _config.systemLayout.rootGroup;
+    final newChildren = List<Object>.from(root.children)..add(def);
+    _updateSystemLayout(_config.systemLayout.copyWith(
+      rootGroup: root.copyWith(children: newChildren),
+    ));
+  }
+
+  void removeStaff(int index) {
+    final root = _config.systemLayout.rootGroup;
+    if (index < 0 || index >= root.children.length) return;
+    
+    final newChildren = List<Object>.from(root.children)..removeAt(index);
+    _updateSystemLayout(_config.systemLayout.copyWith(
+      rootGroup: root.copyWith(children: newChildren),
+    ));
+  }
+
+  void updateStaffLines(int index, int lines) {
+    _updateStaffDefinition(index, (staff) => staff.copyWith(lines: lines));
+  }
+
+  void updateStaffClef(int index, core.ClefConfig? clef) {
+    _updateStaffDefinition(index, (staff) => staff.copyWith(clef: () => clef));
+  }
+
+  void updateStaffInstrumentName(int index, String? name) {
+    _updateStaffDefinition(
+        index, (staff) => staff.copyWith(instrumentName: () => name));
+  }
+
+  void updateGroupConnector(core.SystemConnector connector) {
+    final root = _config.systemLayout.rootGroup;
+    _updateSystemLayout(_config.systemLayout.copyWith(
+      rootGroup: root.copyWith(connector: connector),
+    ));
+  }
+
+  void updateGroupContinuousBarlines(bool value) {
+    final root = _config.systemLayout.rootGroup;
+    _updateSystemLayout(_config.systemLayout.copyWith(
+      rootGroup: root.copyWith(continuousBarlines: value),
+    ));
+  }
+
+  void _updateSystemLayout(core.SystemLayout layout) {
+    _config = _config.copyWith(systemLayout: layout);
+    
+    // Sync active profile: if current layout matches a known profile, set it.
+    _activeProfile = null;
+    for (final p in core.StaffProfiles.all) {
+      if (p.systemLayout == layout) {
+        _activeProfile = p;
+        break;
+      }
+    }
+    
+    notifyListeners();
+    _save();
+  }
+
+  // --- Computed Getters for Fast Lane UI ---
+
+  core.StaffDefinition? get _primaryDef {
+    final root = _config.systemLayout.rootGroup;
+    if (root.children.isEmpty) return null;
+    final child = root.children.first;
+    return child is core.StaffDefinition ? child : null;
+  }
+
+  core.StaffDefinition? get _secondaryDef {
+    final root = _config.systemLayout.rootGroup;
+    if (root.children.length < 2) return null;
+    final child = root.children[1];
+    return child is core.StaffDefinition ? child : null;
+  }
+
+  core.ClefConfig? get primaryClef => _primaryDef?.clef;
+  core.ClefConfig? get secondaryClef => _secondaryDef?.clef;
+  int get primaryLines => _primaryDef?.lines ?? 5;
+  int get secondaryLines => _secondaryDef?.lines ?? 5;
 
   /// Apply a [StaffProfile], overriding layout type and clefs while
   /// preserving all spacing and margin settings.
   void applyProfile(core.StaffProfile profile) {
     _config = profile.applyTo(_config);
+    _activeProfile = profile;
     notifyListeners();
+    _save();
   }
 }

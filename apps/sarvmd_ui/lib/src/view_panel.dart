@@ -29,7 +29,6 @@ class ViewPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 280,
       color: Theme.of(context).colorScheme.surfaceContainer,
       child: Column(
         children: [

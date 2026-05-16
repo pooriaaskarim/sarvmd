@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sarvmd_core/sarvmd_core.dart' as core;
+
 import '../../theme/app_metrics.dart';
 
 class SegmentedSetting<T extends Enum> extends StatelessWidget {
@@ -47,9 +47,7 @@ class SegmentedSetting<T extends Enum> extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    opt is core.LayoutType
-                        ? (opt as core.LayoutType).label.toUpperCase()
-                        : opt.name.toUpperCase(),
+                    opt.name.toUpperCase(),
                     style: TextStyle(
                       color: isSelected
                           ? Theme.of(context).colorScheme.onSurface

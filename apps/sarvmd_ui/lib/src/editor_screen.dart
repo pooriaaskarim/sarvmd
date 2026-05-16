@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'components/inputs/document_settings_group.dart';
 import 'theme/app_metrics.dart';
 import 'components/inputs/section_header.dart';
@@ -7,16 +8,14 @@ import 'components/inputs/staff_spacing_group.dart';
 import 'components/animations/fade_in_slide.dart';
 import 'components/layout/sarv_header.dart';
 import 'components/specialized/profile_picker.dart';
-import 'components/specialized/clef_config_widget.dart';
 import 'components/specialized/zoom_feedback_overlay.dart';
-import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'config_notifier.dart';
 import 'preview_canvas.dart';
 import 'view_panel.dart';
 import 'ruler_box.dart';
 import 'view_notifier.dart';
 import 'components/inputs/integrated_scale_control.dart';
-import 'components/inputs/layout_type_switcher.dart';
+import 'components/advanced_builder_panel.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key, required this.viewNotifier});
@@ -34,8 +33,42 @@ class _EditorScreenState extends State<EditorScreen> {
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
   BoxConstraints? _lastConstraints;
   bool _hasCentered = false;
+  bool _isDraggingSidebar = false;
+  bool _isDraggingViewPanel = false;
+  double _sidebarWidth = 320;
+  double _viewPanelWidth = 280;
   bool _sidebarCollapsed = false;
   bool _viewPanelCollapsed = false;
+  double? _lastEffectiveWidth;
+  double? _lastEffectiveHeight;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLayoutPrefs();
+    _lastEffectiveWidth = _notifier.config.effectiveWidth;
+    _lastEffectiveHeight = _notifier.config.effectiveHeight;
+    _notifier.addListener(_onConfigChanged);
+  }
+
+  Future<void> _loadLayoutPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _sidebarWidth = prefs.getDouble('sidebar_width') ?? 320;
+      _viewPanelWidth = prefs.getDouble('view_panel_width') ?? 280;
+    });
+  }
+
+  Future<void> _saveLayoutPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('sidebar_width', _sidebarWidth);
+    await prefs.setDouble('view_panel_width', _viewPanelWidth);
+  }
+
+  static const double minSidebarWidth = 280;
+  static const double maxSidebarWidth = 500;
+  static const double minViewPanelWidth = 240;
+  static const double maxViewPanelWidth = 400;
 
   void _applyZoomPreset(ZoomPreset preset) {
     final constraints = _lastConstraints;
@@ -97,19 +130,21 @@ class _EditorScreenState extends State<EditorScreen> {
       ..multiply(Matrix4.diagonal3Values(fitScale, fitScale, 1.0));
   }
 
-  @override
-  void initState() {
-    super.initState();
-    // Re-center the view whenever the document configuration changes
-    // (e.g. paper size, orientation) so the matrix stays in sync with
-    // the new paper dimensions.
-    _notifier.addListener(_onConfigChanged);
-  }
+
 
   void _onConfigChanged() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _applyZoomPreset(ZoomPreset.fitScreen);
-    });
+    final config = _notifier.config;
+    final newW = config.effectiveWidth;
+    final newH = config.effectiveHeight;
+
+    if (newW != _lastEffectiveWidth || newH != _lastEffectiveHeight) {
+      _lastEffectiveWidth = newW;
+      _lastEffectiveHeight = newH;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _applyZoomPreset(ZoomPreset.fitScreen);
+      });
+    }
   }
 
   @override
@@ -133,14 +168,16 @@ class _EditorScreenState extends State<EditorScreen> {
             children: [
               // Sidebar (Left)
               AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
+                duration: _isDraggingSidebar
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                width: _sidebarCollapsed ? 0 : 320,
+                width: _sidebarCollapsed ? 0 : _sidebarWidth,
                 color: Theme.of(context).colorScheme.surfaceContainer,
                 child: ClipRect(
                   child: OverflowBox(
                     minWidth: 0,
-                    maxWidth: 320,
+                    maxWidth: _sidebarWidth,
                     alignment: Alignment.topLeft,
                     child: Column(
                       children: [
@@ -152,21 +189,25 @@ class _EditorScreenState extends State<EditorScreen> {
                               const SizedBox(height: 48),
                               const SarvHeader(),
                               const SizedBox(height: AppSpacing.sectionGap),
-                              const FadeInSlide(
-                                  delay: 1,
-                                  child: SectionHeader(title: 'Profiles')),
-                              const SizedBox(height: AppSpacing.itemGapSmall),
                               FadeInSlide(
-                                delay: 2,
-                                child: ProfilePicker(
-                                  currentConfig: _notifier.config,
-                                  onProfileSelected: (p) =>
-                                      _notifier.applyProfile(p),
+                                delay: 1,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SectionHeader(title: 'Profiles'),
+                                    const SizedBox(
+                                        height: AppSpacing.itemGapSmall),
+                                    ProfilePicker(
+                                      currentConfig: _notifier.config,
+                                      onProfileSelected: (p) =>
+                                          _notifier.applyProfile(p),
+                                    ),
+                                  ],
                                 ),
                               ),
                               const Divider(height: 32),
                               FadeInSlide(
-                                delay: 3,
+                                delay: 2,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -181,17 +222,12 @@ class _EditorScreenState extends State<EditorScreen> {
                                       onOrientationChanged:
                                           _notifier.updateOrientation,
                                     ),
-                                    const SizedBox(height: AppSpacing.itemGap),
-                                    LayoutTypeSwitcher(
-                                      value: _notifier.config.layoutType,
-                                      onChanged: _notifier.updateLayoutType,
-                                    ),
                                   ],
                                 ),
                               ),
                               const Divider(height: 32),
                               FadeInSlide(
-                                delay: 4,
+                                delay: 3,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -220,61 +256,35 @@ class _EditorScreenState extends State<EditorScreen> {
                               ),
                               const Divider(height: 32),
                               FadeInSlide(
-                                delay: 5,
+                                delay: 4,
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     SectionHeader(
                                       title: 'Staff Spacing',
                                       onReset: _notifier.resetSpacing,
                                     ),
                                     StaffSpacingGroup(
-                                      staffConfig:
-                                          _notifier.config.staffConfig,
-                                      layoutType:
-                                          _notifier.config.layoutType,
-                                      onLineGapChanged:
-                                          _notifier.updateLineGap,
+                                      staffConfig: _notifier.config.staffConfig,
+                                      isDoubleLine:
+                                          _notifier.config.staffCount > 1,
+                                      lines: _notifier.primaryLines,
+                                      onLineGapChanged: _notifier.updateLineGap,
                                       onSystemGapChanged:
                                           _notifier.updateSystemGap,
                                       onInterStaffGapChanged:
                                           _notifier.updateInterStaffGap,
+                                      hints: _notifier.uiHints,
                                     ),
                                   ],
                                 ),
                               ),
                               const Divider(height: 32),
                               FadeInSlide(
-                                delay: 6,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SectionHeader(
-                                        title: 'Clefs & Symbols'),
-                                    const SizedBox(
-                                        height: AppSpacing.itemGapSmall),
-                                    ClefConfigWidget(
-                                      label: layout.config.layoutType ==
-                                              core.LayoutType.doubleLine
-                                          ? 'Upper Staff'
-                                          : 'Staff Clef',
-                                      value: _notifier.config.primaryClef,
-                                      onChanged: (v) =>
-                                          _notifier.updatePrimaryClef(v),
-                                    ),
-                                    if (layout.config.layoutType ==
-                                        core.LayoutType.doubleLine) ...[
-                                      const SizedBox(
-                                          height: AppSpacing.paddingMedium),
-                                      ClefConfigWidget(
-                                        label: 'Lower Staff',
-                                        value: _notifier.config.secondaryClef,
-                                        onChanged: (v) =>
-                                            _notifier.updateSecondaryClef(v),
-                                      ),
-                                    ],
-                                  ],
+                                delay: 5,
+                                child: SystemHierarchyPanel(
+                                  key: const ValueKey('advanced'),
+                                  notifier: _notifier,
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.paddingLarge),
@@ -325,6 +335,42 @@ class _EditorScreenState extends State<EditorScreen> {
                   ),
                 ),
               ),
+              // Resize Handle (Left)
+              if (!_sidebarCollapsed)
+                GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onPanStart: (_) => setState(() => _isDraggingSidebar = true),
+                  onPanEnd: (_) {
+                    setState(() => _isDraggingSidebar = false);
+                    _saveLayoutPrefs();
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _sidebarWidth = (_sidebarWidth + details.delta.dx)
+                          .clamp(minSidebarWidth, maxSidebarWidth);
+                    });
+                  },
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeLeftRight,
+                    child: Container(
+                      width: 8,
+                      color: Colors.transparent,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: _isDraggingSidebar ? 2 : 1,
+                          height: _isDraggingSidebar ? 60 : 40,
+                          decoration: BoxDecoration(
+                            color: _isDraggingSidebar
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outlineVariant,
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               // Preview Area
               Expanded(
                 child: Container(
@@ -446,16 +492,55 @@ class _EditorScreenState extends State<EditorScreen> {
                   ),
                 ),
               ),
+              // Resize Handle (Right)
+              if (!_viewPanelCollapsed)
+                GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onPanStart: (_) =>
+                      setState(() => _isDraggingViewPanel = true),
+                  onPanEnd: (_) {
+                    setState(() => _isDraggingViewPanel = false);
+                    _saveLayoutPrefs();
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _viewPanelWidth = (_viewPanelWidth - details.delta.dx)
+                          .clamp(minViewPanelWidth, maxViewPanelWidth);
+                    });
+                  },
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.resizeLeftRight,
+                    child: Container(
+                      width: 8,
+                      color: Colors.transparent,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: _isDraggingViewPanel ? 2 : 1,
+                          height: _isDraggingViewPanel ? 60 : 40,
+                          decoration: BoxDecoration(
+                            color: _isDraggingViewPanel
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outlineVariant,
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               // View Panel (Right)
               AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
+                duration: _isDraggingViewPanel
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                width: _viewPanelCollapsed ? 0 : 280,
+                width: _viewPanelCollapsed ? 0 : _viewPanelWidth,
                 color: Theme.of(context).colorScheme.surfaceContainer,
                 child: ClipRect(
                   child: OverflowBox(
                     minWidth: 0,
-                    maxWidth: 280,
+                    maxWidth: _viewPanelWidth,
                     alignment: Alignment.topRight,
                     child: ViewPanel(
                       viewNotifier: widget.viewNotifier,
