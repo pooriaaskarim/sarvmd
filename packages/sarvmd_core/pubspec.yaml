@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
+# Licensed under the Business Source License 1.1 (BUSL-1.1).
+# See the LICENSE file in the project root for details.
+
 name: sarvmd_core
 description: Core library for Sarv music score notebook — config, layout, LaTeX emitter, compiler.
 publish_to: none

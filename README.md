@@ -39,3 +39,18 @@ SarvMD is architected as a modular Dart Workspace (monorepo). This structure mai
 ### Design Philosophy
 - **Desktop-First**: The UI is optimized for desktop environments to support detailed layout adjustments, fluid keyboard-and-mouse navigation, and seamless system-level export handling.
 - **Zero-Dependency Core**: The core layout engine relies entirely on pure Dart, minimizing external dependencies to ensure long-term stability and performance.
+
+## License & Contributing
+
+### License
+SarvMD is licensed under the **Business Source License 1.1 (BUSL-1.1)**. 
+*   **Non-Commercial Use**: Free to copy, modify, and run the code for personal, educational, or testing purposes.
+*   **Commercial Use**: Commercial production use, including hosting a commercial service, embedding the layout engine in proprietary software, or selling compiled versions of the applications, is prohibited unless authorized by the copyright owner (**Pooria Askari Moqaddam**).
+*   **Open-Source Transition**: On **June, 2031**, this license automatically transitions to the standard, highly permissive **Apache License 2.0**.
+
+For the full legal terms, please read the [LICENSE](LICENSE) file.
+
+### Contributing
+We welcome contributions! To keep our codebase legally clean and secure, we require all contributors to sign off on their commits using the **Developer Certificate of Origin (DCO)**. 
+
+Please read our [Contributing Guidelines](CONTRIBUTING.md) for step-by-step instructions on how to sign off on your commits (`git commit -s`).

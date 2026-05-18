@@ -1,0 +1,54 @@
+name: Developer Certificate of Origin (DCO)
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  dco-check:
+    name: Verify DCO Sign-offs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history to correctly analyze the pull request commits
+
+      - name: Check Commit Sign-offs
+        run: |
+          echo "Verifying Developer Certificate of Origin (DCO) sign-offs..."
+          
+          # Get all commits in the pull request branch that are not in the target base branch
+          commits=$(git log --no-merges --pretty=format:"%H" origin/${{ github.base_ref }}..HEAD)
+          
+          if [ -z "$commits" ]; then
+            echo "No commits found to verify."
+            exit 0
+          fi
+          
+          missing_signoff=0
+          
+          for commit in $commits; do
+            subject=$(git log -1 --pretty=format:"%s" $commit)
+            author=$(git log -1 --pretty=format:"%an <%ae>" $commit)
+            signoff=$(git log -1 --pretty=format:"%B" $commit | grep -E "^Signed-off-by: .* <.*>$" || true)
+            
+            if [ -z "$signoff" ]; then
+              echo "❌ Error: Commit $commit is missing a valid 'Signed-off-by' signature!"
+              echo "   Author:  $author"
+              echo "   Subject: \"$subject\""
+              echo "   How to fix: Run 'git commit --amend -s' to sign off, then force-push."
+              echo ""
+              missing_signoff=1
+            else
+              echo "✅ Commit $commit is signed off: $signoff"
+            fi
+          done
+          
+          if [ $missing_signoff -eq 1 ]; then
+            echo "❌ DCO Verification Failed. Please ensure all commits have a 'Signed-off-by' line."
+            exit 1
+          else
+            echo "🎉 All commits successfully verified for DCO sign-off!"
+            exit 0
+          fi
