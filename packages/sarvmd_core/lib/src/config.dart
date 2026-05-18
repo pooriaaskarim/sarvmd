@@ -29,7 +29,6 @@ enum PageSize {
   final double height;
 }
 
-
 /// Types of vertical connectors joining staves in a system.
 enum SystemConnector {
   /// No vertical connector.
@@ -43,57 +42,110 @@ enum SystemConnector {
 }
 
 /// Style of barlines drawn through or between staves.
-enum BarlineStyle {
-  standard,
-  dashed,
-  none
-}
+enum BarlineStyle { standard, dashed, none }
 
 /// Represents a single physical staff on the page.
 class StaffDefinition {
   const StaffDefinition({
+    this.uid = '',
     this.lines = 5,
     this.clef,
     this.scale = 1.0,
     this.instrumentName,
+    this.instrumentAbbreviation,
+    this.labelVisible = true,
+    this.labelHorizontalOffset = 0.0,
+    this.labelVerticalOffset = 0.0,
+    this.labelFontFamily = 'serif',
+    this.labelFontSize = 11.0,
+    this.labelItalic = true,
     this.barlineStyle = BarlineStyle.standard,
   });
 
+  final String uid;
   final int lines;
   final ClefConfig? clef;
   final double scale;
   final String? instrumentName;
+  final String? instrumentAbbreviation;
+  final bool labelVisible;
+  final double labelHorizontalOffset;
+  final double labelVerticalOffset;
+  final String labelFontFamily;
+  final double labelFontSize;
+  final bool labelItalic;
   final BarlineStyle barlineStyle;
 
   StaffDefinition copyWith({
+    String? uid,
     int? lines,
     ClefConfig? Function()? clef,
     double? scale,
     String? Function()? instrumentName,
+    String? Function()? instrumentAbbreviation,
+    bool? labelVisible,
+    double? labelHorizontalOffset,
+    double? labelVerticalOffset,
+    String? labelFontFamily,
+    double? labelFontSize,
+    bool? labelItalic,
     BarlineStyle? barlineStyle,
-  }) => StaffDefinition(
+  }) =>
+      StaffDefinition(
+        uid: uid ?? this.uid,
         lines: lines ?? this.lines,
         clef: clef != null ? clef() : this.clef,
         scale: scale ?? this.scale,
-        instrumentName: instrumentName != null ? instrumentName() : this.instrumentName,
+        instrumentName:
+            instrumentName != null ? instrumentName() : this.instrumentName,
+        instrumentAbbreviation: instrumentAbbreviation != null
+            ? instrumentAbbreviation()
+            : this.instrumentAbbreviation,
+        labelVisible: labelVisible ?? this.labelVisible,
+        labelHorizontalOffset:
+            labelHorizontalOffset ?? this.labelHorizontalOffset,
+        labelVerticalOffset: labelVerticalOffset ?? this.labelVerticalOffset,
+        labelFontFamily: labelFontFamily ?? this.labelFontFamily,
+        labelFontSize: labelFontSize ?? this.labelFontSize,
+        labelItalic: labelItalic ?? this.labelItalic,
         barlineStyle: barlineStyle ?? this.barlineStyle,
       );
 
   Map<String, dynamic> toJson() => {
+        'uid': uid,
         'lines': lines,
         'clef': clef?.toJson(),
         'scale': scale,
         'instrumentName': instrumentName,
+        'instrumentAbbreviation': instrumentAbbreviation,
+        'labelVisible': labelVisible,
+        'labelHorizontalOffset': labelHorizontalOffset,
+        'labelVerticalOffset': labelVerticalOffset,
+        'labelFontFamily': labelFontFamily,
+        'labelFontSize': labelFontSize,
+        'labelItalic': labelItalic,
         'barlineStyle': barlineStyle.name,
       };
 
-  factory StaffDefinition.fromJson(Map<String, dynamic> json) => StaffDefinition(
+  factory StaffDefinition.fromJson(Map<String, dynamic> json) =>
+      StaffDefinition(
+        uid: json['uid'] as String? ??
+            DateTime.now().microsecondsSinceEpoch.toString(),
         lines: json['lines'] as int? ?? 5,
         clef: json['clef'] != null
             ? ClefConfig.fromJson(json['clef'] as Map<String, dynamic>)
             : null,
         scale: (json['scale'] as num?)?.toDouble() ?? 1.0,
         instrumentName: json['instrumentName'] as String?,
+        instrumentAbbreviation: json['instrumentAbbreviation'] as String?,
+        labelVisible: json['labelVisible'] as bool? ?? true,
+        labelHorizontalOffset:
+            (json['labelHorizontalOffset'] as num?)?.toDouble() ?? 0.0,
+        labelVerticalOffset:
+            (json['labelVerticalOffset'] as num?)?.toDouble() ?? 0.0,
+        labelFontFamily: json['labelFontFamily'] as String? ?? 'serif',
+        labelFontSize: (json['labelFontSize'] as num?)?.toDouble() ?? 11.0,
+        labelItalic: json['labelItalic'] as bool? ?? true,
         barlineStyle: json['barlineStyle'] != null
             ? BarlineStyle.values.byName(json['barlineStyle'] as String)
             : BarlineStyle.standard,
@@ -108,14 +160,29 @@ class StaffDefinition {
           clef == other.clef &&
           scale == other.scale &&
           instrumentName == other.instrumentName &&
+          instrumentAbbreviation == other.instrumentAbbreviation &&
+          labelVisible == other.labelVisible &&
+          labelHorizontalOffset == other.labelHorizontalOffset &&
+          labelVerticalOffset == other.labelVerticalOffset &&
+          labelFontFamily == other.labelFontFamily &&
+          labelFontSize == other.labelFontSize &&
+          labelItalic == other.labelItalic &&
           barlineStyle == other.barlineStyle;
 
   @override
   int get hashCode =>
+      uid.hashCode ^
       lines.hashCode ^
       clef.hashCode ^
       scale.hashCode ^
       instrumentName.hashCode ^
+      instrumentAbbreviation.hashCode ^
+      labelVisible.hashCode ^
+      labelHorizontalOffset.hashCode ^
+      labelVerticalOffset.hashCode ^
+      labelFontFamily.hashCode ^
+      labelFontSize.hashCode ^
+      labelItalic.hashCode ^
       barlineStyle.hashCode;
 }
 
@@ -128,6 +195,7 @@ class StaffGroup {
   });
 
   final SystemConnector connector;
+
   /// Can be StaffDefinition or StaffGroup
   final List<Object> children;
   final bool continuousBarlines;
@@ -136,7 +204,8 @@ class StaffGroup {
     SystemConnector? connector,
     List<Object>? children,
     bool? continuousBarlines,
-  }) => StaffGroup(
+  }) =>
+      StaffGroup(
         connector: connector ?? this.connector,
         children: children ?? this.children,
         continuousBarlines: continuousBarlines ?? this.continuousBarlines,
@@ -145,7 +214,8 @@ class StaffGroup {
   Map<String, dynamic> toJson() => {
         'connector': connector.name,
         'children': children.map((c) {
-          if (c is StaffDefinition) return {'type': 'staff', 'data': c.toJson()};
+          if (c is StaffDefinition)
+            return {'type': 'staff', 'data': c.toJson()};
           if (c is StaffGroup) return {'type': 'group', 'data': c.toJson()};
           throw Exception('Unknown child type in StaffGroup');
         }).toList(),
@@ -153,7 +223,8 @@ class StaffGroup {
       };
 
   factory StaffGroup.fromJson(Map<String, dynamic> json) => StaffGroup(
-        connector: SystemConnector.values.byName(json['connector'] as String? ?? 'none'),
+        connector: SystemConnector.values
+            .byName(json['connector'] as String? ?? 'none'),
         children: (json['children'] as List<dynamic>? ?? []).map((c) {
           final map = c as Map<String, dynamic>;
           final type = map['type'] as String;
@@ -183,9 +254,7 @@ class StaffGroup {
 
   @override
   int get hashCode =>
-      connector.hashCode ^
-      children.hashCode ^
-      continuousBarlines.hashCode;
+      connector.hashCode ^ children.hashCode ^ continuousBarlines.hashCode;
 }
 
 /// The new core layout defining the system hierarchy.
@@ -198,7 +267,8 @@ class SystemLayout {
 
   SystemLayout copyWith({
     StaffGroup? rootGroup,
-  }) => SystemLayout(
+  }) =>
+      SystemLayout(
         rootGroup: rootGroup ?? this.rootGroup,
       );
 
@@ -226,22 +296,62 @@ class SystemLayout {
 /// The type of clef symbol.
 enum ClefSymbol {
   /// Treble clef (G clef)
-  g('G'),
+  g('G',
+      displayName: 'Treble',
+      requiresFixedLines: true,
+      defaultLines: 5,
+      supportsAnchorOffset: true),
 
   /// Alto/Tenor clef (C clef)
-  c('C'),
+  c('C',
+      displayName: 'Alto',
+      requiresFixedLines: true,
+      defaultLines: 5,
+      supportsAnchorOffset: true),
 
   /// Bass clef (F clef)
-  f('F'),
+  f('F',
+      displayName: 'Bass',
+      requiresFixedLines: true,
+      defaultLines: 5,
+      supportsAnchorOffset: true),
 
   /// Guitar Tablature
-  tab('TAB'),
+  tab('TAB',
+      displayName: 'TAB',
+      requiresFixedLines: false,
+      defaultLines: 6,
+      supportsAnchorOffset: false),
 
   /// Percussion staff (thick double bar)
-  percussion('PERC');
+  percussion('PERC',
+      displayName: 'Percussion',
+      requiresFixedLines: false,
+      defaultLines: 1,
+      supportsAnchorOffset: false);
 
-  const ClefSymbol(this.label);
+  const ClefSymbol(
+    this.label, {
+    required this.displayName,
+    required this.requiresFixedLines,
+    required this.defaultLines,
+    required this.supportsAnchorOffset,
+  });
+
+  /// The character/identifier for the clef.
   final String label;
+
+  /// The human-readable name of the clef.
+  final String displayName;
+
+  /// Whether this clef strictly requires a set number of lines (e.g., standard pitched clefs).
+  final bool requiresFixedLines;
+
+  /// The standard default number of lines for this clef.
+  final int defaultLines;
+
+  /// Whether the anchor line can be shifted (e.g., C clef moving between Alto and Tenor).
+  final bool supportsAnchorOffset;
 }
 
 /// A clef anchored to a specific line on a staff.
@@ -439,7 +549,7 @@ class PageConfig {
   final PageOrientation orientation;
   final StaffConfig staffConfig;
   final Margins margins;
-  
+
   /// The hierarchical definition of the staves on this page.
   final SystemLayout systemLayout;
 
@@ -478,12 +588,14 @@ class PageConfig {
       systemLayout.hashCode;
 
   /// The width of the page in mm, accounting for orientation.
-  double get effectiveWidth =>
-      orientation == PageOrientation.portrait ? pageSize.width : pageSize.height;
+  double get effectiveWidth => orientation == PageOrientation.portrait
+      ? pageSize.width
+      : pageSize.height;
 
   /// The height of the page in mm, accounting for orientation.
-  double get effectiveHeight =>
-      orientation == PageOrientation.portrait ? pageSize.height : pageSize.width;
+  double get effectiveHeight => orientation == PageOrientation.portrait
+      ? pageSize.height
+      : pageSize.width;
 
   /// Usable width after subtracting margins, in mm.
   double get usableWidth => effectiveWidth - margins.left - margins.right;
@@ -496,11 +608,13 @@ class PageConfig {
     int countStaves(StaffGroup group) {
       int count = 0;
       for (final child in group.children) {
-        if (child is StaffDefinition) count++;
+        if (child is StaffDefinition)
+          count++;
         else if (child is StaffGroup) count += countStaves(child);
       }
       return count;
     }
+
     return countStaves(systemLayout.rootGroup);
   }
 
@@ -519,8 +633,9 @@ class PageConfig {
         }
       }
     }
+
     traverse(systemLayout.rootGroup);
-    
+
     if (stavesFound > 1) {
       totalHeight += (stavesFound - 1) * staffConfig.interStaffGapMm;
     }
@@ -536,8 +651,7 @@ class PageConfig {
       };
 
   factory PageConfig.fromJson(Map<String, dynamic> json) => PageConfig(
-        pageSize:
-            PageSize.values.byName(json['pageSize'] as String? ?? 'a4'),
+        pageSize: PageSize.values.byName(json['pageSize'] as String? ?? 'a4'),
         orientation: PageOrientation.values
             .byName(json['orientation'] as String? ?? 'portrait'),
         staffConfig: json['staffConfig'] != null

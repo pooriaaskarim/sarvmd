@@ -54,8 +54,10 @@ abstract final class StaffProfiles {
       rootGroup: StaffGroup(
         connector: SystemConnector.brace,
         children: [
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.f, anchorLine: 4)),
+          StaffDefinition(
+              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
+          StaffDefinition(
+              lines: 5, clef: ClefConfig(symbol: ClefSymbol.f, anchorLine: 4)),
         ],
       ),
     ),
@@ -69,7 +71,8 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
+          StaffDefinition(
+              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
         ],
       ),
     ),
@@ -83,7 +86,8 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.f, anchorLine: 4)),
+          StaffDefinition(
+              lines: 5, clef: ClefConfig(symbol: ClefSymbol.f, anchorLine: 4)),
         ],
       ),
     ),
@@ -97,7 +101,8 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.c, anchorLine: 3)),
+          StaffDefinition(
+              lines: 5, clef: ClefConfig(symbol: ClefSymbol.c, anchorLine: 3)),
         ],
       ),
     ),
@@ -111,7 +116,9 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 6, clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
+          StaffDefinition(
+              lines: 6,
+              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
         ],
       ),
     ),
@@ -130,8 +137,11 @@ abstract final class StaffProfiles {
       rootGroup: StaffGroup(
         connector: SystemConnector.bracket,
         children: [
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
-          StaffDefinition(lines: 6, clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
+          StaffDefinition(
+              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
+          StaffDefinition(
+              lines: 6,
+              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
         ],
       ),
     ),
@@ -149,7 +159,9 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 4, clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 2)),
+          StaffDefinition(
+              lines: 4,
+              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 2)),
         ],
       ),
     ),
@@ -167,7 +179,9 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
+          StaffDefinition(
+              lines: 5,
+              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
         ],
       ),
     ),
@@ -185,7 +199,9 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 5, clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 3)),
+          StaffDefinition(
+              lines: 5,
+              clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 3)),
         ],
       ),
     ),
@@ -200,7 +216,9 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 1, clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 1)),
+          StaffDefinition(
+              lines: 1,
+              clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 1)),
         ],
       ),
     ),
@@ -215,7 +233,9 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffGroup(
         children: [
-          StaffDefinition(lines: 3, clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 2)),
+          StaffDefinition(
+              lines: 3,
+              clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 2)),
         ],
       ),
     ),

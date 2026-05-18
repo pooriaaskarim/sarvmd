@@ -48,7 +48,8 @@ class ClefConfigWidget extends StatelessWidget {
         const core.ClefConfig(symbol: core.ClefSymbol.g, anchorLine: 2);
     final selectedSym = activeValue.symbol;
 
-    Widget buildHorizontalTab(core.ClefSymbol sym, String glyph, [String? label]) {
+    Widget buildHorizontalTab(core.ClefSymbol sym, String glyph,
+        [String? label]) {
       final isSelected = sym == selectedSym;
       final colorScheme = Theme.of(context).colorScheme;
       return Expanded(
@@ -158,8 +159,8 @@ class ClefConfigWidget extends StatelessWidget {
                     },
                     child: CustomPaint(
                       size: Size(constraints.maxWidth, gap * 8.5),
-                      painter: MiniStaffClefPainter(
-                          activeValue, lines, gap, Theme.of(context).colorScheme),
+                      painter: MiniStaffClefPainter(activeValue, lines, gap,
+                          Theme.of(context).colorScheme),
                     ),
                   ),
                 ),
@@ -223,7 +224,8 @@ class ClefConfigWidget extends StatelessWidget {
                 _buildPresetChip(context, 'Guitar TAB', core.ClefSymbol.tab, 3),
               ],
               if (selectedSym == core.ClefSymbol.percussion) ...[
-                _buildPresetChip(context, 'Percussion', core.ClefSymbol.percussion, 2),
+                _buildPresetChip(
+                    context, 'Percussion', core.ClefSymbol.percussion, 2),
               ],
             ],
           ),
@@ -333,15 +335,20 @@ class MiniStaffClefPainter extends CustomPainter {
     tp.paint(canvas, Offset(gap * 0.05, anchorYPx + anchorSp * gap - ascent));
   }
 
-  void _paintTabClef(Canvas canvas, double x, double topY, int lines, double gap,
-      Color color) {
+  void _paintTabClef(Canvas canvas, double x, double topY, int lines,
+      double gap, Color color) {
     final staffHeight = (lines - 1) * gap;
     final centerY = topY + staffHeight / 2;
-    final fontSize = gap * 1.4;
 
+    // Standard visual padding matching standard clefs
+    final startX = x + gap * 0.5;
+
+    // Use a high-fidelity Serif font for authentic engraving
+    final fontSize = gap * 1.5;
     final textStyle = TextStyle(
-      fontSize: fontSize,
+      fontFamily: 'Noto Serif',
       fontWeight: FontWeight.bold,
+      fontSize: fontSize,
       color: color,
       height: 0.8,
     );
@@ -354,8 +361,8 @@ class MiniStaffClefPainter extends CustomPainter {
         text: TextSpan(text: char, style: textStyle),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.layout();
-      tp.paint(canvas, Offset(x, currentY));
+
+      tp.paint(canvas, Offset(startX, currentY));
       currentY += fontSize * 0.8;
     }
   }
@@ -366,20 +373,24 @@ class MiniStaffClefPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
-    final barWidth = gap * 0.4;
-    final barHeight = (lines > 1) ? gap * 2.0 : gap * 0.8;
+    final barWidth = gap * 0.35;
+    final barHeight = gap * 2.0; // Fixed height (independent of lines count)
     final staffHeight = (lines - 1) * gap;
     final centerY = topY + staffHeight / 2;
 
+    // Standard visual padding matching standard clefs
+    final leftX = x + gap * 0.5;
+
+    // Space between the two bars is exactly one bar width
     canvas.drawRect(
         Rect.fromCenter(
-            center: Offset(x + gap * 0.4, centerY),
+            center: Offset(leftX + barWidth / 2, centerY),
             width: barWidth,
             height: barHeight),
         paint);
     canvas.drawRect(
         Rect.fromCenter(
-            center: Offset(x + gap * 1.0, centerY),
+            center: Offset(leftX + barWidth * 2.5, centerY),
             width: barWidth,
             height: barHeight),
         paint);

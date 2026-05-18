@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../config_notifier.dart';
-import 'specialized/clef_config_widget.dart';
+import 'specialized/staff_config_dialog.dart';
 
 class SystemHierarchyPanel extends StatelessWidget {
   const SystemHierarchyPanel({super.key, required this.notifier});
@@ -10,49 +10,55 @@ class SystemHierarchyPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final layout = notifier.config.systemLayout;
+    return ListenableBuilder(
+      listenable: notifier,
+      builder: (context, _) {
+        final cs = Theme.of(context).colorScheme;
+        final layout = notifier.config.systemLayout;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
-            const SizedBox(width: 8),
-            Text(
-              'System Layout',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: cs.onSurface,
-                letterSpacing: 0.5,
-              ),
+            Row(
+              children: [
+                Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'System Layout',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurface,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => notifier.addStaff(),
+                  icon: const Icon(Icons.add_circle_outline, size: 14),
+                  label:
+                      const Text('Add Staff', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
             ),
-            const Spacer(),
-            TextButton.icon(
-              onPressed: () => notifier.addStaff(),
-              icon: const Icon(Icons.add_circle_outline, size: 14),
-              label: const Text('Add Staff', style: TextStyle(fontSize: 12)),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+            const SizedBox(height: 12),
+            _StaffGroupWidget(
+              group: layout.rootGroup,
+              isRoot: true,
+              notifier: notifier,
             ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            _buildMolaSummary(context),
           ],
-        ),
-        const SizedBox(height: 12),
-        _StaffGroupWidget(
-          group: layout.rootGroup,
-          isRoot: true,
-          notifier: notifier,
-        ),
-        const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 16),
-        _buildMolaSummary(context),
-      ],
+        );
+      },
     );
   }
 
@@ -95,30 +101,6 @@ class SystemHierarchyPanel extends StatelessWidget {
   }
 }
 
-class _StaffPropertyRow extends StatelessWidget {
-  const _StaffPropertyRow({required this.label, required this.child});
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        child,
-      ],
-    );
-  }
-}
-
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({required this.label, required this.value});
   final String label;
@@ -146,11 +128,13 @@ class _StaffGroupWidget extends StatelessWidget {
     super.key,
     required this.group,
     this.isRoot = false,
+    this.index,
     required this.notifier,
   });
 
   final core.StaffGroup group;
   final bool isRoot;
+  final int? index;
   final ConfigNotifier notifier;
 
   @override
@@ -176,6 +160,22 @@ class _StaffGroupWidget extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  if (!isRoot && index != null) ...[
+                    ReorderableDragStartListener(
+                      index: index!,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            size: 18,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   Icon(
                     group.connector == core.SystemConnector.brace
                         ? Icons.code
@@ -243,25 +243,38 @@ class _StaffGroupWidget extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 12),
-              ...group.children.asMap().entries.map((entry) {
-                final index = entry.key;
-                final child = entry.value;
-                if (child is core.StaffDefinition) {
-                  return _StaffItem(
-                    key: ValueKey('staff_${group.hashCode}_$index'),
-                    index: index,
-                    staff: child,
-                    notifier: notifier,
+              ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                buildDefaultDragHandles: false,
+                itemCount: group.children.length,
+                onReorder: (oldIndex, newIndex) {
+                  notifier.reorderGroupChildren(
+                      group.hashCode, oldIndex, newIndex);
+                },
+                itemBuilder: (context, idx) {
+                  final child = group.children[idx];
+                  if (child is core.StaffDefinition) {
+                    return _StaffItem(
+                      key: ValueKey('staff_${child.uid}'),
+                      index: idx,
+                      staff: child,
+                      notifier: notifier,
+                    );
+                  } else if (child is core.StaffGroup) {
+                    return _StaffGroupWidget(
+                      key: ValueKey('group_${child.hashCode}_$idx'),
+                      group: child,
+                      index: idx,
+                      notifier: notifier,
+                    );
+                  }
+                  return SizedBox(
+                    key: ValueKey('empty_${group.hashCode}_$idx'),
+                    child: const SizedBox.shrink(),
                   );
-                } else if (child is core.StaffGroup) {
-                  return _StaffGroupWidget(
-                    key: ValueKey('group_${child.hashCode}_$index'),
-                    group: child,
-                    notifier: notifier,
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
+                },
+              ),
             ],
           );
         },
@@ -270,7 +283,7 @@ class _StaffGroupWidget extends StatelessWidget {
   }
 }
 
-class _StaffItem extends StatefulWidget {
+class _StaffItem extends StatelessWidget {
   const _StaffItem({
     super.key,
     required this.index,
@@ -282,137 +295,159 @@ class _StaffItem extends StatefulWidget {
   final core.StaffDefinition staff;
   final ConfigNotifier notifier;
 
-  @override
-  State<_StaffItem> createState() => _StaffItemState();
-}
-
-class _StaffItemState extends State<_StaffItem> {
-  late TextEditingController _controller;
-  late FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = FocusNode();
-    _controller = TextEditingController(text: widget.staff.instrumentName);
-  }
-
-  @override
-  void didUpdateWidget(_StaffItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Only update the controller if the text actually changed and the user is
-    // NOT currently typing in this field. This prevents focus loss and cursor
-    // jumping during reactive updates.
-    if (!_focusNode.hasFocus &&
-        widget.staff.instrumentName != _controller.text) {
-      _controller.text = widget.staff.instrumentName ?? '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
+  void _openConfigDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => StaffConfigDialog(staff: staff, notifier: notifier),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
+    // Build standard instrument label
+    final String displayName = staff.instrumentName ?? 'Staff ${index + 1}';
+    final String abbrevInfo = staff.instrumentAbbreviation != null &&
+            staff.instrumentAbbreviation!.isNotEmpty
+        ? ' (${staff.instrumentAbbreviation})'
+        : '';
+    final String labelText = '$displayName$abbrevInfo';
+
+    // Clef description
+    String clefLabel = 'No Clef';
+    if (staff.clef != null) {
+      clefLabel = switch (staff.clef!.symbol) {
+        core.ClefSymbol.g => 'Treble (L${staff.clef!.anchorLine})',
+        core.ClefSymbol.c => 'Alto (L${staff.clef!.anchorLine})',
+        core.ClefSymbol.f => 'Bass (L${staff.clef!.anchorLine})',
+        core.ClefSymbol.tab => 'TAB',
+        core.ClefSymbol.percussion => 'Percussion',
+      };
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${widget.index + 1}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: cs.primary,
-                  ),
+          // Drag Handle
+          ReorderableDragStartListener(
+            index: index,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Icon(
+                  Icons.drag_indicator,
+                  size: 18,
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  onChanged: (v) => widget.notifier.updateStaffInstrumentName(
-                      widget.index, v.isEmpty ? null : v),
-                  decoration: InputDecoration(
-                    hintText: 'Instrument (e.g. Violin I)',
-                    hintStyle: TextStyle(
-                        fontSize: 11,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                    border: InputBorder.none,
-                  ),
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                ),
-              ),
-              IconButton(
-                onPressed: () => widget.notifier.removeStaff(widget.index),
-                icon: const Icon(Icons.remove_circle_outline, size: 16),
-                color: cs.error.withValues(alpha: 0.7),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-          const Divider(height: 16, thickness: 0.5),
-          _StaffPropertyRow(
-            label: 'Lines',
-            child: Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: widget.staff.lines.toDouble(),
-                    min: 0,
-                    max: 12,
-                    divisions: 12,
-                    onChanged: (v) =>
-                        widget.notifier.updateStaffLines(widget.index, v.toInt()),
-                  ),
-                ),
-                SizedBox(
-                  width: 24,
-                  child: Text(
-                    '${widget.staff.lines}',
-                    textAlign: TextAlign.center,
-                    style:
-                        const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
             ),
           ),
-          const SizedBox(height: 12),
-          ClefConfigWidget(
-            label: 'Clef',
-            value: widget.staff.clef,
-            onChanged: (c) => widget.notifier.updateStaffClef(widget.index, c),
-            staffLines: widget.staff.lines,
+
+          // Index Circle
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${index + 1}',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: cs.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Name and configuration badges
+          Expanded(
+            child: InkWell(
+              onTap: () => _openConfigDialog(context),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      labelText,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: [
+                        _buildBadge(context, '${staff.lines} lines'),
+                        _buildBadge(context, clefLabel),
+                        if (!staff.labelVisible)
+                          _buildBadge(context, 'Hidden', color: cs.error),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Actions
+          IconButton(
+            onPressed: () => _openConfigDialog(context),
+            icon: Icon(Icons.tune_outlined,
+                size: 16, color: cs.primary.withValues(alpha: 0.8)),
+            tooltip: 'Configure Staff',
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+          ),
+          IconButton(
+            onPressed: () => notifier.removeStaff(index),
+            icon: Icon(Icons.remove_circle_outline,
+                size: 16, color: cs.error.withValues(alpha: 0.7)),
+            tooltip: 'Remove Staff',
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(BuildContext context, String text, {Color? color}) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: (color ?? cs.secondaryContainer).withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: (color ?? cs.secondaryContainer).withValues(alpha: 0.3),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: color ?? cs.primary,
+        ),
       ),
     );
   }

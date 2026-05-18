@@ -125,7 +125,9 @@ class _StatusHeader extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isDefault ? Icons.straighten_rounded : Icons.verified_rounded,
+                    isDefault
+                        ? Icons.straighten_rounded
+                        : Icons.verified_rounded,
                     size: 14,
                     color: isDefault ? cs.onSurfaceVariant : cs.primary,
                   ),
@@ -166,10 +168,10 @@ class _PresetSwitcher extends StatelessWidget {
     // Determine which preset is "active" based on zoom level
     // Actual Size is active if zoom matches calibrationFactor
     final bool isActual = (currentZoom - calibrationFactor).abs() < 0.01;
-    
+
     // For Page/Width we'd need more context to know if it's currently active,
     // so we'll just treat them as buttons for now, or keep "Actual" highlighted.
-    
+
     return Container(
       height: 40,
       padding: const EdgeInsets.all(4),
@@ -222,8 +224,8 @@ class _PresetButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final color = isSelected 
-        ? (highlightColor ?? cs.primary) 
+    final color = isSelected
+        ? (highlightColor ?? cs.primary)
         : cs.onSurfaceVariant.withValues(alpha: 0.7);
 
     return Expanded(

@@ -111,4 +111,3 @@ class _PrecisionSliderState extends State<PrecisionSlider> {
     );
   }
 }
-

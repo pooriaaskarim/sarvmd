@@ -90,12 +90,14 @@ class _ExportPanelState extends State<ExportPanel> {
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                  border:
+                      Border.all(color: Colors.green.withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const Icon(Icons.check_circle,
+                        color: Colors.green, size: 18),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
@@ -204,9 +206,7 @@ class _ExportChip extends StatelessWidget {
                     Text(
                       label,
                       style: TextStyle(
-                          fontSize: 12,
-                          color: fg,
-                          fontWeight: FontWeight.w600),
+                          fontSize: 12, color: fg, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

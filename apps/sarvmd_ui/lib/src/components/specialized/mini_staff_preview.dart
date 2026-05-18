@@ -91,7 +91,7 @@ class _MiniStaffPainter extends CustomPainter {
         totalHeight += (staff.lines > 0 ? staff.lines - 1 : 0) * lineGap;
       }
       totalHeight += (staves.length - 1) * gap;
-      
+
       double currentTopY = (size.height - totalHeight) / 2;
 
       // Draw brace/bracket proxy if needed
@@ -108,9 +108,12 @@ class _MiniStaffPainter extends CustomPainter {
                 4, currentTopY + totalHeight / 2, 8, currentTopY + totalHeight);
           canvas.drawPath(bracePath, connectorPaint);
         } else {
-          canvas.drawLine(Offset(8, currentTopY), Offset(8, currentTopY + totalHeight), connectorPaint);
-          canvas.drawLine(Offset(8, currentTopY), Offset(10, currentTopY), connectorPaint);
-          canvas.drawLine(Offset(8, currentTopY + totalHeight), Offset(10, currentTopY + totalHeight), connectorPaint);
+          canvas.drawLine(Offset(8, currentTopY),
+              Offset(8, currentTopY + totalHeight), connectorPaint);
+          canvas.drawLine(
+              Offset(8, currentTopY), Offset(10, currentTopY), connectorPaint);
+          canvas.drawLine(Offset(8, currentTopY + totalHeight),
+              Offset(10, currentTopY + totalHeight), connectorPaint);
         }
       }
 

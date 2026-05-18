@@ -24,7 +24,7 @@ class ConfigNotifier extends ChangeNotifier {
       try {
         final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
         _config = core.PageConfig.fromJson(jsonMap);
-        
+
         // Restore active profile if it matches
         _activeProfile = null;
         for (final p in core.StaffProfiles.all) {
@@ -150,7 +150,7 @@ class ConfigNotifier extends ChangeNotifier {
       if (c is core.StaffDefinition) return c.copyWith(clef: () => null);
       return c;
     }).toList();
-    
+
     _updateSystemLayout(_config.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
@@ -164,15 +164,16 @@ class ConfigNotifier extends ChangeNotifier {
     _updateStaffDefinition(1, (staff) => staff.copyWith(clef: () => clef));
   }
 
-  void _updateStaffDefinition(int index, core.StaffDefinition Function(core.StaffDefinition) updater) {
+  void _updateStaffDefinition(
+      int index, core.StaffDefinition Function(core.StaffDefinition) updater) {
     final root = _config.systemLayout.rootGroup;
     if (index >= root.children.length) return;
-    
+
     final child = root.children[index];
     if (child is core.StaffDefinition) {
       final newChildren = List<Object>.from(root.children);
       newChildren[index] = updater(child);
-      
+
       _updateSystemLayout(_config.systemLayout.copyWith(
         rootGroup: root.copyWith(children: newChildren),
       ));
@@ -181,9 +182,12 @@ class ConfigNotifier extends ChangeNotifier {
 
   // --- Tree Mutation Methods ---
 
-  void addStaff({core.StaffDefinition def = const core.StaffDefinition()}) {
+  void addStaff({core.StaffDefinition? def}) {
     final root = _config.systemLayout.rootGroup;
-    final newChildren = List<Object>.from(root.children)..add(def);
+    final newDef = (def ?? const core.StaffDefinition()).copyWith(
+      uid: DateTime.now().microsecondsSinceEpoch.toString(),
+    );
+    final newChildren = List<Object>.from(root.children)..add(newDef);
     _updateSystemLayout(_config.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
@@ -192,24 +196,74 @@ class ConfigNotifier extends ChangeNotifier {
   void removeStaff(int index) {
     final root = _config.systemLayout.rootGroup;
     if (index < 0 || index >= root.children.length) return;
-    
+
     final newChildren = List<Object>.from(root.children)..removeAt(index);
     _updateSystemLayout(_config.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
   }
 
-  void updateStaffLines(int index, int lines) {
-    _updateStaffDefinition(index, (staff) => staff.copyWith(lines: lines));
+  void updateStaffLines(String uid, int lines) {
+    _updateStaffByUid(uid, (staff) => staff.copyWith(lines: lines));
   }
 
-  void updateStaffClef(int index, core.ClefConfig? clef) {
-    _updateStaffDefinition(index, (staff) => staff.copyWith(clef: () => clef));
+  void updateStaffClef(String uid, core.ClefConfig? clef) {
+    _updateStaffByUid(uid, (staff) => staff.copyWith(clef: () => clef));
   }
 
-  void updateStaffInstrumentName(int index, String? name) {
-    _updateStaffDefinition(
-        index, (staff) => staff.copyWith(instrumentName: () => name));
+  void updateStaffInstrumentName(String uid, String? name) {
+    _updateStaffByUid(
+        uid, (staff) => staff.copyWith(instrumentName: () => name));
+  }
+
+  void updateStaffConfigDetails(
+    String uid, {
+    String? Function()? name,
+    String? Function()? abbreviation,
+    bool? visible,
+    int? lines,
+    core.ClefConfig? Function()? clef,
+    double? horizontalOffset,
+    double? verticalOffset,
+    String? fontFamily,
+    double? fontSize,
+    bool? italic,
+  }) {
+    _updateStaffByUid(
+      uid,
+      (staff) => staff.copyWith(
+        instrumentName: name,
+        instrumentAbbreviation: abbreviation,
+        labelVisible: visible,
+        lines: lines,
+        clef: clef,
+        labelHorizontalOffset: horizontalOffset,
+        labelVerticalOffset: verticalOffset,
+        labelFontFamily: fontFamily,
+        labelFontSize: fontSize,
+        labelItalic: italic,
+      ),
+    );
+  }
+
+  void _updateStaffByUid(
+      String uid, core.StaffDefinition Function(core.StaffDefinition) updater) {
+    final root = _config.systemLayout.rootGroup;
+
+    Object? findAndUpdate(Object node) {
+      if (node is core.StaffDefinition) {
+        if (node.uid == uid) return updater(node);
+        return node;
+      } else if (node is core.StaffGroup) {
+        final newChildren =
+            node.children.map((c) => findAndUpdate(c)!).toList();
+        return node.copyWith(children: newChildren);
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as core.StaffGroup;
+    _updateSystemLayout(_config.systemLayout.copyWith(rootGroup: newRoot));
   }
 
   void updateGroupConnector(core.SystemConnector connector) {
@@ -226,9 +280,35 @@ class ConfigNotifier extends ChangeNotifier {
     ));
   }
 
+  void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {
+    final root = _config.systemLayout.rootGroup;
+
+    Object? findAndReorder(Object node) {
+      if (node is core.StaffGroup) {
+        if (node.hashCode == groupHash) {
+          final children = List<Object>.from(node.children);
+          if (oldIndex < newIndex) {
+            newIndex -= 1;
+          }
+          final item = children.removeAt(oldIndex);
+          children.insert(newIndex, item);
+          return node.copyWith(children: children);
+        } else {
+          final newChildren =
+              node.children.map((c) => findAndReorder(c)!).toList();
+          return node.copyWith(children: newChildren);
+        }
+      }
+      return node;
+    }
+
+    final newRoot = findAndReorder(root) as core.StaffGroup;
+    _updateSystemLayout(_config.systemLayout.copyWith(rootGroup: newRoot));
+  }
+
   void _updateSystemLayout(core.SystemLayout layout) {
     _config = _config.copyWith(systemLayout: layout);
-    
+
     // Sync active profile: if current layout matches a known profile, set it.
     _activeProfile = null;
     for (final p in core.StaffProfiles.all) {
@@ -237,7 +317,7 @@ class ConfigNotifier extends ChangeNotifier {
         break;
       }
     }
-    
+
     notifyListeners();
     _save();
   }
@@ -266,7 +346,26 @@ class ConfigNotifier extends ChangeNotifier {
   /// Apply a [StaffProfile], overriding layout type and clefs while
   /// preserving all spacing and margin settings.
   void applyProfile(core.StaffProfile profile) {
-    _config = profile.applyTo(_config);
+    var newConfig = profile.applyTo(_config);
+
+    // Ensure all staves have unique IDs for stable keying
+    final root = newConfig.systemLayout.rootGroup;
+    final newChildren = root.children.asMap().entries.map((entry) {
+      final index = entry.key;
+      final c = entry.value;
+      if (c is core.StaffDefinition) {
+        return c.copyWith(
+          uid: '${DateTime.now().microsecondsSinceEpoch}_$index',
+        );
+      }
+      return c;
+    }).toList();
+
+    _config = newConfig.copyWith(
+      systemLayout: newConfig.systemLayout.copyWith(
+        rootGroup: root.copyWith(children: newChildren),
+      ),
+    );
     _activeProfile = profile;
     notifyListeners();
     _save();

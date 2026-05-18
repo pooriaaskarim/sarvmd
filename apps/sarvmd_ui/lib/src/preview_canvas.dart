@@ -97,8 +97,8 @@ class _ManuscriptPainter extends CustomPainter {
           const Offset(-100000, 0), Offset(size.width + 100000, 0), guidePaint);
       canvas.drawLine(Offset(-100000, size.height),
           Offset(size.width + 100000, size.height), guidePaint);
-      canvas.drawLine(
-          const Offset(0, -100000), Offset(0, size.height + 100000), guidePaint);
+      canvas.drawLine(const Offset(0, -100000), Offset(0, size.height + 100000),
+          guidePaint);
       canvas.drawLine(Offset(size.width, -100000),
           Offset(size.width, size.height + 100000), guidePaint);
     }
@@ -134,7 +134,8 @@ class _ManuscriptPainter extends CustomPainter {
           marginPaint);
     }
 
-    for (final system in layout.systems) {
+    for (var sysIdx = 0; sysIdx < layout.systems.length; sysIdx++) {
+      final system = layout.systems[sysIdx];
       for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
         final staff = system.staves[sIdx];
         final topYPx = staff.topY * scale;
@@ -145,11 +146,8 @@ class _ManuscriptPainter extends CustomPainter {
             ..color = colorScheme.primary.withValues(alpha: 0.1)
             ..style = PaintingStyle.fill;
 
-          final rect = Rect.fromLTRB(
-              leftMm * scale,
-              topYPx - (lineGapPx / 2),
-              rightMm * scale,
-              topYPx + staff.height * scale + (lineGapPx / 2));
+          final rect = Rect.fromLTRB(leftMm * scale, topYPx - (lineGapPx / 2),
+              rightMm * scale, topYPx + staff.height * scale + (lineGapPx / 2));
           canvas.drawRect(rect, boundsPaint);
         }
 
@@ -171,46 +169,74 @@ class _ManuscriptPainter extends CustomPainter {
           final localScale = staff.scale;
           if (clef.symbol == core.ClefSymbol.tab) {
             _paintTabClef(canvas, leftMm * scale, topSnappedY, staff.lines,
-                lineGapPx * localScale, inkColor, scale: localScale);
+                lineGapPx * localScale, inkColor,
+                scale: localScale);
           } else if (clef.symbol == core.ClefSymbol.percussion) {
             _paintPercussionClef(canvas, leftMm * scale, topSnappedY,
-                staff.lines, lineGapPx * localScale, inkColor, scale: localScale);
+                staff.lines, lineGapPx * localScale, inkColor,
+                scale: localScale);
           } else {
             _paintStandardClef(canvas, clef, leftMm * scale, topSnappedY,
-                staff.lines, lineGapPx * localScale, inkColor, scale: localScale);
+                staff.lines, lineGapPx * localScale, inkColor,
+                scale: localScale);
           }
         }
 
         // ── Draw Instrument Name ──────────────────────────────
-        final name = staff.definition?.instrumentName;
-        if (name != null && name.isNotEmpty) {
-          final namePainter = TextPainter(
-            text: TextSpan(
-              text: name,
-              style: TextStyle(
-                fontSize: 11 * (scale / (96 / 25.4)), // ~11pt for better visibility
-                fontWeight: FontWeight.w600,
-                color: inkColor.withValues(alpha: 0.8),
-                fontFamily: 'Roboto',
-              ),
-            ),
-            textDirection: TextDirection.ltr,
-          )..layout();
+        final isLabelVisible = staff.definition?.labelVisible ?? true;
+        if (isLabelVisible) {
+          final isFirstSystem = sysIdx == 0;
+          final String? name = isFirstSystem
+              ? staff.definition?.instrumentName
+              : (staff.definition?.instrumentAbbreviation ??
+                  staff.definition?.instrumentName);
 
-          final staffMidY = topSnappedY + (staff.height * scale) / 2;
-          
-          // Place label in the left margin area, 4mm from the staff.
-          // Clamp to ensure it doesn't go off-page (min 2mm from edge).
-          final double marginSpace = 4 * scale;
-          final double minEdgePadding = 2 * scale;
-          
-          double nameX = (leftMm * scale) - namePainter.width - marginSpace;
-          if (nameX < minEdgePadding) {
-            nameX = minEdgePadding;
+          if (name != null && name.isNotEmpty) {
+            final double ptScale =
+                scale / (96 / 25.4); // Points conversion scale
+            final double fontSize =
+                (staff.definition?.labelFontSize ?? 11.0) * ptScale;
+            final bool italic = staff.definition?.labelItalic ?? true;
+            final String fontFamily =
+                staff.definition?.labelFontFamily == 'serif'
+                    ? 'Noto Serif'
+                    : 'Roboto';
+
+            final namePainter = TextPainter(
+              text: TextSpan(
+                text: name,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: inkColor.withValues(alpha: 0.8),
+                  fontFamily: fontFamily,
+                  fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+                ),
+              ),
+              textDirection: TextDirection.ltr,
+            )..layout();
+
+            final staffMidY = topSnappedY + (staff.height * scale) / 2;
+
+            // Place label in the left margin area, 4mm from the staff.
+            // Clamp to ensure it doesn't go off-page (min 2mm from edge).
+            final double marginSpace = 4 * scale;
+            final double minEdgePadding = 2 * scale;
+
+            double nameX = (leftMm * scale) - namePainter.width - marginSpace;
+            if (nameX < minEdgePadding) {
+              nameX = minEdgePadding;
+            }
+
+            // Apply custom offsets
+            final double hOffset =
+                (staff.definition?.labelHorizontalOffset ?? 0.0) * ptScale;
+            final double vOffset =
+                (staff.definition?.labelVerticalOffset ?? 0.0) * ptScale;
+
+            final nameY = staffMidY - namePainter.height / 2;
+            namePainter.paint(canvas, Offset(nameX + hOffset, nameY + vOffset));
           }
-          
-          final nameY = staffMidY - namePainter.height / 2;
-          namePainter.paint(canvas, Offset(nameX, nameY));
         }
       }
 
@@ -218,12 +244,14 @@ class _ManuscriptPainter extends CustomPainter {
       // We iterate through all group placements to support nested brackets
       // and MOLA-compliant broken barlines.
       for (final group in system.groupPlacements) {
-        final staves = system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+        final staves =
+            system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
         if (staves.length < 1) continue;
 
         final topY = (staves.first.topY * scale).roundToDouble();
-        final bottomY = (staves.last.topY * scale + staves.last.height * scale).roundToDouble();
-        
+        final bottomY = (staves.last.topY * scale + staves.last.height * scale)
+            .roundToDouble();
+
         // Offset connectors horizontally based on level to avoid overlap
         // Root group (level 0) is the outermost.
         final double xOffset = group.level * (4.0 * scale);
@@ -240,42 +268,50 @@ class _ManuscriptPainter extends CustomPainter {
           canvas.drawLine(
             Offset(startX, topY),
             Offset(startX, bottomY),
-            connectorPaint..strokeWidth = thicknessPx * 2.5, // Bolder for system start
+            connectorPaint
+              ..strokeWidth = thicknessPx * 2.5, // Bolder for system start
           );
         } else if (!group.continuousBarlines) {
-            // For groups with broken barlines, we still need a small segment for each staff
-            for (final staff in staves) {
-              final sTop = (staff.topY * scale).roundToDouble();
-              final sBottom = (staff.topY * scale + staff.height * scale).roundToDouble();
-              canvas.drawLine(
-                Offset(startX, sTop),
-                Offset(startX, sBottom),
-                connectorPaint..strokeWidth = thicknessPx * 2.5,
-              );
-            }
+          // For groups with broken barlines, we still need a small segment for each staff
+          for (final staff in staves) {
+            final sTop = (staff.topY * scale).roundToDouble();
+            final sBottom =
+                (staff.topY * scale + staff.height * scale).roundToDouble();
+            canvas.drawLine(
+              Offset(startX, sTop),
+              Offset(startX, sBottom),
+              connectorPaint..strokeWidth = thicknessPx * 2.5,
+            );
+          }
         }
 
         // 2. Draw Connector (Bracket/Brace)
-        if (group.connector == core.SystemConnector.brace && staves.length >= 2) {
+        if (group.connector == core.SystemConnector.brace &&
+            staves.length >= 2) {
           _paintBrace(canvas, startX, topY, bottomY, scale, inkColor);
-        } else if (group.connector == core.SystemConnector.bracket && staves.length >= 2) {
+        } else if (group.connector == core.SystemConnector.bracket &&
+            staves.length >= 2) {
           final bracketPaint = Paint()
             ..color = inkColor
             ..strokeWidth = thicknessPx * 3.0
             ..style = PaintingStyle.stroke;
-            
-          canvas.drawLine(Offset(startX, topY), Offset(startX, bottomY), bracketPaint);
-          
+
+          canvas.drawLine(
+              Offset(startX, topY), Offset(startX, bottomY), bracketPaint);
+
           final tickLen = 2.0 * scale;
-          canvas.drawLine(Offset(startX, topY), Offset(startX + tickLen, topY), bracketPaint);
-          canvas.drawLine(Offset(startX, bottomY), Offset(startX + tickLen, bottomY), bracketPaint);
+          canvas.drawLine(Offset(startX, topY), Offset(startX + tickLen, topY),
+              bracketPaint);
+          canvas.drawLine(Offset(startX, bottomY),
+              Offset(startX + tickLen, bottomY), bracketPaint);
         }
       }
     }
   }
 
   void _paintStandardClef(Canvas canvas, core.ClefConfig clef, double x,
-      double topY, int lines, double gap, Color color, {double scale = 1.0}) {
+      double topY, int lines, double gap, Color color,
+      {double scale = 1.0}) {
     const fontScale = 4.0;
     final (String glyph, double anchorSp) = switch (clef.symbol) {
       core.ClefSymbol.g => ('\u{1D11E}', 0.876),
@@ -310,25 +346,27 @@ class _ManuscriptPainter extends CustomPainter {
     tp.paint(canvas, Offset(glyphX.roundToDouble(), glyphY.roundToDouble()));
   }
 
-  void _paintTabClef(Canvas canvas, double x, double topY, int lines, double gap,
-      Color color, {double scale = 1.0}) {
-    // TAB is usually centered vertically in the staff
+  void _paintTabClef(
+      Canvas canvas, double x, double topY, int lines, double gap, Color color,
+      {double scale = 1.0}) {
     final staffHeight = (lines - 1) * gap;
     final centerY = topY + staffHeight / 2;
 
-    // We stack T, A, B vertically.
-    // Font size should be such that they fit roughly within 2-3 gaps.
-    final fontSize = gap * 1.2;
+    // Standard visual padding matching standard clefs
+    final startX = x + gap * 0.5;
+
+    // Use a high-fidelity Serif font for authentic engraving
+    final fontSize = gap * 1.5;
     final textStyle = TextStyle(
-      fontFamily: 'Roboto', // Professional sans-serif for TAB
+      fontFamily: 'Noto Serif',
       fontWeight: FontWeight.bold,
       fontSize: fontSize,
       color: color,
-      height: 0.9,
+      height: 0.8,
     );
 
     final List<String> letters = ['T', 'A', 'B'];
-    double currentY = centerY - (fontSize * 1.5 * 0.9);
+    double currentY = centerY - (fontSize * 1.5 * 0.8);
 
     for (final char in letters) {
       final tp = TextPainter(
@@ -336,29 +374,34 @@ class _ManuscriptPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
 
-      tp.paint(canvas, Offset(x + gap * 0.2, currentY));
-      currentY += fontSize * 0.9;
+      tp.paint(canvas, Offset(startX, currentY));
+      currentY += fontSize * 0.8;
     }
   }
 
-  void _paintPercussionClef(Canvas canvas, double x, double topY, int lines,
-      double gap, Color color, {double scale = 1.0}) {
-    // Percussion clef is two thick vertical bars
+  void _paintPercussionClef(
+      Canvas canvas, double x, double topY, int lines, double gap, Color color,
+      {double scale = 1.0}) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
 
-    final barWidth = gap * 0.4;
-    final barHeight = (lines > 1) ? gap * 2.0 : gap * 0.8;
-    
+    final barWidth = gap * 0.35;
+    final barHeight = gap * 2.0;
+
     final staffHeight = (lines - 1) * gap;
     final centerY = topY + staffHeight / 2;
-    
-    final leftX = x + gap * 0.3;
+
+    // Standard visual padding matching standard clefs
+    final leftX = x + gap * 0.5;
+
+    // Space between the two bars is exactly one bar width
     final rect1 = Rect.fromCenter(
-        center: Offset(leftX, centerY), width: barWidth, height: barHeight);
+        center: Offset(leftX + barWidth / 2, centerY),
+        width: barWidth,
+        height: barHeight);
     final rect2 = Rect.fromCenter(
-        center: Offset(leftX + barWidth * 1.5, centerY),
+        center: Offset(leftX + barWidth * 2.5, centerY),
         width: barWidth,
         height: barHeight);
 
@@ -366,48 +409,37 @@ class _ManuscriptPainter extends CustomPainter {
     canvas.drawRect(rect2, paint);
   }
 
-  void _paintBrace(
-      Canvas canvas, double x, double topY, double bottomY, double scale, Color color) {
+  void _paintBrace(Canvas canvas, double x, double topY, double bottomY,
+      double scale, Color color) {
     final double h = bottomY - topY;
-    final double w = (h * 0.12).clamp(6.0 * scale, 30.0 * scale); 
+    final double w = (h * 0.12).clamp(6.0 * scale, 30.0 * scale);
     final double mid = (topY + bottomY) / 2;
 
     final path = Path();
     // Start at top tip
     path.moveTo(x, topY);
-    
+
     // Outer edge (the left-most curve with the sharp beak)
-    path.cubicTo(
-      x - w * 0.1, topY + h * 0.05, 
-      x - w * 0.9, mid - h * 0.15, 
-      x - w, mid // THE BEAK POINT
-    );
-    path.cubicTo(
-      x - w * 0.9, mid + h * 0.15, 
-      x - w * 0.1, bottomY - h * 0.05, 
-      x, bottomY
-    );
-    
+    path.cubicTo(x - w * 0.1, topY + h * 0.05, x - w * 0.9, mid - h * 0.15,
+        x - w, mid // THE BEAK POINT
+        );
+    path.cubicTo(x - w * 0.9, mid + h * 0.15, x - w * 0.1, bottomY - h * 0.05,
+        x, bottomY);
+
     // Inner edge (the right-side curve that creates the calligraphic width)
     // Tapers back up to the tips
+    path.cubicTo(x - w * 0.15, bottomY - h * 0.08, x - w * 0.65, mid + h * 0.1,
+        x - w * 0.65, mid);
     path.cubicTo(
-      x - w * 0.15, bottomY - h * 0.08, 
-      x - w * 0.65, mid + h * 0.1, 
-      x - w * 0.65, mid
-    );
-    path.cubicTo(
-      x - w * 0.65, mid - h * 0.1, 
-      x - w * 0.15, topY + h * 0.08, 
-      x, topY
-    );
-    
+        x - w * 0.65, mid - h * 0.1, x - w * 0.15, topY + h * 0.08, x, topY);
+
     path.close();
-    
+
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
-      
+
     canvas.drawPath(path, paint);
   }
 

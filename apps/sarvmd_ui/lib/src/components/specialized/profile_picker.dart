@@ -26,7 +26,9 @@ class ProfilePicker extends StatelessWidget {
         // We want roughly 2 items per row in a 320px sidebar.
         final crossAxisCount = constraints.maxWidth > 250 ? 2 : 1;
         final spacing = 8.0;
-        final itemWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+        final itemWidth =
+            (constraints.maxWidth - (spacing * (crossAxisCount - 1))) /
+                crossAxisCount;
 
         // Group profiles by category
         final grouped = <core.ProfileCategory, List<core.StaffProfile>>{};
@@ -108,7 +110,7 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -180,5 +182,3 @@ class _ProfileCard extends StatelessWidget {
     );
   }
 }
-
-

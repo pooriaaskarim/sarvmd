@@ -123,12 +123,12 @@ PageLayout computeLayout(PageConfig config) {
     final systemTopY = config.margins.top + i * (systemH + adjustedGap);
     final staves = <StaffPosition>[];
     final placements = <GroupPlacement>[];
-    
+
     double currentTopY = systemTopY;
 
     void traverse(StaffGroup group, int level) {
       final startIdx = staves.length;
-      
+
       for (final child in group.children) {
         if (child is StaffDefinition) {
           final sStaff = StaffPosition(
@@ -156,7 +156,7 @@ PageLayout computeLayout(PageConfig config) {
         ));
       }
     }
-    
+
     traverse(config.systemLayout.rootGroup, 0);
     systems.add(StaffSystem(staves: staves, groupPlacements: placements));
   }
