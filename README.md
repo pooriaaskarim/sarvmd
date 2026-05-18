@@ -4,6 +4,9 @@
   <img alt="SarvMD" src="apps/sarvmd_ui/assets/handwriting/sarv_banner_light.png">
 </picture>
 
+<p align="center">
+  <b>English</b> | <a href="README.fa.md"><b>فارسی</b></a>
+</p>
 
 ## What is SarvMD?
 SarvMD is a music manuscript generator designed to provide a flexible environment for composers, educators, and musicians to create customizable manuscript papers. SarvMD offers control over various dimensions of the workspace, ensuring clean and legible outputs.
