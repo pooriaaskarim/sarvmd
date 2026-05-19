@@ -9,10 +9,39 @@ class ConfigNotifier extends ChangeNotifier {
   core.StaffProfile? _activeProfile;
   Timer? _saveTimer;
 
-  ConfigNotifier() {
+  ConfigNotifier([SharedPreferences? prefs]) {
     _activeProfile = core.StaffProfiles.treble;
     _config = _activeProfile!.applyTo(const core.PageConfig());
-    _loadFromPrefs();
+    if (prefs != null) {
+      _loadSync(prefs);
+    } else {
+      _loadFromPrefs();
+    }
+  }
+
+  void _loadSync(SharedPreferences prefs) {
+    final jsonStr = prefs.getString(_prefKey);
+    if (jsonStr != null) {
+      try {
+        final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
+        _config = core.PageConfig.fromJson(jsonMap);
+
+        // Restore active profile if it matches
+        _activeProfile = null;
+        for (final p in core.StaffProfiles.all) {
+          if (p.systemLayout == _config.systemLayout) {
+            _activeProfile = p;
+            break;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error loading config from prefs: $e');
+      }
+    }
+  }
+
+  Future<void> initialize() async {
+    // If already loaded synchronously, this is a no-op
   }
 
   static const _prefKey = 'sarvmd_config';
