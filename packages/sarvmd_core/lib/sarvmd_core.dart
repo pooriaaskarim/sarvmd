@@ -23,3 +23,7 @@ export 'src/domain/signature.dart';
 export 'src/domain/musical_event.dart';
 export 'src/domain/measure.dart';
 export 'src/domain/score.dart';
+export 'src/domain/smufl.dart';
+
+// Layout engines and Spindles
+export 'src/layout/spacing_spindle.dart';
