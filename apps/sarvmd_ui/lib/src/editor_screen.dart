@@ -18,16 +18,25 @@ import 'components/inputs/integrated_scale_control.dart';
 import 'components/advanced_builder_panel.dart';
 
 class EditorScreen extends StatefulWidget {
-  const EditorScreen({super.key, required this.viewNotifier});
+  const EditorScreen({
+    super.key,
+    required this.viewNotifier,
+    required this.configNotifier,
+    required this.initialSidebarWidth,
+    required this.initialViewPanelWidth,
+  });
 
   final ViewNotifier viewNotifier;
+  final ConfigNotifier configNotifier;
+  final double initialSidebarWidth;
+  final double initialViewPanelWidth;
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
 }
 
 class _EditorScreenState extends State<EditorScreen> {
-  final ConfigNotifier _notifier = ConfigNotifier();
+  late final ConfigNotifier _notifier;
   final TransformationController _transformationController =
       TransformationController();
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
@@ -35,8 +44,8 @@ class _EditorScreenState extends State<EditorScreen> {
   bool _hasCentered = false;
   bool _isDraggingSidebar = false;
   bool _isDraggingViewPanel = false;
-  double _sidebarWidth = 320;
-  double _viewPanelWidth = 280;
+  late double _sidebarWidth;
+  late double _viewPanelWidth;
   bool _sidebarCollapsed = false;
   bool _viewPanelCollapsed = false;
   double? _lastEffectiveWidth;
@@ -45,18 +54,12 @@ class _EditorScreenState extends State<EditorScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLayoutPrefs();
+    _notifier = widget.configNotifier;
+    _sidebarWidth = widget.initialSidebarWidth;
+    _viewPanelWidth = widget.initialViewPanelWidth;
     _lastEffectiveWidth = _notifier.config.effectiveWidth;
     _lastEffectiveHeight = _notifier.config.effectiveHeight;
     _notifier.addListener(_onConfigChanged);
-  }
-
-  Future<void> _loadLayoutPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _sidebarWidth = prefs.getDouble('sidebar_width') ?? 320;
-      _viewPanelWidth = prefs.getDouble('view_panel_width') ?? 280;
-    });
   }
 
   Future<void> _saveLayoutPrefs() async {

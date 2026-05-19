@@ -3,28 +3,34 @@
 // license that can be found in the LICENSE file in the root of this project.
 
 import 'package:flutter/material.dart';
-import 'src/editor_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'src/view_notifier.dart';
 import 'src/theme/app_theme.dart';
+import 'src/components/specialized/launch_coordinator.dart';
 
-void main() {
-  runApp(const SarvApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  runApp(SarvApp(prefs: prefs));
 }
 
 class SarvApp extends StatefulWidget {
-  const SarvApp({super.key});
+  const SarvApp({super.key, required this.prefs});
+
+  final SharedPreferences prefs;
 
   @override
   State<SarvApp> createState() => _SarvAppState();
 }
 
 class _SarvAppState extends State<SarvApp> {
-  final ViewNotifier _viewNotifier = ViewNotifier();
+  late final ViewNotifier _viewNotifier;
 
   @override
   void initState() {
     super.initState();
-    _viewNotifier.initialize();
+    _viewNotifier = ViewNotifier(widget.prefs);
+    _viewNotifier.initializeSync();
   }
 
   @override
@@ -45,7 +51,10 @@ class _SarvAppState extends State<SarvApp> {
           themeMode: _viewNotifier.themeMode,
           theme: AppTheme.build(accent, Brightness.light),
           darkTheme: AppTheme.build(accent, Brightness.dark),
-          home: EditorScreen(viewNotifier: _viewNotifier),
+          home: LaunchCoordinator(
+            viewNotifier: _viewNotifier,
+            prefs: widget.prefs,
+          ),
         );
       },
     );

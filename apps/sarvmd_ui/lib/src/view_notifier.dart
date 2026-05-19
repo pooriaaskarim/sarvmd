@@ -33,11 +33,11 @@ class ViewNotifier extends ChangeNotifier {
   double _calibrationFactor = 1.0;
   double get calibrationFactor => _calibrationFactor;
 
-  SharedPreferences? _prefs;
+  ViewNotifier([this._prefs]);
 
-  /// Load persisted settings from disk/local storage.
-  Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
+  /// Synchronously load persisted settings from the pre-initialized SharedPreferences instance.
+  void initializeSync() {
+    if (_prefs == null) return;
 
     // Load Theme Mode
     final themeIndex = _prefs?.getInt(_keyThemeMode);
@@ -56,13 +56,25 @@ class ViewNotifier extends ChangeNotifier {
     if (savedFactor != null) {
       _calibrationFactor = savedFactor;
     } else {
-      // If no manual calibration exists, try to detect physical PPI from the OS.
-      final detectedPpi = await detectPhysicalPpi();
-      if (detectedPpi != null) {
-        _calibrationFactor = (detectedPpi / 96.0).clamp(0.5, 4.0);
-      }
+      // Run physical PPI detection in the background so it does not block the UI startup
+      _detectPpiBackground();
     }
+  }
 
+  Future<void> _detectPpiBackground() async {
+    final detectedPpi = await detectPhysicalPpi();
+    if (detectedPpi != null) {
+      _calibrationFactor = (detectedPpi / 96.0).clamp(0.5, 4.0);
+      notifyListeners();
+    }
+  }
+
+  SharedPreferences? _prefs;
+
+  /// Load persisted settings from disk/local storage.
+  Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance();
+    initializeSync();
     notifyListeners();
   }
 
