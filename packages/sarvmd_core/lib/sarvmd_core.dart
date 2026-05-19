@@ -27,3 +27,5 @@ export 'src/domain/smufl.dart';
 
 // Layout engines and Spindles
 export 'src/layout/spacing_spindle.dart';
+export 'src/layout/positioned_element.dart';
+export 'src/layout/engraver.dart';
