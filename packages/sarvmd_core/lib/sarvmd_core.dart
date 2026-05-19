@@ -14,3 +14,12 @@ export 'src/emitter.dart';
 export 'src/compiler.dart';
 export 'src/profiles.dart';
 export 'src/svg_emitter.dart';
+
+// Domain models
+export 'src/domain/duration.dart';
+export 'src/domain/pitch.dart';
+export 'src/domain/clef.dart';
+export 'src/domain/signature.dart';
+export 'src/domain/musical_event.dart';
+export 'src/domain/measure.dart';
+export 'src/domain/score.dart';
