@@ -19,7 +19,7 @@ class RulerBox extends StatefulWidget {
   final ViewState viewState;
 
   /// Dedicated high-frequency notifier for cursor position. Kept separate
-  /// from ViewNotifier intentionally so that every mouse-move only repaints
+  /// from ViewCubit intentionally so that every mouse-move only repaints
   /// the rulers, NOT the whole widget tree.
   final ValueNotifier<Offset?> cursorNotifier;
   final double rulerSize;
