@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import '../config_notifier.dart';
+import '../config_cubit.dart';
 import 'specialized/staff_config_dialog.dart';
 
 class SystemHierarchyPanel extends StatelessWidget {
   const SystemHierarchyPanel({super.key, required this.notifier});
 
-  final ConfigNotifier notifier;
+  final ConfigCubit notifier;
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: notifier,
-      builder: (context, _) {
+    return BlocBuilder<ConfigCubit, core.PageConfig>(
+      builder: (context, state) {
         final cs = Theme.of(context).colorScheme;
-        final layout = notifier.config.systemLayout;
+        final layout = state.systemLayout;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -55,17 +55,17 @@ class SystemHierarchyPanel extends StatelessWidget {
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
-            _buildMolaSummary(context),
+            _buildMolaSummary(context, state),
           ],
         );
       },
     );
   }
 
-  Widget _buildMolaSummary(BuildContext context) {
+  Widget _buildMolaSummary(BuildContext context, core.PageConfig state) {
     final cs = Theme.of(context).colorScheme;
-    final staffCount = notifier.config.staffCount;
-    final totalHeight = notifier.config.systemHeight;
+    final staffCount = state.staffCount;
+    final totalHeight = state.systemHeight;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -135,7 +135,7 @@ class _StaffGroupWidget extends StatelessWidget {
   final core.StaffGroup group;
   final bool isRoot;
   final int? index;
-  final ConfigNotifier notifier;
+  final ConfigCubit notifier;
 
   @override
   Widget build(BuildContext context) {
@@ -293,7 +293,7 @@ class _StaffItem extends StatelessWidget {
 
   final int index;
   final core.StaffDefinition staff;
-  final ConfigNotifier notifier;
+  final ConfigCubit notifier;
 
   void _openConfigDialog(BuildContext context) {
     showDialog(

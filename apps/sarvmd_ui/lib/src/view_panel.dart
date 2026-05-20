@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'theme/app_metrics.dart';
 import 'theme/app_theme.dart';
 import 'components/inputs/section_header.dart';
@@ -7,143 +7,139 @@ import 'components/inputs/integrated_scale_control.dart';
 import 'components/inputs/guide_toggle.dart';
 import 'components/animations/fade_in_slide.dart';
 import 'export_panel.dart';
-import 'config_notifier.dart';
-import 'view_notifier.dart';
+import 'view_state.dart';
+import 'view_cubit.dart';
 
 class ViewPanel extends StatelessWidget {
   const ViewPanel({
     super.key,
-    required this.viewNotifier,
     required this.transformationController,
     required this.onZoomPreset,
-    required this.configNotifier,
-    required this.layoutGetter,
   });
 
-  final ViewNotifier viewNotifier;
   final TransformationController transformationController;
   final ValueChanged<ZoomPreset> onZoomPreset;
-  final ConfigNotifier configNotifier;
-  final core.PageLayout Function() layoutGetter;
 
   @override
   Widget build(BuildContext context) {
+    final viewCubit = context.read<ViewCubit>();
     return Container(
       color: Theme.of(context).colorScheme.surfaceContainer,
       child: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.paddingLarge),
-              children: [
-                const SizedBox(height: 48),
-                const FadeInSlide(
-                  delay: 0,
-                  child: Text(
-                    'VIEW',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
+            child: BlocBuilder<ViewCubit, ViewState>(
+              builder: (context, viewState) {
+                return ListView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.paddingLarge),
+                  children: [
+                    const SizedBox(height: 48),
+                    const FadeInSlide(
+                      delay: 0,
+                      child: Text(
+                        'VIEW',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sectionGap),
-                const FadeInSlide(
-                    delay: 1, child: SectionHeader(title: 'Appearance')),
-                FadeInSlide(
-                  delay: 2,
-                  child: ListenableBuilder(
-                    listenable: viewNotifier,
-                    builder: (context, _) {
-                      return _AppearanceSettings(
-                        themeMode: viewNotifier.themeMode,
-                        accent: viewNotifier.accent,
-                        onThemeModeChanged: viewNotifier.updateThemeMode,
-                        onAccentChanged: viewNotifier.updateAccent,
-                      );
-                    },
-                  ),
-                ),
-                FadeInSlide(
-                  delay: 3,
-                  child: Divider(
-                      color: Theme.of(context).colorScheme.outline, height: 32),
-                ),
-                const FadeInSlide(
-                    delay: 4, child: SectionHeader(title: 'Zoom')),
-                FadeInSlide(
-                  delay: 5,
-                  child: IntegratedScaleControl(
-                    viewNotifier: viewNotifier,
-                    transformationController: transformationController,
-                    onZoomPreset: onZoomPreset,
-                  ),
-                ),
-                FadeInSlide(
-                  delay: 6,
-                  child: Divider(
-                      color: Theme.of(context).colorScheme.outline, height: 32),
-                ),
-                const FadeInSlide(
-                    delay: 7, child: SectionHeader(title: 'Guides')),
-                FadeInSlide(
-                  delay: 11,
-                  child: ListenableBuilder(
-                    listenable: viewNotifier,
-                    builder: (context, _) {
-                      return Column(
+                    const SizedBox(height: AppSpacing.sectionGap),
+                    const FadeInSlide(
+                        delay: 1, child: SectionHeader(title: 'Appearance')),
+                    FadeInSlide(
+                      delay: 2,
+                      child: _AppearanceSettings(
+                        themeMode: viewState.themeMode,
+                        accent: viewState.accent,
+                        onThemeModeChanged: viewCubit.updateThemeMode,
+                        onAccentChanged: viewCubit.updateAccent,
+                      ),
+                    ),
+                    const FadeInSlide(
+                      delay: 3,
+                      child: Divider(height: 32),
+                    ),
+                    const FadeInSlide(
+                        delay: 4, child: SectionHeader(title: 'Zoom')),
+                    FadeInSlide(
+                      delay: 5,
+                      child: IntegratedScaleControl(
+                        viewState: viewState,
+                        viewCubit: viewCubit,
+                        transformationController: transformationController,
+                        onZoomPreset: onZoomPreset,
+                      ),
+                    ),
+                    const FadeInSlide(
+                      delay: 6,
+                      child: Divider(height: 32),
+                    ),
+                    const FadeInSlide(
+                      delay: 7,
+                      child: SectionHeader(title: 'Notation Preview'),
+                    ),
+                    FadeInSlide(
+                      delay: 8,
+                      child: GuideToggle(
+                        label: 'Show Music Score',
+                        value: viewState.showNotation,
+                        onChanged: (v) => viewCubit.toggleShowNotation(),
+                      ),
+                    ),
+                    const FadeInSlide(
+                      delay: 9,
+                      child: Divider(height: 32),
+                    ),
+                    const FadeInSlide(
+                        delay: 10, child: SectionHeader(title: 'Guides')),
+                    FadeInSlide(
+                      delay: 11,
+                      child: Column(
                         children: [
                           GuideToggle(
                             label: 'Mouse Wings',
-                            value: viewNotifier
-                                .isGuideActive(GuideType.rulerWings),
-                            onChanged: (v) => viewNotifier.toggleGuide(
+                            value: viewState.isGuideActive(GuideType.rulerWings),
+                            onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.rulerWings, v ?? false),
                           ),
                           GuideToggle(
                             label: 'Paper Edges',
-                            value: viewNotifier
-                                .isGuideActive(GuideType.paperEdges),
-                            onChanged: (v) => viewNotifier.toggleGuide(
+                            value: viewState.isGuideActive(GuideType.paperEdges),
+                            onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.paperEdges, v ?? false),
                           ),
                           GuideToggle(
                             label: 'Paper Centers',
-                            value: viewNotifier
-                                .isGuideActive(GuideType.paperCenters),
-                            onChanged: (v) => viewNotifier.toggleGuide(
+                            value: viewState.isGuideActive(GuideType.paperCenters),
+                            onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.paperCenters, v ?? false),
                           ),
                           GuideToggle(
                             label: 'Document Margins',
-                            value:
-                                viewNotifier.isGuideActive(GuideType.margins),
-                            onChanged: (v) => viewNotifier.toggleGuide(
+                            value: viewState.isGuideActive(GuideType.margins),
+                            onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.margins, v ?? false),
                           ),
                           GuideToggle(
                             label: 'Staff Bounds',
-                            value: viewNotifier
-                                .isGuideActive(GuideType.staffBounds),
-                            onChanged: (v) => viewNotifier.toggleGuide(
+                            value: viewState.isGuideActive(GuideType.staffBounds),
+                            onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.staffBounds, v ?? false),
                           ),
                         ],
-                      );
-                    },
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
-          FadeInSlide(
-            delay: 9,
-            child: ExportPanel(
-              configNotifier: configNotifier,
-              layoutGetter: layoutGetter,
-            ),
+          const FadeInSlide(
+            delay: 12,
+            child: ExportPanel(),
           ),
         ],
       ),

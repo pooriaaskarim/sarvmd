@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'export_service.dart';
-import 'config_notifier.dart';
+import 'config_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// A compact export footer pinned at the bottom of the right view panel.
 ///
@@ -10,14 +10,7 @@ import 'config_notifier.dart';
 class ExportPanel extends StatefulWidget {
   const ExportPanel({
     super.key,
-    required this.configNotifier,
-    required this.layoutGetter,
   });
-
-  final ConfigNotifier configNotifier;
-
-  /// Returns the current layout. Called at time of export.
-  final core.PageLayout Function() layoutGetter;
 
   @override
   State<ExportPanel> createState() => _ExportPanelState();
@@ -31,8 +24,9 @@ class _ExportPanelState extends State<ExportPanel> {
     if (_loading != null || _successMessage != null) return;
     setState(() => _loading = kind);
 
-    final config = widget.configNotifier.config;
-    final layout = widget.layoutGetter();
+    final configCubit = context.read<ConfigCubit>();
+    final config = configCubit.state;
+    final layout = configCubit.layout;
 
     try {
       final String path;

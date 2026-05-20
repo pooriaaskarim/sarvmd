@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../view_notifier.dart';
+import '../../view_cubit.dart';
+import '../../view_state.dart';
 import '../dialogs/calibration_dialog.dart';
 import '../../theme/app_metrics.dart';
 
@@ -12,22 +13,24 @@ enum ZoomPreset {
 class IntegratedScaleControl extends StatelessWidget {
   const IntegratedScaleControl({
     super.key,
-    required this.viewNotifier,
+    required this.viewState,
+    required this.viewCubit,
     required this.transformationController,
     required this.onZoomPreset,
   });
 
-  final ViewNotifier viewNotifier;
+  final ViewState viewState;
+  final ViewCubit viewCubit;
   final TransformationController transformationController;
   final ValueChanged<ZoomPreset> onZoomPreset;
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([viewNotifier, transformationController]),
+      listenable: transformationController,
       builder: (context, _) {
         final currentZoom = transformationController.value.row0[0];
-        final calibrationFactor = viewNotifier.calibrationFactor;
+        final calibrationFactor = viewState.calibrationFactor;
         final isDefault = (calibrationFactor - 1.0).abs() < 0.001;
         final effectivePpi = (calibrationFactor * 96).round();
 
@@ -39,7 +42,7 @@ class IntegratedScaleControl extends StatelessWidget {
               currentZoom: currentZoom,
               effectivePpi: effectivePpi,
               isDefault: isDefault,
-              onCalibrate: () => showCalibrationDialog(context, viewNotifier),
+              onCalibrate: () => showCalibrationDialog(context, viewCubit),
             ),
             const SizedBox(height: AppSpacing.itemGap),
 

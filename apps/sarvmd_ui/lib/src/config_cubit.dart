@@ -1,17 +1,19 @@
+// Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
+// Licensed under the Business Source License 1.1 (BUSL-1.1).
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:shared_preferences/shared_preferences.dart';
 
-class ConfigNotifier extends ChangeNotifier {
-  late core.PageConfig _config;
-  core.StaffProfile? _activeProfile;
+/// Cubit managing the physical layout configuration (`PageConfig`) of the score sheet.
+class ConfigCubit extends Cubit<core.PageConfig> {
   Timer? _saveTimer;
 
-  ConfigNotifier() {
-    _activeProfile = core.StaffProfiles.treble;
-    _config = _activeProfile!.applyTo(const core.PageConfig());
+  ConfigCubit([core.PageConfig? initial])
+      : super(initial ?? core.StaffProfiles.treble.applyTo(const core.PageConfig())) {
     _loadFromPrefs();
   }
 
@@ -23,17 +25,8 @@ class ConfigNotifier extends ChangeNotifier {
     if (jsonStr != null) {
       try {
         final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
-        _config = core.PageConfig.fromJson(jsonMap);
-
-        // Restore active profile if it matches
-        _activeProfile = null;
-        for (final p in core.StaffProfiles.all) {
-          if (p.systemLayout == _config.systemLayout) {
-            _activeProfile = p;
-            break;
-          }
-        }
-        notifyListeners();
+        final loadedConfig = core.PageConfig.fromJson(jsonMap);
+        emit(loadedConfig);
       } catch (e) {
         debugPrint('Error loading config from prefs: $e');
       }
@@ -44,114 +37,128 @@ class ConfigNotifier extends ChangeNotifier {
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 500), () async {
       final prefs = await SharedPreferences.getInstance();
-      final jsonStr = jsonEncode(_config.toJson());
+      final jsonStr = jsonEncode(state.toJson());
       await prefs.setString(_prefKey, jsonStr);
     });
   }
 
   @override
-  void dispose() {
+  Future<void> close() {
     _saveTimer?.cancel();
-    super.dispose();
+    return super.close();
   }
 
-  core.PageConfig get config => _config;
-  core.StaffProfile? get activeProfile => _activeProfile;
+  // --- Computed Getters for UI Fast Lane ---
 
-  core.StaffUIHints get uiHints {
-    // Contextual hints: if current layout matches a profile, use its hints.
-    for (final profile in core.StaffProfiles.all) {
-      if (profile.systemLayout == _config.systemLayout) {
-        return profile.uiHints;
+  core.StaffProfile? get activeProfile {
+    for (final p in core.StaffProfiles.all) {
+      if (p.systemLayout == state.systemLayout) {
+        return p;
       }
     }
-    return const core.StaffUIHints();
+    return null;
   }
 
-  core.PageLayout get layout => core.computeLayout(_config);
+  core.StaffUIHints get uiHints => activeProfile?.uiHints ?? const core.StaffUIHints();
+
+  core.PageLayout get layout => core.computeLayout(state);
+
+  core.StaffDefinition? get _primaryDef {
+    final root = state.systemLayout.rootGroup;
+    if (root.children.isEmpty) return null;
+    final child = root.children.first;
+    return child is core.StaffDefinition ? child : null;
+  }
+
+  core.StaffDefinition? get _secondaryDef {
+    final root = state.systemLayout.rootGroup;
+    if (root.children.length < 2) return null;
+    final child = root.children[1];
+    return child is core.StaffDefinition ? child : null;
+  }
+
+  core.ClefConfig? get primaryClef => _primaryDef?.clef;
+  core.ClefConfig? get secondaryClef => _secondaryDef?.clef;
+  int get primaryLines => _primaryDef?.lines ?? 5;
+  int get secondaryLines => _secondaryDef?.lines ?? 5;
+
+  // --- State Mutator Actions ---
 
   void updatePageSize(core.PageSize size) {
-    _config = _config.copyWith(pageSize: size);
-    notifyListeners();
+    emit(state.copyWith(pageSize: size));
     _save();
   }
 
   void updateOrientation(core.PageOrientation orientation) {
-    _config = _config.copyWith(orientation: orientation);
-    notifyListeners();
+    emit(state.copyWith(orientation: orientation));
     _save();
   }
 
   void updateStaffConfig(core.StaffConfig staff) {
-    _config = _config.copyWith(staffConfig: staff);
-    notifyListeners();
+    emit(state.copyWith(staffConfig: staff));
     _save();
   }
 
   void updateMargins(core.Margins margins) {
-    _config = _config.copyWith(margins: margins);
-    notifyListeners();
+    emit(state.copyWith(margins: margins));
     _save();
   }
 
   void updateLineGap(double mm) {
     updateStaffConfig(core.StaffConfig(
       lineGapMm: mm,
-      lineThicknessPt: _config.staffConfig.lineThicknessPt,
-      systemGapMm: _config.staffConfig.systemGapMm,
-      interStaffGapMm: _config.staffConfig.interStaffGapMm,
+      lineThicknessPt: state.staffConfig.lineThicknessPt,
+      systemGapMm: state.staffConfig.systemGapMm,
+      interStaffGapMm: state.staffConfig.interStaffGapMm,
     ));
   }
 
   void updateSystemGap(double mm) {
     updateStaffConfig(core.StaffConfig(
-      lineGapMm: _config.staffConfig.lineGapMm,
-      lineThicknessPt: _config.staffConfig.lineThicknessPt,
+      lineGapMm: state.staffConfig.lineGapMm,
+      lineThicknessPt: state.staffConfig.lineThicknessPt,
       systemGapMm: mm,
-      interStaffGapMm: _config.staffConfig.interStaffGapMm,
+      interStaffGapMm: state.staffConfig.interStaffGapMm,
     ));
   }
 
   void updateInterStaffGap(double mm) {
     updateStaffConfig(core.StaffConfig(
-      lineGapMm: _config.staffConfig.lineGapMm,
-      lineThicknessPt: _config.staffConfig.lineThicknessPt,
-      systemGapMm: _config.staffConfig.systemGapMm,
+      lineGapMm: state.staffConfig.lineGapMm,
+      lineThicknessPt: state.staffConfig.lineThicknessPt,
+      systemGapMm: state.staffConfig.systemGapMm,
       interStaffGapMm: mm,
     ));
   }
 
   void updateVerticalMargins(double mm) {
-    updateMargins(_config.margins.copyWith(top: mm, bottom: mm));
+    updateMargins(state.margins.copyWith(top: mm, bottom: mm));
   }
 
   void updateHorizontalMargins(double mm) {
-    updateMargins(_config.margins.copyWith(left: mm, right: mm));
+    updateMargins(state.margins.copyWith(left: mm, right: mm));
   }
 
   void resetToDefaults() {
     applyProfile(core.StaffProfiles.treble);
   }
 
-  /// Reset only margins to their default values.
   void resetMargins() {
     updateMargins(const core.Margins());
   }
 
-  /// Reset only staff spacing to default values.
   void resetSpacing() {
     updateStaffConfig(const core.StaffConfig());
   }
 
-  /// Reset only clef configuration to defaults (no clef).
   void resetClefs() {
-    final root = _config.systemLayout.rootGroup;
+    final root = state.systemLayout.rootGroup;
     final newChildren = root.children.map((c) {
       if (c is core.StaffDefinition) return c.copyWith(clef: () => null);
       return c;
     }).toList();
 
-    _updateSystemLayout(_config.systemLayout.copyWith(
+    _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
   }
@@ -166,7 +173,7 @@ class ConfigNotifier extends ChangeNotifier {
 
   void _updateStaffDefinition(
       int index, core.StaffDefinition Function(core.StaffDefinition) updater) {
-    final root = _config.systemLayout.rootGroup;
+    final root = state.systemLayout.rootGroup;
     if (index >= root.children.length) return;
 
     final child = root.children[index];
@@ -174,7 +181,7 @@ class ConfigNotifier extends ChangeNotifier {
       final newChildren = List<Object>.from(root.children);
       newChildren[index] = updater(child);
 
-      _updateSystemLayout(_config.systemLayout.copyWith(
+      _updateSystemLayout(state.systemLayout.copyWith(
         rootGroup: root.copyWith(children: newChildren),
       ));
     }
@@ -183,22 +190,22 @@ class ConfigNotifier extends ChangeNotifier {
   // --- Tree Mutation Methods ---
 
   void addStaff({core.StaffDefinition? def}) {
-    final root = _config.systemLayout.rootGroup;
+    final root = state.systemLayout.rootGroup;
     final newDef = (def ?? const core.StaffDefinition()).copyWith(
       uid: DateTime.now().microsecondsSinceEpoch.toString(),
     );
     final newChildren = List<Object>.from(root.children)..add(newDef);
-    _updateSystemLayout(_config.systemLayout.copyWith(
+    _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
   }
 
   void removeStaff(int index) {
-    final root = _config.systemLayout.rootGroup;
+    final root = state.systemLayout.rootGroup;
     if (index < 0 || index >= root.children.length) return;
 
     final newChildren = List<Object>.from(root.children)..removeAt(index);
-    _updateSystemLayout(_config.systemLayout.copyWith(
+    _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
   }
@@ -248,7 +255,7 @@ class ConfigNotifier extends ChangeNotifier {
 
   void _updateStaffByUid(
       String uid, core.StaffDefinition Function(core.StaffDefinition) updater) {
-    final root = _config.systemLayout.rootGroup;
+    final root = state.systemLayout.rootGroup;
 
     Object? findAndUpdate(Object node) {
       if (node is core.StaffDefinition) {
@@ -263,25 +270,25 @@ class ConfigNotifier extends ChangeNotifier {
     }
 
     final newRoot = findAndUpdate(root) as core.StaffGroup;
-    _updateSystemLayout(_config.systemLayout.copyWith(rootGroup: newRoot));
+    _updateSystemLayout(state.systemLayout.copyWith(rootGroup: newRoot));
   }
 
   void updateGroupConnector(core.SystemConnector connector) {
-    final root = _config.systemLayout.rootGroup;
-    _updateSystemLayout(_config.systemLayout.copyWith(
+    final root = state.systemLayout.rootGroup;
+    _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(connector: connector),
     ));
   }
 
   void updateGroupContinuousBarlines(bool value) {
-    final root = _config.systemLayout.rootGroup;
-    _updateSystemLayout(_config.systemLayout.copyWith(
+    final root = state.systemLayout.rootGroup;
+    _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(continuousBarlines: value),
     ));
   }
 
   void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {
-    final root = _config.systemLayout.rootGroup;
+    final root = state.systemLayout.rootGroup;
 
     Object? findAndReorder(Object node) {
       if (node is core.StaffGroup) {
@@ -303,50 +310,16 @@ class ConfigNotifier extends ChangeNotifier {
     }
 
     final newRoot = findAndReorder(root) as core.StaffGroup;
-    _updateSystemLayout(_config.systemLayout.copyWith(rootGroup: newRoot));
+    _updateSystemLayout(state.systemLayout.copyWith(rootGroup: newRoot));
   }
 
   void _updateSystemLayout(core.SystemLayout layout) {
-    _config = _config.copyWith(systemLayout: layout);
-
-    // Sync active profile: if current layout matches a known profile, set it.
-    _activeProfile = null;
-    for (final p in core.StaffProfiles.all) {
-      if (p.systemLayout == layout) {
-        _activeProfile = p;
-        break;
-      }
-    }
-
-    notifyListeners();
+    emit(state.copyWith(systemLayout: layout));
     _save();
   }
 
-  // --- Computed Getters for Fast Lane UI ---
-
-  core.StaffDefinition? get _primaryDef {
-    final root = _config.systemLayout.rootGroup;
-    if (root.children.isEmpty) return null;
-    final child = root.children.first;
-    return child is core.StaffDefinition ? child : null;
-  }
-
-  core.StaffDefinition? get _secondaryDef {
-    final root = _config.systemLayout.rootGroup;
-    if (root.children.length < 2) return null;
-    final child = root.children[1];
-    return child is core.StaffDefinition ? child : null;
-  }
-
-  core.ClefConfig? get primaryClef => _primaryDef?.clef;
-  core.ClefConfig? get secondaryClef => _secondaryDef?.clef;
-  int get primaryLines => _primaryDef?.lines ?? 5;
-  int get secondaryLines => _secondaryDef?.lines ?? 5;
-
-  /// Apply a [StaffProfile], overriding layout type and clefs while
-  /// preserving all spacing and margin settings.
   void applyProfile(core.StaffProfile profile) {
-    var newConfig = profile.applyTo(_config);
+    final newConfig = profile.applyTo(state);
 
     // Ensure all staves have unique IDs for stable keying
     final root = newConfig.systemLayout.rootGroup;
@@ -361,13 +334,11 @@ class ConfigNotifier extends ChangeNotifier {
       return c;
     }).toList();
 
-    _config = newConfig.copyWith(
+    emit(newConfig.copyWith(
       systemLayout: newConfig.systemLayout.copyWith(
         rootGroup: root.copyWith(children: newChildren),
       ),
-    );
-    _activeProfile = profile;
-    notifyListeners();
+    ));
     _save();
   }
 }

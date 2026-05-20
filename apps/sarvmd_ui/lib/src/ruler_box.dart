@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'view_notifier.dart';
+import 'view_state.dart';
 
 class RulerBox extends StatefulWidget {
   const RulerBox({
@@ -8,7 +8,7 @@ class RulerBox extends StatefulWidget {
     required this.child,
     required this.transformationController,
     required this.paperSizeMm,
-    required this.viewNotifier,
+    required this.viewState,
     required this.cursorNotifier,
     this.rulerSize = 25.0,
   });
@@ -16,7 +16,7 @@ class RulerBox extends StatefulWidget {
   final Widget child;
   final TransformationController transformationController;
   final Size paperSizeMm;
-  final ViewNotifier viewNotifier;
+  final ViewState viewState;
 
   /// Dedicated high-frequency notifier for cursor position. Kept separate
   /// from ViewNotifier intentionally so that every mouse-move only repaints
@@ -71,7 +71,6 @@ class _RulerBoxState extends State<RulerBox> {
                     listenable: Listenable.merge([
                       widget.transformationController,
                       widget.cursorNotifier,
-                      widget.viewNotifier,
                     ]),
                     builder: (context, _) {
                       final colorScheme = Theme.of(context).colorScheme;
@@ -84,7 +83,7 @@ class _RulerBoxState extends State<RulerBox> {
                             paperSizeMm: widget.paperSizeMm,
                             colorScheme: colorScheme,
                             cursorPos: widget.cursorNotifier.value,
-                            showWings: widget.viewNotifier
+                            showWings: widget.viewState
                                 .isGuideActive(GuideType.rulerWings),
                           ),
                         ),
@@ -109,7 +108,6 @@ class _RulerBoxState extends State<RulerBox> {
                     listenable: Listenable.merge([
                       widget.transformationController,
                       widget.cursorNotifier,
-                      widget.viewNotifier,
                     ]),
                     builder: (context, _) {
                       final colorScheme = Theme.of(context).colorScheme;
@@ -122,7 +120,7 @@ class _RulerBoxState extends State<RulerBox> {
                             paperSizeMm: widget.paperSizeMm,
                             colorScheme: colorScheme,
                             cursorPos: widget.cursorNotifier.value,
-                            showWings: widget.viewNotifier
+                            showWings: widget.viewState
                                 .isGuideActive(GuideType.rulerWings),
                           ),
                         ),

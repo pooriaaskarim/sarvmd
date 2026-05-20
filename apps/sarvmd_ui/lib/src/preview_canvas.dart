@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import 'view_notifier.dart';
+import 'view_state.dart';
+import 'sample_score.dart';
+import 'dart:math' as math;
+
 
 class PreviewCanvas extends StatelessWidget {
   const PreviewCanvas({
     super.key,
     required this.layout,
-    required this.viewNotifier,
+    required this.viewState,
   });
 
   final core.PageLayout layout;
-  final ViewNotifier viewNotifier;
+  final ViewState viewState;
 
   @override
   Widget build(BuildContext context) {
@@ -37,20 +40,15 @@ class PreviewCanvas extends StatelessWidget {
           ),
         ],
       ),
-      child: ListenableBuilder(
-        listenable: viewNotifier,
-        builder: (context, _) {
-          return CustomPaint(
-            size: sizePx,
-            painter: _ManuscriptPainter(
-              layout: layout,
-              scale: lpmm,
-              viewNotifier: viewNotifier,
-              colorScheme: Theme.of(context).colorScheme,
-              inkColor: inkColor,
-            ),
-          );
-        },
+      child: CustomPaint(
+        size: sizePx,
+        painter: _ManuscriptPainter(
+          layout: layout,
+          scale: lpmm,
+          viewState: viewState,
+          colorScheme: Theme.of(context).colorScheme,
+          inkColor: inkColor,
+        ),
       ),
     );
   }
@@ -60,14 +58,14 @@ class _ManuscriptPainter extends CustomPainter {
   _ManuscriptPainter({
     required this.layout,
     required this.scale,
-    required this.viewNotifier,
+    required this.viewState,
     required this.colorScheme,
     required this.inkColor,
   });
 
   final core.PageLayout layout;
   final double scale;
-  final ViewNotifier viewNotifier;
+  final ViewState viewState;
   final ColorScheme colorScheme;
   final Color inkColor;
 
@@ -92,7 +90,7 @@ class _ManuscriptPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     // Hint lines for paper edges
-    if (viewNotifier.isGuideActive(GuideType.paperEdges)) {
+    if (viewState.isGuideActive(GuideType.paperEdges)) {
       canvas.drawLine(
           const Offset(-100000, 0), Offset(size.width + 100000, 0), guidePaint);
       canvas.drawLine(Offset(-100000, size.height),
@@ -103,7 +101,7 @@ class _ManuscriptPainter extends CustomPainter {
           Offset(size.width, size.height + 100000), guidePaint);
     }
 
-    if (viewNotifier.isGuideActive(GuideType.paperCenters)) {
+    if (viewState.isGuideActive(GuideType.paperCenters)) {
       final centerX = size.width / 2;
       final centerY = size.height / 2;
       canvas.drawLine(Offset(centerX, -100000),
@@ -113,7 +111,7 @@ class _ManuscriptPainter extends CustomPainter {
     }
 
     // Margin guides
-    if (viewNotifier.isGuideActive(GuideType.margins)) {
+    if (viewState.isGuideActive(GuideType.margins)) {
       final marginPaint = Paint()
         ..color = colorScheme.primary.withValues(alpha: 0.5)
         ..strokeWidth = 1.0
@@ -141,7 +139,7 @@ class _ManuscriptPainter extends CustomPainter {
         final topYPx = staff.topY * scale;
 
         // Staff bounding box guides
-        if (viewNotifier.isGuideActive(GuideType.staffBounds)) {
+        if (viewState.isGuideActive(GuideType.staffBounds)) {
           final boundsPaint = Paint()
             ..color = colorScheme.primary.withValues(alpha: 0.1)
             ..style = PaintingStyle.fill;
@@ -307,6 +305,17 @@ class _ManuscriptPainter extends CustomPainter {
         }
       }
     }
+
+    if (viewState.showNotation) {
+      final score = createSampleScore(layout.config);
+      final engravingLayout = core.Engraver.compile(score, layout.config);
+      if (engravingLayout.pages.isNotEmpty) {
+        final page = engravingLayout.pages.first;
+        for (final element in page.elements) {
+          _paintPositionedElement(canvas, element, lineGapPx, inkColor);
+        }
+      }
+    }
   }
 
   void _paintStandardClef(Canvas canvas, core.ClefConfig clef, double x,
@@ -443,10 +452,249 @@ class _ManuscriptPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 
+  void _paintPositionedElement(
+      Canvas canvas, core.PositionedElement elem, double gap, Color color) {
+    if (elem is core.PositionedNote) {
+      final x = elem.x * scale;
+      final y = elem.y * scale;
+      final rx = 0.59 * gap * elem.scale;
+      final ry = 0.40 * gap * elem.scale;
+
+      // Draw ledger lines
+      final ledgerPaint = Paint()
+        ..color = color
+        ..strokeWidth = 0.12 * gap
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      for (final ledgerY in elem.ledgerLineYs) {
+        final len = gap * 1.6 * elem.scale;
+        final ly = ledgerY * scale;
+        canvas.drawLine(
+          Offset(x - len / 2, ly),
+          Offset(x + len / 2, ly),
+          ledgerPaint,
+        );
+      }
+
+      // Draw notehead (rotated oval by -20 degrees)
+      canvas.save();
+      canvas.translate(x, y);
+      canvas.rotate(-20 * math.pi / 180);
+
+      final rect = Rect.fromLTRB(-rx, -ry, rx, ry);
+      if (elem.glyph == core.SmuflGlyph.noteheadBlack) {
+        canvas.drawOval(
+            rect,
+            Paint()
+              ..color = color
+              ..style = PaintingStyle.fill);
+      } else if (elem.glyph == core.SmuflGlyph.noteheadHalf) {
+        canvas.drawOval(
+            rect,
+            Paint()
+              ..color = color
+              ..strokeWidth = 0.18 * gap
+              ..style = PaintingStyle.stroke);
+      } else if (elem.glyph == core.SmuflGlyph.noteheadWhole) {
+        final wholeRect = Rect.fromLTRB(-rx * 1.3, -ry * 1.1, rx * 1.3, ry * 1.1);
+        canvas.drawOval(
+            wholeRect,
+            Paint()
+              ..color = color
+              ..strokeWidth = 0.18 * gap
+              ..style = PaintingStyle.stroke);
+      }
+      canvas.restore();
+
+      // Draw stem
+      if (elem.hasStem) {
+        final stemLen = elem.stemLengthSp * gap * elem.scale;
+        final stemThickness = 0.11 * gap * elem.scale;
+        final stemX = elem.stemUp ? x + rx * 0.95 : x - rx * 0.95;
+        final stemEndY = elem.stemUp ? y - stemLen : y + stemLen;
+
+        canvas.drawLine(
+          Offset(stemX, y),
+          Offset(stemX, stemEndY),
+          Paint()
+            ..color = color
+            ..strokeWidth = stemThickness
+            ..strokeCap = StrokeCap.round
+            ..style = PaintingStyle.stroke,
+        );
+
+        // Draw flag if present
+        if (elem.flagGlyph != null) {
+          final tp = TextPainter(
+            text: TextSpan(
+              text: elem.flagGlyph!.codepoint,
+              style: TextStyle(
+                fontFamily: 'NotoMusic',
+                fontSize: gap * 4.0 * elem.scale,
+                color: color,
+              ),
+            ),
+            textDirection: TextDirection.ltr,
+          )..layout();
+
+          final baselineDelta =
+              tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+
+          final double flagX = stemX;
+          final double flagY = elem.stemUp
+              ? stemEndY - baselineDelta + gap * 0.1
+              : stemEndY - baselineDelta - gap * 0.1;
+          tp.paint(canvas, Offset(flagX, flagY));
+        }
+      }
+    } else if (elem is core.PositionedRest) {
+      final x = elem.x * scale;
+      final y = elem.y * scale;
+
+      if (elem.glyph == core.SmuflGlyph.restWhole) {
+        // Hangs below staff line
+        canvas.drawRect(
+          Rect.fromLTWH(x - 0.5 * gap * elem.scale, y, 1.0 * gap * elem.scale,
+              0.6 * gap * elem.scale),
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.fill,
+        );
+      } else if (elem.glyph == core.SmuflGlyph.restHalf) {
+        // Sits on top of staff line
+        canvas.drawRect(
+          Rect.fromLTWH(x - 0.5 * gap * elem.scale, y - 0.6 * gap * elem.scale,
+              1.0 * gap * elem.scale, 0.6 * gap * elem.scale),
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.fill,
+        );
+      } else {
+        // Other rests (quarter, eighth, sixteenth)
+        final tp = TextPainter(
+          text: TextSpan(
+            text: elem.glyph.codepoint,
+            style: TextStyle(
+              fontFamily: 'NotoMusic',
+              fontSize: gap * 4.0 * elem.scale,
+              color: color,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+        final baselineDelta =
+            tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+
+        final double glyphX = x - tp.width / 2;
+        final double baselineY = y + 1.0 * gap * elem.scale;
+        final double glyphY = baselineY - baselineDelta;
+
+        tp.paint(canvas, Offset(glyphX, glyphY));
+      }
+    } else if (elem is core.PositionedBarline) {
+      canvas.drawLine(
+        Offset(elem.x * scale, elem.topY * scale),
+        Offset(elem.x * scale, elem.bottomY * scale),
+        Paint()
+          ..color = color
+          ..strokeWidth = elem.thicknessMm * scale
+          ..style = PaintingStyle.stroke,
+      );
+    } else if (elem is core.PositionedClef) {
+      final anchorSp = switch (elem.glyph) {
+        core.SmuflGlyph.gClef => 0.876,
+        core.SmuflGlyph.cClef => 2.0,
+        core.SmuflGlyph.fClef => 2.578,
+        core.SmuflGlyph.tabClef => 0.0,
+        core.SmuflGlyph.percussionClef => 1.0,
+        _ => 0.0,
+      };
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: elem.glyph.codepoint,
+          style: TextStyle(
+            fontFamily: 'NotoMusic',
+            fontSize: gap * 4.0 * elem.scale,
+            color: color,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      final baselineDelta =
+          tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+
+      final anchorYPx = elem.y * scale;
+      final baselineY = anchorYPx + anchorSp * gap * elem.scale;
+      final microOffset = gap * elem.scale * 0.04;
+
+      final glyphX = elem.x * scale + gap * elem.scale * 0.15;
+      final glyphY = baselineY - baselineDelta + microOffset;
+
+      tp.paint(canvas, Offset(glyphX, glyphY));
+    } else if (elem is core.PositionedTimeSignature) {
+      final textStyle = TextStyle(
+        fontFamily: 'Georgia',
+        fontWeight: FontWeight.bold,
+        fontSize: gap * 2.0 * elem.scale,
+        color: color,
+        height: 1.0,
+      );
+
+      final numPainter = TextPainter(
+        text: TextSpan(text: '${elem.beats}', style: textStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      final denPainter = TextPainter(
+        text: TextSpan(text: '${elem.beatValue}', style: textStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      final double xPx = elem.x * scale;
+      final double yPx = elem.y * scale;
+
+      final numX = xPx - numPainter.width / 2;
+      final numY = yPx - 1.0 * gap * elem.scale - numPainter.height / 2;
+
+      final denX = xPx - denPainter.width / 2;
+      final denY = yPx + 1.0 * gap * elem.scale - denPainter.height / 2;
+
+      numPainter.paint(canvas, Offset(numX, numY));
+      denPainter.paint(canvas, Offset(denX, denY));
+    } else if (elem is core.PositionedKeySignature) {
+      for (var i = 0; i < elem.accidentals.length; i++) {
+        final accidental = elem.accidentals[i];
+        final tp = TextPainter(
+          text: TextSpan(
+            text: accidental.glyph.codepoint,
+            style: TextStyle(
+              fontFamily: 'NotoMusic',
+              fontSize: gap * 4.0 * elem.scale,
+              color: color,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+        final baselineDelta =
+            tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+
+        final ax = elem.x * scale + i * gap * elem.scale * 0.8;
+        final ay = accidental.y * scale;
+        final glyphY = ay - baselineDelta + gap * elem.scale * 1.0;
+
+        tp.paint(canvas, Offset(ax, glyphY));
+      }
+    }
+  }
+
   @override
   bool shouldRepaint(covariant _ManuscriptPainter oldDelegate) {
     return oldDelegate.layout != layout ||
         oldDelegate.scale != scale ||
-        oldDelegate.viewNotifier != viewNotifier;
+        oldDelegate.viewState != viewState;
   }
 }

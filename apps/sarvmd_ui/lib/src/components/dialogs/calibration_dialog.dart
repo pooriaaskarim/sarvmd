@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import '../../view_notifier.dart';
+import '../../view_cubit.dart';
 
 /// Opens the display calibration dialog.
 Future<void> showCalibrationDialog(
   BuildContext context,
-  ViewNotifier viewNotifier,
+  ViewCubit viewCubit,
 ) {
   return showDialog<void>(
     context: context,
     barrierColor: Colors.black54,
-    builder: (_) => CalibrationDialog(viewNotifier: viewNotifier),
+    builder: (_) => CalibrationDialog(viewCubit: viewCubit),
   );
 }
 
@@ -20,9 +20,9 @@ Future<void> showCalibrationDialog(
 /// The user holds a physical ruler to their screen and nudges the reference
 /// bar until it spans exactly 25 mm, then clicks Apply to commit.
 class CalibrationDialog extends StatefulWidget {
-  const CalibrationDialog({super.key, required this.viewNotifier});
+  const CalibrationDialog({super.key, required this.viewCubit});
 
-  final ViewNotifier viewNotifier;
+  final ViewCubit viewCubit;
 
   @override
   State<CalibrationDialog> createState() => _CalibrationDialogState();
@@ -46,7 +46,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
   @override
   void initState() {
     super.initState();
-    _localFactor = widget.viewNotifier.calibrationFactor;
+    _localFactor = widget.viewCubit.state.calibrationFactor;
   }
 
   void _nudge(double delta) {
@@ -56,7 +56,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
   }
 
   void _apply() {
-    widget.viewNotifier.updateCalibrationFactor(_localFactor);
+    widget.viewCubit.updateCalibrationFactor(_localFactor);
     Navigator.of(context).pop();
   }
 

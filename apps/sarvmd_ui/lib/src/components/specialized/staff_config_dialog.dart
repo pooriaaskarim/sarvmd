@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import '../../config_notifier.dart';
+import '../../config_cubit.dart';
 import 'instrument_preset.dart';
 import 'live_staff_preview.dart';
 
 class StaffConfigDialog extends StatefulWidget {
   final core.StaffDefinition staff;
-  final ConfigNotifier notifier;
+  final ConfigCubit notifier;
 
   const StaffConfigDialog({
     super.key,
