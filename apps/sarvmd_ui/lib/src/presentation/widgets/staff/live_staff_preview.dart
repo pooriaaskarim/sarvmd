@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import '../../theme/app_theme.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// A standard, highly reusable, and fully theme-reactive live preview for a musical staff.
 ///

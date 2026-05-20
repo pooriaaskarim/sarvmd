@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'theme/app_theme.dart';
-import 'utils/ppi_detector.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/utils/ppi_detector.dart';
 import 'view_state.dart';
 
 /// Cubit controlling theme modes, accent colors, display calibration, and overlay guides.

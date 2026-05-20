@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'view_state.dart';
+import '../../../logic/view/view_state.dart';
 
 class RulerBox extends StatefulWidget {
   const RulerBox({

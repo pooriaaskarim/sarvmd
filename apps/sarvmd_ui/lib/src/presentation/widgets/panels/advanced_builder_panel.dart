@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import '../config_cubit.dart';
-import 'specialized/staff_config_dialog.dart';
+import '../../../logic/config/config_cubit.dart';
+import '../dialogs/staff_config_dialog.dart';
 
 class SystemHierarchyPanel extends StatelessWidget {
   const SystemHierarchyPanel({super.key, required this.notifier});

@@ -28,36 +28,72 @@ core.Score createSampleScore(core.PageConfig config) {
       if (i == 0) {
         // Melodic Top Part (Treble scale rise/fall)
         if (m == 1) {
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.c, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.d, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.e, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.f, octave: 4), core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.c, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.d, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.e, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.f, octave: 4),
+              core.RhythmicDuration(1, 4)));
         } else if (m == 2) {
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.g, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.a, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.b, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.c, octave: 5), core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.g, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.a, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.b, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.c, octave: 5),
+              core.RhythmicDuration(1, 4)));
         } else if (m == 3) {
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.c, octave: 5), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.b, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.a, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.g, octave: 4), core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.c, octave: 5),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.b, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.a, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.g, octave: 4),
+              core.RhythmicDuration(1, 4)));
         } else {
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.f, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.e, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.d, octave: 4), core.RhythmicDuration(1, 4)));
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.c, octave: 4), core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.f, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.e, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.d, octave: 4),
+              core.RhythmicDuration(1, 4)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.c, octave: 4),
+              core.RhythmicDuration(1, 4)));
         }
       } else if (i == 1) {
         // Grand-staff / Duo Counterpoint Part (Bass line half-notes)
-        events.add(const core.NoteEvent(core.Pitch(core.NoteName.c, octave: 3), core.RhythmicDuration(1, 2)));
-        events.add(const core.NoteEvent(core.Pitch(core.NoteName.g, octave: 3), core.RhythmicDuration(1, 2)));
+        events.add(const core.NoteEvent(core.Pitch(core.NoteName.c, octave: 3),
+            core.RhythmicDuration(1, 2)));
+        events.add(const core.NoteEvent(core.Pitch(core.NoteName.g, octave: 3),
+            core.RhythmicDuration(1, 2)));
       } else {
         // Ensembles / Pads Part (Whole notes/rests for other background tracks)
         if (m % 2 == 0) {
           events.add(const core.RestEvent(core.RhythmicDuration(1, 1)));
         } else {
-          events.add(const core.NoteEvent(core.Pitch(core.NoteName.c, octave: 4), core.RhythmicDuration(1, 1)));
+          events.add(const core.NoteEvent(
+              core.Pitch(core.NoteName.c, octave: 4),
+              core.RhythmicDuration(1, 1)));
         }
       }
 

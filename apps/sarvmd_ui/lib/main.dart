@@ -4,12 +4,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'src/config_cubit.dart';
-import 'src/view_state.dart';
-import 'src/view_cubit.dart';
-import 'src/score_cubit.dart';
-import 'src/theme/app_theme.dart';
-import 'src/editor_screen.dart';
+import 'src/logic/config/config_cubit.dart';
+import 'src/logic/view/view_state.dart';
+import 'src/logic/view/view_cubit.dart';
+import 'src/logic/score/score_cubit.dart';
+import 'src/core/theme/app_theme.dart';
+import 'src/presentation/screens/editor_screen.dart';
 
 void main() {
   runApp(

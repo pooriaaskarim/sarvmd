@@ -13,7 +13,8 @@ class ConfigCubit extends Cubit<core.PageConfig> {
   Timer? _saveTimer;
 
   ConfigCubit([core.PageConfig? initial])
-      : super(initial ?? core.StaffProfiles.treble.applyTo(const core.PageConfig())) {
+      : super(initial ??
+            core.StaffProfiles.treble.applyTo(const core.PageConfig())) {
     _loadFromPrefs();
   }
 
@@ -59,7 +60,8 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     return null;
   }
 
-  core.StaffUIHints get uiHints => activeProfile?.uiHints ?? const core.StaffUIHints();
+  core.StaffUIHints get uiHints =>
+      activeProfile?.uiHints ?? const core.StaffUIHints();
 
   core.PageLayout get layout => core.computeLayout(state);
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import '../../theme/app_metrics.dart';
+import '../../../core/theme/app_metrics.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StaffSpacingGroup — the top-level widget that composes all four tiers.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'export_service.dart';
-import 'config_cubit.dart';
+import '../../../logic/services/export_service.dart';
+import '../../../logic/config/config_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// A compact export footer pinned at the bottom of the right view panel.

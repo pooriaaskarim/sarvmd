@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../view_cubit.dart';
-import '../../view_state.dart';
+import '../../../logic/view/view_cubit.dart';
+import '../../../logic/view/view_state.dart';
 import '../dialogs/calibration_dialog.dart';
-import '../../theme/app_metrics.dart';
+import '../../../core/theme/app_metrics.dart';
 
 enum ZoomPreset {
   actualSize,

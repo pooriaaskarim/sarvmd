@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'theme/app_metrics.dart';
-import 'theme/app_theme.dart';
-import 'components/inputs/section_header.dart';
-import 'components/inputs/integrated_scale_control.dart';
-import 'components/inputs/guide_toggle.dart';
-import 'components/animations/fade_in_slide.dart';
+import '../../../core/theme/app_metrics.dart';
+import '../../../core/theme/app_theme.dart';
+import '../common/section_header.dart';
+import '../common/integrated_scale_control.dart';
+import '../common/guide_toggle.dart';
+import '../animations/fade_in_slide.dart';
 import 'export_panel.dart';
-import 'view_state.dart';
-import 'view_cubit.dart';
+import '../../../logic/view/view_state.dart';
+import '../../../logic/view/view_cubit.dart';
 
 class ViewPanel extends StatelessWidget {
   const ViewPanel({
@@ -101,19 +101,22 @@ class ViewPanel extends StatelessWidget {
                         children: [
                           GuideToggle(
                             label: 'Mouse Wings',
-                            value: viewState.isGuideActive(GuideType.rulerWings),
+                            value:
+                                viewState.isGuideActive(GuideType.rulerWings),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.rulerWings, v ?? false),
                           ),
                           GuideToggle(
                             label: 'Paper Edges',
-                            value: viewState.isGuideActive(GuideType.paperEdges),
+                            value:
+                                viewState.isGuideActive(GuideType.paperEdges),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.paperEdges, v ?? false),
                           ),
                           GuideToggle(
                             label: 'Paper Centers',
-                            value: viewState.isGuideActive(GuideType.paperCenters),
+                            value:
+                                viewState.isGuideActive(GuideType.paperCenters),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.paperCenters, v ?? false),
                           ),
@@ -125,7 +128,8 @@ class ViewPanel extends StatelessWidget {
                           ),
                           GuideToggle(
                             label: 'Staff Bounds',
-                            value: viewState.isGuideActive(GuideType.staffBounds),
+                            value:
+                                viewState.isGuideActive(GuideType.staffBounds),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.staffBounds, v ?? false),
                           ),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import 'view_state.dart';
-import 'sample_score.dart';
+import '../../../logic/view/view_state.dart';
+import '../../../logic/sample/sample_score.dart';
 import 'dart:math' as math;
-
 
 class PreviewCanvas extends StatelessWidget {
   const PreviewCanvas({
@@ -496,7 +495,8 @@ class _ManuscriptPainter extends CustomPainter {
               ..strokeWidth = 0.18 * gap
               ..style = PaintingStyle.stroke);
       } else if (elem.glyph == core.SmuflGlyph.noteheadWhole) {
-        final wholeRect = Rect.fromLTRB(-rx * 1.3, -ry * 1.1, rx * 1.3, ry * 1.1);
+        final wholeRect =
+            Rect.fromLTRB(-rx * 1.3, -ry * 1.1, rx * 1.3, ry * 1.1);
         canvas.drawOval(
             wholeRect,
             Paint()

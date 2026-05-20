@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_metrics.dart';
+import '../../../core/theme/app_metrics.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.title, this.onReset});

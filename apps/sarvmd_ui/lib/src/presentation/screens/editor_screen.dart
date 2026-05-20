@@ -5,23 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import 'components/inputs/document_settings_group.dart';
-import 'theme/app_metrics.dart';
-import 'components/inputs/section_header.dart';
-import 'components/inputs/precision_slider.dart';
-import 'components/inputs/staff_spacing_group.dart';
-import 'components/animations/fade_in_slide.dart';
-import 'components/layout/sarv_header.dart';
-import 'components/specialized/profile_picker.dart';
-import 'components/specialized/zoom_feedback_overlay.dart';
-import 'preview_canvas.dart';
-import 'view_panel.dart';
-import 'ruler_box.dart';
-import 'components/inputs/integrated_scale_control.dart';
-import 'components/advanced_builder_panel.dart';
-import 'config_cubit.dart';
-import 'view_cubit.dart';
-import 'view_state.dart';
+import '../widgets/staff/document_settings_group.dart';
+import '../../core/theme/app_metrics.dart';
+import '../widgets/common/section_header.dart';
+import '../widgets/common/precision_slider.dart';
+import '../widgets/staff/staff_spacing_group.dart';
+import '../widgets/animations/fade_in_slide.dart';
+import '../widgets/layout/sarv_header.dart';
+import '../widgets/staff/profile_picker.dart';
+import '../widgets/staff/zoom_feedback_overlay.dart';
+import '../widgets/canvas/preview_canvas.dart';
+import '../widgets/panels/view_panel.dart';
+import '../widgets/canvas/ruler_box.dart';
+import '../widgets/common/integrated_scale_control.dart';
+import '../widgets/panels/advanced_builder_panel.dart';
+import '../../logic/config/config_cubit.dart';
+import '../../logic/view/view_cubit.dart';
+import '../../logic/view/view_state.dart';
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key});
@@ -179,13 +179,16 @@ class _EditorScreenState extends State<EditorScreen> {
                                   children: [
                                     const SizedBox(height: 48),
                                     const SarvHeader(),
-                                    const SizedBox(height: AppSpacing.sectionGap),
+                                    const SizedBox(
+                                        height: AppSpacing.sectionGap),
                                     FadeInSlide(
                                       delay: 1,
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          const SectionHeader(title: 'Profiles'),
+                                          const SectionHeader(
+                                              title: 'Profiles'),
                                           const SizedBox(
                                               height: AppSpacing.itemGapSmall),
                                           ProfilePicker(
@@ -200,15 +203,19 @@ class _EditorScreenState extends State<EditorScreen> {
                                     FadeInSlide(
                                       delay: 2,
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          const SectionHeader(title: 'Document'),
+                                          const SectionHeader(
+                                              title: 'Document'),
                                           const SizedBox(
                                               height: AppSpacing.itemGapSmall),
                                           DocumentSettingsGroup(
                                             pageSize: configState.pageSize,
-                                            onPageSizeChanged: configCubit.updatePageSize,
-                                            orientation: configState.orientation,
+                                            onPageSizeChanged:
+                                                configCubit.updatePageSize,
+                                            orientation:
+                                                configState.orientation,
                                             onOrientationChanged:
                                                 configCubit.updateOrientation,
                                           ),
@@ -219,7 +226,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                     FadeInSlide(
                                       delay: 3,
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           SectionHeader(
                                             title: 'Margins (mm)',
@@ -230,16 +238,16 @@ class _EditorScreenState extends State<EditorScreen> {
                                             value: configState.margins.top,
                                             min: 5.0,
                                             max: 40.0,
-                                            onChanged: (v) =>
-                                                configCubit.updateVerticalMargins(v),
+                                            onChanged: (v) => configCubit
+                                                .updateVerticalMargins(v),
                                           ),
                                           PrecisionSlider(
                                             label: 'Horizontal',
                                             value: configState.margins.left,
                                             min: 5.0,
                                             max: 40.0,
-                                            onChanged: (v) =>
-                                                configCubit.updateHorizontalMargins(v),
+                                            onChanged: (v) => configCubit
+                                                .updateHorizontalMargins(v),
                                           ),
                                         ],
                                       ),
@@ -248,18 +256,21 @@ class _EditorScreenState extends State<EditorScreen> {
                                     FadeInSlide(
                                       delay: 4,
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           SectionHeader(
                                             title: 'Staff Spacing',
                                             onReset: configCubit.resetSpacing,
                                           ),
                                           StaffSpacingGroup(
-                                            staffConfig: configState.staffConfig,
+                                            staffConfig:
+                                                configState.staffConfig,
                                             isDoubleLine:
                                                 configState.staffCount > 1,
                                             lines: configCubit.primaryLines,
-                                            onLineGapChanged: configCubit.updateLineGap,
+                                            onLineGapChanged:
+                                                configCubit.updateLineGap,
                                             onSystemGapChanged:
                                                 configCubit.updateSystemGap,
                                             onInterStaffGapChanged:
@@ -274,7 +285,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                       key: const ValueKey('advanced_panel'),
                                       notifier: configCubit,
                                     ),
-                                    const SizedBox(height: AppSpacing.paddingLarge),
+                                    const SizedBox(
+                                        height: AppSpacing.paddingLarge),
                                   ],
                                 ),
                               ),
@@ -286,7 +298,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                     horizontal: AppSpacing.paddingLarge,
                                     vertical: AppSpacing.paddingMedium),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       '${configCubit.layout.systemCount} Systems',
@@ -299,7 +312,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                       message: 'Reset ALL settings to defaults',
                                       child: TextButton.icon(
                                         onPressed: configCubit.resetToDefaults,
-                                        icon: const Icon(Icons.restore, size: 14),
+                                        icon:
+                                            const Icon(Icons.restore, size: 14),
                                         label: const Text('Reset',
                                             style: TextStyle(fontSize: 12)),
                                         style: TextButton.styleFrom(
@@ -307,7 +321,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 8, vertical: 4),
                                           shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(4)),
+                                              borderRadius:
+                                                  BorderRadius.circular(4)),
                                           foregroundColor: Theme.of(context)
                                               .colorScheme
                                               .onSurfaceVariant,
@@ -326,7 +341,8 @@ class _EditorScreenState extends State<EditorScreen> {
                     if (!_sidebarCollapsed)
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
-                        onPanStart: (_) => setState(() => _isDraggingSidebar = true),
+                        onPanStart: (_) =>
+                            setState(() => _isDraggingSidebar = true),
                         onPanEnd: (_) {
                           setState(() => _isDraggingSidebar = false);
                           _saveLayoutPrefs();
@@ -350,7 +366,9 @@ class _EditorScreenState extends State<EditorScreen> {
                                 decoration: BoxDecoration(
                                   color: _isDraggingSidebar
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.outlineVariant,
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .outlineVariant,
                                   borderRadius: BorderRadius.circular(1),
                                 ),
                               ),
@@ -373,7 +391,8 @@ class _EditorScreenState extends State<EditorScreen> {
                             }
 
                             return RulerBox(
-                              transformationController: _transformationController,
+                              transformationController:
+                                  _transformationController,
                               viewState: viewState,
                               cursorNotifier: _cursorNotifier,
                               paperSizeMm: Size(
@@ -393,7 +412,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                       child: InteractiveViewer(
                                         transformationController:
                                             _transformationController,
-                                        boundaryMargin: const EdgeInsets.all(100000),
+                                        boundaryMargin:
+                                            const EdgeInsets.all(100000),
                                         minScale: ScaleMetrics.minZoom,
                                         maxScale: ScaleMetrics.maxZoom,
                                         constrained: false,
@@ -410,7 +430,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                       right: 0,
                                       child: Center(
                                         child: ZoomFeedbackOverlay(
-                                            controller: _transformationController),
+                                            controller:
+                                                _transformationController),
                                       ),
                                     ),
 
@@ -422,11 +443,13 @@ class _EditorScreenState extends State<EditorScreen> {
                                         heroTag: 'left_toggle',
                                         onPressed: () {
                                           setState(() {
-                                            _sidebarCollapsed = !_sidebarCollapsed;
+                                            _sidebarCollapsed =
+                                                !_sidebarCollapsed;
                                           });
                                         },
-                                        backgroundColor:
-                                            Theme.of(context).colorScheme.surface,
+                                        backgroundColor: Theme.of(context)
+                                            .colorScheme
+                                            .surface,
                                         foregroundColor: Theme.of(context)
                                             .colorScheme
                                             .onSurfaceVariant,
@@ -450,11 +473,13 @@ class _EditorScreenState extends State<EditorScreen> {
                                         heroTag: 'right_toggle',
                                         onPressed: () {
                                           setState(() {
-                                            _viewPanelCollapsed = !_viewPanelCollapsed;
+                                            _viewPanelCollapsed =
+                                                !_viewPanelCollapsed;
                                           });
                                         },
-                                        backgroundColor:
-                                            Theme.of(context).colorScheme.surface,
+                                        backgroundColor: Theme.of(context)
+                                            .colorScheme
+                                            .surface,
                                         foregroundColor: Theme.of(context)
                                             .colorScheme
                                             .onSurfaceVariant,
@@ -482,14 +507,16 @@ class _EditorScreenState extends State<EditorScreen> {
                     if (!_viewPanelCollapsed)
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
-                        onPanStart: (_) => setState(() => _isDraggingViewPanel = true),
+                        onPanStart: (_) =>
+                            setState(() => _isDraggingViewPanel = true),
                         onPanEnd: (_) {
                           setState(() => _isDraggingViewPanel = false);
                           _saveLayoutPrefs();
                         },
                         onPanUpdate: (details) {
                           setState(() {
-                            _viewPanelWidth = (_viewPanelWidth - details.delta.dx)
+                            _viewPanelWidth = (_viewPanelWidth -
+                                    details.delta.dx)
                                 .clamp(minViewPanelWidth, maxViewPanelWidth);
                           });
                         },
@@ -506,7 +533,9 @@ class _EditorScreenState extends State<EditorScreen> {
                                 decoration: BoxDecoration(
                                   color: _isDraggingViewPanel
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.outlineVariant,
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .outlineVariant,
                                   borderRadius: BorderRadius.circular(1),
                                 ),
                               ),

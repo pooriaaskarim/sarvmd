@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_metrics.dart';
+import '../../../core/theme/app_metrics.dart';
 
 class ZoomFeedbackOverlay extends StatefulWidget {
   const ZoomFeedbackOverlay({super.key, required this.controller});

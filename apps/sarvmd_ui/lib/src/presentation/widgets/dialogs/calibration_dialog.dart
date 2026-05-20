@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import '../../view_cubit.dart';
+import '../../../logic/view/view_cubit.dart';
 
 /// Opens the display calibration dialog.
 Future<void> showCalibrationDialog(

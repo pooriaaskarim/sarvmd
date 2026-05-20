@@ -2,7 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
-import 'theme/app_theme.dart';
+import '../../core/theme/app_theme.dart';
 
 /// The active guide overlay lines shown on the sheet music manuscript canvas.
 enum GuideType {

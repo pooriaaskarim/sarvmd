@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import '../../theme/app_metrics.dart';
-import 'dropdown_setting.dart';
+import '../../../core/theme/app_metrics.dart';
+import '../common/dropdown_setting.dart';
 
 class DocumentSettingsGroup extends StatelessWidget {
   const DocumentSettingsGroup({
