@@ -20,6 +20,7 @@ class ViewState {
   final double calibrationFactor;
   final Set<GuideType> activeGuides;
   final bool showNotation;
+  final String? activeScrubbingMargin;
 
   const ViewState({
     this.themeMode = ThemeMode.system,
@@ -27,6 +28,7 @@ class ViewState {
     this.calibrationFactor = 1.0,
     this.activeGuides = const {GuideType.paperEdges, GuideType.rulerWings},
     this.showNotation = false,
+    this.activeScrubbingMargin,
   });
 
   ViewState copyWith({
@@ -35,6 +37,8 @@ class ViewState {
     double? calibrationFactor,
     Set<GuideType>? activeGuides,
     bool? showNotation,
+    String? activeScrubbingMargin,
+    bool clearScrubbingMargin = false,
   }) {
     return ViewState(
       themeMode: themeMode ?? this.themeMode,
@@ -42,6 +46,9 @@ class ViewState {
       calibrationFactor: calibrationFactor ?? this.calibrationFactor,
       activeGuides: activeGuides ?? this.activeGuides,
       showNotation: showNotation ?? this.showNotation,
+      activeScrubbingMargin: clearScrubbingMargin
+          ? null
+          : (activeScrubbingMargin ?? this.activeScrubbingMargin),
     );
   }
 

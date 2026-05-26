@@ -6,9 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../widgets/staff/document_settings_group.dart';
+import '../widgets/staff/margins_settings_group.dart';
 import '../../core/theme/app_metrics.dart';
 import '../widgets/common/section_header.dart';
-import '../widgets/common/precision_slider.dart';
 import '../widgets/staff/staff_spacing_group.dart';
 import '../widgets/animations/fade_in_slide.dart';
 import '../widgets/layout/sarv_header.dart';
@@ -225,31 +225,27 @@ class _EditorScreenState extends State<EditorScreen> {
                                     const Divider(height: 32),
                                     FadeInSlide(
                                       delay: 3,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          SectionHeader(
-                                            title: 'Margins (mm)',
-                                            onReset: configCubit.resetMargins,
-                                          ),
-                                          PrecisionSlider(
-                                            label: 'Vertical',
-                                            value: configState.margins.top,
-                                            min: 5.0,
-                                            max: 40.0,
-                                            onChanged: (v) => configCubit
-                                                .updateVerticalMargins(v),
-                                          ),
-                                          PrecisionSlider(
-                                            label: 'Horizontal',
-                                            value: configState.margins.left,
-                                            min: 5.0,
-                                            max: 40.0,
-                                            onChanged: (v) => configCubit
-                                                .updateHorizontalMargins(v),
-                                          ),
-                                        ],
+                                      child: MarginsSettingsGroup(
+                                        margins: configState.margins,
+                                        onLeftChanged:
+                                            configCubit.updateLeftMargin,
+                                        onRightChanged:
+                                            configCubit.updateRightMargin,
+                                        onTopChanged:
+                                            configCubit.updateTopMargin,
+                                        onBottomChanged:
+                                            configCubit.updateBottomMargin,
+                                        onHorizontalChanged:
+                                            configCubit.updateHorizontalMargins,
+                                        onVerticalChanged:
+                                            configCubit.updateVerticalMargins,
+                                        onReset: configCubit.resetMargins,
+                                        onScrubStart: (side) => context
+                                            .read<ViewCubit>()
+                                            .setActiveScrubbingMargin(side),
+                                        onScrubEnd: () => context
+                                            .read<ViewCubit>()
+                                            .setActiveScrubbingMargin(null),
                                       ),
                                     ),
                                     const Divider(height: 32),

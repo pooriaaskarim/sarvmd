@@ -141,6 +141,22 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     updateMargins(state.margins.copyWith(left: mm, right: mm));
   }
 
+  void updateLeftMargin(double mm) {
+    updateMargins(state.margins.copyWith(left: mm));
+  }
+
+  void updateRightMargin(double mm) {
+    updateMargins(state.margins.copyWith(right: mm));
+  }
+
+  void updateTopMargin(double mm) {
+    updateMargins(state.margins.copyWith(top: mm));
+  }
+
+  void updateBottomMargin(double mm) {
+    updateMargins(state.margins.copyWith(bottom: mm));
+  }
+
   void resetToDefaults() {
     applyProfile(core.StaffProfiles.treble);
   }

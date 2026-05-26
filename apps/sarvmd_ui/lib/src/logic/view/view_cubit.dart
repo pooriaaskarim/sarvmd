@@ -110,6 +110,14 @@ class ViewCubit extends Cubit<ViewState> {
     emit(state.copyWith(activeGuides: newGuides));
   }
 
+  void setActiveScrubbingMargin(String? side) {
+    if (side == null) {
+      emit(state.copyWith(clearScrubbingMargin: true));
+    } else {
+      emit(state.copyWith(activeScrubbingMargin: side));
+    }
+  }
+
   void toggleShowNotation() async {
     final nextShow = !state.showNotation;
     emit(state.copyWith(showNotation: nextShow));

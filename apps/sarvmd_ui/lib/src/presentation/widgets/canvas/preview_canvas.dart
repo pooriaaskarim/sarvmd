@@ -131,6 +131,58 @@ class _ManuscriptPainter extends CustomPainter {
           marginPaint);
     }
 
+    // Active Scrubbing Margin Guide Overlay HUD
+    final activeScrub = viewState.activeScrubbingMargin;
+    if (activeScrub != null) {
+      final double marginLeft = layout.config.margins.left * scale;
+      final double marginRight =
+          size.width - layout.config.margins.right * scale;
+      final double marginTop = layout.config.margins.top * scale;
+      final double marginBottom =
+          size.height - layout.config.margins.bottom * scale;
+
+      if (activeScrub == 'left' || activeScrub == 'horizontal') {
+        _drawScrubHUD(
+          canvas,
+          size,
+          'left',
+          'Left: ${layout.config.margins.left.toStringAsFixed(1)} mm',
+          marginLeft,
+          true,
+        );
+      }
+      if (activeScrub == 'right' || activeScrub == 'horizontal') {
+        _drawScrubHUD(
+          canvas,
+          size,
+          'right',
+          'Right: ${layout.config.margins.right.toStringAsFixed(1)} mm',
+          marginRight,
+          true,
+        );
+      }
+      if (activeScrub == 'top' || activeScrub == 'vertical') {
+        _drawScrubHUD(
+          canvas,
+          size,
+          'top',
+          'Top: ${layout.config.margins.top.toStringAsFixed(1)} mm',
+          marginTop,
+          false,
+        );
+      }
+      if (activeScrub == 'bottom' || activeScrub == 'vertical') {
+        _drawScrubHUD(
+          canvas,
+          size,
+          'bottom',
+          'Bottom: ${layout.config.margins.bottom.toStringAsFixed(1)} mm',
+          marginBottom,
+          false,
+        );
+      }
+    }
+
     for (var sysIdx = 0; sysIdx < layout.systems.length; sysIdx++) {
       final system = layout.systems[sysIdx];
       for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
@@ -215,12 +267,45 @@ class _ManuscriptPainter extends CustomPainter {
 
             final staffMidY = topSnappedY + (staff.height * scale) / 2;
 
-            // Place label in the left margin area, 4mm from the staff.
-            // Clamp to ensure it doesn't go off-page (min 2mm from edge).
+            // Place label in the left margin area, dynamically computing leftmost layout boundary
             final double marginSpace = 4 * scale;
             final double minEdgePadding = 2 * scale;
 
-            double nameX = (leftMm * scale) - namePainter.width - marginSpace;
+            double leftmostLayoutX = leftMm * scale;
+            for (final group in system.groupPlacements) {
+              if (sIdx >= group.startStaffIdx && sIdx <= group.endStaffIdx) {
+                final double xOffset = group.level * (4.0 * scale);
+                final double startX =
+                    (leftMm * scale).roundToDouble() - xOffset;
+
+                double boundary = startX;
+                if (group.connector == core.SystemConnector.brace &&
+                    (group.endStaffIdx - group.startStaffIdx + 1) >= 2) {
+                  final groupStaves = system.staves
+                      .sublist(group.startStaffIdx, group.endStaffIdx + 1);
+                  final double gTopY =
+                      (groupStaves.first.topY * scale).roundToDouble();
+                  final double gBottomY = (groupStaves.last.topY * scale +
+                          groupStaves.last.height * scale)
+                      .roundToDouble();
+                  final double h = gBottomY - gTopY;
+                  final double w = (h * 0.12).clamp(6.0 * scale, 30.0 * scale);
+                  boundary -= w;
+                }
+                leftmostLayoutX = math.min(leftmostLayoutX, boundary);
+              }
+            }
+
+            final double availableWidth =
+                leftmostLayoutX - marginSpace - minEdgePadding;
+
+            if (namePainter.width > availableWidth) {
+              final double finalMaxWidth = math.max(availableWidth, 10.0);
+              namePainter.textAlign = TextAlign.right;
+              namePainter.layout(maxWidth: finalMaxWidth);
+            }
+
+            double nameX = leftmostLayoutX - namePainter.width - marginSpace;
             if (nameX < minEdgePadding) {
               nameX = minEdgePadding;
             }
@@ -689,6 +774,107 @@ class _ManuscriptPainter extends CustomPainter {
         tp.paint(canvas, Offset(ax, glyphY));
       }
     }
+  }
+
+  void _drawScrubHUD(Canvas canvas, Size size, String side, String label,
+      double linePositionValue, bool isVerticalLine) {
+    final activeColor = colorScheme.primary;
+
+    // 1. Draw prominent highlighted guide line
+    final highlightPaint = Paint()
+      ..color = activeColor.withValues(alpha: 0.85)
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    if (isVerticalLine) {
+      canvas.drawLine(
+        Offset(linePositionValue, 0),
+        Offset(linePositionValue, size.height),
+        highlightPaint,
+      );
+    } else {
+      canvas.drawLine(
+        Offset(0, linePositionValue),
+        Offset(size.width, linePositionValue),
+        highlightPaint,
+      );
+    }
+
+    // 2. Configure text painter for the metric label
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: colorScheme.onPrimary,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Roboto',
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    // 3. Determine positioning of the floating bubble
+    final double paddingHorizontal = 8.0;
+    final double paddingVertical = 4.0;
+    final double bubbleWidth = textPainter.width + paddingHorizontal * 2;
+    final double bubbleHeight = textPainter.height + paddingVertical * 2;
+
+    double bubbleX = 0.0;
+    double bubbleY = 0.0;
+
+    if (isVerticalLine) {
+      bubbleY = size.height / 2 - bubbleHeight / 2;
+      if (side == 'left') {
+        bubbleX = linePositionValue + 12;
+      } else {
+        bubbleX = linePositionValue - 12 - bubbleWidth;
+      }
+    } else {
+      bubbleX = size.width / 2 - bubbleWidth / 2;
+      if (side == 'top') {
+        bubbleY = linePositionValue + 12;
+      } else {
+        bubbleY = linePositionValue - 12 - bubbleHeight;
+      }
+    }
+
+    // Keep bubble inside page bounds
+    bubbleX = bubbleX.clamp(4.0, size.width - bubbleWidth - 4.0);
+    bubbleY = bubbleY.clamp(4.0, size.height - bubbleHeight - 4.0);
+
+    // 4. Draw rounded rectangle background with shadow
+    final bgPaint = Paint()
+      ..color = activeColor
+      ..style = PaintingStyle.fill;
+
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.15)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+
+    final pillRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(bubbleX, bubbleY, bubbleWidth, bubbleHeight),
+      const Radius.circular(6.0),
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(bubbleX, bubbleY + 1.5, bubbleWidth, bubbleHeight),
+        const Radius.circular(6.0),
+      ),
+      shadowPaint,
+    );
+
+    canvas.drawRRect(pillRect, bgPaint);
+
+    // 5. Paint text centered inside the pill
+    textPainter.paint(
+      canvas,
+      Offset(
+        bubbleX + paddingHorizontal,
+        bubbleY + paddingVertical,
+      ),
+    );
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/app_theme.dart';
@@ -334,8 +335,19 @@ class _LiveStaffPreviewPainter extends CustomPainter {
 
       final double staffMidY = startY + staffHeight / 2;
 
-      // Calculate placement relative to start of staff (25px spacing)
-      final double defaultX = (startX - 25.0) - labelPainter.width;
+      // Space-aware label layout calculation (25px default spacing)
+      final double marginSpace = 25.0;
+      final double minEdgePadding = 8.0;
+      final double availableWidth = startX - marginSpace - minEdgePadding;
+
+      if (labelPainter.width > availableWidth) {
+        final double finalMaxWidth = math.max(availableWidth, 40.0);
+        labelPainter.textAlign = TextAlign.right;
+        labelPainter.layout(maxWidth: finalMaxWidth);
+      }
+
+      // Calculate placement relative to start of staff
+      final double defaultX = (startX - marginSpace) - labelPainter.width;
       final double x = defaultX + hOffset;
       final double y = staffMidY - labelPainter.height / 2 + vOffset;
 
