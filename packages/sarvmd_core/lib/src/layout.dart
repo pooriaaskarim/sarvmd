@@ -63,6 +63,7 @@ class StaffSystem {
   const StaffSystem({
     required this.staves,
     this.groupPlacements = const [],
+    this.leftIndentMm = 0.0,
   });
 
   /// The physical positioning of all staves in this system.
@@ -70,6 +71,9 @@ class StaffSystem {
 
   /// Hierarchical grouping information for connectors and barlines.
   final List<GroupPlacement> groupPlacements;
+
+  /// Dynamic horizontal indent applied to the left side of this system (in mm).
+  final double leftIndentMm;
 
   /// Y of the topmost line of the topmost staff.
   double get topY => staves.first.topY;
@@ -158,7 +162,38 @@ PageLayout computeLayout(PageConfig config) {
     }
 
     traverse(config.systemLayout.rootGroup, 0);
-    systems.add(StaffSystem(staves: staves, groupPlacements: placements));
+
+    // Implement optimal system-wide space-aware indentation calculation
+    int systemMaxSplitLength = 0;
+    for (final staff in staves) {
+      final def = staff.definition;
+      if (def != null && def.labelVisible) {
+        final String label = i == 0
+            ? (def.instrumentName ?? '')
+            : (def.instrumentAbbreviation ?? def.instrumentName ?? '');
+        if (label.isNotEmpty) {
+          int maxWordLength = 0;
+          for (final word in label.split(' ')) {
+            if (word.length > maxWordLength) {
+              maxWordLength = word.length;
+            }
+          }
+          if (maxWordLength > systemMaxSplitLength) {
+            systemMaxSplitLength = maxWordLength;
+          }
+        }
+      }
+    }
+
+    final double leftIndentMm = systemMaxSplitLength > 0
+        ? (systemMaxSplitLength * 1.5) + 4.0
+        : 0.0;
+
+    systems.add(StaffSystem(
+      staves: staves,
+      groupPlacements: placements,
+      leftIndentMm: leftIndentMm,
+    ));
   }
 
   return PageLayout(config: config, systems: systems);

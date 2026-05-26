@@ -185,6 +185,30 @@ class _ManuscriptPainter extends CustomPainter {
 
     for (var sysIdx = 0; sysIdx < layout.systems.length; sysIdx++) {
       final system = layout.systems[sysIdx];
+      final systemLeftMm = leftMm + system.leftIndentMm;
+
+      // Pre-calculate the system's optimal maximum split word length
+      int systemMaxSplitLength = 0;
+      for (final staff in system.staves) {
+        final def = staff.definition;
+        if (def != null && def.labelVisible) {
+          final String label = sysIdx == 0
+              ? (def.instrumentName ?? '')
+              : (def.instrumentAbbreviation ?? def.instrumentName ?? '');
+          if (label.isNotEmpty) {
+            int maxWordLength = 0;
+            for (final word in label.split(' ')) {
+              if (word.length > maxWordLength) {
+                maxWordLength = word.length;
+              }
+            }
+            if (maxWordLength > systemMaxSplitLength) {
+              systemMaxSplitLength = maxWordLength;
+            }
+          }
+        }
+      }
+
       for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
         final staff = system.staves[sIdx];
         final topYPx = staff.topY * scale;
@@ -195,7 +219,7 @@ class _ManuscriptPainter extends CustomPainter {
             ..color = colorScheme.primary.withValues(alpha: 0.1)
             ..style = PaintingStyle.fill;
 
-          final rect = Rect.fromLTRB(leftMm * scale, topYPx - (lineGapPx / 2),
+          final rect = Rect.fromLTRB(systemLeftMm * scale, topYPx - (lineGapPx / 2),
               rightMm * scale, topYPx + staff.height * scale + (lineGapPx / 2));
           canvas.drawRect(rect, boundsPaint);
         }
@@ -205,7 +229,7 @@ class _ManuscriptPainter extends CustomPainter {
         for (var i = 0; i < staff.lines; i++) {
           final y = topSnappedY + i * lineGapPx;
           canvas.drawLine(
-            Offset(leftMm * scale, y),
+            Offset(systemLeftMm * scale, y),
             Offset(rightMm * scale, y),
             staffPaint,
           );
@@ -217,15 +241,15 @@ class _ManuscriptPainter extends CustomPainter {
         if (clef != null) {
           final localScale = staff.scale;
           if (clef.symbol == core.ClefSymbol.tab) {
-            _paintTabClef(canvas, leftMm * scale, topSnappedY, staff.lines,
+            _paintTabClef(canvas, systemLeftMm * scale, topSnappedY, staff.lines,
                 lineGapPx * localScale, inkColor,
                 scale: localScale);
           } else if (clef.symbol == core.ClefSymbol.percussion) {
-            _paintPercussionClef(canvas, leftMm * scale, topSnappedY,
+            _paintPercussionClef(canvas, systemLeftMm * scale, topSnappedY,
                 staff.lines, lineGapPx * localScale, inkColor,
                 scale: localScale);
           } else {
-            _paintStandardClef(canvas, clef, leftMm * scale, topSnappedY,
+            _paintStandardClef(canvas, clef, systemLeftMm * scale, topSnappedY,
                 staff.lines, lineGapPx * localScale, inkColor,
                 scale: localScale);
           }
@@ -241,6 +265,10 @@ class _ManuscriptPainter extends CustomPainter {
                   staff.definition?.instrumentName);
 
           if (name != null && name.isNotEmpty) {
+            // Only wrap if name length is longer than the systemMaxSplitLength (which represents the optimal split indent)
+            final formattedName = name.length > systemMaxSplitLength
+                ? name.replaceAll(' ', '\n')
+                : name;
             final double ptScale =
                 scale / (96 / 25.4); // Points conversion scale
             final double fontSize =
@@ -253,7 +281,7 @@ class _ManuscriptPainter extends CustomPainter {
 
             final namePainter = TextPainter(
               text: TextSpan(
-                text: name,
+                text: formattedName,
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.w600,
@@ -262,6 +290,7 @@ class _ManuscriptPainter extends CustomPainter {
                   fontStyle: italic ? FontStyle.italic : FontStyle.normal,
                 ),
               ),
+              textAlign: TextAlign.right, // Always right-align multi-line text
               textDirection: TextDirection.ltr,
             )..layout();
 
@@ -271,12 +300,12 @@ class _ManuscriptPainter extends CustomPainter {
             final double marginSpace = 4 * scale;
             final double minEdgePadding = 2 * scale;
 
-            double leftmostLayoutX = leftMm * scale;
+            double leftmostLayoutX = systemLeftMm * scale;
             for (final group in system.groupPlacements) {
               if (sIdx >= group.startStaffIdx && sIdx <= group.endStaffIdx) {
                 final double xOffset = group.level * (4.0 * scale);
                 final double startX =
-                    (leftMm * scale).roundToDouble() - xOffset;
+                    (systemLeftMm * scale).roundToDouble() - xOffset;
 
                 double boundary = startX;
                 if (group.connector == core.SystemConnector.brace &&
@@ -337,7 +366,7 @@ class _ManuscriptPainter extends CustomPainter {
         // Offset connectors horizontally based on level to avoid overlap
         // Root group (level 0) is the outermost.
         final double xOffset = group.level * (4.0 * scale);
-        final startX = (leftMm * scale).roundToDouble() - xOffset;
+        final startX = (systemLeftMm * scale).roundToDouble() - xOffset;
 
         final connectorPaint = Paint()
           ..color = inkColor
