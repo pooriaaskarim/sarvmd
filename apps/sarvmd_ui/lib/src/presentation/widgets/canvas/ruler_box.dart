@@ -39,6 +39,8 @@ class _RulerBoxState extends State<RulerBox> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         // Top Ruler
@@ -47,19 +49,56 @@ class _RulerBoxState extends State<RulerBox> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GestureDetector(
-                onTap: _toggleOrigin,
+              // Premium Origin Switcher Button
+              Tooltip(
+                message: _centerOrigin
+                    ? 'Switch to Top-Left Origin'
+                    : 'Switch to Center Origin',
                 child: Container(
                   width: widget.rulerSize,
                   height: widget.rulerSize,
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  child: Center(
-                    child: Text(
-                      _centerOrigin ? 'mm\nCTR' : 'mm\nTOP',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainer,
+                    border: Border(
+                      right: BorderSide(
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
+                      bottom: BorderSide(
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _toggleOrigin,
+                      mouseCursor: SystemMouseCursors.click,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'mm',
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontSize: 7.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              _centerOrigin ? Icons.filter_center_focus : Icons.open_in_full,
+                              key: ValueKey(_centerOrigin),
+                              size: 9.5,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -129,11 +168,172 @@ class _RulerBoxState extends State<RulerBox> {
                   ),
                 ),
               ),
-              Expanded(child: widget.child),
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: widget.child),
+                    // Dynamic WX Real-time Coordinate HUD Overlay
+                    Positioned(
+                      bottom: 16,
+                      right: 16,
+                      child: _CoordinateHUD(
+                        transformationController: widget.transformationController,
+                        cursorNotifier: widget.cursorNotifier,
+                        paperSizeMm: widget.paperSizeMm,
+                        centerOrigin: _centerOrigin,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Floating glassmorphic HUD for real-time cursor coordinate tracking in millimeters.
+class _CoordinateHUD extends StatelessWidget {
+  const _CoordinateHUD({
+    required this.transformationController,
+    required this.cursorNotifier,
+    required this.paperSizeMm,
+    required this.centerOrigin,
+  });
+
+  final TransformationController transformationController;
+  final ValueNotifier<Offset?> cursorNotifier;
+  final Size paperSizeMm;
+  final bool centerOrigin;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([transformationController, cursorNotifier]),
+      builder: (context, _) {
+        final pos = cursorNotifier.value;
+        final isHovered = pos != null;
+
+        return AnimatedOpacity(
+          opacity: isHovered ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          child: isHovered ? _buildContent(context, pos) : const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, Offset pos) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Extract transformation matrix parameters
+    final matrix = transformationController.value;
+    final double scale = matrix.storage[0];
+    final double tx = matrix.getTranslation().x;
+    final double ty = matrix.getTranslation().y;
+
+    const double lpmm = 96 / 25.4; // Pixels per millimeter
+    final double effectiveScale = lpmm * scale;
+
+    // Convert local screen coordinates back into physical paper coordinates
+    double xMm = (pos.dx - tx) / effectiveScale;
+    double yMm = (pos.dy - ty) / effectiveScale;
+
+    // Check if cursor lies inside the boundaries of physical paper sheet
+    final bool onPaper = xMm >= 0 && xMm <= paperSizeMm.width &&
+                         yMm >= 0 && yMm <= paperSizeMm.height;
+
+    // Recalculate coordinates relative to origin (Top-Left or Center)
+    if (centerOrigin) {
+      xMm -= paperSizeMm.width / 2;
+      yMm -= paperSizeMm.height / 2;
+    }
+
+    final String xStr = xMm.toStringAsFixed(1);
+    final String yStr = yMm.toStringAsFixed(1);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark
+            ? colorScheme.surfaceContainer.withValues(alpha: 0.85)
+            : colorScheme.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: onPaper
+              ? colorScheme.primary.withValues(alpha: 0.3)
+              : colorScheme.outlineVariant.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: isDark ? 0.08 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // On-Paper Status indicator dot
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: onPaper
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Coordinate system origin mode label
+          Text(
+            centerOrigin ? 'CTR' : 'TOP',
+            style: TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              color: onPaper ? colorScheme.primary : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Millimeter measurements
+          Text(
+            'X: $xStr',
+            style: TextStyle(
+              fontSize: 10,
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Y: $yStr',
+            style: TextStyle(
+              fontSize: 10,
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            'mm',
+            style: TextStyle(
+              fontSize: 8.5,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -172,9 +372,6 @@ class RulerPainter extends CustomPainter {
     const double lpmm = 96 / 25.4;
 
     // Extract scale and translation from matrix.
-    // NOTE: getMaxScaleOnAxis() returns max(scaleX, scaleY, scaleZ). Since Z is
-    // always 1.0 in our 2-D matrix, it would return 1.0 whenever zoom < 100%.
-    // Read storage[0] directly — it's the X-axis (= visual zoom) scale.
     final double scale = matrix.storage[0];
     final double tx = matrix.getTranslation().x;
     final double ty = matrix.getTranslation().y;
@@ -200,9 +397,6 @@ class RulerPainter extends CustomPainter {
 
     final double effectiveScale = lpmm * scale;
 
-    // The InteractiveViewer and each ruler painter share the same coordinate
-    // origin (both begin after the ruler strip). tx/ty from the matrix already
-    // represent the paper position in painter-local space — no offset needed.
     double offset = axis == Axis.horizontal ? tx : ty;
 
     if (centerOrigin) {
@@ -217,7 +411,6 @@ class RulerPainter extends CustomPainter {
             effectiveScale;
 
     // Adaptive step logic for Labels (Major Ticks)
-    // We want labels to be at least 40 logical pixels apart.
     final double minPixelsPerLabel = 40.0;
     final double targetGapMm = minPixelsPerLabel / effectiveScale;
 
@@ -310,7 +503,7 @@ class RulerPainter extends CustomPainter {
       }
     }
 
-    // Draw cursor "wing" indicator — painted last so it's always on top of tick marks
+    // Draw cursor "wing" indicator
     if (showWings && cursorPos != null) {
       final wingPaint = Paint()
         ..color = colorScheme.primary.withValues(alpha: 0.7)
@@ -319,10 +512,8 @@ class RulerPainter extends CustomPainter {
       final pos = axis == Axis.horizontal ? cursorPos!.dx : cursorPos!.dy;
 
       if (axis == Axis.horizontal) {
-        // Solid line along full height of the horizontal ruler
         canvas.drawLine(Offset(pos, 0), Offset(pos, size.height), wingPaint);
       } else {
-        // Solid line along full width of the vertical ruler
         canvas.drawLine(Offset(0, pos), Offset(size.width, pos), wingPaint);
       }
     }
