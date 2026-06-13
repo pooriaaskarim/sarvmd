@@ -3,58 +3,42 @@
 // license that can be found in the LICENSE file in the root of this project.
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'src/view_notifier.dart';
-import 'src/theme/app_theme.dart';
-import 'src/components/specialized/launch_coordinator.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'src/logic/config/config_cubit.dart';
+import 'src/logic/view/view_state.dart';
+import 'src/logic/view/view_cubit.dart';
+import 'src/logic/score/score_cubit.dart';
+import 'src/core/theme/app_theme.dart';
+import 'src/presentation/screens/editor_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
-  runApp(SarvApp(prefs: prefs));
+void main() {
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => ConfigCubit()),
+        BlocProvider(create: (_) => ViewCubit()),
+        BlocProvider(create: (_) => ScoreCubit()),
+      ],
+      child: const SarvApp(),
+    ),
+  );
 }
 
-class SarvApp extends StatefulWidget {
-  const SarvApp({super.key, required this.prefs});
-
-  final SharedPreferences prefs;
-
-  @override
-  State<SarvApp> createState() => _SarvAppState();
-}
-
-class _SarvAppState extends State<SarvApp> {
-  late final ViewNotifier _viewNotifier;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewNotifier = ViewNotifier(widget.prefs);
-    _viewNotifier.initializeSync();
-  }
-
-  @override
-  void dispose() {
-    _viewNotifier.dispose();
-    super.dispose();
-  }
+class SarvApp extends StatelessWidget {
+  const SarvApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _viewNotifier,
-      builder: (context, _) {
-        final accent = _viewNotifier.accent;
+    return BlocBuilder<ViewCubit, ViewState>(
+      builder: (context, viewState) {
+        final accent = viewState.accent;
         return MaterialApp(
           title: 'SarvMD',
           debugShowCheckedModeBanner: false,
-          themeMode: _viewNotifier.themeMode,
+          themeMode: viewState.themeMode,
           theme: AppTheme.build(accent, Brightness.light),
           darkTheme: AppTheme.build(accent, Brightness.dark),
-          home: LaunchCoordinator(
-            viewNotifier: _viewNotifier,
-            prefs: widget.prefs,
-          ),
+          home: const EditorScreen(),
         );
       },
     );

@@ -54,7 +54,6 @@ class Engraver {
     final lineGap = config.staffConfig.lineGapMm;
     final leftX = config.margins.left;
     final rightX = config.effectiveWidth - config.margins.right;
-    final usableWidth = rightX - leftX;
 
     // Retrieve systems per page using layout engine rules
     final baseLayout = computeLayout(config);
@@ -159,6 +158,8 @@ class Engraver {
         if (currentMeasureIdx >= measureCount) break;
 
         final system = pageBaseLayout.systems[sIdx];
+        final systemLeftX = leftX + system.leftIndentMm;
+        final systemUsableWidth = rightX - systemLeftX;
         
         // Find how many measures fit in this system
         final systemMeasures = <int>[];
@@ -173,7 +174,7 @@ class Engraver {
             systemMeasures.add(currentMeasureIdx);
             accumulatedWidth += mWidth;
             currentMeasureIdx++;
-          } else if (accumulatedWidth + mWidth <= usableWidth) {
+          } else if (accumulatedWidth + mWidth <= systemUsableWidth) {
             systemMeasures.add(currentMeasureIdx);
             accumulatedWidth += mWidth;
             currentMeasureIdx++;
@@ -194,21 +195,21 @@ class Engraver {
         );
 
         if (spacingSum > 0.0) {
-          justifyFactor = (usableWidth - decorationSum) / spacingSum;
+          justifyFactor = (systemUsableWidth - decorationSum) / spacingSum;
         }
 
         // Place system-level barlines at left margin
         final sysTopY = system.staves.first.topY;
         final sysBottomY = system.staves.last.topY + system.staves.last.height;
         pageElements.add(PositionedBarline(
-          x: leftX,
+          x: systemLeftX,
           topY: sysTopY,
           bottomY: sysBottomY,
           thicknessMm: 0.6,
         ));
 
         // Place elements inside the measures allocated to this system
-        var xCursor = leftX;
+        var xCursor = systemLeftX;
 
         for (final mIdx in systemMeasures) {
           final decorWidth = decorationLeftWidths[mIdx];
