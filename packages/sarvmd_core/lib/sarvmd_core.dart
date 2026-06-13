@@ -14,3 +14,18 @@ export 'src/emitter.dart';
 export 'src/compiler.dart';
 export 'src/profiles.dart';
 export 'src/svg_emitter.dart';
+
+// Domain models
+export 'src/domain/duration.dart';
+export 'src/domain/pitch.dart';
+export 'src/domain/clef.dart';
+export 'src/domain/signature.dart';
+export 'src/domain/musical_event.dart';
+export 'src/domain/measure.dart';
+export 'src/domain/score.dart';
+export 'src/domain/smufl.dart';
+
+// Layout engines and Spindles
+export 'src/layout/spacing_spindle.dart';
+export 'src/layout/positioned_element.dart';
+export 'src/layout/engraver.dart';

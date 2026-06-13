@@ -70,3 +70,5 @@ This document serves as the official bilingual glossary and translation referenc
 | **Sign-off (git commit -s)** | Sign-off (امضای دیجیتال کامیت) | Appending `Signed-off-by: Name <email>` to commit messages to legally verify compliance with the DCO. |
 | **Non-Commercial Use** | Non-Commercial Use (کاربردهای غیرتجاری) | Copying, studying, or executing software for personal, academic, or testing workflows without fees or restrictions. |
 | **Commercial Production Use** | Commercial Production Use (بهره‌برداری تجاری) | Running the software in active corporate production environments, SaaS, or embedding its engines in proprietary products. |
+| **Git Flow** | الگوی شاخه‌دهی Git Flow | A branching model for Git centering on persistent master and dev branches, and temporary feature, bugfix, release, and hotfix branches. |
+| **Conventional Commits** | کامیت‌های استاندارد (Conventional Commits) | A specification for adding human and machine readable meaning to commit messages (e.g., feat, fix, docs). |
