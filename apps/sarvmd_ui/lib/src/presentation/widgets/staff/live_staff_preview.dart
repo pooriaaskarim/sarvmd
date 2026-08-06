@@ -290,16 +290,16 @@ class _LiveStaffPreviewPainter extends CustomPainter {
         const fontScale =
             3.8; // Scaled up clef glyph multiplier for maximum prominence
         final (String glyph, double anchorSp) = switch (clefSymbol!) {
-          core.ClefSymbol.g => ('\u{1D11E}', 0.876),
-          core.ClefSymbol.c => ('\u{1D121}', 2.0),
-          core.ClefSymbol.f => ('\u{1D122}', 2.578),
+          core.ClefSymbol.g => ('\u{E050}', 0.876),
+          core.ClefSymbol.c => ('\u{E05C}', 2.0),
+          core.ClefSymbol.f => ('\u{E062}', 2.578),
           _ => ('', 0.0),
         };
         final tp = TextPainter(
           text: TextSpan(
             text: glyph,
             style: TextStyle(
-              fontFamily: 'NotoMusic',
+              fontFamily: 'Bravura',
               fontSize: gap * fontScale,
               color: inkColor,
             ),
