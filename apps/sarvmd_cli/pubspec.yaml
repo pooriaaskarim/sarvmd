@@ -12,3 +12,4 @@ dependencies:
   sarvmd_core:
     path: ../../packages/sarvmd_core
   args: ^2.5.0
+  logd: ^0.9.1

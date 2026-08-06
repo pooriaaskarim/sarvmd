@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/utils/ppi_detector.dart';
 import 'view_state.dart';
+
+final _log = AppLogger.view;
 
 /// Cubit controlling theme modes, accent colors, display calibration, and overlay guides.
 class ViewCubit extends Cubit<ViewState> {
@@ -46,6 +49,10 @@ class ViewCubit extends Cubit<ViewState> {
       final detectedPpi = await detectPhysicalPpi();
       if (detectedPpi != null) {
         calibrationFactor = (detectedPpi / 96.0).clamp(0.5, 4.0);
+        _log.debug('Auto-detected physical PPI',
+            context: {'ppi': detectedPpi, 'factor': calibrationFactor});
+      } else {
+        _log.debug('Physical PPI detection returned null; using default factor');
       }
     }
 
@@ -58,10 +65,16 @@ class ViewCubit extends Cubit<ViewState> {
       calibrationFactor: calibrationFactor,
       showNotation: showNotation,
     ));
+    _log.debug('View state restored from SharedPreferences', context: {
+      'themeMode': themeMode.name,
+      'accent': accent.name,
+      'calibrationFactor': calibrationFactor,
+    });
   }
 
   void updateCalibrationFactor(double factor) async {
     final finalFactor = factor.clamp(0.3, 5.0);
+    _log.debug('Calibration updated', context: {'factor': finalFactor});
     emit(state.copyWith(calibrationFactor: finalFactor));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_keyCalibration, finalFactor);
@@ -74,6 +87,7 @@ class ViewCubit extends Cubit<ViewState> {
   }
 
   void updateThemeMode(ThemeMode mode) async {
+    _log.debug('Theme mode changed', context: {'mode': mode.name});
     emit(state.copyWith(themeMode: mode));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyThemeMode, mode.index);
