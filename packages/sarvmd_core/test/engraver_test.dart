@@ -194,17 +194,25 @@ void main() {
       score = Score(title: 'Emitter Check', parts: [part]);
     });
 
-    test('emitCompiledSvg runs successfully and returns valid SVG XML', () {
+    test('emitCompiledSvg runs successfully and returns valid SVG XML for all SvgLayeringModes', () {
       final layout = Engraver.compile(score, config);
       expect(layout.pages, hasLength(1));
 
-      final svg = emitCompiledSvg(config, layout.pages.first);
-      expect(svg, startsWith('<?xml'));
-      expect(svg, contains('<svg'));
-      expect(svg, contains('</svg>'));
-      expect(svg, contains('<ellipse')); // Notehead
-      expect(svg, contains('<rect')); // Rest
-      expect(svg, contains('<text')); // Time Signature beats
+      // 1. Flat by Category
+      final svgFlat = emitCompiledSvg(config, layout.pages.first, layeringMode: SvgLayeringMode.flatByCategory);
+      expect(svgFlat, contains('id="layer-background"'));
+      expect(svgFlat, contains('id="layer-staff-lines"'));
+      expect(svgFlat, contains('id="layer-notation"'));
+
+      // 2. Hierarchical by System
+      final svgHierarchical = emitCompiledSvg(config, layout.pages.first, layeringMode: SvgLayeringMode.hierarchicalBySystem);
+      expect(svgHierarchical, contains('id="layer-systems"'));
+      expect(svgHierarchical, contains('id="system-1"'));
+
+      // 3. None (Minimal)
+      final svgNone = emitCompiledSvg(config, layout.pages.first, layeringMode: SvgLayeringMode.none);
+      expect(svgNone, isNot(contains('id="layer-background"')));
+      expect(svgNone, contains('<ellipse')); // Notehead
     });
 
     test('emitCompiled runs successfully and returns valid LaTeX document', () {

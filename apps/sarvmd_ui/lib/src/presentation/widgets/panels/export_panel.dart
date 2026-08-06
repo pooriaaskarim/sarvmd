@@ -3,9 +3,11 @@ import '../../../logic/services/export_service.dart';
 import '../../../logic/config/config_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:sarvmd_core/sarvmd_core.dart' as core;
+
 /// A compact export footer pinned at the bottom of the right view panel.
 ///
-/// Shows three export actions: TeX / PDF / SVG.
+/// Shows three export actions: TeX / PDF / SVG (with SVG Layering Mode options).
 /// Handles its own loading state and success/failure feedback via snackbar.
 class ExportPanel extends StatefulWidget {
   const ExportPanel({
@@ -20,7 +22,8 @@ class _ExportPanelState extends State<ExportPanel> {
   _ExportKind? _loading;
   String? _successMessage;
 
-  Future<void> _export(_ExportKind kind) async {
+  Future<void> _export(_ExportKind kind,
+      {core.SvgLayeringMode? svgLayeringMode}) async {
     if (_loading != null || _successMessage != null) return;
     setState(() => _loading = kind);
 
@@ -36,7 +39,12 @@ class _ExportPanelState extends State<ExportPanel> {
         case _ExportKind.pdf:
           path = await ExportService.exportPdf(config, layout);
         case _ExportKind.svg:
-          path = await ExportService.exportSvg(config, layout);
+          path = await ExportService.exportSvg(
+            config,
+            layout,
+            layeringMode:
+                svgLayeringMode ?? core.SvgLayeringMode.flatByCategory,
+          );
       }
       if (mounted) {
         setState(() {
@@ -130,11 +138,42 @@ class _ExportPanelState extends State<ExportPanel> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: _ExportChip(
-                      label: 'SVG',
-                      icon: Icons.image_outlined,
-                      loading: _loading == _ExportKind.svg,
-                      onPressed: () => _export(_ExportKind.svg),
+                    child: PopupMenuButton<core.SvgLayeringMode>(
+                      tooltip: 'SVG Export Options',
+                      offset: const Offset(0, -140),
+                      onSelected: (mode) =>
+                          _export(_ExportKind.svg, svgLayeringMode: mode),
+                      itemBuilder: (context) =>
+                          core.SvgLayeringMode.values.map((mode) {
+                        return PopupMenuItem<core.SvgLayeringMode>(
+                          value: mode,
+                          child: Row(
+                            children: [
+                              Icon(
+                                mode == core.SvgLayeringMode.flatByCategory
+                                    ? Icons.layers
+                                    : mode ==
+                                            core.SvgLayeringMode
+                                                .hierarchicalBySystem
+                                        ? Icons.account_tree
+                                        : Icons.border_all,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                mode.label,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      child: _ExportChip(
+                        label: 'SVG ▾',
+                        icon: Icons.image_outlined,
+                        loading: _loading == _ExportKind.svg,
+                        onPressed: () {},
+                      ),
                     ),
                   ),
                 ],

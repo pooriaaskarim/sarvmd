@@ -24,6 +24,7 @@ export 'src/domain/musical_event.dart';
 export 'src/domain/measure.dart';
 export 'src/domain/score.dart';
 export 'src/domain/smufl.dart';
+export 'src/domain/svg_layering_mode.dart';
 
 // Layout engines and Spindles
 export 'src/layout/spacing_spindle.dart';

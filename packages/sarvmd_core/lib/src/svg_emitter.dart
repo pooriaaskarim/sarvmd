@@ -11,13 +11,18 @@
 import 'config.dart';
 import 'layout.dart';
 import 'domain/smufl.dart';
+import 'domain/svg_layering_mode.dart';
 import 'layout/positioned_element.dart';
 import 'layout/engraver.dart';
 
 String _f(double v) => v.toStringAsFixed(3);
 
 /// Emit a complete standalone SVG string for a blank manuscript layout.
-String emitSvg(PageConfig config, PageLayout layout) {
+String emitSvg(
+  PageConfig config,
+  PageLayout layout, {
+  SvgLayeringMode layeringMode = SvgLayeringMode.flatByCategory,
+}) {
   final buf = StringBuffer();
   final w = config.effectiveWidth;
   final h = config.effectiveHeight;
@@ -35,6 +40,15 @@ String emitSvg(PageConfig config, PageLayout layout) {
   final leftX = config.margins.left;
   final rightX = w - config.margins.right;
 
+  if (layeringMode == SvgLayeringMode.none) {
+    buf.writeln('  <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
+    _drawSystemConnectors(buf, config, layout.systems);
+    _drawStaffLines(buf, layout.systems, leftX, rightX, gap, strokeMm);
+    _drawClefs(buf, layout.systems, leftX, gap);
+    buf.writeln('</svg>');
+    return buf.toString();
+  }
+
   // Layer 1: Page Background
   buf.writeln(
     '  <g id="layer-background" inkscape:groupmode="layer" inkscape:label="Page Background">',
@@ -42,19 +56,204 @@ String emitSvg(PageConfig config, PageLayout layout) {
   buf.writeln('    <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
   buf.writeln('  </g>');
 
-  // Layer 2: System Structure (System Barlines & Piano Braces)
+  if (layeringMode == SvgLayeringMode.hierarchicalBySystem) {
+    buf.writeln(
+      '  <g id="layer-systems" inkscape:groupmode="layer" inkscape:label="Score Systems">',
+    );
+    for (var i = 0; i < layout.systems.length; i++) {
+      final system = layout.systems[i];
+      final sysIdx = i + 1;
+      buf.writeln(
+        '    <g id="system-$sysIdx" inkscape:groupmode="layer" inkscape:label="System $sysIdx">',
+      );
+      _drawSystemConnectors(buf, config, [system]);
+      _drawStaffLines(buf, [system], leftX, rightX, gap, strokeMm);
+      _drawClefs(buf, [system], leftX, gap);
+      buf.writeln('    </g>');
+    }
+    buf.writeln('  </g>');
+  } else {
+    // SvgLayeringMode.flatByCategory
+    buf.writeln(
+      '  <g id="layer-system-structure" inkscape:groupmode="layer" inkscape:label="System Structure">',
+    );
+    _drawSystemConnectors(buf, config, layout.systems);
+    buf.writeln('  </g>');
+
+    buf.writeln(
+      '  <g id="layer-staff-lines" inkscape:groupmode="layer" inkscape:label="Staff Lines"'
+      ' stroke="black" stroke-width="${_f(strokeMm)}" fill="none">',
+    );
+    _drawStaffLines(buf, layout.systems, leftX, rightX, gap, strokeMm, wrapGroup: false);
+    buf.writeln('  </g>');
+
+    buf.writeln(
+      '  <g id="layer-clefs" inkscape:groupmode="layer" inkscape:label="Clefs">',
+    );
+    _drawClefs(buf, layout.systems, leftX, gap);
+    buf.writeln('  </g>');
+  }
+
+  buf.writeln('</svg>');
+  return buf.toString();
+}
+
+/// Emit a complete standalone SVG string for an engraved, compiled page.
+String emitCompiledSvg(
+  PageConfig config,
+  EngravingPage page, {
+  SvgLayeringMode layeringMode = SvgLayeringMode.flatByCategory,
+}) {
+  final buf = StringBuffer();
+  final w = config.effectiveWidth;
+  final h = config.effectiveHeight;
+
+  buf.writeln('<?xml version="1.0" encoding="UTF-8"?>');
   buf.writeln(
-    '  <g id="layer-system-structure" inkscape:groupmode="layer" inkscape:label="System Structure">',
+    '<svg xmlns="http://www.w3.org/2000/svg"'
+    ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
+    ' viewBox="0 0 ${_f(w)} ${_f(h)}"'
+    ' width="${_f(w)}mm" height="${_f(h)}mm">',
   );
-  _drawSystemConnectors(buf, config, layout.systems);
+
+  final gap = config.staffConfig.lineGapMm;
+  final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
+  final leftX = config.margins.left;
+  final rightX = w - config.margins.right;
+
+  if (layeringMode == SvgLayeringMode.none) {
+    buf.writeln('  <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
+    _drawSystemConnectors(buf, config, page.pageLayout.systems);
+    _drawStaffLines(buf, page.pageLayout.systems, leftX, rightX, gap, strokeMm);
+    for (final elem in page.elements) {
+      buf.write(_drawElement(elem, gap));
+    }
+    buf.writeln('</svg>');
+    return buf.toString();
+  }
+
+  // Layer 1: Page Background
+  buf.writeln(
+    '  <g id="layer-background" inkscape:groupmode="layer" inkscape:label="Page Background">',
+  );
+  buf.writeln('    <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
   buf.writeln('  </g>');
 
-  // Layer 3: Staff Lines
-  buf.writeln(
-    '  <g id="layer-staff-lines" inkscape:groupmode="layer" inkscape:label="Staff Lines"'
-    ' stroke="black" stroke-width="${_f(strokeMm)}" fill="none">',
-  );
-  for (final system in layout.systems) {
+  if (layeringMode == SvgLayeringMode.hierarchicalBySystem) {
+    buf.writeln(
+      '  <g id="layer-systems" inkscape:groupmode="layer" inkscape:label="Score Systems">',
+    );
+    for (var i = 0; i < page.pageLayout.systems.length; i++) {
+      final system = page.pageLayout.systems[i];
+      final sysIdx = i + 1;
+      final sysTopY = system.staves.first.topY - gap * 2.0;
+      final sysBottomY = system.staves.last.topY + system.staves.last.height + gap * 2.0;
+
+      buf.writeln(
+        '    <g id="system-$sysIdx" inkscape:groupmode="layer" inkscape:label="System $sysIdx">',
+      );
+
+      _drawSystemConnectors(buf, config, [system]);
+      _drawStaffLines(buf, [system], leftX, rightX, gap, strokeMm);
+
+      final sysElements = page.elements.where(
+        (e) => e.y >= sysTopY && e.y <= sysBottomY,
+      );
+
+      buf.writeln('      <g class="barlines">');
+      for (final elem in sysElements.whereType<PositionedBarline>()) {
+        buf.write(_drawElement(elem, gap));
+      }
+      buf.writeln('      </g>');
+
+      buf.writeln('      <g class="clefs-signatures">');
+      for (final elem in sysElements.where(
+        (e) =>
+            e is PositionedClef ||
+            e is PositionedKeySignature ||
+            e is PositionedTimeSignature,
+      )) {
+        buf.write(_drawElement(elem, gap));
+      }
+      buf.writeln('      </g>');
+
+      buf.writeln('      <g class="notation">');
+      for (final elem in sysElements.where(
+        (e) => e is PositionedNote || e is PositionedRest,
+      )) {
+        buf.write(_drawElement(elem, gap));
+      }
+      buf.writeln('      </g>');
+
+      buf.writeln('    </g>');
+    }
+    buf.writeln('  </g>');
+  } else {
+    // SvgLayeringMode.flatByCategory
+    buf.writeln(
+      '  <g id="layer-system-structure" inkscape:groupmode="layer" inkscape:label="System Structure">',
+    );
+    _drawSystemConnectors(buf, config, page.pageLayout.systems);
+    buf.writeln('  </g>');
+
+    buf.writeln(
+      '  <g id="layer-staff-lines" inkscape:groupmode="layer" inkscape:label="Staff Lines"'
+      ' stroke="black" stroke-width="${_f(strokeMm)}" fill="none">',
+    );
+    _drawStaffLines(buf, page.pageLayout.systems, leftX, rightX, gap, strokeMm, wrapGroup: false);
+    buf.writeln('  </g>');
+
+    buf.writeln(
+      '  <g id="layer-barlines" inkscape:groupmode="layer" inkscape:label="Barlines">',
+    );
+    for (final elem in page.elements.whereType<PositionedBarline>()) {
+      buf.write(_drawElement(elem, gap));
+    }
+    buf.writeln('  </g>');
+
+    buf.writeln(
+      '  <g id="layer-clefs-signatures" inkscape:groupmode="layer" inkscape:label="Clefs &amp; Signatures">',
+    );
+    for (final elem in page.elements.where(
+      (e) =>
+          e is PositionedClef ||
+          e is PositionedKeySignature ||
+          e is PositionedTimeSignature,
+    )) {
+      buf.write(_drawElement(elem, gap));
+    }
+    buf.writeln('  </g>');
+
+    buf.writeln(
+      '  <g id="layer-notation" inkscape:groupmode="layer" inkscape:label="Notation Elements">',
+    );
+    for (final elem in page.elements.where(
+      (e) => e is PositionedNote || e is PositionedRest,
+    )) {
+      buf.write(_drawElement(elem, gap));
+    }
+    buf.writeln('  </g>');
+  }
+
+  buf.writeln('</svg>');
+  return buf.toString();
+}
+
+void _drawStaffLines(
+  StringBuffer buf,
+  List<StaffSystem> systems,
+  double leftX,
+  double rightX,
+  double gap,
+  double strokeMm, {
+  bool wrapGroup = true,
+}) {
+  if (wrapGroup) {
+    buf.writeln(
+      '  <g stroke="black" stroke-width="${_f(strokeMm)}" fill="none">',
+    );
+  }
+  for (final system in systems) {
     for (var si = 0; si < system.staves.length; si++) {
       final staff = system.staves[si];
       final topY = staff.topY;
@@ -67,13 +266,18 @@ String emitSvg(PageConfig config, PageLayout layout) {
       }
     }
   }
-  buf.writeln('  </g>');
+  if (wrapGroup) {
+    buf.writeln('  </g>');
+  }
+}
 
-  // Layer 4: Clefs
-  buf.writeln(
-    '  <g id="layer-clefs" inkscape:groupmode="layer" inkscape:label="Clefs">',
-  );
-  for (final system in layout.systems) {
+void _drawClefs(
+  StringBuffer buf,
+  List<StaffSystem> systems,
+  double leftX,
+  double gap,
+) {
+  for (final system in systems) {
     for (var si = 0; si < system.staves.length; si++) {
       final staff = system.staves[si];
       final clef = staff.definition?.clef;
@@ -115,101 +319,6 @@ String emitSvg(PageConfig config, PageLayout layout) {
       buf.writeln('    </g>');
     }
   }
-  buf.writeln('  </g>');
-
-  buf.writeln('</svg>');
-  return buf.toString();
-}
-
-/// Emit a complete standalone SVG string for an engraved, compiled page.
-String emitCompiledSvg(PageConfig config, EngravingPage page) {
-  final buf = StringBuffer();
-  final w = config.effectiveWidth;
-  final h = config.effectiveHeight;
-
-  buf.writeln('<?xml version="1.0" encoding="UTF-8"?>');
-  buf.writeln(
-    '<svg xmlns="http://www.w3.org/2000/svg"'
-    ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
-    ' viewBox="0 0 ${_f(w)} ${_f(h)}"'
-    ' width="${_f(w)}mm" height="${_f(h)}mm">',
-  );
-
-  final gap = config.staffConfig.lineGapMm;
-  final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
-  final leftX = config.margins.left;
-  final rightX = w - config.margins.right;
-
-  // Layer 1: Page Background
-  buf.writeln(
-    '  <g id="layer-background" inkscape:groupmode="layer" inkscape:label="Page Background">',
-  );
-  buf.writeln('    <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
-  buf.writeln('  </g>');
-
-  // Layer 2: System Structure (System Barlines & Piano Braces)
-  buf.writeln(
-    '  <g id="layer-system-structure" inkscape:groupmode="layer" inkscape:label="System Structure">',
-  );
-  _drawSystemConnectors(buf, config, page.pageLayout.systems);
-  buf.writeln('  </g>');
-
-  // Layer 3: Staff Lines
-  buf.writeln(
-    '  <g id="layer-staff-lines" inkscape:groupmode="layer" inkscape:label="Staff Lines"'
-    ' stroke="black" stroke-width="${_f(strokeMm)}" fill="none">',
-  );
-  for (final system in page.pageLayout.systems) {
-    for (var si = 0; si < system.staves.length; si++) {
-      final staff = system.staves[si];
-      final topY = staff.topY;
-      for (var li = 0; li < staff.lines; li++) {
-        final y = topY + li * gap;
-        buf.writeln(
-          '    <line x1="${_f(leftX)}" y1="${_f(y)}"'
-          ' x2="${_f(rightX)}" y2="${_f(y)}"/>',
-        );
-      }
-    }
-  }
-  buf.writeln('  </g>');
-
-  // Layer 4: Barlines
-  buf.writeln(
-    '  <g id="layer-barlines" inkscape:groupmode="layer" inkscape:label="Barlines">',
-  );
-  for (final elem in page.elements.whereType<PositionedBarline>()) {
-    buf.write(_drawElement(elem, gap));
-  }
-  buf.writeln('  </g>');
-
-  // Layer 5: Clefs & Signatures
-  buf.writeln(
-    '  <g id="layer-clefs-signatures" inkscape:groupmode="layer" inkscape:label="Clefs &amp; Signatures">',
-  );
-  for (final elem in page.elements.where(
-    (e) =>
-        e is PositionedClef ||
-        e is PositionedKeySignature ||
-        e is PositionedTimeSignature,
-  )) {
-    buf.write(_drawElement(elem, gap));
-  }
-  buf.writeln('  </g>');
-
-  // Layer 6: Notation Elements (Notes & Rests)
-  buf.writeln(
-    '  <g id="layer-notation" inkscape:groupmode="layer" inkscape:label="Notation Elements">',
-  );
-  for (final elem in page.elements.where(
-    (e) => e is PositionedNote || e is PositionedRest,
-  )) {
-    buf.write(_drawElement(elem, gap));
-  }
-  buf.writeln('  </g>');
-
-  buf.writeln('</svg>');
-  return buf.toString();
 }
 
 /// Helper method to draw system connectors (braces / connecting barlines).
