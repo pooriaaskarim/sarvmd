@@ -2,16 +2,8 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-      - master
-      - dev
-      - 'feature/**'
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
-      - 'LICENSE'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
