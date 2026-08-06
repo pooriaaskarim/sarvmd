@@ -3,10 +3,12 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/utils/app_logger.dart';
+
+final _log = AppLogger.config;
 
 /// Cubit managing the physical layout configuration (`PageConfig`) of the score sheet.
 class ConfigCubit extends Cubit<core.PageConfig> {
@@ -28,18 +30,27 @@ class ConfigCubit extends Cubit<core.PageConfig> {
         final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
         final loadedConfig = core.PageConfig.fromJson(jsonMap);
         emit(loadedConfig);
-      } catch (e) {
-        debugPrint('Error loading config from prefs: $e');
+        _log.debug('Config restored from SharedPreferences');
+      } catch (e, st) {
+        _log.error('Failed to deserialize config from SharedPreferences',
+            error: e, stackTrace: st);
       }
+    } else {
+      _log.debug('No saved config found; using default profile');
     }
   }
 
   void _save() {
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 500), () async {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonStr = jsonEncode(state.toJson());
-      await prefs.setString(_prefKey, jsonStr);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final jsonStr = jsonEncode(state.toJson());
+        await prefs.setString(_prefKey, jsonStr);
+      } catch (e, st) {
+        _log.error('Failed to persist config to SharedPreferences',
+            error: e, stackTrace: st);
+      }
     });
   }
 
@@ -337,6 +348,7 @@ class ConfigCubit extends Cubit<core.PageConfig> {
   }
 
   void applyProfile(core.StaffProfile profile) {
+    _log.debug('Applying profile', context: {'profile': profile.label});
     final newConfig = profile.applyTo(state);
 
     // Ensure all staves have unique IDs for stable keying
