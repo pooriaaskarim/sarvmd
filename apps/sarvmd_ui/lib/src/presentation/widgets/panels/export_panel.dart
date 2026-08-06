@@ -138,42 +138,61 @@ class _ExportPanelState extends State<ExportPanel> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: PopupMenuButton<core.SvgLayeringMode>(
-                      tooltip: 'SVG Export Options',
-                      offset: const Offset(0, -140),
-                      onSelected: (mode) =>
-                          _export(_ExportKind.svg, svgLayeringMode: mode),
-                      itemBuilder: (context) =>
-                          core.SvgLayeringMode.values.map((mode) {
-                        return PopupMenuItem<core.SvgLayeringMode>(
-                          value: mode,
-                          child: Row(
-                            children: [
-                              Icon(
-                                mode == core.SvgLayeringMode.flatByCategory
-                                    ? Icons.layers
-                                    : mode ==
-                                            core.SvgLayeringMode
-                                                .hierarchicalBySystem
-                                        ? Icons.account_tree
-                                        : Icons.border_all,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                mode.label,
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ],
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _ExportChip(
+                            label: 'SVG',
+                            icon: Icons.image_outlined,
+                            loading: _loading == _ExportKind.svg,
+                            onPressed: () => _export(_ExportKind.svg),
                           ),
-                        );
-                      }).toList(),
-                      child: _ExportChip(
-                        label: 'SVG ▾',
-                        icon: Icons.image_outlined,
-                        loading: _loading == _ExportKind.svg,
-                        onPressed: () {},
-                      ),
+                        ),
+                        const SizedBox(width: 4),
+                        PopupMenuButton<core.SvgLayeringMode>(
+                          tooltip: 'SVG Layering Options',
+                          offset: const Offset(0, -140),
+                          onSelected: (mode) =>
+                              _export(_ExportKind.svg, svgLayeringMode: mode),
+                          itemBuilder: (context) =>
+                              core.SvgLayeringMode.values.map((mode) {
+                            return PopupMenuItem<core.SvgLayeringMode>(
+                              value: mode,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    mode == core.SvgLayeringMode.flatByCategory
+                                        ? Icons.layers
+                                        : mode ==
+                                                core.SvgLayeringMode
+                                                    .hierarchicalBySystem
+                                            ? Icons.account_tree
+                                            : Icons.border_all,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    mode.label,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          child: Container(
+                            height: 34,
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            decoration: BoxDecoration(
+                              color: cs.onSurface.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                  color: cs.outline.withValues(alpha: 0.3)),
+                            ),
+                            child: Icon(Icons.arrow_drop_down,
+                                size: 18, color: cs.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
