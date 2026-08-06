@@ -289,11 +289,11 @@ class _LiveStaffPreviewPainter extends CustomPainter {
       } else {
         const fontScale =
             3.8; // Scaled up clef glyph multiplier for maximum prominence
-        final (String glyph, double anchorSp) = switch (clefSymbol!) {
-          core.ClefSymbol.g => ('\u{E050}', 0.876),
-          core.ClefSymbol.c => ('\u{E05C}', 2.0),
-          core.ClefSymbol.f => ('\u{E062}', 2.578),
-          _ => ('', 0.0),
+        final String glyph = switch (clefSymbol!) {
+          core.ClefSymbol.g => '\u{E050}',
+          core.ClefSymbol.c => '\u{E05C}',
+          core.ClefSymbol.f => '\u{E062}',
+          _ => '',
         };
         final tp = TextPainter(
           text: TextSpan(
@@ -310,8 +310,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
         final baselineDelta =
             tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
         final anchorYPx = startY + (lines - anchorLine) * gap;
-        final baselineY = anchorYPx + anchorSp * gap;
-        final glyphY = baselineY - baselineDelta;
+        final glyphY = anchorYPx - baselineDelta;
 
         tp.paint(canvas, Offset(clefX, glyphY));
       }

@@ -435,11 +435,11 @@ class _ManuscriptPainter extends CustomPainter {
       double topY, int lines, double gap, Color color,
       {double scale = 1.0}) {
     const fontScale = 4.0;
-    final (String glyph, double anchorSp) = switch (clef.symbol) {
-      core.ClefSymbol.g => ('\u{E050}', 0.876),
-      core.ClefSymbol.c => ('\u{E05C}', 2.0),
-      core.ClefSymbol.f => ('\u{E062}', 2.578),
-      _ => ('', 0.0),
+    final String glyph = switch (clef.symbol) {
+      core.ClefSymbol.g => '\u{E050}',
+      core.ClefSymbol.c => '\u{E05C}',
+      core.ClefSymbol.f => '\u{E062}',
+      _ => '',
     };
 
     final tp = TextPainter(
@@ -457,13 +457,9 @@ class _ManuscriptPainter extends CustomPainter {
     final baselineDelta =
         tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
 
-    // Anchor is relative to the bottom line usually, but clef.anchorLine is 1-indexed from bottom
     final anchorYPx = topY + (lines - clef.anchorLine) * gap;
-    final baselineY = anchorYPx + anchorSp * gap;
-    final microOffset = gap * 0.04;
-
     final glyphX = x + gap * 0.15;
-    final glyphY = baselineY - baselineDelta + microOffset;
+    final glyphY = anchorYPx - baselineDelta;
 
     tp.paint(canvas, Offset(glyphX.roundToDouble(), glyphY.roundToDouble()));
   }
@@ -716,15 +712,6 @@ class _ManuscriptPainter extends CustomPainter {
           ..style = PaintingStyle.stroke,
       );
     } else if (elem is core.PositionedClef) {
-      final anchorSp = switch (elem.glyph) {
-        core.SmuflGlyph.gClef => 0.876,
-        core.SmuflGlyph.cClef => 2.0,
-        core.SmuflGlyph.fClef => 2.578,
-        core.SmuflGlyph.tabClef => 0.0,
-        core.SmuflGlyph.percussionClef => 1.0,
-        _ => 0.0,
-      };
-
       final tp = TextPainter(
         text: TextSpan(
           text: elem.glyph.codepoint,
@@ -741,11 +728,8 @@ class _ManuscriptPainter extends CustomPainter {
           tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
 
       final anchorYPx = elem.y * scale;
-      final baselineY = anchorYPx + anchorSp * gap * elem.scale;
-      final microOffset = gap * elem.scale * 0.04;
-
       final glyphX = elem.x * scale + gap * elem.scale * 0.15;
-      final glyphY = baselineY - baselineDelta + microOffset;
+      final glyphY = anchorYPx - baselineDelta;
 
       tp.paint(canvas, Offset(glyphX, glyphY));
     } else if (elem is core.PositionedTimeSignature) {

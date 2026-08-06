@@ -308,12 +308,6 @@ class MiniStaffClefPainter extends CustomPainter {
   }
 
   void _paintStandardClef(Canvas canvas, double staffTop, Color color) {
-    final double anchorSp = switch (clef.symbol) {
-      core.ClefSymbol.g => 0.876,
-      core.ClefSymbol.c => 2.0,
-      core.ClefSymbol.f => 2.578,
-      _ => 0.0,
-    };
     final String glyph = switch (clef.symbol) {
       core.ClefSymbol.g => '\u{E050}',
       core.ClefSymbol.c => '\u{E05C}',
@@ -330,9 +324,10 @@ class MiniStaffClefPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    final ascent = tp.computeLineMetrics().first.ascent;
+    final baselineDelta =
+        tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
     final anchorYPx = staffTop + (lines - clef.anchorLine) * gap;
-    tp.paint(canvas, Offset(gap * 0.05, anchorYPx + anchorSp * gap - ascent));
+    tp.paint(canvas, Offset(gap * 0.05, anchorYPx - baselineDelta));
   }
 
   void _paintTabClef(Canvas canvas, double x, double topY, int lines,

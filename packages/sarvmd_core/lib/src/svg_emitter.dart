@@ -116,13 +116,9 @@ String emitSvg(PageConfig config, PageLayout layout) {
 
       final anchorY =
           staff.topY + (staff.lines - clef.anchorLine) * gap * staff.scale;
-      final anchorSp = switch (clef.symbol) {
-        ClefSymbol.g => 0.876,
-        ClefSymbol.c => 2.0,
-        ClefSymbol.f => 2.578,
-        ClefSymbol.tab => 0.0,
-        ClefSymbol.percussion => (staff.lines > 1) ? 1.0 : 0.0,
-      };
+      final anchorSp = (clef.symbol == ClefSymbol.percussion && staff.lines > 1)
+          ? 1.0
+          : 0.0;
 
       final displayGaps = (clef.symbol == ClefSymbol.tab)
           ? (staff.lines > 0 ? staff.lines - 1 : 1).toDouble() * staff.scale
@@ -132,8 +128,7 @@ String emitSvg(PageConfig config, PageLayout layout) {
           ? (staff.topY + (staff.lines - 1) * gap * staff.scale)
           : anchorY;
 
-      final microOffset = gap * 0.04;
-      final baselineY = effectiveAnchorY + anchorSp * gap + microOffset;
+      final baselineY = effectiveAnchorY + anchorSp * gap * staff.scale;
       final glyphX = leftX + gap * 0.15;
 
       final (String path, double upem) = switch (clef.symbol) {

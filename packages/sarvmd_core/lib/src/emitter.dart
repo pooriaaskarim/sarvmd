@@ -118,13 +118,9 @@ String emit(PageConfig config, PageLayout layout) {
         final anchorPdfY = topLinePdfY -
             (staff.lines - clef.anchorLine) * lineGapBp * staff.scale;
 
-        final anchorSp = switch (clef.symbol) {
-          ClefSymbol.g => 0.876,
-          ClefSymbol.c => 2.0,
-          ClefSymbol.f => 2.578,
-          ClefSymbol.tab => 0.0, // Bottom-aligned
-          ClefSymbol.percussion => (staff.lines > 1) ? 1.0 : 0.0,
-        };
+        final anchorSp = (clef.symbol == ClefSymbol.percussion && staff.lines > 1)
+            ? 1.0
+            : 0.0;
 
         // For TAB, we want it to span the full staff height
         final displayGaps = (clef.symbol == ClefSymbol.tab)
@@ -136,9 +132,8 @@ String emit(PageConfig config, PageLayout layout) {
             ? (topLinePdfY - (staff.lines - 1) * lineGapBp)
             : anchorPdfY;
 
-        final microOffsetBp = lineGapBp * 0.04;
         final baselinePdfY =
-            effectiveAnchorPdfY - anchorSp * lineGapBp - microOffsetBp;
+            effectiveAnchorPdfY - anchorSp * lineGapBp * staff.scale;
         final cx = staffLeftBp + lineGapBp * 0.15;
 
         final (String path, double upem) = switch (clef.symbol) {
