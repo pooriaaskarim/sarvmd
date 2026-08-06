@@ -436,9 +436,9 @@ class _ManuscriptPainter extends CustomPainter {
       {double scale = 1.0}) {
     const fontScale = 4.0;
     final (String glyph, double anchorSp) = switch (clef.symbol) {
-      core.ClefSymbol.g => ('\u{1D11E}', 0.876),
-      core.ClefSymbol.c => ('\u{1D121}', 2.0),
-      core.ClefSymbol.f => ('\u{1D122}', 2.578),
+      core.ClefSymbol.g => ('\u{E050}', 0.876),
+      core.ClefSymbol.c => ('\u{E05C}', 2.0),
+      core.ClefSymbol.f => ('\u{E062}', 2.578),
       _ => ('', 0.0),
     };
 
@@ -446,7 +446,7 @@ class _ManuscriptPainter extends CustomPainter {
       text: TextSpan(
         text: glyph,
         style: TextStyle(
-          fontFamily: 'NotoMusic',
+          fontFamily: 'Bravura',
           fontSize: gap * fontScale, // Gap is already pre-scaled
           color: color,
         ),
@@ -643,7 +643,7 @@ class _ManuscriptPainter extends CustomPainter {
             text: TextSpan(
               text: elem.flagGlyph!.codepoint,
               style: TextStyle(
-                fontFamily: 'NotoMusic',
+                fontFamily: 'Bravura',
                 fontSize: gap * 4.0 * elem.scale,
                 color: color,
               ),
@@ -689,7 +689,7 @@ class _ManuscriptPainter extends CustomPainter {
           text: TextSpan(
             text: elem.glyph.codepoint,
             style: TextStyle(
-              fontFamily: 'NotoMusic',
+              fontFamily: 'Bravura',
               fontSize: gap * 4.0 * elem.scale,
               color: color,
             ),
@@ -729,7 +729,7 @@ class _ManuscriptPainter extends CustomPainter {
         text: TextSpan(
           text: elem.glyph.codepoint,
           style: TextStyle(
-            fontFamily: 'NotoMusic',
+            fontFamily: 'Bravura',
             fontSize: gap * 4.0 * elem.scale,
             color: color,
           ),
@@ -785,7 +785,7 @@ class _ManuscriptPainter extends CustomPainter {
           text: TextSpan(
             text: accidental.glyph.codepoint,
             style: TextStyle(
-              fontFamily: 'NotoMusic',
+              fontFamily: 'Bravura',
               fontSize: gap * 4.0 * elem.scale,
               color: color,
             ),

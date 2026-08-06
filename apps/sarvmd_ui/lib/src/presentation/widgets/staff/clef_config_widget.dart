@@ -89,7 +89,7 @@ class ClefConfigWidget extends StatelessWidget {
                   : Text(
                       glyph,
                       style: TextStyle(
-                          fontFamily: 'NotoMusic',
+                          fontFamily: 'Bravura',
                           fontSize: 34,
                           height: 1.0,
                           color: isSelected
@@ -110,11 +110,11 @@ class ClefConfigWidget extends StatelessWidget {
         if (canChangeSymbol) ...[
           Row(
             children: [
-              buildHorizontalTab(core.ClefSymbol.g, '\u{1D11E}'),
+              buildHorizontalTab(core.ClefSymbol.g, '\u{E050}'),
               const SizedBox(width: 8),
-              buildHorizontalTab(core.ClefSymbol.c, '\u{1D121}'),
+              buildHorizontalTab(core.ClefSymbol.c, '\u{E05C}'),
               const SizedBox(width: 8),
-              buildHorizontalTab(core.ClefSymbol.f, '\u{1D122}'),
+              buildHorizontalTab(core.ClefSymbol.f, '\u{E062}'),
               const SizedBox(width: 8),
               buildHorizontalTab(core.ClefSymbol.tab, '', 'TAB'),
               const SizedBox(width: 8),
@@ -315,9 +315,9 @@ class MiniStaffClefPainter extends CustomPainter {
       _ => 0.0,
     };
     final String glyph = switch (clef.symbol) {
-      core.ClefSymbol.g => '\u{1D11E}',
-      core.ClefSymbol.c => '\u{1D121}',
-      core.ClefSymbol.f => '\u{1D122}',
+      core.ClefSymbol.g => '\u{E050}',
+      core.ClefSymbol.c => '\u{E05C}',
+      core.ClefSymbol.f => '\u{E062}',
       _ => '',
     };
 
@@ -325,7 +325,7 @@ class MiniStaffClefPainter extends CustomPainter {
       text: TextSpan(
         text: glyph,
         style: TextStyle(
-            fontFamily: 'NotoMusic', fontSize: gap * 4.0, color: color),
+            fontFamily: 'Bravura', fontSize: gap * 4.0, color: color),
       ),
       textDirection: TextDirection.ltr,
     )..layout();

@@ -550,9 +550,9 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             final isSelected = _selectedClefSymbol == symbol;
 
             String glyph = switch (symbol) {
-              core.ClefSymbol.g => '\u{1D11E}',
-              core.ClefSymbol.c => '\u{1D121}',
-              core.ClefSymbol.f => '\u{1D122}',
+              core.ClefSymbol.g => '\u{E050}',
+              core.ClefSymbol.c => '\u{E05C}',
+              core.ClefSymbol.f => '\u{E062}',
               _ => '',
             };
 
@@ -916,7 +916,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
       graphicsIndicator = Text(
         glyph,
         style: TextStyle(
-          fontFamily: 'NotoMusic',
+          fontFamily: 'Bravura',
           fontSize: 32,
           height: 1.0,
           color: isSelected ? cs.primary : cs.onSurface,

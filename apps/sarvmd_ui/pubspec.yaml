@@ -29,9 +29,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   fonts:
-    - family: NotoMusic
-      fonts:
-        - asset: assets/fonts/NotoMusic-Regular.ttf
     - family: Bravura
       fonts:
         - asset: assets/fonts/Bravura.otf
