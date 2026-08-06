@@ -21,8 +21,8 @@ Future<String?> showSvgExportDialog(
 
 /// A dedicated desktop modal dialog for configuring SVG vector export options.
 ///
-/// Lets the user choose their preferred SVG Layering Architecture
-/// (Flat by Category, Hierarchical by System, or Minimal) before exporting.
+/// Provides a high-contrast, polished UI for selecting SVG Layering Architecture
+/// (Category Layers, System & Staff Layers, or Raw Vector Paths) before exporting.
 class SvgExportDialog extends StatefulWidget {
   const SvgExportDialog({
     super.key,
@@ -76,30 +76,36 @@ class _SvgExportDialogState extends State<SvgExportDialog> {
     return Dialog(
       backgroundColor: cs.surface,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outline.withValues(alpha: 0.5), width: 1),
+      ),
       child: Container(
-        width: 520,
-        padding: const EdgeInsets.all(24),
+        width: 560,
+        padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Title & Icon
+            // Header Title & Icon Badge
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: cs.primaryContainer,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: cs.primary.withValues(alpha: 0.3), width: 1),
                   ),
                   child: Icon(
                     Icons.image_outlined,
                     color: cs.onPrimaryContainer,
-                    size: 22,
+                    size: 26,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,17 +113,19 @@ class _SvgExportDialogState extends State<SvgExportDialog> {
                       Text(
                         'Export Vector Graphic (SVG)',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 19,
                           fontWeight: FontWeight.bold,
                           color: cs.onSurface,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
-                        'Configure layer organization for vector editors',
+                        'Select layer organization for Illustrator, Inkscape, Figma, and Affinity Designer.',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurfaceVariant,
+                          fontSize: 12.5,
+                          height: 1.35,
+                          color: cs.onSurface.withValues(alpha: 0.75),
                         ),
                       ),
                     ],
@@ -125,53 +133,56 @@ class _SvgExportDialogState extends State<SvgExportDialog> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, size: 20),
+                  icon: Icon(Icons.close,
+                      size: 20, color: cs.onSurface.withValues(alpha: 0.8)),
                   tooltip: 'Cancel',
                 ),
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
+            // Section Label
             Text(
-              'Select Layering Architecture',
+              'Layer Organization Strategy',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: 13.5,
+                fontWeight: FontWeight.bold,
                 color: cs.onSurface,
+                letterSpacing: 0.1,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-            // Layering Options Selection Cards
+            // Layering Options Cards
             _LayerOptionCard(
               mode: core.SvgLayeringMode.flatByCategory,
               selectedMode: _selectedMode,
-              title: 'Flat (by Category)',
+              title: 'Category Layers (Page-Wide)',
               subtitle:
-                  'Page-wide layers for Staff Lines, Clefs, Barlines, and Notation. Ideal for page-wide color & line style editing.',
+                  'Organizes elements into top-level functional layers (Staff Lines, Clefs, Barlines, Notes). Ideal for changing colors, line weights, or hiding staff lines page-wide.',
               icon: Icons.layers_outlined,
               onSelect: (m) => setState(() => _selectedMode = m),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             _LayerOptionCard(
               mode: core.SvgLayeringMode.hierarchicalBySystem,
               selectedMode: _selectedMode,
-              title: 'Hierarchical (by System)',
+              title: 'System & Staff Layers (Hierarchical)',
               subtitle:
-                  'Grouped by System & Staff (System 1, System 2...). Ideal for moving, hiding, or extracting individual score systems in Inkscape/Illustrator.',
+                  'Groups elements by System & Staff first (System 1, System 2...). Essential if you want to select, move, re-order, or hide individual musical systems with one click.',
               icon: Icons.account_tree_outlined,
               onSelect: (m) => setState(() => _selectedMode = m),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             _LayerOptionCard(
               mode: core.SvgLayeringMode.none,
               selectedMode: _selectedMode,
-              title: 'Minimal (No Layers)',
+              title: 'Raw Vector Paths (No Layers)',
               subtitle:
-                  'Clean vector paths without Inkscape layer metadata wrappers. Ideal for web embedding or lightweight vector graphics.',
+                  'Outputs clean, un-grouped vector paths without layer metadata. Best for embedding SVGs in websites, apps, or lightweight documents.',
               icon: Icons.border_all_outlined,
               onSelect: (m) => setState(() => _selectedMode = m),
             ),
@@ -180,33 +191,56 @@ class _SvgExportDialogState extends State<SvgExportDialog> {
               const SizedBox(height: 16),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: Colors.red.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
                 ),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
             // Actions Bar
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
+                OutlinedButton(
                   onPressed:
                       _isExporting ? null : () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    side: BorderSide(
+                        color: cs.outline.withValues(alpha: 0.5)),
+                  ),
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 12),
                 FilledButton.icon(
                   onPressed: _isExporting ? null : _handleExport,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 22, vertical: 12),
+                  ),
                   icon: _isExporting
                       ? const SizedBox(
                           width: 16,
@@ -217,7 +251,10 @@ class _SvgExportDialogState extends State<SvgExportDialog> {
                           ),
                         )
                       : const Icon(Icons.download, size: 18),
-                  label: Text(_isExporting ? 'Exporting...' : 'Export SVG'),
+                  label: Text(
+                    _isExporting ? 'Exporting...' : 'Export SVG',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -252,43 +289,80 @@ class _LayerOptionCard extends StatelessWidget {
 
     return InkWell(
       onTap: () => onSelect(mode),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isSelected
-              ? cs.primaryContainer.withValues(alpha: 0.4)
-              : cs.surfaceContainerHigh.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(10),
+              ? cs.primary.withValues(alpha: 0.12)
+              : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? cs.primary
-                : cs.outline.withValues(alpha: 0.3),
-            width: isSelected ? 1.5 : 1.0,
+            color: isSelected ? cs.primary : cs.outline.withValues(alpha: 0.5),
+            width: isSelected ? 2.0 : 1.0,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: cs.primary.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 18,
-              height: 18,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? cs.primary : cs.outline,
-                  width: isSelected ? 5.5 : 2.0,
+            // Custom Radio Indicator Badge
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? cs.primary : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected
+                        ? cs.primary
+                        : cs.onSurface.withValues(alpha: 0.6),
+                    width: isSelected ? 2.0 : 2.0,
+                  ),
                 ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check,
+                        size: 13,
+                        color: Colors.white,
+                      )
+                    : null,
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? cs.primary : cs.onSurfaceVariant,
-            ),
             const SizedBox(width: 12),
+
+            // Icon Badge Box
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? cs.primary.withValues(alpha: 0.18)
+                    : cs.onSurface.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isSelected
+                    ? cs.primary
+                    : cs.onSurface.withValues(alpha: 0.85),
+              ),
+            ),
+            const SizedBox(width: 14),
+
+            // Text Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,19 +370,18 @@ class _LayerOptionCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                       color: isSelected ? cs.primary : cs.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: cs.onSurfaceVariant,
-                      height: 1.3,
+                      fontSize: 12,
+                      color: cs.onSurface.withValues(alpha: 0.85),
+                      height: 1.35,
                     ),
                   ),
                 ],
