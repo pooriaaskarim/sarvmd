@@ -64,59 +64,56 @@ class _ProfilePickerState extends State<ProfilePicker> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Sliding/Scrollable Category Pill Selector ───
-            SizedBox(
-              height: 32,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: allTabs.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 6),
-                itemBuilder: (context, index) {
-                  final cat = allTabs[index];
-                  final label = cat == null ? 'All' : _getCategoryLabel(cat);
-                  final isSelected = _selectedCategory == cat;
+            // ── Responsive Category Pill Selector (Wraps cleanly to sidebar width) ───
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: allTabs.map((cat) {
+                final label = cat == null ? 'All' : _getCategoryLabel(cat);
+                final isSelected = _selectedCategory == cat;
 
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategory = cat;
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = cat;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
                         color: isSelected
                             ? colorScheme.primary
-                            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant.withValues(alpha: 0.1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Center(
-                        child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 150),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                            color: isSelected
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                            letterSpacing: 0.3,
-                          ),
-                          child: Text(label),
-                        ),
+                            : colorScheme.outlineVariant
+                                .withValues(alpha: 0.2),
+                        width: 1,
                       ),
                     ),
-                  );
-                },
-              ),
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 150),
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.85),
+                        letterSpacing: 0.2,
+                      ),
+                      child: Text(label),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 12),
             
