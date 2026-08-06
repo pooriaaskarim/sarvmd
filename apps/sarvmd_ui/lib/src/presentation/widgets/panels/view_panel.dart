@@ -77,24 +77,9 @@ class ViewPanel extends StatelessWidget {
                       delay: 6,
                       child: Divider(height: 32),
                     ),
+
                     const FadeInSlide(
-                      delay: 7,
-                      child: SectionHeader(title: 'Notation Preview'),
-                    ),
-                    FadeInSlide(
-                      delay: 8,
-                      child: GuideToggle(
-                        label: 'Show Music Score',
-                        value: viewState.showNotation,
-                        onChanged: (v) => viewCubit.toggleShowNotation(),
-                      ),
-                    ),
-                    const FadeInSlide(
-                      delay: 9,
-                      child: Divider(height: 32),
-                    ),
-                    const FadeInSlide(
-                        delay: 10, child: SectionHeader(title: 'Guides')),
+                        delay: 7, child: SectionHeader(title: 'Guides')),
                     FadeInSlide(
                       delay: 11,
                       child: Column(
