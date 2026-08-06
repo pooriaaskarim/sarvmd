@@ -67,7 +67,29 @@ String emitSvg(PageConfig config, PageLayout layout) {
         ' stroke-width="${_f(strokeMm * 2.5)}"/>',
       );
 
-      if (!useBrace) {
+      if (useBrace) {
+        // Render the standard piano brace using Bravura SMuFL glyph U+E000.
+        // The glyph spans 997/1000 of an em from baseline upwards.
+        // We use a fontSize equal to the target height and a vertical scale
+        // transform to compress/stretch it to the exact staff span.
+        final double h = sysBottomY - sysTopY;
+        // Nominal em size at which the glyph fills the span naturally.
+        final double nominalSize = h / (997.0 / 1000.0);
+        // Horizontal scale: glyph advance is 84/1000 of em.
+        final double glyphW = nominalSize * (84.0 / 1000.0);
+
+        // SVG text baseline = font ascender, which for Bravura coincides with
+        // the top of the em square (y=sysTopY in our coordinate system).
+        buf.writeln(
+          '    <text'
+          ' x="${_f(leftX - glyphW)}"'
+          ' y="${_f(sysTopY)}"'
+          ' font-family="Bravura"'
+          ' font-size="${_f(nominalSize)}"'
+          ' dominant-baseline="text-before-edge"'
+          ' fill="currentColor">&#xE000;</text>',
+        );
+      } else {
         final tickLen = 2.0;
         buf.writeln(
           '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'

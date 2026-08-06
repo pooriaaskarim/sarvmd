@@ -32,6 +32,9 @@ flutter:
     - family: NotoMusic
       fonts:
         - asset: assets/fonts/NotoMusic-Regular.ttf
+    - family: Bravura
+      fonts:
+        - asset: assets/fonts/Bravura.otf
     - family: IranNastaliq
       fonts:
         - asset: assets/fonts/IranNastaliq.ttf
