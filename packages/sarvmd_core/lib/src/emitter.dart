@@ -23,7 +23,7 @@ double _mmToBp(double mm) => mm * 72.0 / 25.4;
 String _f(double v) => v.toStringAsFixed(3);
 
 /// Emit a complete `.tex` document string for a blank manuscript layout.
-String emit(PageConfig config, PageLayout layout) {
+String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
   final buf = StringBuffer();
 
   final pageW = config.effectiveWidth;
@@ -155,7 +155,15 @@ String emit(PageConfig config, PageLayout layout) {
 
   draw.writeln('Q');
 
-  buf.writeln('\\pdfliteral direct {${draw.toString()}}');
+  final pageLiteral = '\\pdfliteral direct {${draw.toString()}}';
+  final count = pageCount < 1 ? 1 : pageCount;
+  for (var i = 0; i < count; i++) {
+    if (i > 0) {
+      buf.writeln(r'\newpage');
+      buf.writeln(r'\null');
+    }
+    buf.writeln(pageLiteral);
+  }
   buf.writeln(r'\end{document}');
 
   return buf.toString();

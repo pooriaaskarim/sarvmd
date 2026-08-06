@@ -51,13 +51,13 @@ class _SvgExportDialogState extends State<SvgExportDialog> {
     });
 
     try {
-      final path = await ExportService.exportSvg(
+      final result = await ExportService.exportSvg(
         widget.config,
         widget.layout,
         layeringMode: _selectedMode,
       );
       if (mounted) {
-        Navigator.of(context).pop(path);
+        Navigator.of(context).pop(result.filePath);
       }
     } catch (e) {
       if (mounted) {
