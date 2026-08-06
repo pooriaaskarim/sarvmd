@@ -256,11 +256,24 @@ class _MiniStaffPainter extends CustomPainter {
           ..style = PaintingStyle.stroke;
 
         if (root.connector == core.SystemConnector.brace) {
-          final bracePath = Path()
-            ..moveTo(5, currentTopY - 1)
-            ..quadraticBezierTo(
-                1, currentTopY + totalHeight / 2, 5, currentTopY + totalHeight + 1);
-          canvas.drawPath(bracePath, connectorPaint);
+          final double fontSize = totalHeight * (1000.0 / 997.0);
+          final tp = TextPainter(
+            text: TextSpan(
+              text: '\u{E000}',
+              style: TextStyle(
+                fontFamily: 'Bravura',
+                fontSize: fontSize,
+                color: color.withValues(alpha: active ? 0.9 : 0.6),
+                height: 1.0,
+              ),
+            ),
+            textDirection: TextDirection.ltr,
+          )..layout();
+          final double baselineOffset =
+              tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+          final double paintX = 5.0 - tp.width * (82.0 / 84.0);
+          final double paintY = currentTopY + totalHeight - baselineOffset;
+          tp.paint(canvas, Offset(paintX, paintY));
         } else {
           canvas.drawLine(Offset(4, currentTopY),
               Offset(4, currentTopY + totalHeight), connectorPaint);
