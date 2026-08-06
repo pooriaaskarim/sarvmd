@@ -534,35 +534,35 @@ class _ManuscriptPainter extends CustomPainter {
   void _paintBrace(Canvas canvas, double x, double topY, double bottomY,
       double scale, Color color) {
     final double h = bottomY - topY;
-    final double w = (h * 0.12).clamp(6.0 * scale, 30.0 * scale);
-    final double mid = (topY + bottomY) / 2;
+    // Bravura U+E000: yMin=0 (baseline = bottom tip), yMax=997 (top tip), em=1000.
+    // fontSize chosen so that 997 font-units = h pixels.
+    final double fontSize = h * (1000.0 / 997.0);
 
-    final path = Path();
-    // Start at top tip
-    path.moveTo(x, topY);
+    final tp = TextPainter(
+      text: TextSpan(
+        text: '\u{E000}',
+        style: TextStyle(
+          fontFamily: 'Bravura',
+          fontSize: fontSize,
+          color: color,
+          height: 1.0,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
 
-    // Outer edge (the left-most curve with the sharp beak)
-    path.cubicTo(x - w * 0.1, topY + h * 0.05, x - w * 0.9, mid - h * 0.15,
-        x - w, mid // THE BEAK POINT
-        );
-    path.cubicTo(x - w * 0.9, mid + h * 0.15, x - w * 0.1, bottomY - h * 0.05,
-        x, bottomY);
+    // The baseline (y=0 in glyph space = bottom tip of brace) must land at bottomY.
+    // computeDistanceToActualBaseline gives distance from the top-left of the
+    // painted rect to the alphabetic baseline.
+    final double baselineOffset =
+        tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+    final double paintY = bottomY - baselineOffset;
 
-    // Inner edge (the right-side curve that creates the calligraphic width)
-    // Tapers back up to the tips
-    path.cubicTo(x - w * 0.15, bottomY - h * 0.08, x - w * 0.65, mid + h * 0.1,
-        x - w * 0.65, mid);
-    path.cubicTo(
-        x - w * 0.65, mid - h * 0.1, x - w * 0.15, topY + h * 0.08, x, topY);
+    // Right-align: the glyph's right visual edge (82/84 of advance) lands at x.
+    // tp.width is the advance width; LSB=2 and RSB=2 out of 84 units.
+    final double paintX = x - tp.width * (82.0 / 84.0);
 
-    path.close();
-
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-
-    canvas.drawPath(path, paint);
+    tp.paint(canvas, Offset(paintX, paintY));
   }
 
   void _paintPositionedElement(
