@@ -59,13 +59,17 @@ class ExportService {
 
   /// Export the layout to an SVG file.
   static Future<String> exportSvg(
-      core.PageConfig config, core.PageLayout layout) async {
+    core.PageConfig config,
+    core.PageLayout layout, {
+    core.SvgLayeringMode layeringMode = core.SvgLayeringMode.flatByCategory,
+  }) async {
     _log.info('Exporting SVG', context: {
       'pageSize': config.pageSize.name,
       'staffCount': config.staffCount,
+      'layeringMode': layeringMode.name,
     });
     try {
-      final svg = core.emitSvg(config, layout);
+      final svg = core.emitSvg(config, layout, layeringMode: layeringMode);
       final outputDir = _getOutputDir();
       final fileName = _getFileName(config);
       final filePath = p.join(outputDir, '$fileName.svg');
