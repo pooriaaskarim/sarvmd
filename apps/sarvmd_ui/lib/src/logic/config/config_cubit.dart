@@ -323,9 +323,6 @@ class ConfigCubit extends Cubit<core.PageConfig> {
       if (node is core.StaffGroup) {
         if (node.hashCode == groupHash) {
           final children = List<Object>.from(node.children);
-          if (oldIndex < newIndex) {
-            newIndex -= 1;
-          }
           final item = children.removeAt(oldIndex);
           children.insert(newIndex, item);
           return node.copyWith(children: children);

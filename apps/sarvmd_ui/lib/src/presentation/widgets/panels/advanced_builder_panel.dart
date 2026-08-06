@@ -248,7 +248,7 @@ class _StaffGroupWidget extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 buildDefaultDragHandles: false,
                 itemCount: group.children.length,
-                onReorder: (oldIndex, newIndex) {
+                onReorderItem: (oldIndex, newIndex) {
                   notifier.reorderGroupChildren(
                       group.hashCode, oldIndex, newIndex);
                 },
