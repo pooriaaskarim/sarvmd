@@ -7,10 +7,22 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:logd/logd.dart';
 import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+final _log = Logger.get('sarvmd.core.compiler');
+
 void main(List<String> arguments) async {
+  // Configure logd for CLI: plain text to stdout, INFO+.
+  Logger.configure('sarvmd', handlers: [
+    const Handler(
+      formatter: PlainFormatter(),
+      sink: ConsoleSink(),
+      filters: [LevelFilter(LogLevel.info)],
+    ),
+  ]);
+
   final parser = ArgParser()
     ..addOption(
       'layout',
@@ -76,10 +88,8 @@ void main(List<String> arguments) async {
   // Compute layout.
   final layout = core.computeLayout(config);
 
-  stdout.writeln(
-    'Sarv: ${profile.label} layout, '
-    '${pageSize.name.toUpperCase()} — '
-    '${layout.systemCount} systems',
+  _log.info(
+    '${profile.label} layout, ${pageSize.name.toUpperCase()} — ${layout.systemCount} systems',
   );
 
   // Emit LaTeX source.
@@ -89,15 +99,14 @@ void main(List<String> arguments) async {
 
   Directory(outputDir).createSync(recursive: true);
   File(texPath).writeAsStringSync(tex);
-  stdout.writeln('  TeX: $texPath');
+  _log.info('TeX written', context: {'path': texPath});
 
   // Compile to PDF.
   try {
     final pdfPath = await core.compile(texPath, outputDir: outputDir);
-    stdout.writeln('  PDF: $pdfPath');
-    stdout.writeln('Done.');
+    _log.info('PDF written', context: {'path': pdfPath});
   } catch (e) {
-    stderr.writeln('Compilation failed: $e');
+    _log.error('Compilation failed', error: e);
     exit(2);
   }
 }
@@ -109,3 +118,4 @@ void _printUsage(ArgParser parser) {
   stdout.writeln();
   stdout.writeln(parser.usage);
 }
+
