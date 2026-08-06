@@ -3,11 +3,11 @@ import '../../../logic/services/export_service.dart';
 import '../../../logic/config/config_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../dialogs/svg_export_dialog.dart';
 
 /// A compact export footer pinned at the bottom of the right view panel.
 ///
-/// Shows three export actions: TeX / PDF / SVG (with SVG Layering Mode options).
+/// Shows three export actions: TeX / PDF / SVG (dedicated options dialog).
 /// Handles its own loading state and success/failure feedback via snackbar.
 class ExportPanel extends StatefulWidget {
   const ExportPanel({
@@ -22,8 +22,7 @@ class _ExportPanelState extends State<ExportPanel> {
   _ExportKind? _loading;
   String? _successMessage;
 
-  Future<void> _export(_ExportKind kind,
-      {core.SvgLayeringMode? svgLayeringMode}) async {
+  Future<void> _export(_ExportKind kind) async {
     if (_loading != null || _successMessage != null) return;
     setState(() => _loading = kind);
 
@@ -39,12 +38,7 @@ class _ExportPanelState extends State<ExportPanel> {
         case _ExportKind.pdf:
           path = await ExportService.exportPdf(config, layout);
         case _ExportKind.svg:
-          path = await ExportService.exportSvg(
-            config,
-            layout,
-            layeringMode:
-                svgLayeringMode ?? core.SvgLayeringMode.flatByCategory,
-          );
+          path = await ExportService.exportSvg(config, layout);
       }
       if (mounted) {
         setState(() {
@@ -69,6 +63,26 @@ class _ExportPanelState extends State<ExportPanel> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _openSvgDialog() async {
+    if (_loading != null || _successMessage != null) return;
+    final configCubit = context.read<ConfigCubit>();
+    final path = await showSvgExportDialog(
+      context,
+      configCubit.state,
+      configCubit.layout,
+    );
+    if (path != null && mounted) {
+      setState(() {
+        _successMessage = 'Saved: ${path.split('/').last}';
+      });
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() => _successMessage = null);
+        }
+      });
     }
   }
 
@@ -138,61 +152,11 @@ class _ExportPanelState extends State<ExportPanel> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _ExportChip(
-                            label: 'SVG',
-                            icon: Icons.image_outlined,
-                            loading: _loading == _ExportKind.svg,
-                            onPressed: () => _export(_ExportKind.svg),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        PopupMenuButton<core.SvgLayeringMode>(
-                          tooltip: 'SVG Layering Options',
-                          offset: const Offset(0, -140),
-                          onSelected: (mode) =>
-                              _export(_ExportKind.svg, svgLayeringMode: mode),
-                          itemBuilder: (context) =>
-                              core.SvgLayeringMode.values.map((mode) {
-                            return PopupMenuItem<core.SvgLayeringMode>(
-                              value: mode,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    mode == core.SvgLayeringMode.flatByCategory
-                                        ? Icons.layers
-                                        : mode ==
-                                                core.SvgLayeringMode
-                                                    .hierarchicalBySystem
-                                            ? Icons.account_tree
-                                            : Icons.border_all,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    mode.label,
-                                    style: const TextStyle(fontSize: 13),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          child: Container(
-                            height: 34,
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            decoration: BoxDecoration(
-                              color: cs.onSurface.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                  color: cs.outline.withValues(alpha: 0.3)),
-                            ),
-                            child: Icon(Icons.arrow_drop_down,
-                                size: 18, color: cs.onSurfaceVariant),
-                          ),
-                        ),
-                      ],
+                    child: _ExportChip(
+                      label: 'SVG',
+                      icon: Icons.image_outlined,
+                      loading: _loading == _ExportKind.svg,
+                      onPressed: _openSvgDialog,
                     ),
                   ),
                 ],
