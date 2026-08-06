@@ -22,18 +22,21 @@ class GuideToggle extends StatelessWidget {
             .onSurfaceVariant
             .withValues(alpha: AppOpacities.surfaceHint),
       ),
-      child: CheckboxListTile(
-        title: Text(label,
-            style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 13)),
-        value: value,
-        onChanged: onChanged,
-        activeColor: Theme.of(context).colorScheme.primary,
-        checkColor: Theme.of(context).colorScheme.surface,
-        contentPadding: EdgeInsets.zero,
-        controlAffinity: ListTileControlAffinity.leading,
-        dense: true,
+      child: Material(
+        color: Colors.transparent,
+        child: CheckboxListTile(
+          title: Text(label,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13)),
+          value: value,
+          onChanged: onChanged,
+          activeColor: Theme.of(context).colorScheme.primary,
+          checkColor: Theme.of(context).colorScheme.surface,
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          dense: true,
+        ),
       ),
     );
   }
