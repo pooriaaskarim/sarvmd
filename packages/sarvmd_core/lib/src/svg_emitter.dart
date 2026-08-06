@@ -25,21 +25,35 @@ String emitSvg(PageConfig config, PageLayout layout) {
   buf.writeln('<?xml version="1.0" encoding="UTF-8"?>');
   buf.writeln(
     '<svg xmlns="http://www.w3.org/2000/svg"'
+    ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
     ' viewBox="0 0 ${_f(w)} ${_f(h)}"'
     ' width="${_f(w)}mm" height="${_f(h)}mm">',
   );
-
-  // White page background.
-  buf.writeln('  <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
 
   final gap = config.staffConfig.lineGapMm;
   final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
   final leftX = config.margins.left;
   final rightX = w - config.margins.right;
 
+  // Layer 1: Page Background
   buf.writeln(
-      '  <g stroke="black" stroke-width="${_f(strokeMm)}" fill="none">');
+    '  <g id="layer-background" inkscape:groupmode="layer" inkscape:label="Page Background">',
+  );
+  buf.writeln('    <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
+  buf.writeln('  </g>');
 
+  // Layer 2: System Structure (System Barlines & Piano Braces)
+  buf.writeln(
+    '  <g id="layer-system-structure" inkscape:groupmode="layer" inkscape:label="System Structure">',
+  );
+  _drawSystemConnectors(buf, config, layout.systems);
+  buf.writeln('  </g>');
+
+  // Layer 3: Staff Lines
+  buf.writeln(
+    '  <g id="layer-staff-lines" inkscape:groupmode="layer" inkscape:label="Staff Lines"'
+    ' stroke="black" stroke-width="${_f(strokeMm)}" fill="none">',
+  );
   for (final system in layout.systems) {
     for (var si = 0; si < system.staves.length; si++) {
       final staff = system.staves[si];
@@ -52,53 +66,13 @@ String emitSvg(PageConfig config, PageLayout layout) {
         );
       }
     }
-
-    // Barline connecting all staves in the system.
-    final connector = config.systemLayout.rootGroup.connector;
-    if (connector != SystemConnector.none && system.staves.length > 1) {
-      final sysTopY = system.staves.first.topY;
-      final sysBottomY = system.staves.last.topY + system.staves.last.height;
-
-      final bool useBrace = connector == SystemConnector.brace;
-
-      buf.writeln(
-        '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
-        ' x2="${_f(leftX)}" y2="${_f(sysBottomY)}"'
-        ' stroke-width="${_f(strokeMm * 2.5)}"/>',
-      );
-
-      if (useBrace) {
-        // Render standard piano brace using Bravura vector path _braceSvg.
-        // Glyphs in Bravura are defined in 1000-unit em; yMin=0 (bottom tip), yMax=997 (top tip).
-        // Right visual edge sits at x=82 units.
-        final double h = sysBottomY - sysTopY;
-        final double scale = h / 997.0;
-        final double tx = leftX - scale * 82.0;
-        final double ty = sysBottomY;
-
-        buf.writeln(
-          '    <g transform="translate(${_f(tx)}, ${_f(ty)})'
-          ' scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">'
-          '<path d="$_braceSvg"/></g>',
-        );
-      } else {
-        final tickLen = 2.0;
-        buf.writeln(
-          '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
-          ' x2="${_f(leftX + tickLen)}" y2="${_f(sysTopY)}"'
-          ' stroke-width="${_f(strokeMm * 2.5)}"/>',
-        );
-        buf.writeln(
-          '    <line x1="${_f(leftX)}" y1="${_f(sysBottomY)}"'
-          ' x2="${_f(leftX + tickLen)}" y2="${_f(sysBottomY)}"'
-          ' stroke-width="${_f(strokeMm * 2.5)}"/>',
-        );
-      }
-    }
   }
   buf.writeln('  </g>');
 
-  // Clefs loop
+  // Layer 4: Clefs
+  buf.writeln(
+    '  <g id="layer-clefs" inkscape:groupmode="layer" inkscape:label="Clefs">',
+  );
   for (final system in layout.systems) {
     for (var si = 0; si < system.staves.length; si++) {
       final staff = system.staves[si];
@@ -134,12 +108,14 @@ String emitSvg(PageConfig config, PageLayout layout) {
       final scale = (gap * displayGaps) / upem;
 
       buf.writeln(
-          '    <g transform="translate(${_f(glyphX)}, ${_f(baselineY)}) '
-          'scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">');
+        '    <g transform="translate(${_f(glyphX)}, ${_f(baselineY)}) '
+        'scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">',
+      );
       buf.writeln('      <path d="$path"/>');
       buf.writeln('    </g>');
     }
   }
+  buf.writeln('  </g>');
 
   buf.writeln('</svg>');
   return buf.toString();
@@ -154,22 +130,35 @@ String emitCompiledSvg(PageConfig config, EngravingPage page) {
   buf.writeln('<?xml version="1.0" encoding="UTF-8"?>');
   buf.writeln(
     '<svg xmlns="http://www.w3.org/2000/svg"'
+    ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
     ' viewBox="0 0 ${_f(w)} ${_f(h)}"'
     ' width="${_f(w)}mm" height="${_f(h)}mm">',
   );
-
-  // White page background
-  buf.writeln('  <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
 
   final gap = config.staffConfig.lineGapMm;
   final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
   final leftX = config.margins.left;
   final rightX = w - config.margins.right;
 
-  // 1. Draw physical staff lines
+  // Layer 1: Page Background
   buf.writeln(
-      '  <g stroke="black" stroke-width="${_f(strokeMm)}" fill="none">');
+    '  <g id="layer-background" inkscape:groupmode="layer" inkscape:label="Page Background">',
+  );
+  buf.writeln('    <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
+  buf.writeln('  </g>');
 
+  // Layer 2: System Structure (System Barlines & Piano Braces)
+  buf.writeln(
+    '  <g id="layer-system-structure" inkscape:groupmode="layer" inkscape:label="System Structure">',
+  );
+  _drawSystemConnectors(buf, config, page.pageLayout.systems);
+  buf.writeln('  </g>');
+
+  // Layer 3: Staff Lines
+  buf.writeln(
+    '  <g id="layer-staff-lines" inkscape:groupmode="layer" inkscape:label="Staff Lines"'
+    ' stroke="black" stroke-width="${_f(strokeMm)}" fill="none">',
+  );
   for (final system in page.pageLayout.systems) {
     for (var si = 0; si < system.staves.length; si++) {
       final staff = system.staves[si];
@@ -185,13 +174,94 @@ String emitCompiledSvg(PageConfig config, EngravingPage page) {
   }
   buf.writeln('  </g>');
 
-  // 2. Draw all compiled positioned notation elements
-  for (final element in page.elements) {
-    buf.write(_drawElement(element, gap));
+  // Layer 4: Barlines
+  buf.writeln(
+    '  <g id="layer-barlines" inkscape:groupmode="layer" inkscape:label="Barlines">',
+  );
+  for (final elem in page.elements.whereType<PositionedBarline>()) {
+    buf.write(_drawElement(elem, gap));
   }
+  buf.writeln('  </g>');
+
+  // Layer 5: Clefs & Signatures
+  buf.writeln(
+    '  <g id="layer-clefs-signatures" inkscape:groupmode="layer" inkscape:label="Clefs &amp; Signatures">',
+  );
+  for (final elem in page.elements.where(
+    (e) =>
+        e is PositionedClef ||
+        e is PositionedKeySignature ||
+        e is PositionedTimeSignature,
+  )) {
+    buf.write(_drawElement(elem, gap));
+  }
+  buf.writeln('  </g>');
+
+  // Layer 6: Notation Elements (Notes & Rests)
+  buf.writeln(
+    '  <g id="layer-notation" inkscape:groupmode="layer" inkscape:label="Notation Elements">',
+  );
+  for (final elem in page.elements.where(
+    (e) => e is PositionedNote || e is PositionedRest,
+  )) {
+    buf.write(_drawElement(elem, gap));
+  }
+  buf.writeln('  </g>');
 
   buf.writeln('</svg>');
   return buf.toString();
+}
+
+/// Helper method to draw system connectors (braces / connecting barlines).
+void _drawSystemConnectors(
+  StringBuffer buf,
+  PageConfig config,
+  List<StaffSystem> systems,
+) {
+  final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
+  final leftX = config.margins.left;
+  final connector = config.systemLayout.rootGroup.connector;
+
+  if (connector == SystemConnector.none) return;
+
+  for (final system in systems) {
+    if (system.staves.length <= 1) continue;
+
+    final sysTopY = system.staves.first.topY;
+    final sysBottomY = system.staves.last.topY + system.staves.last.height;
+    final bool useBrace = connector == SystemConnector.brace;
+
+    buf.writeln(
+      '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
+      ' x2="${_f(leftX)}" y2="${_f(sysBottomY)}"'
+      ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+    );
+
+    if (useBrace) {
+      final double h = sysBottomY - sysTopY;
+      final double scale = h / 997.0;
+      final double tx = leftX - scale * 82.0;
+      final double ty = sysBottomY;
+
+      buf.writeln(
+        '    <g transform="translate(${_f(tx)}, ${_f(ty)})'
+        ' scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">'
+        '<path d="$_braceSvg"/></g>',
+      );
+    } else {
+      final tickLen = 2.0;
+      buf.writeln(
+        '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
+        ' x2="${_f(leftX + tickLen)}" y2="${_f(sysTopY)}"'
+        ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+      );
+      buf.writeln(
+        '    <line x1="${_f(leftX)}" y1="${_f(sysBottomY)}"'
+        ' x2="${_f(leftX + tickLen)}" y2="${_f(sysBottomY)}"'
+        ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+      );
+    }
+  }
 }
 
 /// Helper method to serialize a [PositionedElement] to SVG markup.
