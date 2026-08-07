@@ -299,7 +299,7 @@ void _drawClefs(
           : anchorY;
 
       final baselineY = effectiveAnchorY + anchorSp * gap * staff.scale;
-      final glyphX = leftX + gap * 0.15;
+      final glyphX = leftX + gap * 0.5;
 
       final (String path, double upem) = switch (clef.symbol) {
         ClefSymbol.g => (_gClefSvg, 1000.0),

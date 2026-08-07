@@ -288,7 +288,7 @@ class MiniStaffClefPainter extends CustomPainter {
       final y = staffTop + i * gap;
       final isAnchor = lineNum == clef.anchorLine;
       canvas.drawLine(
-        Offset(gap * 1.6, y),
+        Offset(gap * 0.5, y),
         Offset(size.width - gap * 0.2, y),
         Paint()
           ..color =
@@ -299,9 +299,9 @@ class MiniStaffClefPainter extends CustomPainter {
     }
 
     if (clef.symbol == core.ClefSymbol.tab) {
-      _paintTabClef(canvas, gap * 0.2, staffTop, lines, gap, staffColor);
+      _paintTabClef(canvas, gap * 0.5, staffTop, lines, gap, staffColor);
     } else if (clef.symbol == core.ClefSymbol.percussion) {
-      _paintPercussionClef(canvas, gap * 0.2, staffTop, lines, gap, staffColor);
+      _paintPercussionClef(canvas, gap * 0.5, staffTop, lines, gap, staffColor);
     } else {
       _paintStandardClef(canvas, staffTop, staffColor);
     }
@@ -327,7 +327,7 @@ class MiniStaffClefPainter extends CustomPainter {
     final baselineDelta =
         tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
     final anchorYPx = staffTop + (lines - clef.anchorLine) * gap;
-    tp.paint(canvas, Offset(gap * 0.05, anchorYPx - baselineDelta));
+    tp.paint(canvas, Offset(gap * 0.5, anchorYPx - baselineDelta));
   }
 
   void _paintTabClef(Canvas canvas, double x, double topY, int lines,

@@ -176,7 +176,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
     final double startX = centerX - 50.0;
     final double endX =
         centerX + 110.0; // Staff lines remain a clean 160px wide
-    final double clefX = startX + 15.0;
+    final double clefX = startX + gap * 0.5;
 
     // Draw staff lines with custom highlighted anchor line (ultra-clear high contrast)
     for (var i = 0; i < lines; i++) {
@@ -244,7 +244,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
         final tabSize = gap * 1.5;
 
         // Standard visual padding matching standard clefs
-        final startX = clefX + gap * 0.4;
+        final startX = clefX;
 
         final lettersStyle = TextStyle(
           fontFamily: 'Noto Serif',
@@ -272,7 +272,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
         final centerY = startY + staffHeight / 2;
 
         // Standard visual padding matching standard clefs
-        final leftX = clefX + gap * 0.4;
+        final leftX = clefX;
 
         canvas.drawRect(
             Rect.fromCenter(

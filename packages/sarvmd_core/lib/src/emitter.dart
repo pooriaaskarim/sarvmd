@@ -134,7 +134,7 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
 
         final baselinePdfY =
             effectiveAnchorPdfY - anchorSp * lineGapBp * staff.scale;
-        final cx = staffLeftBp + lineGapBp * 0.15;
+        final cx = staffLeftBp + lineGapBp * 0.5;
 
         final (String path, double upem) = switch (clef.symbol) {
           ClefSymbol.g => (_gClefPdf, 1000.0),

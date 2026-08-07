@@ -458,7 +458,7 @@ class _ManuscriptPainter extends CustomPainter {
         tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
 
     final anchorYPx = topY + (lines - clef.anchorLine) * gap;
-    final glyphX = x + gap * 0.15;
+    final glyphX = x + gap * 0.5;
     final glyphY = anchorYPx - baselineDelta;
 
     tp.paint(canvas, Offset(glyphX.roundToDouble(), glyphY.roundToDouble()));

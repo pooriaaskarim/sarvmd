@@ -114,8 +114,8 @@ class Engraver {
           final width = SmuflGlyph.gClef.widthSp * lineGap; // Approximation
           if (width > clefWidth) clefWidth = width;
         } else if (m == 0) {
-          // Draw initial system clefs
-          final width = SmuflGlyph.gClef.widthSp * lineGap;
+          // Draw initial system clefs with 0.5 staff space clearance
+          final width = (0.5 + SmuflGlyph.gClef.widthSp * 0.8) * lineGap;
           if (width > clefWidth) clefWidth = width;
         }
 
@@ -216,8 +216,8 @@ class Engraver {
           final rawSpacingWidth = measureSpacingWidths[mIdx];
           final justifiedSpacingWidth = rawSpacingWidth * justifyFactor;
 
-          // Draw decorations at measure start
-          var localX = xCursor + 1.0;
+          // Draw decorations at measure start (initial clef is placed 0.5 staff spaces from system start barline)
+          var localX = xCursor + (mIdx == 0 ? lineGap * 0.5 : lineGap * 0.5);
 
           for (var pIdx = 0; pIdx < score.parts.length; pIdx++) {
             final part = score.parts[pIdx];
