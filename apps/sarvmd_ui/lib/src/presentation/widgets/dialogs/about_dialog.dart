@@ -1,0 +1,505 @@
+// Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
+// Licensed under the Business Source License 1.1 (BUSL-1.1).
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/constants/app_version.dart';
+
+/// Shows the dedicated SarvMD About & Version Information dialog.
+Future<void> showSarvAboutDialog(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    barrierColor: Colors.black54,
+    builder: (_) => const AboutSarvDialog(),
+  );
+}
+
+/// A desktop-class modal dialog displaying SarvMD version info, core layout specs,
+/// legal license details, and author credits.
+class AboutSarvDialog extends StatelessWidget {
+  const AboutSarvDialog({super.key});
+
+  void _copyBuildInfo(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: AppVersion.formattedBuildInfo));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text('Build information copied to clipboard'),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Dialog(
+      backgroundColor: cs.surfaceContainerHigh,
+      surfaceTintColor: Colors.transparent,
+      elevation: 12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540, maxHeight: 620),
+        child: DefaultTabController(
+          length: 3,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Hero Section
+              _buildHeader(context),
+
+              // Tab Selector
+              TabBar(
+                labelColor: cs.primary,
+                unselectedLabelColor: cs.onSurfaceVariant,
+                indicatorColor: cs.primary,
+                indicatorSize: TabBarIndicatorSize.tab,
+                tabs: const [
+                  Tab(icon: Icon(Icons.info_outline, size: 16), text: 'Overview'),
+                  Tab(icon: Icon(Icons.gavel_outlined, size: 16), text: 'License & Credits'),
+                  Tab(icon: Icon(Icons.history_outlined, size: 16), text: 'Changelog'),
+                ],
+              ),
+
+              // Tab Views
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildOverviewTab(context),
+                    _buildLicenseTab(context),
+                    _buildChangelogTab(context),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // Bottom Footer Actions
+              _buildFooter(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified_outlined, size: 14, color: cs.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      'v${AppVersion.version}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Close',
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SvgPicture.asset(
+            'assets/handwriting/Sarv Handwriting.svg',
+            height: 52,
+            colorFilter: ColorFilter.mode(
+              cs.onSurface,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            AppVersion.tagline,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: cs.primary.withValues(alpha: 0.85),
+              fontSize: 17,
+              fontFamily: 'IranNastaliq',
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewTab(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Core Engine Specifications',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: cs.primary,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _SpecCard(
+            icon: Icons.font_download_outlined,
+            title: 'SMuFL Standard',
+            subtitle: AppVersion.smuflSpec,
+            description:
+                'Authentic music notation vectors rendered via standard SMuFL glyph codepoints.',
+          ),
+          const SizedBox(height: 10),
+          const _SpecCard(
+            icon: Icons.straighten_outlined,
+            title: 'Engraving Rules',
+            subtitle: AppVersion.engravingRules,
+            description:
+                'Optical Gouldian rhythmic spacing algorithms and MOLA-compliant system geometry.',
+          ),
+          const SizedBox(height: 10),
+          const _SpecCard(
+            icon: Icons.picture_as_pdf_outlined,
+            title: 'Compiler Backend',
+            subtitle: AppVersion.latexBackend,
+            description:
+                'Generates publication-quality LaTeX files compiled using pdflatex direct graphic operators.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLicenseTab(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _InfoTile(
+            title: 'Author & Lead Developer',
+            value: AppVersion.author,
+            icon: Icons.person_outline,
+          ),
+          const SizedBox(height: 16),
+          const _InfoTile(
+            title: 'License',
+            value: AppVersion.license,
+            icon: Icons.gavel_outlined,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              'SarvMD is built with Flutter, Dart, logd, and Bravura SMuFL vector assets.\n'
+              'Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.',
+              style: TextStyle(
+                fontSize: 11,
+                color: cs.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChangelogTab(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Release Highlights — v${AppVersion.version}',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                AppVersion.buildDate,
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const _ChangelogItem(
+            category: 'Added',
+            description:
+                'System-Wide Engraving Configuration (EngravingConfig) embedded into PageConfig.',
+          ),
+          const _ChangelogItem(
+            category: 'Changed',
+            description:
+                'Unified LaTeX and SVG emitters to consume parameterised engraving tokens.',
+          ),
+          const _ChangelogItem(
+            category: 'Fixed',
+            description:
+                'Clef positioning standardized at 0.5 staff spaces across core engine and live UI canvas.',
+          ),
+          const _ChangelogItem(
+            category: 'Fixed',
+            description:
+                'System Layout left panel text clipping and continuous barlines toggle overflow.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () => _copyBuildInfo(context),
+            icon: const Icon(Icons.copy_outlined, size: 14),
+            label: const Text('Copy Build Info', style: TextStyle(fontSize: 12)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpecCard extends StatelessWidget {
+  const _SpecCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: cs.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: cs.secondaryContainer.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cs.onSurfaceVariant,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoTile extends StatelessWidget {
+  const _InfoTile({
+    required this.title,
+    required this.value,
+    required this.icon,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: cs.primary),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ChangelogItem extends StatelessWidget {
+  const _ChangelogItem({
+    required this.category,
+    required this.description,
+  });
+
+  final String category;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final isAdded = category == 'Added';
+    final isFixed = category == 'Fixed';
+    final badgeColor = isAdded
+        ? Colors.green
+        : (isFixed ? Colors.orange : cs.primary);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.5),
+            ),
+            child: Text(
+              category,
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.bold,
+                color: badgeColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              description,
+              style: TextStyle(
+                fontSize: 11,
+                color: cs.onSurface,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
