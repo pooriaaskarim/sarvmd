@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/app_version.dart';
+import '../../../logic/services/changelog_service.dart';
 
 /// Shows the dedicated SarvMD About & Version Information dialog.
 Future<void> showSarvAboutDialog(BuildContext context) {
@@ -16,12 +17,26 @@ Future<void> showSarvAboutDialog(BuildContext context) {
 }
 
 /// A desktop-class modal dialog displaying SarvMD version info, core layout specs,
-/// legal license details, and author credits.
-class AboutSarvDialog extends StatelessWidget {
+/// legal license details, and dynamically parsed [CHANGELOG.md] history.
+class AboutSarvDialog extends StatefulWidget {
   const AboutSarvDialog({super.key});
 
-  void _copyBuildInfo(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: AppVersion.formattedBuildInfo));
+  @override
+  State<AboutSarvDialog> createState() => _AboutSarvDialogState();
+}
+
+class _AboutSarvDialogState extends State<AboutSarvDialog> {
+  late final Future<List<ReleaseEntry>> _changelogFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _changelogFuture = ChangelogService.loadChangelog();
+  }
+
+  void _copyBuildInfo(BuildContext context, String version, String date) {
+    final info = AppVersion.getFormattedBuildInfo(version, date);
+    Clipboard.setData(ClipboardData(text: info));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Row(
@@ -51,51 +66,62 @@ class AboutSarvDialog extends StatelessWidget {
         side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 540, maxHeight: 620),
-        child: DefaultTabController(
-          length: 3,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header Hero Section
-              _buildHeader(context),
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
+        child: FutureBuilder<List<ReleaseEntry>>(
+          future: _changelogFuture,
+          builder: (context, snapshot) {
+            final entries = snapshot.data ?? [];
+            final latestVersion = entries.isNotEmpty
+                ? entries.first.version
+                : AppVersion.fallbackVersion;
+            final latestDate = entries.isNotEmpty ? entries.first.date : '';
 
-              // Tab Selector
-              TabBar(
-                labelColor: cs.primary,
-                unselectedLabelColor: cs.onSurfaceVariant,
-                indicatorColor: cs.primary,
-                indicatorSize: TabBarIndicatorSize.tab,
-                tabs: const [
-                  Tab(icon: Icon(Icons.info_outline, size: 16), text: 'Overview'),
-                  Tab(icon: Icon(Icons.gavel_outlined, size: 16), text: 'License & Credits'),
-                  Tab(icon: Icon(Icons.history_outlined, size: 16), text: 'Changelog'),
+            return DefaultTabController(
+              length: 3,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header Hero Section
+                  _buildHeader(context, latestVersion),
+
+                  // Tab Selector
+                  TabBar(
+                    labelColor: cs.primary,
+                    unselectedLabelColor: cs.onSurfaceVariant,
+                    indicatorColor: cs.primary,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    tabs: const [
+                      Tab(icon: Icon(Icons.info_outline, size: 16), text: 'Overview'),
+                      Tab(icon: Icon(Icons.gavel_outlined, size: 16), text: 'License & Credits'),
+                      Tab(icon: Icon(Icons.history_outlined, size: 16), text: 'Changelog'),
+                    ],
+                  ),
+
+                  // Tab Views
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildOverviewTab(context),
+                        _buildLicenseTab(context),
+                        _buildChangelogTab(context, snapshot.connectionState, entries),
+                      ],
+                    ),
+                  ),
+
+                  const Divider(height: 1),
+
+                  // Bottom Footer Actions
+                  _buildFooter(context, latestVersion, latestDate),
                 ],
               ),
-
-              // Tab Views
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildOverviewTab(context),
-                    _buildLicenseTab(context),
-                    _buildChangelogTab(context),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 1),
-
-              // Bottom Footer Actions
-              _buildFooter(context),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, String version) {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
@@ -122,7 +148,7 @@ class AboutSarvDialog extends StatelessWidget {
                     Icon(Icons.verified_outlined, size: 14, color: cs.primary),
                     const SizedBox(width: 6),
                     Text(
-                      'v${AppVersion.version}',
+                      'v$version',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -255,65 +281,50 @@ class AboutSarvDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildChangelogTab(BuildContext context) {
+  Widget _buildChangelogTab(
+    BuildContext context,
+    ConnectionState connectionState,
+    List<ReleaseEntry> entries,
+  ) {
     final cs = Theme.of(context).colorScheme;
 
-    return SingleChildScrollView(
+    if (connectionState == ConnectionState.waiting && entries.isEmpty) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    if (entries.isEmpty) {
+      return Center(
+        child: Text(
+          'No changelog information available.',
+          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+        ),
+      );
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Release Highlights — v${AppVersion.version}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                AppVersion.buildDate,
-                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const _ChangelogItem(
-            category: 'Added',
-            description:
-                'System-Wide Engraving Configuration (EngravingConfig) embedded into PageConfig.',
-          ),
-          const _ChangelogItem(
-            category: 'Changed',
-            description:
-                'Unified LaTeX and SVG emitters to consume parameterised engraving tokens.',
-          ),
-          const _ChangelogItem(
-            category: 'Fixed',
-            description:
-                'Clef positioning standardized at 0.5 staff spaces across core engine and live UI canvas.',
-          ),
-          const _ChangelogItem(
-            category: 'Fixed',
-            description:
-                'System Layout left panel text clipping and continuous barlines toggle overflow.',
-          ),
-        ],
-      ),
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final release = entries[index];
+        return _ReleaseCard(release: release);
+      },
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
+  Widget _buildFooter(BuildContext context, String version, String date) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           OutlinedButton.icon(
-            onPressed: () => _copyBuildInfo(context),
+            onPressed: () => _copyBuildInfo(context, version, date),
             icon: const Icon(Icons.copy_outlined, size: 14),
             label: const Text('Copy Build Info', style: TextStyle(fontSize: 12)),
             style: OutlinedButton.styleFrom(
@@ -324,6 +335,113 @@ class AboutSarvDialog extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReleaseCard extends StatelessWidget {
+  const _ReleaseCard({required this.release});
+
+  final ReleaseEntry release;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'v${release.version}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              if (release.date.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text(
+                  release.date,
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...release.changes.map((c) => _ChangelogItem(change: c)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChangelogItem extends StatelessWidget {
+  const _ChangelogItem({required this.change});
+
+  final ChangelogChange change;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final isAdded = change.category == 'Added';
+    final isFixed = change.category == 'Fixed';
+    final badgeColor = isAdded
+        ? Colors.green
+        : (isFixed ? Colors.orange : cs.primary);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.5),
+            ),
+            child: Text(
+              change.category,
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.bold,
+                color: badgeColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              change.text,
+              style: TextStyle(
+                fontSize: 11,
+                color: cs.onSurface,
+                height: 1.3,
+              ),
+            ),
           ),
         ],
       ),
@@ -443,63 +561,6 @@ class _InfoTile extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _ChangelogItem extends StatelessWidget {
-  const _ChangelogItem({
-    required this.category,
-    required this.description,
-  });
-
-  final String category;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    final isAdded = category == 'Added';
-    final isFixed = category == 'Fixed';
-    final badgeColor = isAdded
-        ? Colors.green
-        : (isFixed ? Colors.orange : cs.primary);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: badgeColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.5),
-            ),
-            child: Text(
-              category,
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.bold,
-                color: badgeColor,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              description,
-              style: TextStyle(
-                fontSize: 11,
-                color: cs.onSurface,
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -22,7 +22,6 @@ import '../widgets/panels/advanced_builder_panel.dart';
 import '../../logic/config/config_cubit.dart';
 import '../../logic/view/view_cubit.dart';
 import '../../logic/view/view_state.dart';
-import '../../core/constants/app_version.dart';
 import '../widgets/dialogs/about_dialog.dart';
 
 class EditorScreen extends StatefulWidget {
@@ -300,7 +299,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Tooltip(
-                                      message: 'About SarvMD v${AppVersion.version}',
+                                      message: 'About SarvMD & Version Info',
                                       child: InkWell(
                                         onTap: () => showSarvAboutDialog(context),
                                         borderRadius: BorderRadius.circular(4),
@@ -311,7 +310,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'v${AppVersion.version}',
+                                                'About',
                                                 style: TextStyle(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
