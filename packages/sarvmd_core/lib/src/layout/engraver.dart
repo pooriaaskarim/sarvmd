@@ -114,8 +114,8 @@ class Engraver {
           final width = SmuflGlyph.gClef.widthSp * lineGap; // Approximation
           if (width > clefWidth) clefWidth = width;
         } else if (m == 0) {
-          // Draw initial system clefs with 0.5 staff space clearance
-          final width = (0.5 + SmuflGlyph.gClef.widthSp * 0.8) * lineGap;
+          // Draw initial system clefs with clearance from EngravingConfig
+          final width = (config.engraving.initialClefClearanceSp + SmuflGlyph.gClef.widthSp * 0.8) * lineGap;
           if (width > clefWidth) clefWidth = width;
         }
 
@@ -123,7 +123,7 @@ class Engraver {
         if (measure.keySignature != null && measure.keySignature != activeKeys[pIdx]) {
           activeKeys[pIdx] = measure.keySignature!;
           final stepCount = measure.keySignature!.fifths.abs();
-          final width = stepCount * SmuflGlyph.accidentalFlat.widthSp * lineGap * 0.8;
+          final width = stepCount * SmuflGlyph.accidentalFlat.widthSp * lineGap * config.engraving.keySignatureAccidentalSpacingSp;
           if (width > keyWidth) keyWidth = width;
         }
 
@@ -216,8 +216,8 @@ class Engraver {
           final rawSpacingWidth = measureSpacingWidths[mIdx];
           final justifiedSpacingWidth = rawSpacingWidth * justifyFactor;
 
-          // Draw decorations at measure start (initial clef is placed 0.5 staff spaces from system start barline)
-          var localX = xCursor + (mIdx == 0 ? lineGap * 0.5 : lineGap * 0.5);
+          // Draw decorations at measure start (initial clef clearance from EngravingConfig)
+          var localX = xCursor + lineGap * config.engraving.initialClefClearanceSp;
 
           for (var pIdx = 0; pIdx < score.parts.length; pIdx++) {
             final part = score.parts[pIdx];

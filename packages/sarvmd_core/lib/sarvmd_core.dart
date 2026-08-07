@@ -9,6 +9,7 @@
 library;
 
 export 'src/config.dart';
+export 'src/engraving_config.dart';
 export 'src/layout.dart';
 export 'src/emitter.dart';
 export 'src/compiler.dart';
