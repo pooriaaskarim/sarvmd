@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Standardized Clef Clearance**: Standardized clef positioning at `0.5` staff spaces from the start of the staff line across PDF compilation, SVG exports, and live UI preview widgets.
+- **System Layout Panel Overflow**: Resolved label clipping and overflow in left panel on narrow viewports with dedicated sub-card layout for continuous barlines toggle and tooltip-enabled text truncation.
 
 ---
 
