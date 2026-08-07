@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.1] - 2026-08-07
+
+### Added
+- **System-Wide Engraving Configuration (`EngravingConfig`)**: Introduced a centralized configuration object for layout spacing and rendering constants (`initialClefClearanceSp`, `keySignatureAccidentalSpacingSp`, `singleLineStaffBarlineOverhangSp`, `heavyBarlineWidthSp`, `smuflGlyphScale`) embedded within `PageConfig`.
+
+### Changed
+- **Unified Emitter & UI Pipeline**: Refactored LaTeX PDF emitters, SVG vector emitters, and interactive Flutter canvas painters (`preview_canvas.dart`, `live_staff_preview.dart`, `clef_config_widget.dart`) to consume `EngravingConfig` tokens instead of hardcoded magic numbers.
+
+### Fixed
+- **Standardized Clef Clearance**: Standardized clef positioning at `0.5` staff spaces from the start of the staff line across PDF compilation, SVG exports, and live UI preview widgets.
+- **System Layout Panel Overflow**: Resolved label clipping and overflow in left panel on narrow viewports with dedicated sub-card layout for continuous barlines toggle and tooltip-enabled text truncation.
+
+---
+
 ## [0.5.0] - 2026-08-06
 
 ### Added

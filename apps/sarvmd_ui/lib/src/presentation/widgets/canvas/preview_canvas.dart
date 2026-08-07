@@ -458,7 +458,7 @@ class _ManuscriptPainter extends CustomPainter {
         tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
 
     final anchorYPx = topY + (lines - clef.anchorLine) * gap;
-    final glyphX = x + gap * 0.15;
+    final glyphX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
     final glyphY = anchorYPx - baselineDelta;
 
     tp.paint(canvas, Offset(glyphX.roundToDouble(), glyphY.roundToDouble()));
@@ -471,7 +471,7 @@ class _ManuscriptPainter extends CustomPainter {
     final centerY = topY + staffHeight / 2;
 
     // Standard visual padding matching standard clefs
-    final startX = x + gap * 0.5;
+    final startX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
 
     // Use a high-fidelity Serif font for authentic engraving
     final fontSize = gap * 1.5;
@@ -504,14 +504,14 @@ class _ManuscriptPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
-    final barWidth = gap * 0.35;
+    final barWidth = gap * core.EngravingConfig.standard.heavyBarlineWidthSp;
     final barHeight = gap * 2.0;
 
     final staffHeight = (lines - 1) * gap;
     final centerY = topY + staffHeight / 2;
 
     // Standard visual padding matching standard clefs
-    final leftX = x + gap * 0.5;
+    final leftX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
 
     // Space between the two bars is exactly one bar width
     final rect1 = Rect.fromCenter(
