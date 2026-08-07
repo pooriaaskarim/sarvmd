@@ -288,7 +288,7 @@ class MiniStaffClefPainter extends CustomPainter {
       final y = staffTop + i * gap;
       final isAnchor = lineNum == clef.anchorLine;
       canvas.drawLine(
-        Offset(gap * 0.5, y),
+        Offset(gap * core.EngravingConfig.standard.initialClefClearanceSp, y),
         Offset(size.width - gap * 0.2, y),
         Paint()
           ..color =
@@ -299,9 +299,9 @@ class MiniStaffClefPainter extends CustomPainter {
     }
 
     if (clef.symbol == core.ClefSymbol.tab) {
-      _paintTabClef(canvas, gap * 0.5, staffTop, lines, gap, staffColor);
+      _paintTabClef(canvas, gap * core.EngravingConfig.standard.initialClefClearanceSp, staffTop, lines, gap, staffColor);
     } else if (clef.symbol == core.ClefSymbol.percussion) {
-      _paintPercussionClef(canvas, gap * 0.5, staffTop, lines, gap, staffColor);
+      _paintPercussionClef(canvas, gap * core.EngravingConfig.standard.initialClefClearanceSp, staffTop, lines, gap, staffColor);
     } else {
       _paintStandardClef(canvas, staffTop, staffColor);
     }
@@ -327,7 +327,7 @@ class MiniStaffClefPainter extends CustomPainter {
     final baselineDelta =
         tp.computeDistanceToActualBaseline(TextBaseline.alphabetic);
     final anchorYPx = staffTop + (lines - clef.anchorLine) * gap;
-    tp.paint(canvas, Offset(gap * 0.5, anchorYPx - baselineDelta));
+    tp.paint(canvas, Offset(gap * core.EngravingConfig.standard.initialClefClearanceSp, anchorYPx - baselineDelta));
   }
 
   void _paintTabClef(Canvas canvas, double x, double topY, int lines,
@@ -336,7 +336,7 @@ class MiniStaffClefPainter extends CustomPainter {
     final centerY = topY + staffHeight / 2;
 
     // Standard visual padding matching standard clefs
-    final startX = x + gap * 0.5;
+    final startX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
 
     // Use a high-fidelity Serif font for authentic engraving
     final fontSize = gap * 1.5;
@@ -368,13 +368,13 @@ class MiniStaffClefPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
-    final barWidth = gap * 0.35;
+    final barWidth = gap * core.EngravingConfig.standard.heavyBarlineWidthSp;
     final barHeight = gap * 2.0; // Fixed height (independent of lines count)
     final staffHeight = (lines - 1) * gap;
     final centerY = topY + staffHeight / 2;
 
     // Standard visual padding matching standard clefs
-    final leftX = x + gap * 0.5;
+    final leftX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
 
     // Space between the two bars is exactly one bar width
     canvas.drawRect(

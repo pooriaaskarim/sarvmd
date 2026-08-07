@@ -11,6 +11,7 @@
 /// stream using absolute page coordinates.
 
 import 'config.dart';
+import 'engraving_config.dart';
 import 'layout.dart';
 import 'domain/smufl.dart';
 import 'layout/positioned_element.dart';
@@ -134,7 +135,7 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
 
         final baselinePdfY =
             effectiveAnchorPdfY - anchorSp * lineGapBp * staff.scale;
-        final cx = staffLeftBp + lineGapBp * 0.5;
+        final cx = staffLeftBp + lineGapBp * config.engraving.initialClefClearanceSp;
 
         final (String path, double upem) = switch (clef.symbol) {
           ClefSymbol.g => (_gClefPdf, 1000.0),
@@ -213,7 +214,7 @@ String emitCompiled(PageConfig config, EngravingPage page) {
 
   // 2. Draw all compiled positioned notation elements
   for (final element in page.elements) {
-    draw.write(_drawElementPdf(element, pageHBp, lineGapBp));
+    draw.write(_drawElementPdf(element, pageHBp, lineGapBp, config.engraving));
   }
 
   draw.writeln('Q');
@@ -225,7 +226,7 @@ String emitCompiled(PageConfig config, EngravingPage page) {
 }
 
 /// Helper method to serialize a [PositionedElement] to PDF operators.
-String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp) {
+String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp, EngravingConfig config) {
   final buf = StringBuffer();
   final scale = elem.scale;
 
@@ -284,7 +285,7 @@ String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp) {
             ? _flag8thPdf
             : _flag16thPdf;
         
-        final flagScale = gapBp * 0.0035 * scale;
+        final flagScale = gapBp * config.smuflGlyphScale * scale;
         final flagScaleY = elem.stemUp ? -flagScale : flagScale;
 
         buf.writeln('q');
@@ -312,11 +313,14 @@ String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp) {
         '${_f(1.0 * gapBp * scale)} ${_f(0.6 * gapBp * scale)} re f'
       );
     } else {
-      final restPath = elem.glyph == SmuflGlyph.restQuarter
-          ? _quarterRestPdf
-          : (elem.glyph == SmuflGlyph.restEighth ? _eighthRestPdf : _sixteenthRestPdf);
+      final restPath = switch (elem.glyph) {
+        SmuflGlyph.restQuarter => _quarterRestPdf,
+        SmuflGlyph.restEighth => _eighthRestPdf,
+        SmuflGlyph.restSixteenth => _sixteenthRestPdf,
+        _ => _quarterRestPdf,
+      };
       
-      final s = gapBp * 0.0035 * scale;
+      final s = gapBp * config.smuflGlyphScale * scale;
       buf.writeln('q');
       buf.writeln('$s 0 0 $s ${_f(xBp)} ${_f(yBp)} cm');
       buf.writeln('0 g');
@@ -377,7 +381,7 @@ String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp) {
     var localXBp = _mmToBp(elem.x);
     for (final acc in elem.accidentals) {
       final accPath = acc.glyph == SmuflGlyph.accidentalFlat ? _flatAccidentalPdf : _sharpAccidentalPdf;
-      final accScale = gapBp * 0.0035 * scale;
+      final accScale = gapBp * config.smuflGlyphScale * scale;
       final accYBp = pageHBp - _mmToBp(acc.y);
 
       buf.writeln('q');
@@ -385,7 +389,7 @@ String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp) {
       buf.writeln('0 g');
       buf.writeln('$accPath Q');
 
-      localXBp += acc.glyph.widthSp * gapBp * 0.6 * scale;
+      localXBp += acc.glyph.widthSp * gapBp * config.keySignatureAccidentalSpacingSp * scale;
     }
   }
 

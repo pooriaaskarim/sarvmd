@@ -176,7 +176,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
     final double startX = centerX - 50.0;
     final double endX =
         centerX + 110.0; // Staff lines remain a clean 160px wide
-    final double clefX = startX + gap * 0.5;
+    final double clefX = startX + gap * core.EngravingConfig.standard.initialClefClearanceSp;
 
     // Draw staff lines with custom highlighted anchor line (ultra-clear high contrast)
     for (var i = 0; i < lines; i++) {
@@ -206,8 +206,8 @@ class _LiveStaffPreviewPainter extends CustomPainter {
       );
     } else if (lines == 1) {
       canvas.drawLine(
-        Offset(startX, startY - gap * 0.8),
-        Offset(startX, startY + gap * 0.8),
+        Offset(startX, startY - gap * core.EngravingConfig.standard.singleLineStaffBarlineOverhangSp),
+        Offset(startX, startY + gap * core.EngravingConfig.standard.singleLineStaffBarlineOverhangSp),
         Paint()
           ..color = inkColor
           ..strokeWidth = 2.0
@@ -231,10 +231,10 @@ class _LiveStaffPreviewPainter extends CustomPainter {
       canvas.drawLine(
           Offset(endX, startY), Offset(endX, startY + staffHeight), thickPaint);
     } else if (lines == 1) {
-      canvas.drawLine(Offset(endX - 5.5, startY - gap * 0.8),
-          Offset(endX - 5.5, startY + gap * 0.8), thinPaint);
-      canvas.drawLine(Offset(endX, startY - gap * 0.8),
-          Offset(endX, startY + gap * 0.8), thickPaint);
+      canvas.drawLine(Offset(endX - 5.5, startY - gap * core.EngravingConfig.standard.singleLineStaffBarlineOverhangSp),
+          Offset(endX - 5.5, startY + gap * core.EngravingConfig.standard.singleLineStaffBarlineOverhangSp), thinPaint);
+      canvas.drawLine(Offset(endX, startY - gap * core.EngravingConfig.standard.singleLineStaffBarlineOverhangSp),
+          Offset(endX, startY + gap * core.EngravingConfig.standard.singleLineStaffBarlineOverhangSp), thickPaint);
     }
 
     // Draw Clef in preview
@@ -268,7 +268,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
           ..color = inkColor
           ..style = PaintingStyle.fill;
         final barHeight = gap * 2.0;
-        final barWidth = gap * 0.35;
+        final barWidth = gap * core.EngravingConfig.standard.heavyBarlineWidthSp;
         final centerY = startY + staffHeight / 2;
 
         // Standard visual padding matching standard clefs
