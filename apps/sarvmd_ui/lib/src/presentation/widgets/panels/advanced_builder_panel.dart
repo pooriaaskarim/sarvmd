@@ -23,16 +23,18 @@ class SystemHierarchyPanel extends StatelessWidget {
               children: [
                 Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
                 const SizedBox(width: 8),
-                Text(
-                  'System Layout',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: cs.onSurface,
-                    letterSpacing: 0.5,
+                Expanded(
+                  child: Text(
+                    'System Layout',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                      letterSpacing: 0.5,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
                 TextButton.icon(
                   onPressed: () => notifier.addStaff(),
                   icon: const Icon(Icons.add_circle_outline, size: 14),
@@ -198,48 +200,62 @@ class _StaffGroupWidget extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   _ConnectorPicker(
                     value: group.connector,
                     onChanged: (v) => notifier.updateGroupConnector(v),
                     compact: isCompact,
                   ),
-                  if (!isCompact && group.children.length > 1) ...[
-                    const SizedBox(width: 12),
-                    Tooltip(
-                      message: 'Continuous barlines across staves',
-                      child: Transform.scale(
-                        scale: 0.8,
-                        child: Switch(
-                          value: group.continuousBarlines,
-                          onChanged: (v) =>
-                              notifier.updateGroupContinuousBarlines(v),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
-              if (isCompact && group.children.length > 1)
+              if (group.children.length > 1)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
-                  child: Row(
-                    children: [
-                      const Text('Continuous Barlines',
-                          style: TextStyle(fontSize: 10)),
-                      const Spacer(),
-                      Transform.scale(
-                        scale: 0.7,
-                        child: Switch(
-                          value: group.continuousBarlines,
-                          onChanged: (v) =>
-                              notifier.updateGroupContinuousBarlines(v),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                        ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.3),
+                        width: 0.5,
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.line_style,
+                          size: 14,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Continuous Barlines',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Tooltip(
+                          message: 'Connect barlines continuously across staves',
+                          child: Transform.scale(
+                            scale: 0.75,
+                            child: Switch(
+                              value: group.continuousBarlines,
+                              onChanged: (v) =>
+                                  notifier.updateGroupContinuousBarlines(v),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               const SizedBox(height: 12),
@@ -383,11 +399,16 @@ class _StaffItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      labelText,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    Tooltip(
+                      message: labelText,
+                      child: Text(
+                        labelText,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -413,16 +434,16 @@ class _StaffItem extends StatelessWidget {
             icon: Icon(Icons.tune_outlined,
                 size: 16, color: cs.primary.withValues(alpha: 0.8)),
             tooltip: 'Configure Staff',
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            padding: const EdgeInsets.all(4),
           ),
           IconButton(
             onPressed: () => notifier.removeStaff(index),
             icon: Icon(Icons.remove_circle_outline,
                 size: 16, color: cs.error.withValues(alpha: 0.7)),
             tooltip: 'Remove Staff',
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            padding: const EdgeInsets.all(4),
           ),
         ],
       ),

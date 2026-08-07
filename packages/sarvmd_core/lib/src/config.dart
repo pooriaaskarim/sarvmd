@@ -1,5 +1,7 @@
 /// Configuration models for Sarv manuscript paper generation.
 
+import 'engraving_config.dart';
+
 /// Supported page orientations.
 enum PageOrientation {
   portrait,
@@ -535,6 +537,7 @@ class PageConfig {
     this.orientation = PageOrientation.portrait,
     this.staffConfig = const StaffConfig(),
     this.margins = const Margins(),
+    this.engraving = EngravingConfig.standard,
     this.systemLayout = const SystemLayout(
       rootGroup: StaffGroup(
         connector: SystemConnector.none,
@@ -549,6 +552,7 @@ class PageConfig {
   final PageOrientation orientation;
   final StaffConfig staffConfig;
   final Margins margins;
+  final EngravingConfig engraving;
 
   /// The hierarchical definition of the staves on this page.
   final SystemLayout systemLayout;
@@ -558,6 +562,7 @@ class PageConfig {
     PageOrientation? orientation,
     StaffConfig? staffConfig,
     Margins? margins,
+    EngravingConfig? engraving,
     SystemLayout? systemLayout,
   }) =>
       PageConfig(
@@ -565,6 +570,7 @@ class PageConfig {
         orientation: orientation ?? this.orientation,
         staffConfig: staffConfig ?? this.staffConfig,
         margins: margins ?? this.margins,
+        engraving: engraving ?? this.engraving,
         systemLayout: systemLayout ?? this.systemLayout,
       );
 
@@ -577,6 +583,7 @@ class PageConfig {
           orientation == other.orientation &&
           staffConfig == other.staffConfig &&
           margins == other.margins &&
+          engraving == other.engraving &&
           systemLayout == other.systemLayout;
 
   @override
@@ -585,6 +592,7 @@ class PageConfig {
       orientation.hashCode ^
       staffConfig.hashCode ^
       margins.hashCode ^
+      engraving.hashCode ^
       systemLayout.hashCode;
 
   /// The width of the page in mm, accounting for orientation.
@@ -647,6 +655,7 @@ class PageConfig {
         'orientation': orientation.name,
         'staffConfig': staffConfig.toJson(),
         'margins': margins.toJson(),
+        'engraving': engraving.toJson(),
         'systemLayout': systemLayout.toJson(),
       };
 
@@ -660,6 +669,9 @@ class PageConfig {
         margins: json['margins'] != null
             ? Margins.fromJson(json['margins'] as Map<String, dynamic>)
             : const Margins(),
+        engraving: json['engraving'] != null
+            ? EngravingConfig.fromJson(json['engraving'] as Map<String, dynamic>)
+            : EngravingConfig.standard,
         systemLayout: json['systemLayout'] != null
             ? SystemLayout.fromJson(
                 json['systemLayout'] as Map<String, dynamic>)

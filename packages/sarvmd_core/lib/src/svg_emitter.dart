@@ -9,6 +9,7 @@
 /// in mm so the file is scale-accurate at 1 mm = 1 user unit.
 
 import 'config.dart';
+import 'engraving_config.dart';
 import 'layout.dart';
 import 'domain/smufl.dart';
 import 'domain/svg_layering_mode.dart';
@@ -44,7 +45,7 @@ String emitSvg(
     buf.writeln('  <rect width="${_f(w)}" height="${_f(h)}" fill="white"/>');
     _drawSystemConnectors(buf, config, layout.systems);
     _drawStaffLines(buf, layout.systems, leftX, rightX, gap, strokeMm);
-    _drawClefs(buf, layout.systems, leftX, gap);
+    _drawClefs(buf, layout.systems, leftX, gap, config.engraving);
     buf.writeln('</svg>');
     return buf.toString();
   }
@@ -68,7 +69,7 @@ String emitSvg(
       );
       _drawSystemConnectors(buf, config, [system]);
       _drawStaffLines(buf, [system], leftX, rightX, gap, strokeMm);
-      _drawClefs(buf, [system], leftX, gap);
+      _drawClefs(buf, [system], leftX, gap, config.engraving);
       buf.writeln('    </g>');
     }
     buf.writeln('  </g>');
@@ -90,7 +91,7 @@ String emitSvg(
     buf.writeln(
       '  <g id="layer-clefs" inkscape:groupmode="layer" inkscape:label="Clefs">',
     );
-    _drawClefs(buf, layout.systems, leftX, gap);
+    _drawClefs(buf, layout.systems, leftX, gap, config.engraving);
     buf.writeln('  </g>');
   }
 
@@ -126,7 +127,7 @@ String emitCompiledSvg(
     _drawSystemConnectors(buf, config, page.pageLayout.systems);
     _drawStaffLines(buf, page.pageLayout.systems, leftX, rightX, gap, strokeMm);
     for (final elem in page.elements) {
-      buf.write(_drawElement(elem, gap));
+      buf.write(_drawElement(elem, gap, config.engraving));
     }
     buf.writeln('</svg>');
     return buf.toString();
@@ -162,7 +163,7 @@ String emitCompiledSvg(
 
       buf.writeln('      <g class="barlines">');
       for (final elem in sysElements.whereType<PositionedBarline>()) {
-        buf.write(_drawElement(elem, gap));
+        buf.write(_drawElement(elem, gap, config.engraving));
       }
       buf.writeln('      </g>');
 
@@ -173,7 +174,7 @@ String emitCompiledSvg(
             e is PositionedKeySignature ||
             e is PositionedTimeSignature,
       )) {
-        buf.write(_drawElement(elem, gap));
+        buf.write(_drawElement(elem, gap, config.engraving));
       }
       buf.writeln('      </g>');
 
@@ -181,7 +182,7 @@ String emitCompiledSvg(
       for (final elem in sysElements.where(
         (e) => e is PositionedNote || e is PositionedRest,
       )) {
-        buf.write(_drawElement(elem, gap));
+        buf.write(_drawElement(elem, gap, config.engraving));
       }
       buf.writeln('      </g>');
 
@@ -207,7 +208,7 @@ String emitCompiledSvg(
       '  <g id="layer-barlines" inkscape:groupmode="layer" inkscape:label="Barlines">',
     );
     for (final elem in page.elements.whereType<PositionedBarline>()) {
-      buf.write(_drawElement(elem, gap));
+      buf.write(_drawElement(elem, gap, config.engraving));
     }
     buf.writeln('  </g>');
 
@@ -220,7 +221,7 @@ String emitCompiledSvg(
           e is PositionedKeySignature ||
           e is PositionedTimeSignature,
     )) {
-      buf.write(_drawElement(elem, gap));
+      buf.write(_drawElement(elem, gap, config.engraving));
     }
     buf.writeln('  </g>');
 
@@ -230,7 +231,7 @@ String emitCompiledSvg(
     for (final elem in page.elements.where(
       (e) => e is PositionedNote || e is PositionedRest,
     )) {
-      buf.write(_drawElement(elem, gap));
+      buf.write(_drawElement(elem, gap, config.engraving));
     }
     buf.writeln('  </g>');
   }
@@ -276,6 +277,7 @@ void _drawClefs(
   List<StaffSystem> systems,
   double leftX,
   double gap,
+  EngravingConfig engraving,
 ) {
   for (final system in systems) {
     for (var si = 0; si < system.staves.length; si++) {
@@ -299,7 +301,7 @@ void _drawClefs(
           : anchorY;
 
       final baselineY = effectiveAnchorY + anchorSp * gap * staff.scale;
-      final glyphX = leftX + gap * 0.15;
+      final glyphX = leftX + gap * engraving.initialClefClearanceSp;
 
       final (String path, double upem) = switch (clef.symbol) {
         ClefSymbol.g => (_gClefSvg, 1000.0),
@@ -374,7 +376,7 @@ void _drawSystemConnectors(
 }
 
 /// Helper method to serialize a [PositionedElement] to SVG markup.
-String _drawElement(PositionedElement elem, double gap) {
+String _drawElement(PositionedElement elem, double gap, EngravingConfig config) {
   final buf = StringBuffer();
   final scale = elem.scale;
 
@@ -431,7 +433,7 @@ String _drawElement(PositionedElement elem, double gap) {
             ? _flag8thSvg
             : _flag16thSvg;
         
-        final flagScale = gap * 0.0035 * scale;
+        final flagScale = gap * config.smuflGlyphScale * scale;
         final flagTransY = stemEndY;
         final flagScaleY = elem.stemUp ? -flagScale : flagScale;
 
@@ -458,19 +460,19 @@ String _drawElement(PositionedElement elem, double gap) {
       );
     } else if (elem.glyph == SmuflGlyph.restQuarter) {
       buf.writeln(
-        '    <g transform="translate(${_f(x)}, ${_f(y)}) scale(${_f(gap * 0.0035 * scale)}, -${_f(gap * 0.0035 * scale)})" fill="black" stroke="none">'
+        '    <g transform="translate(${_f(x)}, ${_f(y)}) scale(${_f(gap * config.smuflGlyphScale * scale)}, -${_f(gap * config.smuflGlyphScale * scale)})" fill="black" stroke="none">'
         '      <path d="$_quarterRestSvg"/>'
         '    </g>'
       );
     } else if (elem.glyph == SmuflGlyph.restEighth) {
       buf.writeln(
-        '    <g transform="translate(${_f(x)}, ${_f(y)}) scale(${_f(gap * 0.0035 * scale)}, -${_f(gap * 0.0035 * scale)})" fill="black" stroke="none">'
+        '    <g transform="translate(${_f(x)}, ${_f(y)}) scale(${_f(gap * config.smuflGlyphScale * scale)}, -${_f(gap * config.smuflGlyphScale * scale)})" fill="black" stroke="none">'
         '      <path d="$_eighthRestSvg"/>'
         '    </g>'
       );
     } else {
       buf.writeln(
-        '    <g transform="translate(${_f(x)}, ${_f(y)}) scale(${_f(gap * 0.0035 * scale)}, -${_f(gap * 0.0035 * scale)})" fill="black" stroke="none">'
+        '    <g transform="translate(${_f(x)}, ${_f(y)}) scale(${_f(gap * config.smuflGlyphScale * scale)}, -${_f(gap * config.smuflGlyphScale * scale)})" fill="black" stroke="none">'
         '      <path d="$_sixteenthRestSvg"/>'
         '    </g>'
       );
@@ -525,13 +527,13 @@ String _drawElement(PositionedElement elem, double gap) {
     var localX = elem.x;
     for (final acc in elem.accidentals) {
       final accPath = acc.glyph == SmuflGlyph.accidentalFlat ? _flatAccidentalSvg : _sharpAccidentalSvg;
-      final accScale = gap * 0.0035 * scale;
+      final accScale = gap * config.smuflGlyphScale * scale;
       buf.writeln(
         '    <g transform="translate(${_f(localX)}, ${_f(acc.y)}) scale(${_f(accScale)}, -${_f(accScale)})" fill="black" stroke="none">'
         '      <path d="$accPath"/>'
         '    </g>'
       );
-      localX += acc.glyph.widthSp * gap * 0.6 * scale;
+      localX += acc.glyph.widthSp * gap * config.keySignatureAccidentalSpacingSp * scale;
     }
   }
 
