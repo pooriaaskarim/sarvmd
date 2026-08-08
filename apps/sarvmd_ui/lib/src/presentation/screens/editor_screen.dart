@@ -22,7 +22,7 @@ import '../widgets/panels/advanced_builder_panel.dart';
 import '../../logic/config/config_cubit.dart';
 import '../../logic/view/view_cubit.dart';
 import '../../logic/view/view_state.dart';
-import '../widgets/dialogs/about_dialog.dart';
+
 
 class EditorScreen extends StatefulWidget {
   const EditorScreen({super.key});
@@ -298,40 +298,6 @@ class _EditorScreenState extends State<EditorScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Tooltip(
-                                      message: 'About SarvMD & Version Info',
-                                      child: InkWell(
-                                        onTap: () => showSarvAboutDialog(context),
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 4, vertical: 2),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                'About',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.info_outline,
-                                                size: 13,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                     Text(
                                       '${configCubit.layout.systemCount} Systems',
                                       style: TextStyle(
