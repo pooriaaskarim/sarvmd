@@ -366,15 +366,17 @@ void _drawStaffLabels(
 
         if (label != null && label.trim().isNotEmpty) {
           final labelX = leftX - 3.0 + def.labelHorizontalOffset;
-          final labelY = staff.topY + (staff.height / 2.0) + 0.5 + def.labelVerticalOffset;
+          final staffMidY = staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
           final italicAttr = def.labelItalic ? ' font-style="italic"' : '';
           final fontFamily = def.labelFontFamily.isNotEmpty ? def.labelFontFamily : 'serif';
+          // Convert labelFontSize in points (pt) to unitless viewBox mm (1 pt = 25.4 / 72 mm).
+          // Must remain UNITLESS so SVG viewBox scaling matrix does not double-scale physical units!
           final fontSizeMm = def.labelFontSize * (25.4 / 72.0);
 
           buf.writeln(
-            '    <text x="${_f(labelX)}" y="${_f(labelY)}"'
-            ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}mm"$italicAttr'
-            ' fill="black" text-anchor="end" dominant-baseline="central">'
+            '    <text x="${_f(labelX)}" y="${_f(staffMidY)}"'
+            ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$italicAttr'
+            ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">'
             '${_escapeXml(label)}'
             '</text>',
           );
