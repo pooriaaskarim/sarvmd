@@ -47,6 +47,7 @@ Future<List<int>> emitPdf(
               _drawSystemConnectors(canvas, config, layout.systems, hPt);
               _drawStaffLines(canvas, layout.systems, leftX, rightX, gap, strokeMm, hPt);
               _drawClefs(canvas, layout.systems, leftX, gap, config.engraving, hPt);
+              _drawStaffLabels(canvas, layout.systems, leftX, hPt, pdfDoc.document);
             },
           );
         },
@@ -90,6 +91,7 @@ Future<List<int>> emitCompiledPdfPages(
             painter: (pdf.PdfGraphics canvas, pdf.PdfPoint size) {
               _drawSystemConnectors(canvas, config, pageData.pageLayout.systems, hPt);
               _drawStaffLines(canvas, pageData.pageLayout.systems, leftX, rightX, gap, strokeMm, hPt);
+              _drawStaffLabels(canvas, pageData.pageLayout.systems, leftX, hPt, pdfDoc.document);
 
               for (final elem in pageData.elements) {
                 _drawElement(canvas, elem, gap, config.engraving, hPt);
@@ -107,7 +109,7 @@ Future<List<int>> emitCompiledPdfPages(
 void _drawStaffLines(
   pdf.PdfGraphics canvas,
   List<StaffSystem> systems,
-  double leftX,
+  double baseLeftX,
   double rightX,
   double gap,
   double strokeMm,
@@ -116,10 +118,12 @@ void _drawStaffLines(
   canvas.setStrokeColor(pdf.PdfColors.black);
   canvas.setLineWidth(strokeMm * _mmToPt);
 
-  final leftPt = leftX * _mmToPt;
   final rightPt = rightX * _mmToPt;
 
   for (final system in systems) {
+    final leftX = baseLeftX + system.leftIndentMm;
+    final leftPt = leftX * _mmToPt;
+
     for (final staff in system.staves) {
       final topY = staff.topY;
       for (var li = 0; li < staff.lines; li++) {
@@ -135,12 +139,14 @@ void _drawStaffLines(
 void _drawClefs(
   pdf.PdfGraphics canvas,
   List<StaffSystem> systems,
-  double leftX,
+  double baseLeftX,
   double gap,
   EngravingConfig engraving,
   double hPt,
 ) {
   for (final system in systems) {
+    final leftX = baseLeftX + system.leftIndentMm;
+
     for (final staff in system.staves) {
       final clef = staff.definition?.clef;
       if (clef == null) continue;
@@ -178,6 +184,49 @@ void _drawClefs(
   }
 }
 
+void _drawStaffLabels(
+  pdf.PdfGraphics canvas,
+  List<StaffSystem> systems,
+  double baseLeftX,
+  double hPt,
+  pdf.PdfDocument doc,
+) {
+  for (var sysIdx = 0; sysIdx < systems.length; sysIdx++) {
+    final system = systems[sysIdx];
+    final leftX = baseLeftX + system.leftIndentMm;
+
+    for (final staff in system.staves) {
+      final def = staff.definition;
+      if (def != null && def.labelVisible) {
+        final String? label = sysIdx == 0
+            ? def.instrumentName
+            : (def.instrumentAbbreviation ?? def.instrumentName);
+
+        if (label != null && label.trim().isNotEmpty) {
+          final labelX = leftX - 3.0 + def.labelHorizontalOffset;
+          final labelY = staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
+          final labelXPt = labelX * _mmToPt;
+          final labelYPt = hPt - (labelY * _mmToPt);
+          final fontPt = def.labelFontSize;
+
+          canvas.saveContext();
+          final font = def.labelItalic
+              ? pdf.PdfFont.helveticaOblique(doc)
+              : pdf.PdfFont.helvetica(doc);
+          canvas.setFillColor(pdf.PdfColors.black);
+
+          final textMetrics = font.stringMetrics(label);
+          final textWidthPt = textMetrics.width * fontPt;
+          final drawXPt = labelXPt - textWidthPt;
+
+          canvas.drawString(font, fontPt, label, drawXPt, labelYPt - (fontPt * 0.3));
+          canvas.restoreContext();
+        }
+      }
+    }
+  }
+}
+
 void _drawSystemConnectors(
   pdf.PdfGraphics canvas,
   PageConfig config,
@@ -185,12 +234,12 @@ void _drawSystemConnectors(
   double hPt,
 ) {
   final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
-  final leftX = config.margins.left;
   final connector = config.systemLayout.rootGroup.connector;
 
   if (connector == SystemConnector.none) return;
 
   for (final system in systems) {
+    final leftX = config.margins.left + system.leftIndentMm;
     if (system.staves.length <= 1) continue;
 
     final sysTopY = system.staves.first.topY;
