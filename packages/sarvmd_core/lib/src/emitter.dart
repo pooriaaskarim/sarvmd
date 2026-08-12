@@ -47,13 +47,13 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
   draw.writeln('$lineW w'); // Set line width in points.
   draw.writeln('0 G'); // Black stroke color.
 
-  final staffLeftBp = _mmToBp(config.margins.left);
   final staffRightBp = _mmToBp(pageW - config.margins.right);
   final pageHBp = _mmToBp(pageH);
   final lineGapBp = _mmToBp(config.staffConfig.lineGapMm);
 
   // Draw each system.
   for (final system in layout.systems) {
+    final staffLeftBp = _mmToBp(config.margins.left + system.leftIndentMm);
     for (final staff in system.staves) {
       final topLinePdfY = pageHBp - _mmToBp(staff.topY);
       for (var line = 0; line < staff.lines; line++) {

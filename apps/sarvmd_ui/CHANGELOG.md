@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.2] - 2026-08-12
+
+### Added
+- **Pure-Dart Direct Vector PDF Emitter**: Integrated native pure-Dart PDF rendering engine (`pdf_emitter.dart`) in `sarvmd_core` (`emitPdf`, `emitCompiledPdfPages`) allowing direct, zero-dependency PDF generation in memory without requiring host `pdflatex` installations.
+- **Web Browser PDF Export**: Enabled 100% offline web PDF downloads via browser blob URL triggers (`web_download_web.dart`).
+
+### Changed
+- **Default PDF Export Pipeline**: Updated `ExportService.exportPdf` to use direct vector PDF emission as the default export strategy across Web, Desktop, and Mobile while preserving raw `.tex` source export functionality (`exportTex`).
+
+### Fixed
+- **Instrument Labels & System Indentation**: Enabled instrument name and abbreviation rendering (`def.instrumentName`, `def.instrumentAbbreviation`) across PDF, SVG, and LaTeX emitters with automatic space-aware system left indentation (`leftIndentMm`).
+- **Scale-Accurate SVG Typography**: Resolved SVG label font double-scaling by serializing unitless font sizes matching the SVG `viewBox` millimeter coordinate space.
+- **Responsive Branding Header**: Wrapped `SarvHeader` in a responsive `FittedBox` scale-down container to eliminate horizontal `RenderFlex` overflow warnings on narrow sidebar viewports.
+
+---
+
 ## [0.5.1] - 2026-08-07
 
 ### Added
