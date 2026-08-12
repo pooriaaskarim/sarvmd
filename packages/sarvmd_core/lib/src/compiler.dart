@@ -7,11 +7,21 @@ import 'package:path/path.dart' as p;
 
 final _log = Logger.get('sarvmd.core.compiler');
 
+const bool _kIsWeb =
+    bool.fromEnvironment('dart.library.js_util') ||
+    bool.fromEnvironment('dart.library.html') ||
+    identical(0, 0.0);
+
 /// Compile a `.tex` file to PDF using pdflatex.
 ///
 /// Returns the path to the generated PDF file.
 /// Throws if compilation fails.
 Future<String> compile(String texPath, {String? outputDir}) async {
+  if (_kIsWeb) {
+    throw UnsupportedError(
+      'LaTeX compilation via pdflatex process is not supported in Web browser mode.',
+    );
+  }
   final texFile = File(texPath);
   if (!texFile.existsSync()) {
     _log.error('TeX source not found', error: texPath);

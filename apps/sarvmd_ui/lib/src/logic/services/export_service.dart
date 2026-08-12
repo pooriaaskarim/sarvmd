@@ -1,11 +1,14 @@
 // Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../core/utils/app_logger.dart';
+import 'web_download/web_download.dart';
 
 final _log = AppLogger.export;
 
@@ -77,6 +80,7 @@ class ExportService {
 
   /// Default output directory.
   static String getDefaultOutputDir() {
+    if (kIsWeb) return 'Browser Downloads';
     return p.join(Directory.current.path, 'output');
   }
 
@@ -110,8 +114,21 @@ class ExportService {
     final sw = Stopwatch()..start();
     try {
       final tex = core.emit(config, layout, pageCount: pageCount);
-      final dir = outputDir ?? getDefaultOutputDir();
       final name = _cleanFileName(fileName ?? '', config);
+
+      if (kIsWeb) {
+        final bytes = utf8.encode(tex);
+        downloadFileWeb('$name.tex', bytes, 'text/plain;charset=utf-8');
+        _log.info('TeX download triggered for browser', context: {'fileName': '$name.tex', 'size': bytes.length});
+        return ExportResult(
+          filePath: 'Browser Downloads/$name.tex',
+          fileName: '$name.tex',
+          fileSizeBytes: bytes.length,
+          elapsedMs: sw.elapsedMilliseconds,
+        );
+      }
+
+      final dir = outputDir ?? getDefaultOutputDir();
       final filePath = p.join(dir, '$name.tex');
 
       await Directory(dir).create(recursive: true);
@@ -139,16 +156,53 @@ class ExportService {
     String? fileName,
     int pageCount = 1,
     String? outputDir,
+    bool useLatexCompiler = false,
   }) async {
     _log.info('Exporting PDF', context: {
       'pageSize': config.pageSize.name,
       'staffCount': config.staffCount,
       'pageCount': pageCount,
+      'useLatexCompiler': useLatexCompiler,
     });
     final sw = Stopwatch()..start();
     try {
-      final dir = outputDir ?? getDefaultOutputDir();
       final name = _cleanFileName(fileName ?? '', config);
+
+      if (kIsWeb || !useLatexCompiler) {
+        final pdfBytes = await core.emitPdf(config, layout, pageCount: pageCount);
+
+        if (kIsWeb) {
+          downloadFileWeb('$name.pdf', pdfBytes, 'application/pdf');
+          _log.info('PDF download triggered for browser', context: {'fileName': '$name.pdf', 'size': pdfBytes.length});
+          return ExportResult(
+            filePath: 'Browser Downloads/$name.pdf',
+            fileName: '$name.pdf',
+            fileSizeBytes: pdfBytes.length,
+            elapsedMs: sw.elapsedMilliseconds,
+          );
+        }
+
+        final dir = outputDir ?? getDefaultOutputDir();
+        final filePath = p.join(dir, '$name.pdf');
+        await Directory(dir).create(recursive: true);
+        final file = File(filePath);
+        await file.writeAsBytes(pdfBytes);
+
+        _log.info('PDF export complete (native vector)', context: {
+          'path': filePath,
+          'elapsedMs': sw.elapsedMilliseconds,
+          'size': pdfBytes.length,
+        });
+
+        return ExportResult(
+          filePath: filePath,
+          fileName: '$name.pdf',
+          fileSizeBytes: pdfBytes.length,
+          elapsedMs: sw.elapsedMilliseconds,
+        );
+      }
+
+      final dir = outputDir ?? getDefaultOutputDir();
       final texResult = await exportTex(
         config,
         layout,
@@ -160,7 +214,7 @@ class ExportService {
       final file = File(pdfPath);
       final size = await file.length();
 
-      _log.info('PDF export complete', context: {
+      _log.info('PDF export complete (pdflatex)', context: {
         'path': pdfPath,
         'elapsedMs': sw.elapsedMilliseconds,
         'size': size,
@@ -195,8 +249,21 @@ class ExportService {
     final sw = Stopwatch()..start();
     try {
       final svg = core.emitSvg(config, layout, layeringMode: layeringMode);
-      final dir = outputDir ?? getDefaultOutputDir();
       final name = _cleanFileName(fileName ?? '', config);
+
+      if (kIsWeb) {
+        final bytes = utf8.encode(svg);
+        downloadFileWeb('$name.svg', bytes, 'image/svg+xml;charset=utf-8');
+        _log.info('SVG download triggered for browser', context: {'fileName': '$name.svg', 'size': bytes.length});
+        return ExportResult(
+          filePath: 'Browser Downloads/$name.svg',
+          fileName: '$name.svg',
+          fileSizeBytes: bytes.length,
+          elapsedMs: sw.elapsedMilliseconds,
+        );
+      }
+
+      final dir = outputDir ?? getDefaultOutputDir();
       final filePath = p.join(dir, '$name.svg');
 
       await Directory(dir).create(recursive: true);
@@ -217,4 +284,5 @@ class ExportService {
     }
   }
 }
+
 
