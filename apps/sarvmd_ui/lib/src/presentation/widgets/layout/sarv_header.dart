@@ -32,41 +32,45 @@ class SarvHeader extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SvgPicture.asset(
-                  'assets/handwriting/Sarv Handwriting.svg',
-                  height: 64,
-                  colorFilter: ColorFilter.mode(
-                    cs.onSurface,
-                    BlendMode.srcIn,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/handwriting/Sarv Handwriting.svg',
+                    height: 64,
+                    colorFilter: ColorFilter.mode(
+                      cs.onSurface,
+                      BlendMode.srcIn,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Manuscript Designer',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: cs.primary.withValues(alpha: 0.8),
-                        fontSize: 18,
-                        fontFamily: 'IranNastaliq',
-                        letterSpacing: 1.2,
-                        height: 1.3,
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Manuscript Designer',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: cs.primary.withValues(alpha: 0.8),
+                          fontSize: 18,
+                          fontFamily: 'IranNastaliq',
+                          letterSpacing: 1.2,
+                          height: 1.3,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.info_outline,
-                      size: 14,
-                      color: cs.primary.withValues(alpha: 0.6),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: cs.primary.withValues(alpha: 0.6),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
