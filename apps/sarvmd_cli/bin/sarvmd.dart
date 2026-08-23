@@ -27,42 +27,51 @@ void main(List<String> arguments) async {
     ..addOption(
       'layout',
       abbr: 'l',
-      help: 'Layout type.',
+      help: 'Layout type / نوع چیدمان.',
       allowed: ['doubleLine', 'singleLine', 'piano', 'standard'],
       defaultsTo: 'singleLine',
     )
     ..addOption(
       'size',
       abbr: 's',
-      help: 'Paper size.',
+      help: 'Paper size / ابعاد برگه.',
       allowed: ['a4', 'b4'],
       defaultsTo: 'a4',
     )
     ..addOption(
       'output',
       abbr: 'o',
-      help: 'Output directory for generated files.',
+      help: 'Output directory / مسیر خروجی.',
       defaultsTo: 'output',
+    )
+    ..addOption(
+      'lang',
+      abbr: 'g',
+      help: 'Language / زبان (fa, en).',
+      allowed: ['fa', 'en'],
+      defaultsTo: 'fa',
     )
     ..addFlag(
       'help',
       abbr: 'h',
       negatable: false,
-      help: 'Show usage information.',
+      help: 'Show usage information / نمایش راهنما.',
     );
 
   final ArgResults results;
   try {
     results = parser.parse(arguments);
   } on FormatException catch (e) {
-    stderr.writeln('Error: ${e.message}');
+    stderr.writeln('Error / خطا: ${e.message}');
     stderr.writeln();
-    _printUsage(parser);
+    _printUsage(parser, isFa: true);
     exit(1);
   }
 
+  final isFa = results.option('lang') == 'fa';
+
   if (results.flag('help')) {
-    _printUsage(parser);
+    _printUsage(parser, isFa: isFa);
     exit(0);
   }
 
@@ -88,9 +97,15 @@ void main(List<String> arguments) async {
   // Compute layout.
   final layout = core.computeLayout(config);
 
-  _log.info(
-    '${profile.label} layout, ${pageSize.name.toUpperCase()} — ${layout.systemCount} systems',
-  );
+  if (isFa) {
+    _log.info(
+      '[اطلاع] چیدمان ${profile.label}، ابعاد ${pageSize.name.toUpperCase()} — تعداد سیستم‌ها: ${layout.systemCount}',
+    );
+  } else {
+    _log.info(
+      '[INFO] ${profile.label} layout, ${pageSize.name.toUpperCase()} — ${layout.systemCount} systems',
+    );
+  }
 
   // Emit LaTeX source.
   final tex = core.emit(config, layout);
@@ -99,23 +114,43 @@ void main(List<String> arguments) async {
 
   Directory(outputDir).createSync(recursive: true);
   File(texPath).writeAsStringSync(tex);
-  _log.info('TeX written', context: {'path': texPath});
+
+  if (isFa) {
+    _log.info('[اطلاع] کدهای TeX با موفقیت ذخیره شد.', context: {'مسیر': texPath});
+  } else {
+    _log.info('[INFO] TeX written.', context: {'path': texPath});
+  }
 
   // Compile to PDF.
   try {
     final pdfPath = await core.compile(texPath, outputDir: outputDir);
-    _log.info('PDF written', context: {'path': pdfPath});
+    if (isFa) {
+      _log.info('[موفقیت] فایل PDF با موفقیت کامپایل شد.', context: {'مسیر': pdfPath});
+    } else {
+      _log.info('[INFO] PDF compiled successfully.', context: {'path': pdfPath});
+    }
   } catch (e) {
-    _log.error('Compilation failed', error: e);
+    if (isFa) {
+      _log.error('[خطا] خطا در کامپایل فایل LaTeX.', error: e);
+    } else {
+      _log.error('[ERROR] LaTeX compilation failed.', error: e);
+    }
     exit(2);
   }
 }
 
-void _printUsage(ArgParser parser) {
-  stdout.writeln('Usage: sarv [options]');
-  stdout.writeln();
-  stdout.writeln('Generate blank manuscript paper as PDF.');
-  stdout.writeln();
+void _printUsage(ArgParser parser, {bool isFa = true}) {
+  if (isFa) {
+    stdout.writeln('طریقه استفاده: sarv [گزینه‌ها]');
+    stdout.writeln();
+    stdout.writeln('تولید برگه‌های نت موسیقی (کاغذ دست‌نویس) به صورت PDF.');
+    stdout.writeln();
+  } else {
+    stdout.writeln('Usage: sarv [options]');
+    stdout.writeln();
+    stdout.writeln('Generate blank manuscript paper as PDF.');
+    stdout.writeln();
+  }
   stdout.writeln(parser.usage);
 }
 

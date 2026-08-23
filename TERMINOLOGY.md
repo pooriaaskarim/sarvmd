@@ -1,74 +1,105 @@
-# واژه‌نامه و اصطلاحات تخصصی سرو (SarvMD Bilingual Terminology)
+# واژه‌نامه و اصطلاحات تخصصی سرو (SarvMD Standard Word Dictionary & Glossary)
 
-This document serves as the official bilingual glossary and translation reference for the SarvMD project. It ensures absolute linguistic consistency across Persian and English documentation, source code comments, CLI outputs, and UI localizations.
-
----
-
-## ۱. معماری نرم‌افزار و هسته فنی (Software Architecture & Pipeline)
-
-| English Term | معادل فنی/فارسی (برنامه‌نویسان) | Definition & Context / تعریف و کاربرد |
-| :--- | :--- | :--- |
-| **Pipeline** | Pipeline (پایپ‌لاین) | The sequence of data stages (`Config` $\rightarrow$ `Layout` $\rightarrow$ `Emitter` $\rightarrow$ `Compiler`) that renders the manuscript. |
-| **Single Source of Truth** | Single Source of Truth (SSoT) | An architectural design pattern where core logic is stored in a single library (`sarvmd_core`) and shared across all apps. |
-| **Workspace (Monorepo)** | Monorepo (مونو-ریپو) | A repository structure containing multiple independent packages or apps (`sarvmd_core`, `sarvmd_ui`, `sarvmd_cli`). |
-| **Zero-Dependency Core** | Zero-Dependency | Writing the core layout engine relying entirely on pure Dart APIs, ensuring maximum long-term build stability. |
-| **State Decoupling** | State Decoupling (دکوپلاژ وضعیت) | Separating configuration data (`ConfigNotifier`) from viewport zoom states (`ViewNotifier`) to prevent redundant rebuilds. |
-| **Dual-Notifier System** | الگوی Dual-Notifier | A reactive design pattern managing sheet layout properties and user camera positions independently. |
-| **Zero-Rebuild Input** | Zero-Rebuild Input | UI optimization preventing expensive canvas redraws while the user actively types text (such as staff labels). |
-| **Stable UID-based Identity** | هویت‌دهی پایدار مبتنی بر UID | Using unique identifiers rather than array indices to identify staves, preventing focus loss during drag-and-drop actions. |
-| **Binary IR (B-IR)** | Binary IR (B-IR) | An intermediate binary representation optimized for rapid layout serialization and network/IPC streaming. |
-| **Headless Workflow** | Headless workflow / تحت خط فرمان | Running automated batch manuscript compiling from the command-line interface without launching a window. |
+این سند مرجع رسمی واژه‌نامه تخصصی، اصطلاحات فنی و فرهنگ معادل‌گزینی دوزبانه (فارسی / انگلیسی) پروژه **سرو (SarvMD)** است. هدف این واژه‌نامه، ایجاد **یکپارچگی مطلقا کامل زبان‌شناختی و فنی** در تمامی لایه‌های پروژه شامل مستندات، متون رابط کاربری (UI Strings)، خروجی‌های خط فرمان (CLI Outputs)، کدهای توضیحی (Docstrings) و پیام‌های کامیت است.
 
 ---
 
-## ۲. صفحه‌آرایی نت و استانداردهای پارتیتور (Music Engraving & Scoring)
+## ۱. صفحه‌آرایی نت و استانداردهای پارتیتور (Music Engraving & Scoring Standards)
 
-| English Term | معادل فارسی | Definition & Context / تعریف و کاربرد |
+| English Term | معادل فارسی مصوب | تعاریف، زمینه و کاربرد در سرو |
 | :--- | :--- | :--- |
-| **Music Engraving** | صفحه‌آرایی نت / برگه‌آرایی موسیقی | The professional process of preparing high-quality, readable sheet music for publishing (analogous to typography/layout for text). |
-| **Engraving Standards** | استانداردهای صفحه‌آرایی نت | Strict rules governing page margins, line weights, and spacing ratios to guarantee professional, legible layout outputs. |
-| **MOLA-compliant Preset** | پیش‌فرض منطبق با استاندارد MOLA | Layout parameters designed in accordance with the Music Publishers Association guidelines for blank canvas systems. |
-| **Manuscript Paper** | کاغذ دست‌نویس نت / کاغذ موسیقی | Blank staff paper used by composers to write down musical notations by hand. |
-| **Staff / Staves** | خط حامل / خطوط حامل | The five horizontal lines upon which musical notes are written (originally derived from French *portée*). |
-| **Clef (G, F, C)** | کلید موسیقی (سل، فا، دو) | The symbol placed at the beginning of a staff to determine the pitch of the notes (derived from French *clef*). |
-| **SystemLayout** | چیدمان سیستم‌های حامل (سیستم) | A collection of staves played simultaneously by different instruments, grouped vertically (e.g., an orchestral system score). |
-| **Orchestral Family** | خانواده سازهای ارکستر | Vertical groupings (Woodwinds, Brass, Percussion, Strings) that dictate the rendering order in a system layout. |
-| **Brace / Bracket** | آکولاد / براکت | Vertical grouping brackets used to connect multiple staves in a system layout (derived from French *accolade*). |
-| **Score (Partition)** | پارتیتور ارکستر / پارتیتور کامل | The master sheet music containing all instrumental parts of an ensemble aligned vertically (derived from French *partition*). |
-| **Staff Spacing / Padding** | فاصله‌گذاری و حاشیه خطوط حامل | The calculated vertical distance between neighboring staves or systems to prevent collisions of musical notations. |
+| **Music Engraving** | صفحه‌آرایی نت / برگه‌آرایی موسیقی | فرآیند تخصصی و دقیق چیدمان، تنظیم فواصل و چاپ برگه نت موسیقی با رعایت استانداردهای بصری و خوانایی. |
+| **Engraving Standards** | استانداردهای صفحه‌آرایی نت | مجموعه قواعد ریاضی و تجربی حاکم بر ضخامت خطوط، فواصل حاشیه‌ها و تناسبات اجزای صفحه نت (مانند استانداردهای Gould و MOLA). |
+| **Manuscript Paper** | کاغذ دست‌نویس نت / کاغذ موسیقی | برگه‌های استاندارد خام خطوط حامل که آهنگسازان برای نت‌نویسی دستی از آن استفاده می‌کنند. |
+| **Staff / Staves** | خط حامل / خطوط حامل | ۵ خط افقی موازی و موازی‌ساز که نمادهای موسیقی روی آن‌ها، میان آن‌ها یا بالا/پایین آن‌ها قرار می‌گیرند. |
+| **Clef (Treble, Bass, Alto, Tenor)** | کلید موسیقی (سل، فا، دو) | نشانه ابتدای خط حامل که زیروبمی (Pitch) نت‌ها را مشخص می‌سازد. |
+| **SystemLayout** | چیدمان سیستم‌های حامل (سیستم) | گروهی از خطوط حامل که هم‌زمان توسط سازهای مختلف در یک پارتیتور اجرا می‌شوند و عمودی هم‌راستا هستند. |
+| **System Indentation** | تورفتگی نخستین سیستم / تورفتگی بند | فاصله افقی ابتدای اولین سیستم هر برگه نت از حاشیه چپ جهت درج نام کامل سازها. |
+| **Orchestral Family** | خانواده سازهای ارکستر | دسته‌بندی عمودی سازها (بادی چوبی، بادی برنجی، ضربی، زهی) که ترتیب قرارگیری آن‌ها در سیستم را تعیین می‌کند. |
+| **Brace (Accolade)** | آکولاد / آکولاد پیانو | قوس منحنی عمودی (کتیبه‌ای) برای متصل کردن دو خط حامل مربوط به یک ساز (مانند پیانو یا هارپ). |
+| **Bracket** | براکت / قلاب | خط عمودی مستقیم با لبه‌های ضخیم جهت گروه‌بندی سازهای هم‌خانواده در پارتیتور. |
+| **Score (Full Score / Partition)** | پارتیتور ارکستر / پارتیتور کامل | برگه نت جامع شامل خطوط حامل تمام سازهای یک آنسامبل یا ارکستر که به صورت عمودی تراز شده‌اند. |
+| **Staff Spacing / Distance** | فاصله خطوط حامل | فاصله عمودی محاسبه‌شده میان دو خط حامل متوالی جهت جلوگیری از تداخل نمادها و متون. |
+| **Line Weight / Line Thickness** | ضخامت خطوط | قطر و پهنای فیزیکی ترسیم خطوط حامل، خطوط میزان و خطوط کادر بر حسب میلی‌متر یا پوینت. |
+| **Notehead** | سرِ نت (کله نت) | بخش بیضوی یا شکل‌دار نماد نت که موقعیت زیروبمی آن را روی خط حامل مشخص می‌کند. |
+| **Gouldian Spacing Ratio** | نسبت فاصله‌گذاری گولد | نسبت‌های ریاضی استاندارد برگرفته از کتاب *Behind Bars* نوشته Elaine Gould برای ارگونومی بصری نت. |
+| **MOLA Standards** | استانداردهای انجمن ناشران موسیقی (MOLA) | ضوابط بین‌المللی اندازه کاغذ، حاشیه‌های صحافی و ابعاد حامل‌های موسیقی برای اجراهای زنده. |
+
+---
+
+## ۲. معماری نرم‌افزار و هسته فنی (Software Architecture & Core Engine)
+
+| English Term | معادل فارسی مصوب | تعاریف، زمینه و کاربرد در سرو |
+| :--- | :--- | :--- |
+| **Pipeline** | پایپ‌لاین (فرآیند خطی پردازش) | زنجیره گام‌به‌گام تبدیل داده‌ها (`Config` $\rightarrow$ `Layout` $\rightarrow$ `Emitter` $\rightarrow$ `Compiler`) جهت تولید خروجی. |
+| **Single Source of Truth (SSoT)** | مرجع واحد حقیقت (SSoT) | الگوی معماری که در آن منطق اصلی چیدمان تنها در پکیج `sarvmd_core` پیاده‌سازی شده و میان اپلیکیشن‌ها مشترک است. |
+| **Monorepo / Workspace** | مونو-ریپو / مخزن یکپارچه | مخزن کدی که شامل چند پکیج یا اپلیکیشن مستقل اما وابسته (`sarvmd_core`, `sarvmd_ui`, `sarvmd_cli`) است. |
+| **Zero-Dependency Core** | هسته بدون وابستگی | عدم استفاده از پکیج‌های ثالث در پکیج هسته (`sarvmd_core`) جهت تضمین پایداری درازمدت و سرعت بالا. |
+| **State Decoupling** | دکوپلاژ وضعیت (جداسازی وضعیت) | تفکیک کامل وضعیت تنظیمات سند (`ConfigNotifier`) از وضعیت‌های دوربین/زوم (`ViewNotifier`). |
+| **Dual-Notifier System** | الگوی اعلان دوگانه (Dual-Notifier) | الگوی واکنش‌گرا برای مدیریت مستقل داده‌های هندسی برگه و موقعیت دید کاربر بدون بازترسیم‌های اضافی. |
+| **Zero-Rebuild Input** | ورودی بدون بازترسیم کامل | بهینه‌سازی UI که مانع از اجرای مجدد محاسبات سنگین بوم هنگام تایپ متون توسط کاربر می‌شود. |
+| **Stable UID Identity** | هویت‌دهی پایدار مبتنی بر شناسه | انتساب شناسه یکتا به هر حامل به جای استفاده از نمایه آرایه (Index) جهت حفظ فوکوس هنگام درگ و دراپ. |
+| **Binary IR (B-IR)** | بازنمایی واسط باینری | ساختار داده فشرده باینری جهت سری‌سازی سریع چیدمان و انتقال در شبکه یا پردازش‌های هم‌روند. |
+| **Headless Workflow** | گردش‌کار بدون رابط گرافیکی (Headless) | اجرای اتوماتیک کامپایل و تولید دسته‌ای PDF از طریق خط فرمان بدون نیاز به باز شدن پنجره گرافیکی. |
+| **Vector Emitter** | تولیدکننده دستورات برداری | ماژول تبدیل داده‌های هندسی چیدمان به دستورات خام ترسیم برداری (لاتک `\pdfliteral` یا فلاتر `Path`). |
+| **PDF Compiler** | کامپایلر PDF | موتور تبدیل کدهای LaTeX تولیدشده به فایل نهایی PDF قابل چاپ (مانند `pdflatex`). |
 
 ---
 
 ## ۳. بوم ترسیم تعاملی و هندسه رابط کاربری (Interactive Canvas & UI Geometry)
 
-| English Term | معادل فنی/فارسی (برنامه‌نویسان) | Definition & Context / تعریف و کاربرد |
+| English Term | معادل فارسی مصوب | تعاریف، زمینه و کاربرد در سرو |
 | :--- | :--- | :--- |
-| **Blank Canvas** | Blank Canvas / بوم ساده | The minimalist, distraction-free environment in `sarvmd_ui` optimized for editing musical configurations. |
-| **Actual Size** | Actual Size (ابعاد فیزیکی واقعی) | Rendering the digital paper on screen so that its measured centimeters exactly match those of physical paper. |
-| **Display Calibration** | Display Calibration (کالیبراسیون مانیتور) | Programmatic adjustment of screen pixels to match real-world physical metrics by calculating monitor density. |
-| **Physical PPI auto-detection** | تشخیص خودکار PPI واقعی | Executing low-level shell utilities across OS terminals to retrieve exact hardware monitor specifications. |
-| **Ruler Precision** | Ruler Precision (دقت خط‌کش) | The ruler overlay on the canvas edges showing precise millimeter alignments reacting dynamically to zoom. |
-| **Coordinate Drift** | Coordinate Drift (انحراف مختصاتی) | A geometric error where canvas and ruler alignments desynchronize during aggressive zooms or orientation flips. |
-| **Transformation Matrix** | Transformation Matrix (ماتریس تبدیل هندسی) | The algebraic matrix calculating translation, zoom, and orientation offsets for vector graphics. |
-| **InteractiveViewer** | InteractiveViewer / Viewport | The Flutter rendering component enabling smooth pan (movement) and pinch-zoom gestures across the manuscript page. |
-| **CustomPainter** | CustomPainter | Flutter's low-level drawing class used to render custom vector shapes, Bézier lines, and staves with high efficiency. |
-| **Bézier Path** | Bézier Path (مسیر بزیه) | Parametric curves defined by anchor points used to draw scalable vector graphics like clef symbols and آکولاد brackets. |
-| **Mouse Wings** | Mouse Wings / نشانگر صلیبی تراز | Visual crosshairs following the cursor in real-time to facilitate precise alignment of manuscript staves. |
-| **LiveStaffPreview** | LiveStaffPreview | An interactive widget in the config dialog (e.g., 380x140px) showing real-time changes in clefs and line weights. |
-| **CAD Targets** | CAD Targets / نشانه‌های تراز هندسی | Precision concentric target circles indicating anchor points for alignment and visual calibration in preview cards. |
-| **Effective Width / Height** | Effective Width / Height (ابعاد مفید کاغذ) | The printable workspace dimensions of the sheet page after subtracting top, bottom, left, and right margins. |
+| **Blank Canvas** | بوم ساده / بوم دیجیتال | محیط کاری مینیمال و عاری از عوامل حواس‌پرتی در `sarvmd_ui` برای طراحی آزاد برگه‌های نت. |
+| **Actual Size** | ابعاد فیزیکی واقعی | رندر صفحه دیجیتال روی مانیتور به گونه‌ای که خط‌کش سانتی‌متری روی مانیتور با خط‌کش واقعی مطابقت کامل دارد. |
+| **Display Calibration** | کالیبراسیون نمایشگر | محاسبه تراکم پیکسلی واقعی مانیتور جهت تطبیق ابعاد پیکسلی نرم‌افزار با میلی‌متر واقعی. |
+| **Physical PPI Auto-Detection** | تشخیص خودکار PPI فیزیکی | فراخوانی دستورات بومی سیستم‌عامل برای دریافت ابعاد دقیق فیزیکی مانیتور. |
+| **Ruler Precision** | دقت خط‌کش | خط‌کش‌های متحرک حاشیه بوم که ابعاد و فواصل را با دقت میلی‌متر و وابسته به میزان زوم نشان می‌دهند. |
+| **Coordinate Drift** | انحراف مختصاتی | خطای هندسی ناشی از گرد کردن اعداد اعشاری که باعث عدم انطباق خط‌کش و صفحه هنگام زوم شدید می‌شود. |
+| **Transformation Matrix** | ماتریس تبدیل هندسی | ماتریس جبر خطی برای محاسبه موقعیت، مقیاس (زوم) و جابه‌جایی عناصر گرافیکی روی بوم. |
+| **InteractiveViewer / Viewport** | پنجره دید (Viewport) | کامپوننت فلاتر که تعاملات روان مانند پنینگ (جابه‌جایی) و پنچ-زوم (بزرگ‌نمایی) را مدیریت می‌کند. |
+| **CustomPainter** | رندرکننده سفارشی فلاتر | کلاس سطح پایین فلاتر برای ترسیم مستقیم خطوط، مسیرهای بزیه و نمادهای برداری روی Canvas. |
+| **Bézier Path** | مسیر منحنی بزیه | منحنی‌های ریاضی تعریف‌شده با نقاط کنترل برای ترسیم دقیق نمادهای گرافیکی و آکولادها. |
+| **Mouse Wings** | نشانگر صلیبی تراز | خطوط کمکی افقی و عمودی که همراه با نشانگر ماوس حرکت کرده و تراز بودن عناصر را نشان می‌دهند. |
+| **LiveStaffPreview** | پیش‌نمایش زنده حامل | ویجت تعاملی کوچک در پنجره تنظیمات برای نمایش آنی تغییرات خطوط، کلیدها و ضخامت‌ها. |
+| **CAD Targets** | نشانه‌های تراز هندسی | دایره‌های هدف تراز در کارت‌های پیش‌نمایش برای سنجش دقیق فواصل و نقاط اتصال. |
+| **Effective Workspace** | ابعاد مفید کاغذ | مساحت قابل چاپ برگه پس از کسر حاشیه‌های بالا، پایین، چپ و راست (Printable Area). |
+| **Pastel Seed Palette** | پالت رنگی پاستلی | سیستم رنگ‌آمیزی نرم و ملایم رابط کاربری جهت کاهش خستگی چشم کاربر در استفاده طولانی‌مدت. |
 
 ---
 
-## ۴. پروانه حقوقی و مشارکت متن‌باز (Licensing & Contributing)
+## ۴. حقوق نرم‌افزار، پروانه‌ها و مشارکت (Licensing, Legal & Open-Source)
 
-| English Term | معادل فنی/فارسی (برنامه‌نویسان) | Definition & Context / تعریف و کاربرد |
+| English Term | معادل فارسی مصوب | تعاریف، زمینه و کاربرد در سرو |
 | :--- | :--- | :--- |
-| **Business Source License (BUSL)** | لایسنس BUSL-1.1 | A source-available license that grants free non-commercial rights but restricts commercial usage to protect developer sales. |
-| **Change Date** | Change Date (تاریخ انتقال لایسنس) | The pre-defined future date (June, 2031) at which the BUSL license automatically transitions to a permissive Apache 2.0 license. |
-| **DCO (Developer Certificate of Origin)** | گواهی اصالت توسعه‌دهنده (DCO) | A legal agreement signed by contributors to certify they have the right to submit and license their contributions. |
-| **Sign-off (git commit -s)** | Sign-off (امضای دیجیتال کامیت) | Appending `Signed-off-by: Name <email>` to commit messages to legally verify compliance with the DCO. |
-| **Non-Commercial Use** | Non-Commercial Use (کاربردهای غیرتجاری) | Copying, studying, or executing software for personal, academic, or testing workflows without fees or restrictions. |
-| **Commercial Production Use** | Commercial Production Use (بهره‌برداری تجاری) | Running the software in active corporate production environments, SaaS, or embedding its engines in proprietary products. |
-| **Git Flow** | الگوی شاخه‌دهی Git Flow | A branching model for Git centering on persistent master and dev branches, and temporary feature, bugfix, release, and hotfix branches. |
-| **Conventional Commits** | کامیت‌های استاندارد (Conventional Commits) | A specification for adding human and machine readable meaning to commit messages (e.g., feat, fix, docs). |
+| **Business Source License (BUSL)** | مجوز منبع‌تجاری (BUSL-1.1) | پروانه کدی که استفاده غیرتجاری را کاملاً رایگان دانسته اما استفاده تجاری در محیط تولید را منوط به مجوز می‌داند. |
+| **Change Date** | تاریخ انتقال پروانه | تاریخ پیش‌بینی‌شده (ژوئن ۲۰۳۱) که پروانه BUSL به صورت خودکار به مجوز آزاد Apache 2.0 تبدیل می‌شود. |
+| **Developer Certificate of Origin (DCO)** | گواهی اصالت توسعه‌دهنده | بیانیه قانونی استاندارد که مشارکت‌کننده با امضای آن تایید می‌کند حق انتشار کد ارسالی را دارد. |
+| **Commit Sign-Off** | امضای دیجیتال کامیت | افزودن عبارت `Signed-off-by: Name <email>` به انتهای پیام کامیت با استفاده از دستور `git commit -s`. |
+| **Non-Commercial Use** | بهره‌برداری غیرتجاری | استفاده شخصی، آموزشی، تحقیقاتی و آزمایشی از نرم‌افزار بدون پرداخت هزینه. |
+| **Commercial Production Use** | بهره‌برداری تجاری | استفاده از نرم‌افزار در محصولات تجاری، ارائه خدمات ابری (SaaS) یا فروش مستقیم خروجی‌ها. |
+| **Git Flow** | الگوی شاخه‌دهی گیتی (Git Flow) | ساختار مدیریت شاخه‌ها شامل شاخه‌های پایدار (`master`)، یکپارچه‌سازی (`dev`) و شاخه‌های موقت (`feature`, `bugfix`). |
+| **Conventional Commits** | کامیت‌های استاندارد | ساختار مشخص برای ساختاردهی پیام‌های کامیت (مانند `feat`, `fix`, `docs`, `refactor`). |
+
+---
+
+## ۵. اصطلاحات بین‌المللی‌سازی و بومی‌سازی (Localization & Translation Taxonomy)
+
+| English Term | معادل فارسی مصوب | تعاریف، زمینه و کاربرد در سرو |
+| :--- | :--- | :--- |
+| **Localization (L10n)** | بومی‌سازی (L10n) | فرآیند تطبیق نرم‌افزار با زبان، فرهنگ و استانداردهای نگارشی منطقه هدف. |
+| **Internationalization (I18n)** | بین‌المللی‌سازی (I18n) | طراحی زیرساخت فنی نرم‌افزار به گونه‌ای که بدون تغییر در کد اصلی، از زبان‌های مختلف پشتیبانی کند. |
+| **App Resource Bundle (.arb)** | فایل منابع ترجمه (.arb) | فرمت استاندارد مبتنی بر JSON برای ذخیره متون بومی‌سازی‌شده فلاتر همراه با توضیحات و متغیرها. |
+| **Right-to-Left (RTL)** | راست‌به‌چپ (RTL) | جهت چیدمان عناصر گرافیکی و متون برای زبان‌هایی مانند فارسی و عربی. |
+| **Left-to-Right (LTR)** | چپ‌به‌راست (LTR) | جهت چیدمان عناصر گرافیکی و متون برای زبان‌هایی مانند انگلیسی. |
+| **Zero-Width Non-Joiner (ZWNJ)** | نیم‌فاصله (فاصله مجازی) | کاراکتر کنترلی `U+200C` برای جداسازی نشانه‌های صرفی در نگارش فارسی بدون ایجاد فاصله فیزیکی. |
+| **TextDirection** | جهت‌نما / جهت متن | ویژگی تعیین‌کننده سمت شروع ترسیم متون و چیدمان UI در فلاتر (`TextDirection.rtl` و `TextDirection.ltr`). |
+| **Locale Switcher** | تغییردهنده زبان | کامپوننت UI یا منطق برنامه‌نویسی برای سوییچ زنده و آنی میان زبان‌های فارسی و انگلیسی. |
+
+---
+
+## ۶. قواعد معادل‌گزینی و اصول ترمینولوژی در سرو
+
+۱. **حفظ واژگان تخصصی بین‌المللی موسیقی**: واژگانی مانند *پارتیتور* (فرانسوی: Partition)، *کلید سل/فا/دو*، *آکولاد* و *امبروشور* که ده‌ها سال است در دانشگاه‌ها و کنسرواتوار‌های ایران تثبیت شده‌اند، نباید با معادل‌سازی‌های ساختگی جایگزین شوند.
+۲. **دقت فنی در واژگان برنامه‌نویسی**: اصطلاحات فنی برنامه‌نویسی (مانند *Monorepo*, *Pipeline*, *B-IR*, *Cubit*) در متون برنامه‌نویسی با نگارش لاتین یا آوانگاری فارسی استاندارد همراه با اصل کلمه استفاده می‌شوند.
+۳. **یکپارچگی مطلق در سراسر مخزن**: هر واژه‌ای که در این سند مصوب شده است، باید دقیقاً به همین شکل در `app_fa.arb`، مستندات `.md` و کامنت‌های کد به کار رود.
