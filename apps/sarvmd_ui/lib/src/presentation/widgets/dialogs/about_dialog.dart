@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/app_version.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../logic/services/changelog_service.dart';
 
 /// Shows the standard SarvMD About & Version Information dialog.
@@ -113,11 +114,9 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
                   ),
                   Text(
                     AppVersion.tagline,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'IranNastaliq',
-                      color: cs.primary,
-                    ),
+                    style: Theme.of(context)
+                        .extension<SarvThemeExtension>()
+                        ?.brandSubtitleStyle,
                   ),
                   const SizedBox(height: 4),
 

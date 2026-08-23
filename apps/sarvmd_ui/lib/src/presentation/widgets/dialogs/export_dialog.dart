@@ -9,6 +9,7 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../logic/config/config_cubit.dart';
 import '../../../logic/services/export_directory_service.dart';
 import '../../../logic/services/export_service.dart';
+import '../../../l10n/app_localizations.dart';
 
 enum ExportFormat {
   pdf(
@@ -46,6 +47,15 @@ enum ExportFormat {
   final IconData icon;
   final String ext;
   final String description;
+
+  String getLocalizedDescription(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (this) {
+      ExportFormat.pdf => l10n.formatPdfDesc,
+      ExportFormat.svg => l10n.formatSvgDesc,
+      ExportFormat.tex => l10n.formatTexDesc,
+    };
+  }
 }
 
 /// Opens the master manuscript Export Dialog.
@@ -203,9 +213,9 @@ class _ExportDialogState extends State<ExportDialog> {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('File path copied to clipboard!'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.pathCopiedToast),
+        duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -257,21 +267,19 @@ class _ExportDialogState extends State<ExportDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Export Manuscript',
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.bold,
-                            color: cs.onSurface,
-                            letterSpacing: -0.3,
-                          ),
+                          AppLocalizations.of(context)!.exportManuscriptTitle,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface,
+                                letterSpacing: -0.3,
+                              ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Configure file format, page count, and layer options.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: cs.onSurfaceVariant,
-                          ),
+                          AppLocalizations.of(context)!.exportManuscriptSubtitle,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
@@ -280,7 +288,7 @@ class _ExportDialogState extends State<ExportDialog> {
                     onPressed: () => Navigator.of(context).pop(_lastResult),
                     icon: Icon(Icons.close,
                         size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
-                    tooltip: 'Close',
+                    tooltip: AppLocalizations.of(context)!.close,
                   ),
                 ],
               ),
@@ -299,7 +307,7 @@ class _ExportDialogState extends State<ExportDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Output Filename',
+                          AppLocalizations.of(context)!.outputFilenameLabel,
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
@@ -314,7 +322,7 @@ class _ExportDialogState extends State<ExportDialog> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 4, vertical: 2),
                               child: Text(
-                                'Reset to default',
+                                AppLocalizations.of(context)!.resetToDefault,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: cs.primary,
@@ -348,11 +356,11 @@ class _ExportDialogState extends State<ExportDialog> {
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 isDense: true,
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.zero,
-                                hintText: 'Manuscript filename...',
+                                hintText: AppLocalizations.of(context)!.filenameHint,
                               ),
                               onChanged: (val) {
                                 if (!_isCustomName && val.trim().isNotEmpty) {
@@ -384,7 +392,7 @@ class _ExportDialogState extends State<ExportDialog> {
 
                     // --- Section 2: Format Selection Cards ---
                     Text(
-                      'Format Selection',
+                      AppLocalizations.of(context)!.formatSelectionLabel,
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.bold,
@@ -450,7 +458,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      fmt.description,
+                                      fmt.getLocalizedDescription(context),
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: cs.onSurfaceVariant
@@ -493,7 +501,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                         size: 16, color: cs.primary),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'Number of Pages',
+                                      AppLocalizations.of(context)!.numberOfPagesLabel,
                                       style: TextStyle(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.bold,
@@ -584,7 +592,7 @@ class _ExportDialogState extends State<ExportDialog> {
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
-                                  'Presets: ',
+                                  AppLocalizations.of(context)!.presetsLabel,
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: cs.onSurfaceVariant,
@@ -613,7 +621,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                         ),
                                       ),
                                       child: Text(
-                                        '$count pgs',
+                                        AppLocalizations.of(context)!.pageCountSuffix(count),
                                         style: TextStyle(
                                           fontSize: 10.5,
                                           fontWeight: isSelected
@@ -653,7 +661,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                     size: 16, color: cs.primary),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'SVG Layer Organization',
+                                  AppLocalizations.of(context)!.svgLayerOrganizationLabel,
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
@@ -666,9 +674,8 @@ class _ExportDialogState extends State<ExportDialog> {
 
                             // User-Friendly SVG Layering Cards
                             _SvgLayerCard(
-                              title: 'Category Layers (Page-Wide)',
-                              subtitle:
-                                  'Groups elements by type (Staff Lines, Clefs, Barlines, Notes).\nBest for changing colors or line weights globally in Illustrator / Figma.',
+                              title: AppLocalizations.of(context)!.svgCategoryTitle,
+                              subtitle: AppLocalizations.of(context)!.svgCategoryDesc,
                               icon: Icons.layers,
                               isSelected: _svgMode ==
                                   core.SvgLayeringMode.flatByCategory,
@@ -678,9 +685,8 @@ class _ExportDialogState extends State<ExportDialog> {
                             const SizedBox(height: 6),
 
                             _SvgLayerCard(
-                              title: 'System & Staff Layers (Hierarchical)',
-                              subtitle:
-                                  'Groups elements by System (System 1, System 2...).\nBest for selecting, moving, or re-ordering whole staff systems with one click.',
+                              title: AppLocalizations.of(context)!.svgSystemTitle,
+                              subtitle: AppLocalizations.of(context)!.svgSystemDesc,
                               icon: Icons.account_tree_outlined,
                               isSelected: _svgMode ==
                                   core.SvgLayeringMode.hierarchicalBySystem,
@@ -690,9 +696,8 @@ class _ExportDialogState extends State<ExportDialog> {
                             const SizedBox(height: 6),
 
                             _SvgLayerCard(
-                              title: 'Minimal (Raw Vector Paths)',
-                              subtitle:
-                                  'Clean, un-grouped vector paths without layer tags.\nBest for embedding directly into websites or mobile applications.',
+                              title: AppLocalizations.of(context)!.svgMinimalTitle,
+                              subtitle: AppLocalizations.of(context)!.svgMinimalDesc,
                               icon: Icons.code,
                               isSelected: _svgMode == core.SvgLayeringMode.none,
                               onTap: () => setState(
@@ -731,7 +736,7 @@ class _ExportDialogState extends State<ExportDialog> {
                               children: [
                                 Text(
                                   ExportDirectoryService.isWeb
-                                      ? 'Browser Downloads'
+                                      ? AppLocalizations.of(context)!.browserDownloads
                                       : _outputDir,
                                   style: TextStyle(
                                     fontSize: 11,
@@ -778,7 +783,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                         size: 13, color: cs.primary),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Change...',
+                                      AppLocalizations.of(context)!.changeOutputDir,
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
@@ -815,7 +820,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Saved ${_lastResult!.fileName}',
+                                    AppLocalizations.of(context)!.savedBannerTitle(_lastResult!.fileName),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
@@ -824,7 +829,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    'Size: ${_lastResult!.formattedSize} • Time: ${_lastResult!.elapsedMs}ms',
+                                    AppLocalizations.of(context)!.savedBannerSubtitle(_lastResult!.formattedSize, _lastResult!.elapsedMs),
                                     style: TextStyle(
                                       fontSize: 10.5,
                                       color: Colors.green.shade800,
@@ -844,14 +849,14 @@ class _ExportDialogState extends State<ExportDialog> {
                                   color: Colors.green.shade700,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   children: [
-                                    Icon(Icons.copy,
+                                    const Icon(Icons.copy,
                                         size: 12, color: Colors.white),
-                                    SizedBox(width: 4),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      'Copy Path',
-                                      style: TextStyle(
+                                      AppLocalizations.of(context)!.copyPath,
+                                      style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
@@ -918,7 +923,9 @@ class _ExportDialogState extends State<ExportDialog> {
                       side: BorderSide(
                           color: cs.outline.withValues(alpha: 0.4)),
                     ),
-                    child: Text(_lastResult != null ? 'Close' : 'Cancel'),
+                    child: Text(_lastResult != null
+                        ? AppLocalizations.of(context)!.close
+                        : AppLocalizations.of(context)!.cancel),
                   ),
                   const SizedBox(width: 10),
                   FilledButton.icon(
@@ -940,8 +947,10 @@ class _ExportDialogState extends State<ExportDialog> {
                         : Icon(_selectedFormat.icon, size: 16),
                     label: Text(
                       _isExporting
-                          ? 'Exporting...'
-                          : 'Export ${_selectedFormat.shortLabel}${_selectedFormat != ExportFormat.svg && _pageCount > 1 ? " ($_pageCount Pages)" : ""}',
+                          ? AppLocalizations.of(context)!.exportingState
+                          : (_selectedFormat != ExportFormat.svg && _pageCount > 1
+                              ? AppLocalizations.of(context)!.exportButtonWithPagesLabel(_selectedFormat.shortLabel, _pageCount)
+                              : AppLocalizations.of(context)!.exportButtonLabel(_selectedFormat.shortLabel)),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
