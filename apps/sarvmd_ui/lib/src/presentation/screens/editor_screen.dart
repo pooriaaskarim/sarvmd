@@ -8,10 +8,12 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../widgets/staff/document_settings_group.dart';
 import '../widgets/staff/margins_settings_group.dart';
 import '../../core/theme/app_metrics.dart';
+import '../../core/theme/layout_policy.dart';
 import '../widgets/common/section_header.dart';
 import '../widgets/staff/staff_spacing_group.dart';
 import '../widgets/animations/fade_in_slide.dart';
 import '../widgets/layout/sarv_header.dart';
+import '../../l10n/app_localizations.dart';
 import '../widgets/staff/profile_picker.dart';
 import '../widgets/staff/zoom_feedback_overlay.dart';
 import '../widgets/canvas/preview_canvas.dart';
@@ -156,23 +158,25 @@ class _EditorScreenState extends State<EditorScreen> {
             builder: (context, viewState) {
               return Scaffold(
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                body: Row(
-                  children: [
-                    // Sidebar (Left)
-                    AnimatedContainer(
-                      duration: _isDraggingSidebar
-                          ? Duration.zero
-                          : const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      width: _sidebarCollapsed ? 0 : _sidebarWidth,
-                      color: Theme.of(context).colorScheme.surfaceContainer,
-                      child: ClipRect(
-                        child: OverflowBox(
-                          minWidth: 0,
-                          maxWidth: _sidebarWidth,
-                          alignment: Alignment.topLeft,
-                          child: Column(
-                            children: [
+                body: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Row(
+                    children: [
+                      // Sidebar (Left)
+                      AnimatedContainer(
+                        duration: _isDraggingSidebar
+                            ? Duration.zero
+                            : const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        width: _sidebarCollapsed ? 0 : _sidebarWidth,
+                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        child: ClipRect(
+                          child: OverflowBox(
+                            minWidth: 0,
+                            maxWidth: _sidebarWidth,
+                            alignment: Alignment.topLeft,
+                            child: Column(
+                              children: [
                               Expanded(
                                 child: ListView(
                                   padding: const EdgeInsets.symmetric(
@@ -188,8 +192,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const SectionHeader(
-                                              title: 'Profiles'),
+                                          SectionHeader(
+                                              title: AppLocalizations.of(context)!.profiles),
                                           const SizedBox(
                                               height: AppSpacing.itemGapSmall),
                                           ProfilePicker(
@@ -207,8 +211,8 @@ class _EditorScreenState extends State<EditorScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const SectionHeader(
-                                              title: 'Document'),
+                                          SectionHeader(
+                                              title: AppLocalizations.of(context)!.document),
                                           const SizedBox(
                                               height: AppSpacing.itemGapSmall),
                                           DocumentSettingsGroup(
@@ -257,7 +261,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           SectionHeader(
-                                            title: 'Staff Spacing',
+                                            title: AppLocalizations.of(context)!.staffSpacing,
                                             onReset: configCubit.resetSpacing,
                                           ),
                                           StaffSpacingGroup(
@@ -299,7 +303,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      '${configCubit.layout.systemCount} Systems',
+                                      AppLocalizations.of(context)!.systemsCount(configCubit.layout.systemCount),
                                       style: TextStyle(
                                           fontSize: 11,
                                           color: Theme.of(context)
@@ -307,13 +311,13 @@ class _EditorScreenState extends State<EditorScreen> {
                                               .onSurfaceVariant),
                                     ),
                                     Tooltip(
-                                      message: 'Reset ALL settings to defaults',
+                                      message: AppLocalizations.of(context)!.resetAllSettings,
                                       child: TextButton.icon(
                                         onPressed: configCubit.resetToDefaults,
                                         icon:
                                             const Icon(Icons.restore, size: 14),
-                                        label: const Text('Reset',
-                                            style: TextStyle(fontSize: 12)),
+                                        label: Text(AppLocalizations.of(context)!.reset,
+                                            style: const TextStyle(fontSize: 12)),
                                         style: TextButton.styleFrom(
                                           minimumSize: Size.zero,
                                           padding: const EdgeInsets.symmetric(
@@ -388,57 +392,58 @@ class _EditorScreenState extends State<EditorScreen> {
                               });
                             }
 
-                            return RulerBox(
-                              transformationController:
-                                  _transformationController,
-                              viewState: viewState,
-                              cursorNotifier: _cursorNotifier,
-                              paperSizeMm: Size(
-                                configState.effectiveWidth,
-                                configState.effectiveHeight,
-                              ),
-                              child: MouseRegion(
-                                onHover: (event) {
-                                  _cursorNotifier.value = event.localPosition;
-                                },
-                                onExit: (_) {
-                                  _cursorNotifier.value = null;
-                                },
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: InteractiveViewer(
-                                        transformationController:
-                                            _transformationController,
-                                        boundaryMargin:
-                                            const EdgeInsets.all(100000),
-                                        minScale: ScaleMetrics.minZoom,
-                                        maxScale: ScaleMetrics.maxZoom,
-                                        constrained: false,
-                                        alignment: Alignment.topLeft,
-                                        child: PreviewCanvas(
-                                          layout: configCubit.layout,
-                                          viewState: viewState,
+                            return CanvasStrictScope(
+                              child: RulerBox(
+                                transformationController:
+                                    _transformationController,
+                                viewState: viewState,
+                                cursorNotifier: _cursorNotifier,
+                                paperSizeMm: Size(
+                                  configState.effectiveWidth,
+                                  configState.effectiveHeight,
+                                ),
+                                child: MouseRegion(
+                                  onHover: (event) {
+                                    _cursorNotifier.value = event.localPosition;
+                                  },
+                                  onExit: (_) {
+                                    _cursorNotifier.value = null;
+                                  },
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: InteractiveViewer(
+                                          transformationController:
+                                              _transformationController,
+                                          boundaryMargin:
+                                              const EdgeInsets.all(100000),
+                                          minScale: ScaleMetrics.minZoom,
+                                          maxScale: ScaleMetrics.maxZoom,
+                                          constrained: false,
+                                          alignment: Alignment.topLeft,
+                                          child: PreviewCanvas(
+                                            layout: configCubit.layout,
+                                            viewState: viewState,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      bottom: 24,
-                                      left: 0,
-                                      right: 0,
-                                      child: Center(
-                                        child: ZoomFeedbackOverlay(
-                                            controller:
-                                                _transformationController),
+                                      Positioned(
+                                        bottom: 24,
+                                        left: 0,
+                                        right: 0,
+                                        child: Center(
+                                          child: ZoomFeedbackOverlay(
+                                              controller:
+                                                  _transformationController),
+                                        ),
                                       ),
-                                    ),
 
-                                    // Sidebar Toggle (Left)
-                                    Positioned(
-                                      top: 16,
-                                      left: 16,
-                                      child: FloatingActionButton.small(
-                                        heroTag: 'left_toggle',
+                                      // Sidebar Toggle (Left)
+                                      Positioned(
+                                        top: 16,
+                                        left: 16,
+                                        child: FloatingActionButton.small(
+                                          heroTag: 'left_toggle',
                                         onPressed: () {
                                           setState(() {
                                             _sidebarCollapsed =
@@ -496,8 +501,9 @@ class _EditorScreenState extends State<EditorScreen> {
                                   ],
                                 ),
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
                         ),
                       ),
                     ),
@@ -563,7 +569,8 @@ class _EditorScreenState extends State<EditorScreen> {
                     ),
                   ],
                 ),
-              );
+              ),
+            );
             },
           );
         },
