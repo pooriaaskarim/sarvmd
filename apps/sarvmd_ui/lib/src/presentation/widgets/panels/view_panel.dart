@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import '../common/property_row.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_metrics.dart';
 import '../../../core/theme/app_theme.dart';
 import '../common/section_header.dart';
 import '../common/integrated_scale_control.dart';
 import '../common/guide_toggle.dart';
+import '../common/language_switch_control.dart';
 import '../animations/fade_in_slide.dart';
 import 'export_panel.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/view/view_cubit.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ViewPanel extends StatelessWidget {
   const ViewPanel({
@@ -35,20 +38,23 @@ class ViewPanel extends StatelessWidget {
                       horizontal: AppSpacing.paddingLarge),
                   children: [
                     const SizedBox(height: 48),
-                    const FadeInSlide(
+                    FadeInSlide(
                       delay: 0,
-                      child: Text(
-                        'VIEW',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
+                      child: PropertyRow(
+                        label: Text(
+                          AppLocalizations.of(context)!.view,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                          ),
                         ),
+                        control: const LanguageToggleButton(),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sectionGap),
-                    const FadeInSlide(
-                        delay: 1, child: SectionHeader(title: 'Appearance')),
+                    FadeInSlide(
+                        delay: 1, child: SectionHeader(title: AppLocalizations.of(context)!.appearance)),
                     FadeInSlide(
                       delay: 2,
                       child: _AppearanceSettings(
@@ -62,8 +68,8 @@ class ViewPanel extends StatelessWidget {
                       delay: 3,
                       child: Divider(height: 32),
                     ),
-                    const FadeInSlide(
-                        delay: 4, child: SectionHeader(title: 'Zoom')),
+                    FadeInSlide(
+                        delay: 4, child: SectionHeader(title: AppLocalizations.of(context)!.zoom)),
                     FadeInSlide(
                       delay: 5,
                       child: IntegratedScaleControl(
@@ -78,41 +84,41 @@ class ViewPanel extends StatelessWidget {
                       child: Divider(height: 32),
                     ),
 
-                    const FadeInSlide(
-                        delay: 7, child: SectionHeader(title: 'Guides')),
+                    FadeInSlide(
+                        delay: 7, child: SectionHeader(title: AppLocalizations.of(context)!.guides)),
                     FadeInSlide(
                       delay: 11,
                       child: Column(
                         children: [
                           GuideToggle(
-                            label: 'Mouse Wings',
+                            label: AppLocalizations.of(context)!.mouseWings,
                             value:
                                 viewState.isGuideActive(GuideType.rulerWings),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.rulerWings, v ?? false),
                           ),
                           GuideToggle(
-                            label: 'Paper Edges',
+                            label: AppLocalizations.of(context)!.paperEdges,
                             value:
                                 viewState.isGuideActive(GuideType.paperEdges),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.paperEdges, v ?? false),
                           ),
                           GuideToggle(
-                            label: 'Paper Centers',
+                            label: AppLocalizations.of(context)!.paperCenters,
                             value:
                                 viewState.isGuideActive(GuideType.paperCenters),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.paperCenters, v ?? false),
                           ),
                           GuideToggle(
-                            label: 'Document Margins',
+                            label: AppLocalizations.of(context)!.documentMargins,
                             value: viewState.isGuideActive(GuideType.margins),
                             onChanged: (v) => viewCubit.toggleGuide(
                                 GuideType.margins, v ?? false),
                           ),
                           GuideToggle(
-                            label: 'Staff Bounds',
+                            label: AppLocalizations.of(context)!.staffBounds,
                             value:
                                 viewState.isGuideActive(GuideType.staffBounds),
                             onChanged: (v) => viewCubit.toggleGuide(
@@ -356,16 +362,19 @@ class _AccentPillPickerState extends State<_AccentPillPicker>
                       width: isSelected ? null : 0,
                       child: isSelected
                           ? Padding(
-                              padding: const EdgeInsets.only(left: 8),
+                              padding:
+                                  const EdgeInsetsDirectional.only(start: 8),
                               child: Text(
                                 a.label,
                                 maxLines: 1,
                                 overflow: TextOverflow.clip,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: a.onPastelContainer,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: a.onPastelContainer,
+                                    ),
                               ),
                             )
                           : const SizedBox.shrink(),

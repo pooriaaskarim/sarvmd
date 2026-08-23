@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_metrics.dart';
+import 'property_row.dart';
 
 class GuideToggle extends StatelessWidget {
   const GuideToggle({
@@ -15,27 +15,29 @@ class GuideToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        unselectedWidgetColor: Theme.of(context)
-            .colorScheme
-            .onSurfaceVariant
-            .withValues(alpha: AppOpacities.surfaceHint),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: CheckboxListTile(
-          title: Text(label,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 13)),
-          value: value,
-          onChanged: onChanged,
-          activeColor: Theme.of(context).colorScheme.primary,
-          checkColor: Theme.of(context).colorScheme.surface,
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          dense: true,
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+        child: PropertyRow(
+          label: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+          control: Transform.scale(
+            scale: 0.8,
+            child: Switch.adaptive(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: cs.primary,
+              activeTrackColor: cs.primaryContainer,
+            ),
+          ),
         ),
       ),
     );

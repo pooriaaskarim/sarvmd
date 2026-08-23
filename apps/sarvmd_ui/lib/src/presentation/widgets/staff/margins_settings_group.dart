@@ -3,7 +3,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/unit_formatter.dart';
 import '../common/section_header.dart';
+import '../common/property_row.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// A professional, highly elegant page margin control widget that adapts fluidly
 /// to resizable sidebars using 2x2 quad layouts, capsule fields, and direction-specific icons.
@@ -44,44 +47,44 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final headerWidget = SectionHeader(
+      title: AppLocalizations.of(context)!.margins,
+      onReset: widget.onReset,
+    );
+
+    final linkButton = IconButton(
+      icon: Icon(
+        _isLinked ? Icons.link : Icons.link_off,
+        size: 16,
+        color: _isLinked
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+      ),
+      tooltip: _isLinked
+          ? AppLocalizations.of(context)!.marginsLinked
+          : AppLocalizations.of(context)!.marginsIndependent,
+      onPressed: () {
+        setState(() {
+          _isLinked = !_isLinked;
+          if (_isLinked) {
+            // Sync values on link (sync Top/Bottom and Left/Right)
+            widget.onHorizontalChanged(widget.margins.left);
+            widget.onVerticalChanged(widget.margins.top);
+          }
+        });
+      },
+      style: IconButton.styleFrom(
+        padding: const EdgeInsets.all(4),
+        minimumSize: Size.zero,
+      ),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: SectionHeader(
-                title: 'Margins (mm)',
-                onReset: widget.onReset,
-              ),
-            ),
-            IconButton(
-              icon: Icon(
-                _isLinked ? Icons.link : Icons.link_off,
-                size: 16,
-                color: _isLinked
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              ),
-              tooltip: _isLinked
-                  ? 'Margins Linked (Click to Unlink)'
-                  : 'Margins Independent (Click to Link)',
-              onPressed: () {
-                setState(() {
-                  _isLinked = !_isLinked;
-                  if (_isLinked) {
-                    // Sync values on link (sync Top/Bottom and Left/Right)
-                    widget.onHorizontalChanged(widget.margins.left);
-                    widget.onVerticalChanged(widget.margins.top);
-                  }
-                });
-              },
-              style: IconButton.styleFrom(
-                padding: const EdgeInsets.all(4),
-                minimumSize: Size.zero,
-              ),
-            ),
-          ],
+        PropertyRow(
+          label: headerWidget,
+          control: linkButton,
         ),
         const SizedBox(height: 8),
         AnimatedSwitcher(
@@ -95,7 +98,7 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
                   children: [
                     Expanded(
                       child: _ScrubbableField(
-                        label: 'Vertical',
+                        label: AppLocalizations.of(context)!.vertical,
                         value: widget.margins.top,
                         min: 5.0,
                         max: 40.0,
@@ -109,7 +112,7 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _ScrubbableField(
-                        label: 'Horizontal',
+                        label: AppLocalizations.of(context)!.horizontal,
                         value: widget.margins.left,
                         min: 5.0,
                         max: 40.0,
@@ -129,7 +132,7 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
                       children: [
                         Expanded(
                           child: _ScrubbableField(
-                            label: 'Top',
+                            label: AppLocalizations.of(context)!.top,
                             value: widget.margins.top,
                             min: 5.0,
                             max: 40.0,
@@ -143,7 +146,7 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _ScrubbableField(
-                            label: 'Bottom',
+                            label: AppLocalizations.of(context)!.bottom,
                             value: widget.margins.bottom,
                             min: 5.0,
                             max: 40.0,
@@ -161,7 +164,7 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
                       children: [
                         Expanded(
                           child: _ScrubbableField(
-                            label: 'Left',
+                            label: AppLocalizations.of(context)!.left,
                             value: widget.margins.left,
                             min: 5.0,
                             max: 60.0,
@@ -175,7 +178,7 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _ScrubbableField(
-                            label: 'Right',
+                            label: AppLocalizations.of(context)!.right,
                             value: widget.margins.right,
                             min: 5.0,
                             max: 40.0,
@@ -234,14 +237,16 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.value.toStringAsFixed(1));
+    _controller = TextEditingController(
+        text: UnitFormatter.formatMm(widget.value, includeUnit: false));
   }
 
   @override
   void didUpdateWidget(_ScrubbableField oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
-      _controller.text = widget.value.toStringAsFixed(1);
+      _controller.text =
+          UnitFormatter.formatMm(widget.value, includeUnit: false);
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/theme/layout_policy.dart';
 
 /// A lightweight, premium visual preview of a musical staff layout and clef.
 class MiniStaffPreview extends StatelessWidget {
@@ -26,7 +27,8 @@ class MiniStaffPreview extends StatelessWidget {
         ? colorScheme.outlineVariant.withValues(alpha: 0.15)
         : colorScheme.outline.withValues(alpha: 0.08);
 
-    return AnimatedContainer(
+    return CanvasStrictScope(
+      child: AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       height: 44,
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -60,8 +62,9 @@ class MiniStaffPreview extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _MiniStaffPainter extends CustomPainter {

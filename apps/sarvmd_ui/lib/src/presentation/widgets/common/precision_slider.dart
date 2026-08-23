@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/layout_policy.dart';
+import 'property_row.dart';
 
 class PrecisionSlider extends StatefulWidget {
   const PrecisionSlider({
@@ -59,53 +61,54 @@ class _PrecisionSliderState extends State<PrecisionSlider> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(widget.label,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 13)),
-            Container(
-              width: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(6),
-                border:
-                    Border.all(color: Theme.of(context).colorScheme.outline),
-              ),
-              child: TextField(
-                controller: _controller,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  border: InputBorder.none,
+        PropertyRow(
+          label: Text(
+            widget.label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                onSubmitted: _submit,
-                onTapOutside: (_) {
-                  _submit(_controller.text);
-                  FocusManager.instance.primaryFocus?.unfocus();
-                },
-              ),
+          ),
+          control: Container(
+            width: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(6),
+              border:
+                  Border.all(color: Theme.of(context).colorScheme.outline),
             ),
-          ],
+            child: TextField(
+              controller: _controller,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold),
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                border: InputBorder.none,
+              ),
+              onSubmitted: _submit,
+              onTapOutside: (_) {
+                _submit(_controller.text);
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
+            ),
+          ),
         ),
-        Slider(
-          value: widget.value,
-          min: widget.min,
-          max: widget.max,
-          onChanged: widget.onChanged,
-          activeColor: Theme.of(context).colorScheme.primary,
-          inactiveColor:
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        CanvasStrictScope(
+          child: Slider(
+            value: widget.value,
+            min: widget.min,
+            max: widget.max,
+            onChanged: widget.onChanged,
+            activeColor: Theme.of(context).colorScheme.primary,
+            inactiveColor:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          ),
         ),
       ],
     );

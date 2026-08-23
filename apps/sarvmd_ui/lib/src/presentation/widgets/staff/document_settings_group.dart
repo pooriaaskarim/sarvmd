@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/app_metrics.dart';
+import '../../../core/utils/unit_formatter.dart';
 import '../common/dropdown_setting.dart';
+import '../../../l10n/app_localizations.dart';
 
 class DocumentSettingsGroup extends StatelessWidget {
   const DocumentSettingsGroup({
@@ -29,11 +31,7 @@ class DocumentSettingsGroup extends StatelessWidget {
               final isPortrait = orientation == core.PageOrientation.portrait;
               final w = isPortrait ? size.width : size.height;
               final h = isPortrait ? size.height : size.width;
-
-              String fmt(double v) =>
-                  v.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
-
-              return '${size.name.toUpperCase()}  (${fmt(w)} × ${fmt(h)} mm)';
+              return '${size.name.toUpperCase()}  (${UnitFormatter.formatDimensions(w, h)})';
             },
           ),
           OrientationSwitcher(
@@ -97,13 +95,13 @@ class OrientationSwitcher extends StatelessWidget {
                 children: [
                   _OrientationOption(
                     orientation: core.PageOrientation.portrait,
-                    label: 'Portrait',
+                    label: AppLocalizations.of(context)!.portrait,
                     isSelected: current == core.PageOrientation.portrait,
                     onTap: () => onChanged(core.PageOrientation.portrait),
                   ),
                   _OrientationOption(
                     orientation: core.PageOrientation.landscape,
-                    label: 'Landscape',
+                    label: AppLocalizations.of(context)!.landscape,
                     isSelected: current == core.PageOrientation.landscape,
                     onTap: () => onChanged(core.PageOrientation.landscape),
                   ),
@@ -152,14 +150,14 @@ class _OrientationOption extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 label.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 0.8,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      letterSpacing: 0.8,
+                      fontWeight:
+                          isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected
+                          ? colorScheme.onSurface
+                          : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
               ),
             ],
           ),
