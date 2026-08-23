@@ -2,8 +2,8 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
-
 import '../dialogs/export_dialog.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// A simplified, ultra-polished export bar pinned at the bottom of the View panel.
 ///
@@ -66,13 +66,12 @@ class ExportPanel extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Export',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.4,
-                          color: cs.onPrimary,
-                        ),
+                        AppLocalizations.of(context)!.export,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.4,
+                              color: cs.onPrimary,
+                            ),
                       ),
                     ],
                   ),
@@ -180,11 +179,10 @@ class _QuickFormatChipState extends State<_QuickFormatChip> {
                 const SizedBox(width: 5),
                 Text(
                   widget.label,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: _isHovered ? cs.primary : cs.onSurfaceVariant,
-                  ),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: _isHovered ? cs.primary : cs.onSurfaceVariant,
+                      ),
                 ),
               ],
             ),

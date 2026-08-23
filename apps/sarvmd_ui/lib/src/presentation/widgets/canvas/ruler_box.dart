@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/view/view_state.dart';
 
 class RulerBox extends StatefulWidget {
@@ -253,8 +254,8 @@ class _CoordinateHUD extends StatelessWidget {
       yMm -= paperSizeMm.height / 2;
     }
 
-    final String xStr = xMm.toStringAsFixed(1);
-    final String yStr = yMm.toStringAsFixed(1);
+    final String xStr = UnitFormatter.formatMm(xMm, includeUnit: false);
+    final String yStr = UnitFormatter.formatMm(yMm, includeUnit: false);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

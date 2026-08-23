@@ -4,7 +4,7 @@
 
 name: sarvmd_ui
 description: "A new Flutter project."
-version: 0.5.2
+version: 0.6.0
 publish_to: 'none'
 resolution: workspace
 environment:
@@ -15,6 +15,9 @@ dependencies:
     sdk: flutter
   sarvmd_core:
     path: ../../packages/sarvmd_core
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
   flutter_svg: ^2.0.10
   flutter_driver:
     sdk: flutter
@@ -29,6 +32,7 @@ dev_dependencies:
     sdk: flutter
 
 flutter:
+  generate: true
   uses-material-design: true
   fonts:
     - family: Bravura
@@ -40,6 +44,11 @@ flutter:
     - family: Roboto
       fonts:
         - asset: assets/fonts/Roboto-Regular.ttf
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
+        - asset: assets/fonts/Vazirmatn-Bold.ttf
+          weight: 700
 
   assets:
     - assets/handwriting/

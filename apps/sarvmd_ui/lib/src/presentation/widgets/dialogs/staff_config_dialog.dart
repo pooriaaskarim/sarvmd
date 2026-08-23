@@ -3,6 +3,7 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../logic/config/config_cubit.dart';
 import '../staff/instrument_preset.dart';
 import '../staff/live_staff_preview.dart';
+import '../../../l10n/app_localizations.dart';
 
 class StaffConfigDialog extends StatefulWidget {
   final core.StaffDefinition staff;
@@ -133,7 +134,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Configure Staff Settings',
+                      AppLocalizations.of(context)!.configureStaffSettings,
                       style: textTheme.titleLarge
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
@@ -153,12 +154,12 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
               unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
               indicatorColor: theme.colorScheme.primary,
               indicatorSize: TabBarIndicatorSize.tab,
-              tabs: const [
-                Tab(icon: Icon(Icons.label_outlined), text: 'Labeling'),
+              tabs: [
+                Tab(icon: const Icon(Icons.label_outlined), text: AppLocalizations.of(context)!.tabLabeling),
                 Tab(
-                    icon: Icon(Icons.music_note_outlined),
-                    text: 'Clef & Lines'),
-                Tab(icon: Icon(Icons.tune_outlined), text: 'Fine-Tuning'),
+                    icon: const Icon(Icons.music_note_outlined),
+                    text: AppLocalizations.of(context)!.tabClefLines),
+                Tab(icon: const Icon(Icons.tune_outlined), text: AppLocalizations.of(context)!.tabFineTuning),
               ],
             ),
 
@@ -168,7 +169,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: LiveStaffPreview(
-                name: _currentName.isEmpty ? 'Instrument' : _currentName,
+                name: _currentName.isEmpty ? AppLocalizations.of(context)!.defaultInstrumentName : _currentName,
                 abbrev: _abbrController.text,
                 lines: _selectedLines,
                 clefSymbol: _selectedClefSymbol,
@@ -218,7 +219,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context)!.cancel),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -229,7 +230,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
                     ),
-                    child: const Text('Apply Changes'),
+                    child: Text(AppLocalizations.of(context)!.applyChanges),
                   ),
                 ],
               ),
@@ -251,7 +252,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
 
         // Presets Header Section
         Text(
-          'Quick Instrument Presets',
+          AppLocalizations.of(context)!.quickInstrumentPresets,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: cs.onSurface,
@@ -259,7 +260,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
         ),
         const SizedBox(height: 4),
         Text(
-          'Select a family to pick an orchestral instrument preset',
+          AppLocalizations.of(context)!.selectFamilyPresetDesc,
           style: theme.textTheme.bodySmall?.copyWith(
             color: cs.onSurfaceVariant,
           ),
@@ -298,7 +299,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                     Icon(familyIcon, size: 14, color: cs.primary),
                     const SizedBox(width: 6),
                     Text(
-                      family.name,
+                      _getFamilyName(context, family.name),
                       style: TextStyle(
                         color: cs.primary,
                         fontWeight: FontWeight.bold,
@@ -353,7 +354,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Show Label on Canvas',
+                          AppLocalizations.of(context)!.showLabelOnCanvas,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: cs.onSurface,
@@ -361,7 +362,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Toggle visibility of instrument name on score margins',
+                          AppLocalizations.of(context)!.showLabelOnCanvasDesc,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                             fontSize: 11,
@@ -399,7 +400,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Instrument Name',
+                              AppLocalizations.of(context)!.instrumentNameLabel,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: cs.onSurface,
                                 fontWeight: FontWeight.bold,
@@ -439,7 +440,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                                   controller: textController,
                                   focusNode: focusNode,
                                   decoration: InputDecoration(
-                                    hintText: 'e.g. Violin I, Cello...',
+                                    hintText: AppLocalizations.of(context)!.instrumentNameHint,
                                     prefixIcon:
                                         const Icon(Icons.search, size: 18),
                                     border: OutlineInputBorder(
@@ -478,7 +479,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Abbreviation',
+                              AppLocalizations.of(context)!.abbreviationLabel,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: cs.onSurface,
                                 fontWeight: FontWeight.bold,
@@ -488,7 +489,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                             TextField(
                               controller: _abbrController,
                               decoration: InputDecoration(
-                                hintText: 'e.g. Vln. I, Vc.',
+                                hintText: AppLocalizations.of(context)!.abbreviationHint,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
@@ -538,7 +539,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
       children: [
         const SizedBox(height: 16),
         Text(
-          'Clef Settings',
+          AppLocalizations.of(context)!.clefSettingsHeader,
           style: theme.textTheme.bodyMedium
               ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
         ),
@@ -557,24 +558,19 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             };
 
             String title = switch (symbol) {
-              core.ClefSymbol.g => 'Treble Clef (G-Clef)',
-              core.ClefSymbol.c => 'Movable C-Clef',
-              core.ClefSymbol.f => 'Bass Clef (F-Clef)',
-              core.ClefSymbol.tab => 'Tablature (TAB)',
-              core.ClefSymbol.percussion => 'Percussion Clef (Neutral)',
+              core.ClefSymbol.g => AppLocalizations.of(context)!.clefTrebleTitle,
+              core.ClefSymbol.c => AppLocalizations.of(context)!.clefMovableCTitle,
+              core.ClefSymbol.f => AppLocalizations.of(context)!.clefBassTitle,
+              core.ClefSymbol.tab => AppLocalizations.of(context)!.clefTabTitle,
+              core.ClefSymbol.percussion => AppLocalizations.of(context)!.clefPercussionTitle,
             };
 
             String description = switch (symbol) {
-              core.ClefSymbol.g =>
-                'For high-register instruments (Violin, Flute, Oboe, Soprano, Piano RH). Anchors G4 on Line 2.',
-              core.ClefSymbol.c =>
-                'For mid-register instruments. Placed on Line 3 for Viola (Alto) or Line 4 for Tenor Cello/Trombone. Anchors C4.',
-              core.ClefSymbol.f =>
-                'For low-register instruments (Cello, Bassoon, Trombone, Tuba, Double Bass, Piano LH). Anchors F3 on Line 4.',
-              core.ClefSymbol.tab =>
-                'For fretted string instruments (Guitar, Bass). Staff lines represent strings, and numbers represent fret positions.',
-              core.ClefSymbol.percussion =>
-                'For non-pitched rhythm instruments (Snare Drum, Bass Drum, Cymbals, Triangle). Focuses purely on rhythm.',
+              core.ClefSymbol.g => AppLocalizations.of(context)!.clefTrebleDesc,
+              core.ClefSymbol.c => AppLocalizations.of(context)!.clefMovableCDesc,
+              core.ClefSymbol.f => AppLocalizations.of(context)!.clefBassDesc,
+              core.ClefSymbol.tab => AppLocalizations.of(context)!.clefTabDesc,
+              core.ClefSymbol.percussion => AppLocalizations.of(context)!.clefPercussionDesc,
             };
 
             return _buildClefRowCard(
@@ -607,7 +603,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
         // Clef Presets / Register Chips (Dynamic based on selected Clef Symbol)
         if (_selectedClefSymbol != null) ...[
           Text(
-            'Clef Preset / Register',
+            AppLocalizations.of(context)!.clefPresetRegisterHeader,
             style: theme.textTheme.bodyMedium
                 ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
           ),
@@ -668,7 +664,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Clef Anchor Line',
+                          AppLocalizations.of(context)!.clefAnchorLineHeader,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: cs.onSurface,
@@ -676,7 +672,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Sets which staff line the clef anchors to',
+                          AppLocalizations.of(context)!.clefAnchorLineDesc,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                             fontSize: 11,
@@ -694,7 +690,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                             color: cs.primary.withValues(alpha: 0.2)),
                       ),
                       child: Text(
-                        'Line $_selectedAnchorLine',
+                        AppLocalizations.of(context)!.clefAnchorLineReadout(_selectedAnchorLine),
                         style: TextStyle(
                           color: cs.primary,
                           fontWeight: FontWeight.bold,
@@ -722,7 +718,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Tip: You can also tap directly on any line in the visual preview above to snap the clef to that line!',
+                        AppLocalizations.of(context)!.clefAnchorTip,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.bold,
@@ -759,7 +755,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Number of Staff Lines',
+                        AppLocalizations.of(context)!.numberOfStaffLinesHeader,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: cs.onSurface,
@@ -767,7 +763,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Standard is 5 lines (TAB is 6, percussion varies)',
+                        AppLocalizations.of(context)!.numberOfStaffLinesDesc,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                           fontSize: 11,
@@ -789,7 +785,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                               : cs.primary.withValues(alpha: 0.2)),
                     ),
                     child: Text(
-                      '$_selectedLines Lines',
+                      AppLocalizations.of(context)!.numberOfLinesReadout(_selectedLines),
                       style: TextStyle(
                         color: isFixedLines ? cs.onSurfaceVariant : cs.primary,
                         fontWeight: FontWeight.bold,
@@ -820,7 +816,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Note: Line count is locked for the selected specialized clef.',
+                        AppLocalizations.of(context)!.lineCountLockedNote,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant,
                           fontSize: 11,
@@ -1035,7 +1031,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
       children: [
         const SizedBox(height: 16),
         Text(
-          'Typography & Styling',
+          AppLocalizations.of(context)!.typographyStylingHeader,
           style: theme.textTheme.bodyMedium
               ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
         ),
@@ -1046,7 +1042,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
           children: [
             _buildFontFamilyCard(
               theme: theme,
-              title: 'Classic Serif',
+              title: AppLocalizations.of(context)!.fontSerifTitle,
               fontFamily: 'serif',
               preview: 'Aa',
               isSelected: _fontFamily == 'serif',
@@ -1055,7 +1051,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             const SizedBox(width: 12),
             _buildFontFamilyCard(
               theme: theme,
-              title: 'Modern Sans',
+              title: AppLocalizations.of(context)!.fontSansTitle,
               fontFamily: 'sans',
               preview: 'Aa',
               isSelected: _fontFamily == 'sans',
@@ -1082,7 +1078,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             children: [
               // Font Size Dual Slider
               _PrecisionNumericSlider(
-                label: 'Label Font Size',
+                label: AppLocalizations.of(context)!.labelFontSizeLabel,
                 value: _fontSize,
                 min: 8.0,
                 max: 20.0,
@@ -1103,13 +1099,13 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Italicize Label',
+                          AppLocalizations.of(context)!.italicizeLabelHeader,
                           style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold, color: cs.onSurface),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Use standard italics for score titles',
+                          AppLocalizations.of(context)!.italicizeLabelDesc,
                           style: theme.textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant, fontSize: 11),
                         ),
@@ -1130,7 +1126,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
         const SizedBox(height: 24),
 
         Text(
-          'Fine Alignment & Offsets',
+          AppLocalizations.of(context)!.alignmentOffsetsHeader,
           style: theme.textTheme.bodyMedium
               ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
         ),
@@ -1152,7 +1148,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             children: [
               // Horizontal Offset Dual Slider
               _PrecisionNumericSlider(
-                label: 'Horizontal Offset',
+                label: AppLocalizations.of(context)!.horizontalOffsetLabel,
                 value: _horizontalOffset,
                 min: -60.0,
                 max: 60.0,
@@ -1166,7 +1162,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
               ),
               // Vertical Offset Dual Slider
               _PrecisionNumericSlider(
-                label: 'Vertical Offset',
+                label: AppLocalizations.of(context)!.verticalOffsetLabel,
                 value: _verticalOffset,
                 min: -40.0,
                 max: 40.0,
@@ -1181,7 +1177,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Tip: Changes are instantly previewed in the live staff above.',
+                      AppLocalizations.of(context)!.livePreviewTip,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: cs.primary,
                         fontWeight: FontWeight.bold,
@@ -1484,5 +1480,23 @@ class _PrecisionNumericSliderState extends State<_PrecisionNumericSlider> {
         ),
       ],
     );
+  }
+}
+
+String _getFamilyName(BuildContext context, String rawName) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (rawName) {
+    case 'Woodwinds':
+      return l10n.familyWoodwinds;
+    case 'Brass':
+      return l10n.familyBrass;
+    case 'Percussion':
+      return l10n.familyPercussion;
+    case 'Strings':
+      return l10n.familyStrings;
+    case 'Keyboard & Plucked':
+      return l10n.familyKeyboardPlucked;
+    default:
+      return rawName;
   }
 }

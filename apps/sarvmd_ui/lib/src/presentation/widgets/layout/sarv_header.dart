@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../dialogs/about_dialog.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// The primary branding header for SarvMD, featuring the handwriting logo
 /// and the 'Manuscript Designer' subtitle in IranNastaliq.
@@ -26,7 +28,7 @@ class SarvHeader extends StatelessWidget {
         );
       },
       child: Tooltip(
-        message: 'About SarvMD & Version Info',
+        message: AppLocalizations.of(context)!.aboutSarvMD,
         child: InkWell(
           onTap: () => showSarvAboutDialog(context),
           borderRadius: BorderRadius.circular(12),
@@ -51,15 +53,11 @@ class SarvHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Manuscript Designer',
+                        AppLocalizations.of(context)!.appSubtitle,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: cs.primary.withValues(alpha: 0.8),
-                          fontSize: 18,
-                          fontFamily: 'IranNastaliq',
-                          letterSpacing: 1.2,
-                          height: 1.3,
-                        ),
+                        style: Theme.of(context)
+                            .extension<SarvThemeExtension>()
+                            ?.brandSubtitleStyle,
                       ),
                       const SizedBox(width: 6),
                       Icon(

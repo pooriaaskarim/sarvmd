@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/layout_policy.dart';
 
 /// A standard, highly reusable, and fully theme-reactive live preview for a musical staff.
 ///
@@ -48,8 +49,9 @@ class LiveStaffPreview extends StatelessWidget {
     // Automatically match theme paper color (cream in light mode, dark tinted in dark mode)
     final paperColor = ext?.paperColor ?? theme.colorScheme.surfaceContainer;
 
-    return Center(
-      child: Container(
+    return CanvasStrictScope(
+      child: Center(
+        child: Container(
         width: 380,
         height: 140,
         decoration: BoxDecoration(
@@ -121,6 +123,7 @@ class LiveStaffPreview extends StatelessWidget {
               );
             },
           ),
+        ),
         ),
       ),
     );

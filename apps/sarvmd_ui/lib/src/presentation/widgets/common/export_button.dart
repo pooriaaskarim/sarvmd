@@ -34,7 +34,7 @@ class ExportButton extends StatelessWidget {
               color: color ?? Theme.of(context).colorScheme.primary, width: 1),
         ),
         elevation: 0,
-        alignment: Alignment.centerLeft,
+        alignment: AlignmentDirectional.centerStart,
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/config/config_cubit.dart';
 import '../dialogs/staff_config_dialog.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SystemHierarchyPanel extends StatelessWidget {
   const SystemHierarchyPanel({super.key, required this.notifier});
@@ -25,7 +27,7 @@ class SystemHierarchyPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'System Layout',
+                    AppLocalizations.of(context)!.systemSettings,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
@@ -39,7 +41,7 @@ class SystemHierarchyPanel extends StatelessWidget {
                   onPressed: () => notifier.addStaff(),
                   icon: const Icon(Icons.add_circle_outline, size: 14),
                   label:
-                      const Text('Add Staff', style: TextStyle(fontSize: 12)),
+                      Text(AppLocalizations.of(context)!.addStaff, style: const TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     minimumSize: Size.zero,
@@ -66,6 +68,7 @@ class SystemHierarchyPanel extends StatelessWidget {
 
   Widget _buildMolaSummary(BuildContext context, core.PageConfig state) {
     final cs = Theme.of(context).colorScheme;
+    final isRtl = Localizations.localeOf(context).languageCode == 'fa';
     final staffCount = state.staffCount;
     final totalHeight = state.systemHeight;
 
@@ -77,10 +80,11 @@ class SystemHierarchyPanel extends StatelessWidget {
         border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Text(
-            'Ensemble Summary',
+            AppLocalizations.of(context)!.ensembleSummary,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -89,13 +93,17 @@ class SystemHierarchyPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _SummaryRow(label: 'Total Staves', value: '$staffCount'),
           _SummaryRow(
-              label: 'System Height',
-              value: '${totalHeight.toStringAsFixed(1)} mm'),
+              label: AppLocalizations.of(context)!.totalStaves,
+              value: '$staffCount'),
           _SummaryRow(
-            label: 'Density',
-            value: '${notifier.layout.systemCount} systems/page',
+              label: AppLocalizations.of(context)!.systemHeight,
+              value: UnitFormatter.formatMm(totalHeight)),
+          _SummaryRow(
+            label: AppLocalizations.of(context)!.density,
+            value: isRtl
+                ? '${notifier.layout.systemCount} سیستم در صفحه'
+                : '${notifier.layout.systemCount} systems/page',
           ),
         ],
       ),
@@ -110,15 +118,28 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRtl = Localizations.localeOf(context).languageCode == 'fa';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11)),
-          Text(value,
+          if (isRtl) ...[
+            Text(
+              value,
               style:
-                  const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            Text(label, style: const TextStyle(fontSize: 11)),
+          ] else ...[
+            Text(label, style: const TextStyle(fontSize: 11)),
+            Text(
+              value,
+              style:
+                  const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ],
         ],
       ),
     );
@@ -168,7 +189,7 @@ class _StaffGroupWidget extends StatelessWidget {
                       child: MouseRegion(
                         cursor: SystemMouseCursors.grab,
                         child: Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
+                          padding: const EdgeInsetsDirectional.only(end: 8.0),
                           child: Icon(
                             Icons.drag_indicator,
                             size: 18,
@@ -359,7 +380,7 @@ class _StaffItem extends StatelessWidget {
             child: MouseRegion(
               cursor: SystemMouseCursors.grab,
               child: Padding(
-                padding: const EdgeInsets.only(right: 8.0),
+                padding: const EdgeInsetsDirectional.only(end: 8.0),
                 child: Icon(
                   Icons.drag_indicator,
                   size: 18,

@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] - 2026-08-24
+
+### Added
+- **Vazirmatn Persian Typography Engine**: Integrated Vazirmatn variable font family across `fa` locale sidebars, dialogs, and panels.
+- **Complete Persian Localization (`app_fa.arb`)**: Comprehensive Persian translations for all UI sidebars (`DocumentSettingsGroup`, `MarginsSettingsGroup`, `StaffSpacingGroup`), preset cards, export modals, and calibration dialogs.
+- **Dynamic Language Switcher**: `LanguageSwitchControl` component and `LocaleCubit` integration for instant runtime language switching with persistent `shared_preferences` storage.
+- **Declarative `PropertyRow` Primitive**: Standardized settings row primitive enforcing consistent label alignment and interactive control placement (Pillar 1).
+- **Semantic `TextTheme` Infrastructure**: Material 3 typography token system replacing legacy inline font styling (Pillar 2).
+- **Centralized `UnitFormatter` Engine & Test Suite**: `unit_formatter.dart` utility standardizing physical measurements (`mm`, `pt`, `%`, `px`, `PPI`, dimensions) across all sidebars, dialogs, and canvas HUD overlays with a strict ASCII-digit invariant (`0-9`) and full unit test coverage (`unit_formatter_test.dart`) (Pillar 4).
+
+### Changed
+- **`LayoutPolicy` Contracts & Window Frame Locking**: Introduced `LayoutPolicyMode` (`bilingualFluid`, `canvasStrict`, `documentRtl`), `CanvasStrictScope`, and `BilingualFluidScope`. Top-level `Scaffold` body `Row` is locked to LTR so Left Sidebar, Canvas Center, and Right View Panel never swap physical screen positions (Pillar 3).
+- **CAD Navigation & Physical Control Layouts**: Enforced LTR CAD physical layout rules for document orientation switchers, margin 2x2 quad fields, slider tracks, and zoom scale navigation controls (`IntegratedScaleControl`).
+- **BiDi Paragraph Text Formatting**: Enhanced Persian profile card titles and descriptions with RTL text directionality, resolving sentence dots (`.`), parentheses `(SATB)`, and dashes to the visual end (left side) of Persian phrases.
+
+---
+
 ## [0.5.2] - 2026-08-12
 
 ### Added

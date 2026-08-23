@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'mini_staff_preview.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ProfilePicker extends StatefulWidget {
   const ProfilePicker({
@@ -25,18 +26,20 @@ class _ProfilePickerState extends State<ProfilePicker> {
     return widget.currentConfig.systemLayout == profile.systemLayout;
   }
 
-  String _getCategoryLabel(core.ProfileCategory category) {
+  String _getCategoryLabel(
+      BuildContext context, core.ProfileCategory category) {
+    final l10n = AppLocalizations.of(context)!;
     switch (category) {
       case core.ProfileCategory.standard:
-        return 'Standard';
+        return l10n.categoryStandard;
       case core.ProfileCategory.ensemble:
-        return 'Ensemble';
+        return l10n.categoryEnsemble;
       case core.ProfileCategory.tablature:
-        return 'Tablature';
+        return l10n.categoryTablature;
       case core.ProfileCategory.percussion:
-        return 'Percussion';
+        return l10n.categoryPercussion;
       case core.ProfileCategory.blank:
-        return 'Other';
+        return l10n.categoryOther;
     }
   }
 
@@ -59,7 +62,10 @@ class _ProfilePickerState extends State<ProfilePicker> {
                 crossAxisCount;
 
         final colorScheme = Theme.of(context).colorScheme;
-        final allTabs = <core.ProfileCategory?>[null, ...core.ProfileCategory.values];
+        final allTabs = <core.ProfileCategory?>[
+          null,
+          ...core.ProfileCategory.values
+        ];
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +75,9 @@ class _ProfilePickerState extends State<ProfilePicker> {
               spacing: 6,
               runSpacing: 6,
               children: allTabs.map((cat) {
-                final label = cat == null ? 'All' : _getCategoryLabel(cat);
+                final label = cat == null
+                    ? AppLocalizations.of(context)!.categoryAll
+                    : _getCategoryLabel(context, cat);
                 final isSelected = _selectedCategory == cat;
 
                 return GestureDetector(
@@ -81,8 +89,8 @@ class _ProfilePickerState extends State<ProfilePicker> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? colorScheme.primary
@@ -92,8 +100,7 @@ class _ProfilePickerState extends State<ProfilePicker> {
                       border: Border.all(
                         color: isSelected
                             ? colorScheme.primary
-                            : colorScheme.outlineVariant
-                                .withValues(alpha: 0.2),
+                            : colorScheme.outlineVariant.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
@@ -116,7 +123,7 @@ class _ProfilePickerState extends State<ProfilePicker> {
               }).toList(),
             ),
             const SizedBox(height: 12),
-            
+
             // ── Animated Switcher for Smooth Tab Transitions ───
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
@@ -275,11 +282,11 @@ class _ProfileCardState extends State<_ProfileCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.profile.label,
+                      _getProfileTitle(context, widget.profile),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12.5,
                         fontWeight: active ? FontWeight.bold : FontWeight.w600,
                         color: active
                             ? colorScheme.primary
@@ -287,22 +294,25 @@ class _ProfileCardState extends State<_ProfileCard> {
                         letterSpacing: 0.2,
                       ),
                     ),
-                    
+
                     // Show description with standard clamp lines
-                    if (widget.profile.description != null) ...[
+                    if (_getProfileDescription(context, widget.profile) !=
+                        null) ...[
                       const SizedBox(height: 2),
                       SizedBox(
-                        height: 24, // Keep card heights unified
+                        height: 32, // Accommodate Persian line height
                         child: Text(
-                          widget.profile.description!,
+                          _getProfileDescription(context, widget.profile)!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 9,
-                            height: 1.25,
+                            fontSize: 11,
+                            height: 1.3,
                             color: active
-                                ? colorScheme.onSurfaceVariant.withValues(alpha: 0.8)
-                                : colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                                ? colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.85)
+                                : colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.75),
                           ),
                         ),
                       ),
@@ -312,21 +322,25 @@ class _ProfileCardState extends State<_ProfileCard> {
                     if (widget.showCategoryTag) ...[
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
                           color: active
                               ? colorScheme.primary.withValues(alpha: 0.1)
-                              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                              : colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          _getCategoryLabel(widget.profile.category).toUpperCase(),
+                          _getCategoryLabel(widget.profile.category)
+                              .toUpperCase(),
                           style: TextStyle(
                             fontSize: 7,
                             fontWeight: FontWeight.w800,
                             color: active
                                 ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                                : colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.65),
                             letterSpacing: 0.4,
                           ),
                         ),
@@ -335,11 +349,11 @@ class _ProfileCardState extends State<_ProfileCard> {
                   ],
                 ),
 
-                // Top-right Glowing Active Checkmark Badge
+                // Top Glowing Active Checkmark Badge
                 if (active)
-                  Positioned(
+                  PositionedDirectional(
                     top: -4,
-                    right: -4,
+                    end: -4,
                     child: Container(
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
@@ -367,4 +381,51 @@ class _ProfileCardState extends State<_ProfileCard> {
       ),
     );
   }
+}
+
+String _getProfileTitle(BuildContext context, core.StaffProfile profile) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (profile.id) {
+    'piano' => l10n.profilePianoTitle,
+    'treble' => l10n.profileTrebleTitle,
+    'bass' => l10n.profileBassTitle,
+    'alto' => l10n.profileAltoTitle,
+    'tenor' => l10n.profileTenorTitle,
+    'stringQuartet' => l10n.profileStringQuartetTitle,
+    'choirSATB' => l10n.profileChoirSATBTitle,
+    'leadSheet' => l10n.profileLeadSheetTitle,
+    'guitarTab' => l10n.profileGuitarTabTitle,
+    'guitarGrand' => l10n.profileGuitarGrandTitle,
+    'bassTab' => l10n.profileBassTabTitle,
+    'banjoTab' => l10n.profileBanjoTabTitle,
+    'drumSet' => l10n.profileDrumKitTitle,
+    'percussion1' => l10n.profilePercussion1Title,
+    'percussion3' => l10n.profilePercussion3Title,
+    'blank' => l10n.profileBlankTitle,
+    _ => profile.label,
+  };
+}
+
+String? _getProfileDescription(
+    BuildContext context, core.StaffProfile profile) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (profile.id) {
+    'piano' => l10n.profilePianoDesc,
+    'treble' => l10n.profileTrebleDesc,
+    'bass' => l10n.profileBassDesc,
+    'alto' => l10n.profileAltoDesc,
+    'tenor' => l10n.profileTenorDesc,
+    'stringQuartet' => l10n.profileStringQuartetDesc,
+    'choirSATB' => l10n.profileChoirSATBDesc,
+    'leadSheet' => l10n.profileLeadSheetDesc,
+    'guitarTab' => l10n.profileGuitarTabDesc,
+    'guitarGrand' => l10n.profileGuitarGrandDesc,
+    'bassTab' => l10n.profileBassTabDesc,
+    'banjoTab' => l10n.profileBanjoTabDesc,
+    'drumSet' => l10n.profileDrumKitDesc,
+    'percussion1' => l10n.profilePercussion1Desc,
+    'percussion3' => l10n.profilePercussion3Desc,
+    'blank' => l10n.profileBlankDesc,
+    _ => profile.description,
+  };
 }

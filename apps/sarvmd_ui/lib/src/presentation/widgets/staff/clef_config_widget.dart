@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../common/property_row.dart';
 
 class ClefConfigWidget extends StatelessWidget {
   const ClefConfigWidget({
@@ -78,14 +79,16 @@ class ClefConfigWidget extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: label != null
-                  ? Text(label,
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? colorScheme.onPrimaryContainer
-                              : colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6)))
+                  ? Text(
+                      label,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? colorScheme.onPrimaryContainer
+                                : colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.6),
+                          ),
+                    )
                   : Text(
                       glyph,
                       style: TextStyle(
@@ -186,11 +189,10 @@ class ClefConfigWidget extends StatelessWidget {
                       ),
                       child: Text(
                         'Line ${activeValue.anchorLine} / $lines',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                       ),
                     ),
                   ),
@@ -235,26 +237,26 @@ class ClefConfigWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label,
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold)),
-            Switch(
-                value: !disabled,
-                onChanged: (on) {
-                  if (on) {
-                    onChanged(fallbackValue ??
-                        const core.ClefConfig(
-                            symbol: core.ClefSymbol.g, anchorLine: 2));
-                  } else {
-                    onChanged(null);
-                  }
-                }),
-          ],
+        PropertyRow(
+          label: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          control: Switch(
+            value: !disabled,
+            onChanged: (on) {
+              if (on) {
+                onChanged(fallbackValue ??
+                    const core.ClefConfig(
+                        symbol: core.ClefSymbol.g, anchorLine: 2));
+              } else {
+                onChanged(null);
+              }
+            },
+          ),
         ),
         const SizedBox(height: 12),
         AnimatedOpacity(

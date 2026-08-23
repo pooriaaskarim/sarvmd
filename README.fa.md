@@ -1,4 +1,4 @@
-# طراح برگه‌های موسیقی سرو (Sarv Manuscript Designer)
+# طراح برگه نت سرو (Sarv Manuscript Designer)
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="apps/sarvmd_ui/assets/handwriting/sarv_banner_dark.png">
   <img alt="SarvMD" src="apps/sarvmd_ui/assets/handwriting/sarv_banner_light.png">

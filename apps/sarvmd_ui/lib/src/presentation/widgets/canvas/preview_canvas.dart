@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/sample/sample_score.dart';
 import 'dart:math' as math;
@@ -146,7 +147,7 @@ class _ManuscriptPainter extends CustomPainter {
           canvas,
           size,
           'left',
-          'Left: ${layout.config.margins.left.toStringAsFixed(1)} mm',
+          'Left: ${UnitFormatter.formatMm(layout.config.margins.left)}',
           marginLeft,
           true,
         );
@@ -156,7 +157,7 @@ class _ManuscriptPainter extends CustomPainter {
           canvas,
           size,
           'right',
-          'Right: ${layout.config.margins.right.toStringAsFixed(1)} mm',
+          'Right: ${UnitFormatter.formatMm(layout.config.margins.right)}',
           marginRight,
           true,
         );
@@ -166,7 +167,7 @@ class _ManuscriptPainter extends CustomPainter {
           canvas,
           size,
           'top',
-          'Top: ${layout.config.margins.top.toStringAsFixed(1)} mm',
+          'Top: ${UnitFormatter.formatMm(layout.config.margins.top)}',
           marginTop,
           false,
         );
@@ -176,7 +177,7 @@ class _ManuscriptPainter extends CustomPainter {
           canvas,
           size,
           'bottom',
-          'Bottom: ${layout.config.margins.bottom.toStringAsFixed(1)} mm',
+          'Bottom: ${UnitFormatter.formatMm(layout.config.margins.bottom)}',
           marginBottom,
           false,
         );

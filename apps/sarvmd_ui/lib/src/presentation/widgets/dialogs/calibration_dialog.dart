@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import '../../../core/theme/layout_policy.dart';
+import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/view/view_cubit.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Opens the display calibration dialog.
 Future<void> showCalibrationDialog(
@@ -38,7 +41,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
 
   double get _barWidth => _referenceMm * _baseLpMm * _localFactor;
 
-  String _getPhysicalPpiSrting(double dpr) =>
+  String _getPhysicalPpiString(double dpr) =>
       (_localFactor * 96 * dpr).toStringAsFixed(2);
 
   bool get _isDefault => (_localFactor - 1.0).abs() < 0.001;
@@ -99,14 +102,14 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Display Calibration',
+                          AppLocalizations.of(context)!.displayCalibrationTitle,
                           style: tt.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Calibrate "Actual Size" to your physical display.',
+                          AppLocalizations.of(context)!.displayCalibrationSubtitle,
                           style: tt.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                           ),
@@ -134,52 +137,55 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                   // Numbered steps
                   _StepText(
                     number: '1',
-                    text: 'Hold a physical ruler flat against your screen.',
+                    text: AppLocalizations.of(context)!.calibrationStep1,
                     colorScheme: cs,
                   ),
                   const SizedBox(height: 6),
                   _StepText(
                     number: '2',
-                    text: 'Use the slider or buttons to nudge the bar until it '
-                        'spans exactly 50 mm on your ruler.',
+                    text: AppLocalizations.of(context)!.calibrationStep2,
                     colorScheme: cs,
                   ),
                   const SizedBox(height: 6),
                   _StepText(
                     number: '3',
-                    text: 'Click Apply. Done.',
+                    text: AppLocalizations.of(context)!.calibrationStep3,
                     colorScheme: cs,
                   ),
 
                   const SizedBox(height: 24),
 
                   // Ruler bar with Drag & Scroll interaction
-                  _RulerArea(
-                    barWidth: _barWidth,
-                    colorScheme: cs,
-                    onAdjust: (delta) =>
-                        _nudge(delta / (_referenceMm * _baseLpMm)),
-                    onScroll: (delta) => _nudge(-delta * 0.002), // Fine scroll
+                  CanvasStrictScope(
+                    child: _RulerArea(
+                      barWidth: _barWidth,
+                      colorScheme: cs,
+                      onAdjust: (delta) =>
+                          _nudge(delta / (_referenceMm * _baseLpMm)),
+                      onScroll: (delta) => _nudge(-delta * 0.002), // Fine scroll
+                    ),
                   ),
 
                   const SizedBox(height: 16),
 
                   // Coarse Adjustment Slider
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 4,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 8),
-                      overlayShape:
-                          const RoundSliderOverlayShape(overlayRadius: 16),
-                    ),
-                    child: Slider(
-                      value: _localFactor,
-                      min: 0.5,
-                      max: 3.5,
-                      onChanged: (v) => setState(() => _localFactor = v),
-                      activeColor: cs.primary,
-                      inactiveColor: cs.primary.withValues(alpha: 0.1),
+                  CanvasStrictScope(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        thumbShape:
+                            const RoundSliderThumbShape(enabledThumbRadius: 8),
+                        overlayShape:
+                            const RoundSliderOverlayShape(overlayRadius: 16),
+                      ),
+                      child: Slider(
+                        value: _localFactor,
+                        min: 0.5,
+                        max: 3.5,
+                        onChanged: (v) => setState(() => _localFactor = v),
+                        activeColor: cs.primary,
+                        inactiveColor: cs.primary.withValues(alpha: 0.1),
+                      ),
                     ),
                   ),
 
@@ -198,7 +204,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                       const SizedBox(width: 24),
                       Builder(builder: (context) {
                         final dpr = MediaQuery.of(context).devicePixelRatio;
-                        final physicalPpi = _getPhysicalPpiSrting(dpr);
+                        final physicalPpi = _getPhysicalPpiString(dpr);
 
                         return AnimatedSwitcher(
                           duration: const Duration(milliseconds: 150),
@@ -206,7 +212,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                             key: ValueKey(physicalPpi),
                             children: [
                               Text(
-                                '$physicalPpi PPI',
+                                UnitFormatter.formatPpi(int.tryParse(physicalPpi) ?? 96),
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w900,
@@ -218,8 +224,8 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                               ),
                               Text(
                                 _isDefault
-                                    ? 'baseline (96 DPI)'
-                                    : 'physical density',
+                                    ? AppLocalizations.of(context)!.baseline96Dpi
+                                    : AppLocalizations.of(context)!.physicalDensity,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
@@ -265,7 +271,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                     duration: const Duration(milliseconds: 200),
                     child: TextButton.icon(
                       icon: const Icon(Icons.restart_alt, size: 16),
-                      label: const Text('Reset'),
+                      label: Text(AppLocalizations.of(context)!.reset),
                       onPressed: _isDefault
                           ? null
                           : () => setState(() => _localFactor = 1.0),
@@ -283,7 +289,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                       foregroundColor: cs.onSurfaceVariant,
                       textStyle: const TextStyle(fontSize: 13),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(AppLocalizations.of(context)!.cancel),
                   ),
                   const SizedBox(width: 8),
                   // Apply
@@ -295,7 +301,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: const Text('Apply'),
+                    child: Text(AppLocalizations.of(context)!.apply),
                   ),
                 ],
               ),
