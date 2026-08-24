@@ -41,8 +41,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
 
   double get _barWidth => _referenceMm * _baseLpMm * _localFactor;
 
-  String _getPhysicalPpiString(double dpr) =>
-      (_localFactor * 96 * dpr).toStringAsFixed(2);
+  int _getPhysicalPpi(double dpr) => (_localFactor * 96 * dpr).round();
 
   bool get _isDefault => (_localFactor - 1.0).abs() < 0.001;
 
@@ -129,126 +128,130 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
             ),
 
             // ── Body ─────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Numbered steps
-                  _StepText(
-                    number: '1',
-                    text: AppLocalizations.of(context)!.calibrationStep1,
-                    colorScheme: cs,
-                  ),
-                  const SizedBox(height: 6),
-                  _StepText(
-                    number: '2',
-                    text: AppLocalizations.of(context)!.calibrationStep2,
-                    colorScheme: cs,
-                  ),
-                  const SizedBox(height: 6),
-                  _StepText(
-                    number: '3',
-                    text: AppLocalizations.of(context)!.calibrationStep3,
-                    colorScheme: cs,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Ruler bar with Drag & Scroll interaction
-                  CanvasStrictScope(
-                    child: _RulerArea(
-                      barWidth: _barWidth,
-                      colorScheme: cs,
-                      onAdjust: (delta) =>
-                          _nudge(delta / (_referenceMm * _baseLpMm)),
-                      onScroll: (delta) => _nudge(-delta * 0.002), // Fine scroll
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Coarse Adjustment Slider
-                  CanvasStrictScope(
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 4,
-                        thumbShape:
-                            const RoundSliderThumbShape(enabledThumbRadius: 8),
-                        overlayShape:
-                            const RoundSliderOverlayShape(overlayRadius: 16),
-                      ),
-                      child: Slider(
-                        value: _localFactor,
-                        min: 0.5,
-                        max: 3.5,
-                        onChanged: (v) => setState(() => _localFactor = v),
-                        activeColor: cs.primary,
-                        inactiveColor: cs.primary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Nudge controls + PPI readout
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            Flexible(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _NudgeButton(
-                        icon: Icons.remove,
-                        onTap: () => _nudge(-_step),
-                        onLongPress: () => _nudge(-_step * 10),
+                      // Numbered steps
+                      _StepText(
+                        number: '1',
+                        text: AppLocalizations.of(context)!.calibrationStep1,
                         colorScheme: cs,
                       ),
-                      const SizedBox(width: 24),
-                      Builder(builder: (context) {
-                        final dpr = MediaQuery.of(context).devicePixelRatio;
-                        final physicalPpi = _getPhysicalPpiString(dpr);
+                      const SizedBox(height: 6),
+                      _StepText(
+                        number: '2',
+                        text: AppLocalizations.of(context)!.calibrationStep2,
+                        colorScheme: cs,
+                      ),
+                      const SizedBox(height: 6),
+                      _StepText(
+                        number: '3',
+                        text: AppLocalizations.of(context)!.calibrationStep3,
+                        colorScheme: cs,
+                      ),
 
-                        return AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 150),
-                          child: Column(
-                            key: ValueKey(physicalPpi),
-                            children: [
-                              Text(
-                                UnitFormatter.formatPpi(int.tryParse(physicalPpi) ?? 96),
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                  color: _isDefault
-                                      ? cs.onSurfaceVariant
-                                      : cs.primary,
-                                  letterSpacing: -0.8,
-                                ),
-                              ),
-                              Text(
-                                _isDefault
-                                    ? AppLocalizations.of(context)!.baseline96Dpi
-                                    : AppLocalizations.of(context)!.physicalDensity,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: cs.onSurfaceVariant
-                                      .withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                      const SizedBox(width: 24),
-                      _NudgeButton(
-                        icon: Icons.add,
-                        onTap: () => _nudge(_step),
-                        onLongPress: () => _nudge(_step * 10),
-                        colorScheme: cs,
+                      const SizedBox(height: 24),
+
+                      // Ruler bar with Drag & Scroll interaction
+                      CanvasStrictScope(
+                        child: _RulerArea(
+                          barWidth: _barWidth,
+                          colorScheme: cs,
+                          onAdjust: (delta) =>
+                              _nudge(delta / (_referenceMm * _baseLpMm)),
+                          onScroll: (delta) => _nudge(-delta * 0.002), // Fine scroll
+                        ),
                       ),
+
+                      const SizedBox(height: 16),
+
+                      // Coarse Adjustment Slider
+                      CanvasStrictScope(
+                        child: SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 4,
+                            thumbShape:
+                                const RoundSliderThumbShape(enabledThumbRadius: 8),
+                            overlayShape:
+                                const RoundSliderOverlayShape(overlayRadius: 16),
+                          ),
+                          child: Slider(
+                            value: _localFactor,
+                            min: 0.5,
+                            max: 3.5,
+                            onChanged: (v) => setState(() => _localFactor = v),
+                            activeColor: cs.primary,
+                            inactiveColor: cs.primary.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Nudge controls + PPI readout
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _NudgeButton(
+                            icon: Icons.remove,
+                            onTap: () => _nudge(-_step),
+                            onLongPress: () => _nudge(-_step * 10),
+                            colorScheme: cs,
+                          ),
+                          const SizedBox(width: 24),
+                          Builder(builder: (context) {
+                            final dpr = MediaQuery.of(context).devicePixelRatio;
+                            final physicalPpi = _getPhysicalPpi(dpr);
+
+                            return AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 150),
+                              child: Column(
+                                key: ValueKey(physicalPpi),
+                                children: [
+                                  Text(
+                                    UnitFormatter.formatPpi(physicalPpi),
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                      color: _isDefault
+                                          ? cs.onSurfaceVariant
+                                          : cs.primary,
+                                      letterSpacing: -0.8,
+                                    ),
+                                  ),
+                                  Text(
+                                    _isDefault
+                                        ? AppLocalizations.of(context)!.baseline96Dpi
+                                        : AppLocalizations.of(context)!.physicalDensity,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: cs.onSurfaceVariant
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(width: 24),
+                          _NudgeButton(
+                            icon: Icons.add,
+                            onTap: () => _nudge(_step),
+                            onLongPress: () => _nudge(_step * 10),
+                            colorScheme: cs,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
                     ],
                   ),
-
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             ),
 
