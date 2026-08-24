@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://pooriaaskarim.github.io/sarvmd/">
+  <a href="https://pooriaaskarim.github.io/sarvmd/?lang=en">
     <img src="https://img.shields.io/badge/Try%20SarvMD-Live%20Web%20App-6C5CE7?style=for-the-badge&logo=flutter" alt="Try SarvMD Live Web App">
   </a>
 </p>
