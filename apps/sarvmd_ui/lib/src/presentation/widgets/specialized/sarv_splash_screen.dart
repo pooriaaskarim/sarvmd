@@ -4,11 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../logic/services/changelog_service.dart';
 
 /// A calligraphic, theme-aware landing and splash screen for SarvMD.
 ///
-/// Combines the brand handwriting vector logo with an animated organic calligraphic
-/// underline stroke, theme paper background, and bilingual typography.
+/// Combines the brand handwriting vector logo with dynamic version indicators,
+/// theme paper background, and Hero shared-element transition support.
 class SarvSplashScreen extends StatefulWidget {
   const SarvSplashScreen({
     super.key,
@@ -17,6 +18,7 @@ class SarvSplashScreen extends StatefulWidget {
     this.isPersian = false,
     this.statusText,
     this.progress,
+    this.version,
   });
 
   final SarvAccent accent;
@@ -24,6 +26,7 @@ class SarvSplashScreen extends StatefulWidget {
   final bool isPersian;
   final String? statusText;
   final double? progress;
+  final String? version;
 
   @override
   State<SarvSplashScreen> createState() => _SarvSplashScreenState();
@@ -33,39 +36,47 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _logoFadeAnimation;
-  late Animation<double> _strokeAnimation;
   late Animation<double> _subtitleFadeAnimation;
+  String _displayVersion = '0.6.0';
 
   @override
   void initState() {
     super.initState();
+    if (widget.version != null && widget.version!.isNotEmpty) {
+      _displayVersion = widget.version!;
+    } else {
+      _resolveVersion();
+    }
+
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
     );
 
     _logoFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animController,
-        curve: const Interval(0.0, 0.45, curve: Curves.easeOut),
-      ),
-    );
-
-    _strokeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: const Interval(0.25, 0.75, curve: Curves.easeInOutCubic),
+        curve: const Interval(0.0, 0.50, curve: Curves.easeOut),
       ),
     );
 
     _subtitleFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animController,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
+        curve: const Interval(0.30, 0.90, curve: Curves.easeOut),
       ),
     );
 
     _animController.forward();
+  }
+
+  Future<void> _resolveVersion() async {
+    final v = await ChangelogService.getLatestVersion();
+    if (mounted) {
+      setState(() {
+        _displayVersion = v;
+      });
+    }
   }
 
   @override
@@ -83,7 +94,6 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
     final paperColor = theme.extension<SarvThemeExtension>()?.paperColor ??
         (isDark ? widget.accent.paperDark : widget.accent.paperLight);
 
-    final primaryColor = theme.colorScheme.primary;
     final onSurfaceColor = theme.colorScheme.onSurface;
     final mutedTextColor = theme.colorScheme.onSurfaceVariant;
 
@@ -92,11 +102,8 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
     final screenWidth = mediaQuery.size.width;
     final scaleFactor = (screenWidth / 1200.0).clamp(0.85, 1.3);
 
-    final logoHeight = 76.0 * scaleFactor;
-    final strokeWidth = 220.0 * scaleFactor;
+    final logoHeight = 84.0 * scaleFactor;
     final versionFontSize = 10.0 * scaleFactor;
-
-    final subtitleText = widget.isPersian ? 'دست‌نویس نگار موسیقی' : 'Manuscript Designer';
 
     return Scaffold(
       backgroundColor: paperColor,
@@ -108,64 +115,48 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Official calligraphic handwriting logo
+                  // Official calligraphic handwriting logo with Hero shared element tag
                   FadeTransition(
                     opacity: _logoFadeAnimation,
-                    child: SvgPicture.asset(
-                      'assets/handwriting/Sarv Handwriting.svg',
-                      height: logoHeight,
-                      colorFilter: ColorFilter.mode(
-                        onSurfaceColor,
-                        BlendMode.srcIn,
+                    child: Hero(
+                      tag: 'sarv_brand_logo',
+                      child: SvgPicture.asset(
+                        'assets/handwriting/Sarv Handwriting.svg',
+                        height: logoHeight,
+                        colorFilter: ColorFilter.mode(
+                          onSurfaceColor,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
 
-                  // Animated calligraphic bezier stroke line under the logo
-                  AnimatedBuilder(
-                    animation: _strokeAnimation,
-                    builder: (context, _) {
-                      return SizedBox(
-                        width: strokeWidth,
-                        height: 12,
-                        child: CustomPaint(
-                          painter: _CalligraphicStrokePainter(
-                            progress: _strokeAnimation.value,
-                            color: primaryColor,
-                            scaleFactor: scaleFactor,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Subtitle Calligraphy
+                  // Subtitle Typography with Hero shared element tag
                   FadeTransition(
                     opacity: _subtitleFadeAnimation,
-                    child: Text(
-                      subtitleText,
-                      style: widget.isPersian
-                          ? TextStyle(
-                              fontFamily: 'IranNastaliq',
-                              fontSize: 26.0 * scaleFactor,
-                              color: primaryColor.withValues(alpha: 0.88),
-                              height: 1.3,
-                            )
-                          : TextStyle(
-                              fontSize: 14.0 * scaleFactor,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 2.0 * scaleFactor,
-                              color: primaryColor.withValues(alpha: 0.88),
-                            ),
+                    child: Hero(
+                      tag: 'sarv_brand_subtitle',
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Text(
+                          'MANUSCRIPT DESIGNER',
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 15.0 * scaleFactor,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 4.5 * scaleFactor,
+                            color: onSurfaceColor.withValues(alpha: 0.90),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Quiet, technical version readout at bottom
+            // Dynamic technical version readout at bottom
             Positioned(
               bottom: 28,
               left: 0,
@@ -186,8 +177,21 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
                         ),
                         const SizedBox(height: 6),
                       ],
+                      if (widget.progress != null) ...[
+                        SizedBox(
+                          width: 120 * scaleFactor,
+                          child: LinearProgressIndicator(
+                            value: widget.progress! > 0 ? widget.progress : null,
+                            minHeight: 2.0,
+                            backgroundColor: mutedTextColor.withValues(alpha: 0.15),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       Text(
-                        'SARVMD  •  v1.0.0',
+                        'SARVMD  •  v$_displayVersion',
                         style: TextStyle(
                           fontSize: versionFontSize,
                           fontWeight: FontWeight.w600,
@@ -204,66 +208,5 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
         ),
       ),
     );
-  }
-}
-
-/// Custom painter that draws an organic calligraphic stroke expanding symmetrically outward.
-class _CalligraphicStrokePainter extends CustomPainter {
-  const _CalligraphicStrokePainter({
-    required this.progress,
-    required this.color,
-    required this.scaleFactor,
-  });
-
-  final double progress;
-  final Color color;
-  final double scaleFactor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (progress <= 0.0) return;
-
-    final w = size.width;
-    final h = size.height;
-    final cx = w / 2;
-    final cy = h / 2;
-
-    final totalHalfWidth = w * 0.45;
-    final leftX = cx - (totalHalfWidth * progress);
-    final rightX = cx + (totalHalfWidth * progress);
-
-    final strokePaint = Paint()
-      ..color = color.withValues(alpha: 0.85)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2 * scaleFactor
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
-    path.moveTo(cx, cy);
-
-    // Symmetrical organic curves tracing outward
-    path.quadraticBezierTo(
-      cx - (totalHalfWidth * progress * 0.5),
-      cy - 2.0 * progress * scaleFactor,
-      leftX,
-      cy,
-    );
-
-    path.moveTo(cx, cy);
-    path.quadraticBezierTo(
-      cx + (totalHalfWidth * progress * 0.5),
-      cy - 2.0 * progress * scaleFactor,
-      rightX,
-      cy,
-    );
-
-    canvas.drawPath(path, strokePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CalligraphicStrokePainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.color != color ||
-        oldDelegate.scaleFactor != scaleFactor;
   }
 }

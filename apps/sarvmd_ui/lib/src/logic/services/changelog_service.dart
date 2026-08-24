@@ -50,6 +50,15 @@ class ChangelogService {
     }
   }
 
+  /// Returns the latest parsed version string from [CHANGELOG.md], or '0.6.0' fallback.
+  static Future<String> getLatestVersion() async {
+    final entries = await loadChangelog();
+    if (entries.isNotEmpty) {
+      return entries.first.version;
+    }
+    return '0.6.0';
+  }
+
   /// Parses standard Keep-a-Changelog Markdown format into structured models.
   static List<ReleaseEntry> parseMarkdown(String markdown) {
     final List<ReleaseEntry> entries = [];

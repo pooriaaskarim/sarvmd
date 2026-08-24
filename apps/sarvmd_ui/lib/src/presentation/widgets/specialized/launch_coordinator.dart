@@ -8,11 +8,12 @@ import '../../../logic/locale/locale_cubit.dart';
 import '../../../logic/locale/locale_state.dart';
 import '../../../logic/view/view_cubit.dart';
 import '../../../logic/view/view_state.dart';
+import '../../../logic/services/changelog_service.dart';
 import '../specialized/sarv_splash_screen.dart';
 import '../../screens/editor_screen.dart';
 
-/// Coordinates application startup and smoothly transitions from the calligraphic
-/// splash screen into the main editor workspace.
+/// Coordinates application startup and smoothly executes a Hero shared-element transition
+/// from the calligraphic splash screen into the main editor workspace header.
 class LaunchCoordinator extends StatefulWidget {
   const LaunchCoordinator({
     super.key,
@@ -26,7 +27,8 @@ class LaunchCoordinator extends StatefulWidget {
 }
 
 class _LaunchCoordinatorState extends State<LaunchCoordinator> {
-  bool _isInitialized = false;
+  String _version = '0.6.0';
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -35,13 +37,37 @@ class _LaunchCoordinatorState extends State<LaunchCoordinator> {
   }
 
   Future<void> _startBootSequence() async {
-    // Hold splash screen for minSplashDuration to allow logo animation to complete cleanly
-    await Future.delayed(widget.minSplashDuration);
+    // Perform actual asynchronous boot tasks in parallel with baseline splash threshold
+    final versionFuture = ChangelogService.getLatestVersion();
+    final baselineDelayFuture = Future.delayed(widget.minSplashDuration);
 
-    if (mounted) {
+    final results = await Future.wait([versionFuture, baselineDelayFuture]);
+    final resolvedVersion = results[0] as String;
+
+    if (mounted && !_hasNavigated) {
+      _hasNavigated = true;
       setState(() {
-        _isInitialized = true;
+        _version = resolvedVersion;
       });
+
+      // Execute Hero shared-element transition into EditorScreen
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 750),
+          reverseTransitionDuration: const Duration(milliseconds: 750),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const EditorScreen(key: ValueKey('editor_screen')),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutCubic,
+              ),
+              child: child,
+            );
+          },
+        ),
+      );
     }
   }
 
@@ -60,22 +86,12 @@ class _LaunchCoordinatorState extends State<LaunchCoordinator> {
           builder: (context, viewState) {
             final brightness = _resolveBrightness(context, viewState.themeMode);
 
-            if (!_isInitialized) {
-              return SarvSplashScreen(
-                key: const ValueKey('sarv_splash_screen'),
-                accent: viewState.accent,
-                brightness: brightness,
-                isPersian: localeState.isPersian,
-              );
-            }
-
-            return const AnimatedSwitcher(
-              duration: Duration(milliseconds: 400),
-              switchInCurve: Curves.easeInOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              child: EditorScreen(
-                key: ValueKey('editor_screen'),
-              ),
+            return SarvSplashScreen(
+              key: const ValueKey('sarv_splash_screen'),
+              accent: viewState.accent,
+              brightness: brightness,
+              isPersian: localeState.isPersian,
+              version: _version,
             );
           },
         );
