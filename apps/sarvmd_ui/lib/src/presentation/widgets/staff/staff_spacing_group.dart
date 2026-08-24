@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/app_metrics.dart';
+import '../../../core/theme/layout_policy.dart';
+import '../../../core/utils/unit_formatter.dart';
+import '../../../l10n/app_localizations.dart';
+import '../common/property_row.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StaffSpacingGroup — the top-level widget that composes all four tiers.
@@ -81,7 +85,7 @@ class _StaffSpacingGroupState extends State<StaffSpacingGroup> {
 
         // ── Tier 3a: Line Gap Slider ──────────────────────────────────────
         _AnnotatedSlider(
-          label: widget.hints.lineGapLabel,
+          label: _localizeHint(context, widget.hints.lineGapLabel),
           value: widget.staffConfig.lineGapMm,
           min: 1.0,
           max: 3.8,
@@ -92,7 +96,7 @@ class _StaffSpacingGroupState extends State<StaffSpacingGroup> {
 
         // ── Tier 3b: System Gap Slider ────────────────────────────────────
         _AnnotatedSlider(
-          label: widget.hints.systemGapLabel,
+          label: _localizeHint(context, widget.hints.systemGapLabel),
           value: widget.staffConfig.systemGapMm,
           min: 8.0,
           max: 35.0,
@@ -102,7 +106,7 @@ class _StaffSpacingGroupState extends State<StaffSpacingGroup> {
 
         // ── Tier 3c: Staff Gap (Piano) — greyed when not applicable ───────
         _AnnotatedSlider(
-          label: widget.hints.interStaffGapLabel,
+          label: _localizeHint(context, widget.hints.interStaffGapLabel),
           value: widget.staffConfig.interStaffGapMm,
           min: 4.0,
           max: 20.0,
@@ -149,64 +153,69 @@ class _LiveStatsChip extends StatelessWidget {
       child: Row(
         children: [
           // ── Preset Selector (Dropdown) ─────────────────────────────────
-          PopupMenuButton<core.StaffSizePreset>(
-            onSelected: onPresetSelected,
-            tooltip: 'Select Staff Size Preset',
-            offset: const Offset(0, 42),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            itemBuilder: (context) => core.StaffSizePreset.values.map((p) {
-              final isSelected = p == selectedPreset;
-              return PopupMenuItem<core.StaffSizePreset>(
-                value: p,
+          Expanded(
+            child: PopupMenuButton<core.StaffSizePreset>(
+              onSelected: onPresetSelected,
+              tooltip: AppLocalizations.of(context)!.selectStaffSizePreset,
+              offset: const Offset(0, 42),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              itemBuilder: (context) => core.StaffSizePreset.values.map((p) {
+                final isSelected = p == selectedPreset;
+                return PopupMenuItem<core.StaffSizePreset>(
+                  value: p,
+                  child: Row(
+                    children: [
+                      Text(
+                        _getPresetLabel(context, p),
+                        style: TextStyle(
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? cs.primary : cs.onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        UnitFormatter.formatMm(p.staffHeightMm),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Row(
                   children: [
-                    Text(
-                      p.label,
-                      style: TextStyle(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? cs.primary : cs.onSurface,
+                    _MiniStaffIcon(color: rangeTint.withValues(alpha: 0.6)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _getPresetLabel(context, selectedPreset),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: rangeTint,
+                          letterSpacing: 0.2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${p.staffHeightMm.toStringAsFixed(1)} mm',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-                      ),
-                    ),
+                    Icon(Icons.arrow_drop_down,
+                        size: 18, color: rangeTint.withValues(alpha: 0.7)),
                   ],
                 ),
-              );
-            }).toList(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _MiniStaffIcon(color: rangeTint.withValues(alpha: 0.6)),
-                  const SizedBox(width: 8),
-                  Text(
-                    selectedPreset?.label ?? 'Custom',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: rangeTint,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  Icon(Icons.arrow_drop_down,
-                      size: 18, color: rangeTint.withValues(alpha: 0.7)),
-                ],
               ),
             ),
           ),
 
           // ── Vertical Divider ──────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
               width: 1,
               color: cs.outlineVariant.withValues(alpha: 0.5),
@@ -214,47 +223,47 @@ class _LiveStatsChip extends StatelessWidget {
           ),
 
           // ── Stats Readout (Non-interactive) ────────────────────────────
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontFamily: 'monospace',
-                        color: cs.onSurface.withValues(alpha: 0.8),
-                      ),
-                      children: [
-                        TextSpan(
-                          text: staffHeightMm.toStringAsFixed(1),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const TextSpan(text: 'mm staff height'),
-                      ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  maxLines: 1,
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontFamily: 'monospace',
+                      color: cs.onSurface.withValues(alpha: 0.8),
                     ),
-                  ),
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontFamily: 'monospace',
-                        color: cs.onSurface.withValues(alpha: 0.5),
+                    children: [
+                      TextSpan(
+                        text: UnitFormatter.formatMm(staffHeightMm, includeUnit: false),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      children: [
-                        TextSpan(
-                          text: lineGapMm.toStringAsFixed(2),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        const TextSpan(text: 'mm line gap'),
-                      ],
-                    ),
+                      TextSpan(text: ' ${AppLocalizations.of(context)!.staffHeightReadout}'),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                RichText(
+                  maxLines: 1,
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontFamily: 'monospace',
+                      color: cs.onSurface.withValues(alpha: 0.5),
+                    ),
+                    children: [
+                      TextSpan(
+                        text: UnitFormatter.formatMm(lineGapMm, decimals: 2, includeUnit: false),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      TextSpan(text: ' ${AppLocalizations.of(context)!.lineGapReadout}'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -321,8 +330,7 @@ class _MolaGuidanceHeader extends StatelessWidget {
             children: [
               // MOLA Badge with Definition Tooltip
               Tooltip(
-                message:
-                    'MOLA (Major Orchestra Librarians\' Association) is the global benchmark for professional music manuscript. Their standards ensure that notation remains perfectly legible for orchestral players from a music stand distance, even under challenging stage lighting conditions.',
+                message: AppLocalizations.of(context)!.molaTooltipMessage,
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 constraints: const BoxConstraints.tightFor(width: 320),
@@ -391,7 +399,7 @@ class _MolaGuidanceHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                isPinned ? 'Hide Details' : 'Pin Details',
+                isPinned ? AppLocalizations.of(context)!.hideDetails : AppLocalizations.of(context)!.pinDetails,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -510,6 +518,38 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
     final cs = Theme.of(context).colorScheme;
     final enabledAlpha = widget.enabled ? 1.0 : AppOpacities.disabled;
 
+    final valueInput = Container(
+      width: 62,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.5)),
+      ),
+      child: TextField(
+        controller: _controller,
+        enabled: widget.enabled,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: cs.onSurface,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+        decoration: const InputDecoration(
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+          border: InputBorder.none,
+        ),
+        onSubmitted: _submit,
+        onTapOutside: (_) {
+          _submit(_controller.text);
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+      ),
+    );
+
     return Opacity(
       opacity: enabledAlpha,
       child: IgnorePointer(
@@ -519,71 +559,39 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
           spacing: 2,
           children: [
             // ── Label + numeric field ─────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    color: cs.onSurfaceVariant,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Container(
-                  width: 62,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                    border:
-                        Border.all(color: cs.outline.withValues(alpha: 0.5)),
-                  ),
-                  child: TextField(
-                    controller: _controller,
-                    enabled: widget.enabled,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+            PropertyRow(
+              label: Text(
+                widget.label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
                     ),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      border: InputBorder.none,
-                    ),
-                    onSubmitted: _submit,
-                    onTapOutside: (_) {
-                      _submit(_controller.text);
-                      FocusManager.instance.primaryFocus?.unfocus();
-                    },
-                  ),
-                ),
-              ],
+              ),
+              control: valueInput,
             ),
 
             // ── Slider ───────────────────────────────────────────────
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 2.5,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                activeTrackColor: cs.primary,
-                inactiveTrackColor: cs.onSurface.withValues(alpha: 0.10),
-                thumbColor: cs.primary,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Slider(
-                  value: widget.value.clamp(widget.min, widget.max),
-                  min: widget.min,
-                  max: widget.max,
-                  onChanged: widget.enabled ? widget.onChanged : null,
+            CanvasStrictScope(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 2.5,
+                  thumbShape:
+                      const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  overlayShape:
+                      const RoundSliderOverlayShape(overlayRadius: 12),
+                  activeTrackColor: cs.primary,
+                  inactiveTrackColor:
+                      cs.onSurface.withValues(alpha: 0.10),
+                  thumbColor: cs.primary,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Slider(
+                    value: widget.value.clamp(widget.min, widget.max),
+                    min: widget.min,
+                    max: widget.max,
+                    onChanged: widget.enabled ? widget.onChanged : null,
+                  ),
                 ),
               ),
             ),
@@ -673,7 +681,7 @@ class _SpacingGuidanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final (icon, title, message, tint) = _context(staffHeightMm);
+    final (icon, title, message, tint) = _context(context, staffHeightMm);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
@@ -716,42 +724,72 @@ class _SpacingGuidanceCard extends StatelessWidget {
     );
   }
 
-  (IconData, String, String, Color) _context(double h) {
+  (IconData, String, String, Color) _context(BuildContext context, double h) {
+    final l10n = AppLocalizations.of(context)!;
     if (h >= 10.0) {
       return (
         Icons.school_rounded,
-        'Educational Standard',
-        'Large-scale staff for beginners and children. Ensures high legibility for educational materials and teaching pieces.',
+        l10n.molaEducationalTitle,
+        l10n.molaEducationalDesc,
         const Color(0xFF7C3AED), // violet
       );
     } else if (h >= 8.4) {
       return (
         Icons.stars_rounded,
-        'MOLA Optimal Part (8.5mm)',
-        'The gold standard for orchestral parts. Highly recommended by Major Orchestra Librarians for maximum readability on a music stand.',
+        l10n.molaOptimalTitle,
+        l10n.molaOptimalDesc,
         const Color(0xFF0EA5E9), // sky blue
       );
     } else if (h >= 7.0) {
       return (
         Icons.check_circle_outline_rounded,
-        'MOLA Minimum Part (7.0mm)',
-        'The acceptable minimum for orchestral players. Anything smaller is considered unacceptable by professional standards for parts.',
+        l10n.molaMinimumTitle,
+        l10n.molaMinimumDesc,
         const Color(0xFF059669), // emerald
       );
     } else if (h >= 4.0) {
       return (
         Icons.menu_book_rounded,
-        'Study & Score Scale',
-        'Legible for printed study scores and piano music. Below the 7.0mm limit, these are not suitable for professional orchestral parts.',
+        l10n.molaStudyTitle,
+        l10n.molaStudyDesc,
         const Color(0xFFF59E0B), // amber
       );
     } else {
       return (
         Icons.warning_amber_rounded,
-        'Technical Miniature',
-        'Below the legible score limit (4.0mm). Suitable only for pocket scores or specific technical diagrams, not for performance.',
+        l10n.molaTechnicalTitle,
+        l10n.molaTechnicalDesc,
         const Color(0xFFEF4444), // red
       );
     }
+  }
+}
+
+String _getPresetLabel(BuildContext context, core.StaffSizePreset? preset) {
+  final l10n = AppLocalizations.of(context)!;
+  if (preset == null) return l10n.presetCustomSize;
+  return switch (preset) {
+    core.StaffSizePreset.jumbo => l10n.presetJumbo,
+    core.StaffSizePreset.large => l10n.presetLarge,
+    core.StaffSizePreset.medium => l10n.presetMedium,
+    core.StaffSizePreset.small => l10n.presetSmall,
+  };
+}
+
+String _localizeHint(BuildContext context, String rawHint) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (rawHint) {
+    case 'Staff Size':
+      return l10n.staffSizeLabel;
+    case 'String Spacing':
+      return l10n.stringSpacingLabel;
+    case 'System Gap':
+      return l10n.systemGapLabel;
+    case 'Inter-staff Gap':
+      return l10n.interStaffGapLabel;
+    case 'Tab Distance':
+      return l10n.tabDistanceLabel;
+    default:
+      return rawHint;
   }
 }

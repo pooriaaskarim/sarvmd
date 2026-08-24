@@ -35,12 +35,11 @@ class DropdownSetting<T extends Enum> extends StatelessWidget {
           icon: Icon(Icons.arrow_drop_down,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
           isExpanded: true,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.1,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.1,
+              ),
           onChanged: (v) {
             if (v != null) onChanged(v);
           },
@@ -49,7 +48,7 @@ class DropdownSetting<T extends Enum> extends StatelessWidget {
             return DropdownMenuItem<T>(
               value: opt,
               child: Padding(
-                padding: const EdgeInsets.only(left: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(label),
               ),
             );

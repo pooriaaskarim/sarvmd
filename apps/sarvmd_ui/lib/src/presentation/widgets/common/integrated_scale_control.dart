@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'property_row.dart';
+import '../../../core/theme/layout_policy.dart';
 import '../../../logic/view/view_cubit.dart';
 import '../../../logic/view/view_state.dart';
 import '../dialogs/calibration_dialog.dart';
 import '../../../core/theme/app_metrics.dart';
+import '../../../core/utils/unit_formatter.dart';
 
 enum ZoomPreset {
   actualSize,
@@ -34,9 +37,10 @@ class IntegratedScaleControl extends StatelessWidget {
         final isDefault = (calibrationFactor - 1.0).abs() < 0.001;
         final effectivePpi = (calibrationFactor * 96).round();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        return CanvasStrictScope(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // ── Row 1: Status & Calibration ─────────────────────────────
             _StatusHeader(
               currentZoom: currentZoom,
@@ -65,7 +69,8 @@ class IntegratedScaleControl extends StatelessWidget {
               },
             ),
           ],
-        );
+        ),
+      );
       },
     );
   }
@@ -89,23 +94,17 @@ class _StatusHeader extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Large Zoom Percentage
-        Text(
-          '${(currentZoom * 100).round()}%',
-          style: tt.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1.0,
-            fontFeatures: const [FontFeature.tabularFigures()],
-            color: cs.onSurface,
-          ),
+    return PropertyRow(
+      label: Text(
+        UnitFormatter.formatPercent(currentZoom),
+        style: tt.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: -1.0,
+          fontFeatures: const [FontFeature.tabularFigures()],
+          color: cs.onSurface,
         ),
-
-        // Calibration Status Chip
-        Material(
+      ),
+      control: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onCalibrate,
@@ -137,8 +136,7 @@ class _StatusHeader extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     isDefault ? 'Standard' : '$effectivePpi PPI',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: tt.labelSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: isDefault ? cs.onSurfaceVariant : cs.primary,
                     ),
@@ -148,7 +146,6 @@ class _StatusHeader extends StatelessWidget {
             ),
           ),
         ),
-      ],
     );
   }
 }

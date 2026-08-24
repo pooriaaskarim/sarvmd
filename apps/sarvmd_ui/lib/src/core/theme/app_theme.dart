@@ -70,23 +70,75 @@ enum SarvAccent {
 /// manuscript content always takes centre stage; the accent colour
 /// is applied to interactive controls and highlights only.
 abstract final class AppTheme {
-  static ThemeData build(SarvAccent accent, Brightness brightness) {
+  static ThemeData build(SarvAccent accent, Brightness brightness, {bool isPersian = false}) {
     final scheme = _scheme(accent, brightness);
-    return ThemeData(
+    final baseTheme = ThemeData(
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surface,
       useMaterial3: true,
-      fontFamily: 'Roboto',
-      // Shared extension for custom colors
+      fontFamily: isPersian ? 'Vazirmatn' : 'Roboto',
+      fontFamilyFallback: const ['Vazirmatn', 'Tahoma', 'sans-serif'],
+      // Shared extension for custom colors and semantic typography
       extensions: [
         SarvThemeExtension(
           paperColor: brightness == Brightness.light
               ? accent.paperLight
               : accent.paperDark,
+          brandSubtitleStyle: isPersian
+              ? TextStyle(
+                  color: scheme.primary.withValues(alpha: 0.85),
+                  fontSize: 23,
+                  fontFamily: 'IranNastaliq',
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  height: 1.35,
+                )
+              : TextStyle(
+                  color: scheme.primary.withValues(alpha: 0.85),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                  height: 1.3,
+                ),
         ),
       ],
     );
+
+    if (isPersian) {
+      TextStyle scale(TextStyle style, double defaultSize, {double minSize = 12.0, FontWeight defaultWeight = FontWeight.normal}) {
+        final rawSize = style.fontSize ?? defaultSize;
+        final scaledSize = (rawSize * 1.18).clamp(minSize, 64.0);
+        return style.copyWith(
+          fontFamily: 'Vazirmatn',
+          fontSize: scaledSize,
+          height: 1.35,
+          fontWeight: style.fontWeight ?? defaultWeight,
+        );
+      }
+
+      final t = baseTheme.textTheme;
+      return baseTheme.copyWith(
+        textTheme: t.copyWith(
+          displayLarge: scale(t.displayLarge ?? const TextStyle(), 57),
+          displayMedium: scale(t.displayMedium ?? const TextStyle(), 45),
+          displaySmall: scale(t.displaySmall ?? const TextStyle(), 36),
+          headlineLarge: scale(t.headlineLarge ?? const TextStyle(), 32),
+          headlineMedium: scale(t.headlineMedium ?? const TextStyle(), 28),
+          headlineSmall: scale(t.headlineSmall ?? const TextStyle(), 24),
+          titleLarge: scale(t.titleLarge ?? const TextStyle(), 22, minSize: 18),
+          titleMedium: scale(t.titleMedium ?? const TextStyle(), 16, minSize: 15),
+          titleSmall: scale(t.titleSmall ?? const TextStyle(), 14, minSize: 13.5, defaultWeight: FontWeight.w500),
+          bodyLarge: scale(t.bodyLarge ?? const TextStyle(), 16, minSize: 15),
+          bodyMedium: scale(t.bodyMedium ?? const TextStyle(), 14, minSize: 13.5),
+          bodySmall: scale(t.bodySmall ?? const TextStyle(), 12, minSize: 12.5, defaultWeight: FontWeight.w500),
+          labelLarge: scale(t.labelLarge ?? const TextStyle(), 14, minSize: 13.5, defaultWeight: FontWeight.w600),
+          labelMedium: scale(t.labelMedium ?? const TextStyle(), 12, minSize: 12.5, defaultWeight: FontWeight.w500),
+          labelSmall: scale(t.labelSmall ?? const TextStyle(), 11, minSize: 12.0, defaultWeight: FontWeight.w500),
+        ),
+      );
+    }
+    return baseTheme;
   }
 
   static ColorScheme _scheme(SarvAccent accent, Brightness brightness) {
@@ -171,13 +223,23 @@ abstract final class AppTheme {
 
 /// Custom theme extension for SarvMD-specific design tokens.
 class SarvThemeExtension extends ThemeExtension<SarvThemeExtension> {
-  const SarvThemeExtension({required this.paperColor});
+  const SarvThemeExtension({
+    required this.paperColor,
+    required this.brandSubtitleStyle,
+  });
 
   final Color paperColor;
+  final TextStyle brandSubtitleStyle;
 
   @override
-  SarvThemeExtension copyWith({Color? paperColor}) {
-    return SarvThemeExtension(paperColor: paperColor ?? this.paperColor);
+  SarvThemeExtension copyWith({
+    Color? paperColor,
+    TextStyle? brandSubtitleStyle,
+  }) {
+    return SarvThemeExtension(
+      paperColor: paperColor ?? this.paperColor,
+      brandSubtitleStyle: brandSubtitleStyle ?? this.brandSubtitleStyle,
+    );
   }
 
   @override
@@ -185,6 +247,8 @@ class SarvThemeExtension extends ThemeExtension<SarvThemeExtension> {
     if (other is! SarvThemeExtension) return this;
     return SarvThemeExtension(
       paperColor: Color.lerp(paperColor, other.paperColor, t)!,
+      brandSubtitleStyle:
+          TextStyle.lerp(brandSubtitleStyle, other.brandSubtitleStyle, t)!,
     );
   }
 }
