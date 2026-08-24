@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 /// State representation for application localization.
 class LocaleState {
   final Locale locale;
+  final bool isTransitioning;
 
   const LocaleState({
-    this.locale = const Locale('fa'),
+    this.locale = const Locale('en'),
+    this.isTransitioning = false,
   });
 
   bool get isPersian => locale.languageCode == 'fa';
@@ -18,9 +20,13 @@ class LocaleState {
 
   String get defaultFontFamily => isPersian ? 'IranNastaliq' : 'Roboto';
 
-  LocaleState copyWith({Locale? locale}) {
+  LocaleState copyWith({
+    Locale? locale,
+    bool? isTransitioning,
+  }) {
     return LocaleState(
       locale: locale ?? this.locale,
+      isTransitioning: isTransitioning ?? this.isTransitioning,
     );
   }
 
@@ -29,8 +35,9 @@ class LocaleState {
       identical(this, other) ||
       other is LocaleState &&
           runtimeType == other.runtimeType &&
-          locale == other.locale;
+          locale == other.locale &&
+          isTransitioning == other.isTransitioning;
 
   @override
-  int get hashCode => locale.hashCode;
+  int get hashCode => Object.hash(locale, isTransitioning);
 }

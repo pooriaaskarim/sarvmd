@@ -814,4 +814,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get apply => 'اعمال';
+
+  @override
+  String get changingLanguage => 'در حال تغییر زبان...';
 }

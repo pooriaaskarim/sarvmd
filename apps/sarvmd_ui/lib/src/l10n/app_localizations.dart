@@ -1615,6 +1615,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply'**
   String get apply;
+
+  /// No description provided for @changingLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing language...'**
+  String get changingLanguage;
 }
 
 class _AppLocalizationsDelegate

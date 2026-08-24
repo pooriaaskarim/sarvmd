@@ -812,4 +812,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get apply => 'Apply';
+
+  @override
+  String get changingLanguage => 'Changing language...';
 }

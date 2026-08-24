@@ -322,5 +322,6 @@
   "calibrationStep3": "Click Apply. Done.",
   "baseline96Dpi": "baseline (96 DPI)",
   "physicalDensity": "physical density",
-  "apply": "Apply"
+  "apply": "Apply",
+  "changingLanguage": "Changing language..."
 }

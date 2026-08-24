@@ -260,5 +260,6 @@
   "calibrationStep3": "روی اعمال کلیک کنید. تمام.",
   "baseline96Dpi": "پایه (۹۶ DPI)",
   "physicalDensity": "تراکم فیزیکی",
-  "apply": "اعمال"
+  "apply": "اعمال",
+  "changingLanguage": "در حال تغییر زبان..."
 }
