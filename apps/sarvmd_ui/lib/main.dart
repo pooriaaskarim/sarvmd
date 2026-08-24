@@ -18,7 +18,7 @@ import 'src/logic/locale/locale_cubit.dart';
 import 'src/logic/locale/locale_state.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/layout_policy.dart';
-import 'src/presentation/screens/editor_screen.dart';
+import 'src/presentation/widgets/specialized/launch_coordinator.dart';
 
 void main() {
   // 1. Initialize logging before anything else.
@@ -106,7 +106,7 @@ class SarvApp extends StatelessWidget {
                   child: child!,
                 );
               },
-              home: const EditorScreen(),
+              home: const LaunchCoordinator(),
             );
           },
         );
