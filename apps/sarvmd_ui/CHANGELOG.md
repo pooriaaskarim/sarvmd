@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.1] - 2026-08-24
+
+### Added
+- **Calligraphic Splash Screen & Launch Coordinator**: Dynamic startup boot coordinator (`LaunchCoordinator`) executing a shared-element Hero transition into `EditorScreen`, official calligraphic handwriting logo animation (`SarvSplashScreen`), automated version parsing from `CHANGELOG.md`, and progress indicator.
+- **Glassmorphic Language Transition Overlay**: `LanguageTransitionOverlay` component wrapping `MaterialApp` with a real-time backdrop blur filter (`ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0)`) and animated rotation emblem (`_AnimatedLanguageBadge`) during language switches.
+- **URL Parameterization & Web Deep Linking**: `parseLocaleFromUri()` in `LocaleCubit` supporting query parameters (`?lang=en` / `?lang=fa`, `?locale=...`) and hash fragments, enabling direct web navigation into English or Persian UI modes with persistent `SharedPreferences` caching.
+
+### Changed
+- **Default Locale to English**: Updated default application fallback locale to English (`en`) while preserving persistent user language selection across launches.
+- **Persian Documentation & Readme Refinement**: Refined tone, readability, and technical terminology in Persian documentation (`README.fa.md`) and updated live web app badge links with `?lang=en` and `?lang=fa` parameters across English and Persian READMEs.
+
+---
+
 ## [0.6.0] - 2026-08-24
 
 ### Added

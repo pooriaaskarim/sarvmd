@@ -4,7 +4,8 @@
 abstract class AppVersion {
   static const String name = 'SarvMD';
   static const String tagline = 'Manuscript Designer';
-  static const String fallbackVersion = '0.5.1';
+  static const String version = '0.6.1';
+  static const String fallbackVersion = '0.6.1';
   static const String description =
       'A zero-dependency music manuscript notebook generator powered by Gouldian spacing and high-fidelity LaTeX vector compilation.';
   static const String author = 'Pooria Askari Moqaddam';

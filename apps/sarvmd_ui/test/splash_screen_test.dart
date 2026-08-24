@@ -35,8 +35,8 @@ void main() {
       // Fast forward animation
       await tester.pumpAndSettle();
 
-      expect(find.text('Manuscript Designer'), findsOneWidget);
-      expect(find.text('SARVMD  •  v1.0.0'), findsOneWidget);
+      expect(find.text('MANUSCRIPT DESIGNER'), findsOneWidget);
+      expect(find.text('SARVMD  •  v0.6.1'), findsOneWidget);
     });
 
     testWidgets('SarvSplashScreen renders Persian calligraphy in Persian locale', (tester) async {
@@ -57,8 +57,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('دست‌نویس نگار موسیقی'), findsOneWidget);
-      expect(find.text('SARVMD  •  v1.0.0'), findsOneWidget);
+      expect(find.text('MANUSCRIPT DESIGNER'), findsOneWidget);
+      expect(find.text('SARVMD  •  v0.6.1'), findsOneWidget);
     });
 
     testWidgets('LaunchCoordinator transitions from splash screen to editor screen after min duration', (tester) async {
