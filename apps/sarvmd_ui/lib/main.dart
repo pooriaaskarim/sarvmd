@@ -19,6 +19,7 @@ import 'src/logic/locale/locale_state.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/layout_policy.dart';
 import 'src/presentation/widgets/specialized/launch_coordinator.dart';
+import 'src/presentation/widgets/common/language_transition_overlay.dart';
 
 void main() {
   // 1. Initialize logging before anything else.
@@ -89,8 +90,8 @@ class SarvApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               locale: localeState.locale,
               supportedLocales: const [
-                Locale('fa'),
                 Locale('en'),
+                Locale('fa'),
               ],
               localizationsDelegates: const [
                 AppLocalizations.delegate,
@@ -103,7 +104,9 @@ class SarvApp extends StatelessWidget {
               darkTheme: AppTheme.build(accent, Brightness.dark, isPersian: localeState.isPersian),
               builder: (context, child) {
                 return BilingualFluidScope(
-                  child: child!,
+                  child: LanguageTransitionOverlay(
+                    child: child!,
+                  ),
                 );
               },
               home: const LaunchCoordinator(),
