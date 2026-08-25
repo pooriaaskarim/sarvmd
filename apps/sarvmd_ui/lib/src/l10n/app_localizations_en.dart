@@ -815,4 +815,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get changingLanguage => 'Changing language...';
+
+  @override
+  String get continuousBarlinesTooltip =>
+      'Connect barlines continuously across staves';
+
+  @override
+  String staffNumber(int number) {
+    return 'Staff $number';
+  }
+
+  @override
+  String linesCount(int count) {
+    return '$count Lines';
+  }
+
+  @override
+  String get noClef => 'No Clef';
+
+  @override
+  String clefWithLine(String clef, int line) {
+    return '$clef (L$line)';
+  }
+
+  @override
+  String get hidden => 'Hidden';
+
+  @override
+  String get configureStaff => 'Configure Staff';
+
+  @override
+  String get removeStaff => 'Remove Staff';
+
+  @override
+  String get connectorNone => 'None';
+
+  @override
+  String get connectorNoneTooltip => 'No Connector';
+
+  @override
+  String get connectorBracket => 'Bracket';
+
+  @override
+  String get connectorBracketTooltip => 'Bracket Connector';
+
+  @override
+  String get connectorBrace => 'Brace';
+
+  @override
+  String get connectorBraceTooltip => 'Brace Connector';
 }

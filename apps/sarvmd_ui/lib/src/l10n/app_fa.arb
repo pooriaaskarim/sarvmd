@@ -261,5 +261,19 @@
   "baseline96Dpi": "پایه (۹۶ DPI)",
   "physicalDensity": "تراکم فیزیکی",
   "apply": "اعمال",
-  "changingLanguage": "در حال تغییر زبان..."
+  "changingLanguage": "در حال تغییر زبان...",
+  "continuousBarlinesTooltip": "اتصال پیوسته خطوط میزان بین حامل‌ها",
+  "staffNumber": "حامل {number}",
+  "linesCount": "{count} خط",
+  "noClef": "بدون کلید",
+  "clefWithLine": "{clef} (خط {line})",
+  "hidden": "مخفی",
+  "configureStaff": "تنظیمات حامل",
+  "removeStaff": "حذف حامل",
+  "connectorNone": "بدون اتصال",
+  "connectorNoneTooltip": "بدون خط اتصال",
+  "connectorBracket": "قلاب",
+  "connectorBracketTooltip": "خط اتصال قلاب (کروشه)",
+  "connectorBrace": "آکولاد",
+  "connectorBraceTooltip": "خط اتصال آکولاد"
 }

@@ -68,7 +68,7 @@ class SystemHierarchyPanel extends StatelessWidget {
 
   Widget _buildMolaSummary(BuildContext context, core.PageConfig state) {
     final cs = Theme.of(context).colorScheme;
-    final isRtl = Localizations.localeOf(context).languageCode == 'fa';
+    final l10n = AppLocalizations.of(context)!;
     final staffCount = state.staffCount;
     final totalHeight = state.systemHeight;
 
@@ -80,11 +80,10 @@ class SystemHierarchyPanel extends StatelessWidget {
         border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
-        crossAxisAlignment:
-            isRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            AppLocalizations.of(context)!.ensembleSummary,
+            l10n.ensembleSummary,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -94,16 +93,14 @@ class SystemHierarchyPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _SummaryRow(
-              label: AppLocalizations.of(context)!.totalStaves,
+              label: l10n.totalStaves,
               value: '$staffCount'),
           _SummaryRow(
-              label: AppLocalizations.of(context)!.systemHeight,
+              label: l10n.systemHeight,
               value: UnitFormatter.formatMm(totalHeight)),
           _SummaryRow(
-            label: AppLocalizations.of(context)!.density,
-            value: isRtl
-                ? '${notifier.layout.systemCount} سیستم در صفحه'
-                : '${notifier.layout.systemCount} systems/page',
+            label: l10n.density,
+            value: l10n.systemsCount(notifier.layout.systemCount),
           ),
         ],
       ),
@@ -118,28 +115,17 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRtl = Localizations.localeOf(context).languageCode == 'fa';
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (isRtl) ...[
-            Text(
-              value,
-              style:
-                  const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-            ),
-            Text(label, style: const TextStyle(fontSize: 11)),
-          ] else ...[
-            Text(label, style: const TextStyle(fontSize: 11)),
-            Text(
-              value,
-              style:
-                  const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-            ),
-          ],
+          Text(label, style: const TextStyle(fontSize: 11)),
+          Text(
+            value,
+            style:
+                const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -163,6 +149,7 @@ class _StaffGroupWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -211,7 +198,7 @@ class _StaffGroupWidget extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      isRoot ? 'Main Ensemble' : 'Sub Group',
+                      isRoot ? l10n.mainEnsemble : l10n.subGroup,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -253,7 +240,7 @@ class _StaffGroupWidget extends StatelessWidget {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Continuous Barlines',
+                            l10n.continuousBarlines,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -263,7 +250,7 @@ class _StaffGroupWidget extends StatelessWidget {
                           ),
                         ),
                         Tooltip(
-                          message: 'Connect barlines continuously across staves',
+                          message: l10n.continuousBarlinesTooltip,
                           child: Transform.scale(
                             scale: 0.75,
                             child: Switch(
@@ -343,9 +330,11 @@ class _StaffItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     // Build standard instrument label
-    final String displayName = staff.instrumentName ?? 'Staff ${index + 1}';
+    final String displayName =
+        staff.instrumentName ?? l10n.staffNumber(index + 1);
     final String abbrevInfo = staff.instrumentAbbreviation != null &&
             staff.instrumentAbbreviation!.isNotEmpty
         ? ' (${staff.instrumentAbbreviation})'
@@ -353,15 +342,16 @@ class _StaffItem extends StatelessWidget {
     final String labelText = '$displayName$abbrevInfo';
 
     // Clef description
-    String clefLabel = 'No Clef';
+    String clefLabel = l10n.noClef;
     if (staff.clef != null) {
-      clefLabel = switch (staff.clef!.symbol) {
-        core.ClefSymbol.g => 'Treble (L${staff.clef!.anchorLine})',
-        core.ClefSymbol.c => 'Alto (L${staff.clef!.anchorLine})',
-        core.ClefSymbol.f => 'Bass (L${staff.clef!.anchorLine})',
-        core.ClefSymbol.tab => 'TAB',
-        core.ClefSymbol.percussion => 'Percussion',
+      final name = switch (staff.clef!.symbol) {
+        core.ClefSymbol.g => l10n.trebleClef,
+        core.ClefSymbol.c => l10n.altoClef,
+        core.ClefSymbol.f => l10n.bassClef,
+        core.ClefSymbol.tab => l10n.categoryTablature,
+        core.ClefSymbol.percussion => l10n.categoryPercussion,
       };
+      clefLabel = l10n.clefWithLine(name, staff.clef!.anchorLine);
     }
 
     return Container(
@@ -437,10 +427,10 @@ class _StaffItem extends StatelessWidget {
                       spacing: 4,
                       runSpacing: 4,
                       children: [
-                        _buildBadge(context, '${staff.lines} lines'),
+                        _buildBadge(context, l10n.linesCount(staff.lines)),
                         _buildBadge(context, clefLabel),
                         if (!staff.labelVisible)
-                          _buildBadge(context, 'Hidden', color: cs.error),
+                          _buildBadge(context, l10n.hidden, color: cs.error),
                       ],
                     ),
                   ],
@@ -454,7 +444,7 @@ class _StaffItem extends StatelessWidget {
             onPressed: () => _openConfigDialog(context),
             icon: Icon(Icons.tune_outlined,
                 size: 16, color: cs.primary.withValues(alpha: 0.8)),
-            tooltip: 'Configure Staff',
+            tooltip: l10n.configureStaff,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             padding: const EdgeInsets.all(4),
           ),
@@ -462,7 +452,7 @@ class _StaffItem extends StatelessWidget {
             onPressed: () => notifier.removeStaff(index),
             icon: Icon(Icons.remove_circle_outline,
                 size: 16, color: cs.error.withValues(alpha: 0.7)),
-            tooltip: 'Remove Staff',
+            tooltip: l10n.removeStaff,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             padding: const EdgeInsets.all(4),
           ),
@@ -508,6 +498,7 @@ class _ConnectorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SegmentedButton<core.SystemConnector>(
       segments: [
         ButtonSegment(
@@ -515,24 +506,24 @@ class _ConnectorPicker extends StatelessWidget {
           icon: const Icon(Icons.linear_scale, size: 14),
           label: compact
               ? null
-              : const Text('None', style: TextStyle(fontSize: 10)),
-          tooltip: 'No Connector',
+              : Text(l10n.connectorNone, style: const TextStyle(fontSize: 10)),
+          tooltip: l10n.connectorNoneTooltip,
         ),
         ButtonSegment(
           value: core.SystemConnector.bracket,
           icon: const Icon(Icons.reorder, size: 14),
           label: compact
               ? null
-              : const Text('Bracket', style: TextStyle(fontSize: 10)),
-          tooltip: 'Bracket Connector',
+              : Text(l10n.connectorBracket, style: const TextStyle(fontSize: 10)),
+          tooltip: l10n.connectorBracketTooltip,
         ),
         ButtonSegment(
           value: core.SystemConnector.brace,
           icon: const Icon(Icons.code, size: 14),
           label: compact
               ? null
-              : const Text('Brace', style: TextStyle(fontSize: 10)),
-          tooltip: 'Brace Connector',
+              : Text(l10n.connectorBrace, style: const TextStyle(fontSize: 10)),
+          tooltip: l10n.connectorBraceTooltip,
         ),
       ],
       selected: {value},

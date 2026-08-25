@@ -1621,6 +1621,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Changing language...'**
   String get changingLanguage;
+
+  /// No description provided for @continuousBarlinesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect barlines continuously across staves'**
+  String get continuousBarlinesTooltip;
+
+  /// No description provided for @staffNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff {number}'**
+  String staffNumber(int number);
+
+  /// No description provided for @linesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Lines'**
+  String linesCount(int count);
+
+  /// No description provided for @noClef.
+  ///
+  /// In en, this message translates to:
+  /// **'No Clef'**
+  String get noClef;
+
+  /// No description provided for @clefWithLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{clef} (L{line})'**
+  String clefWithLine(String clef, int line);
+
+  /// No description provided for @hidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get hidden;
+
+  /// No description provided for @configureStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure Staff'**
+  String get configureStaff;
+
+  /// No description provided for @removeStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Staff'**
+  String get removeStaff;
+
+  /// No description provided for @connectorNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get connectorNone;
+
+  /// No description provided for @connectorNoneTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'No Connector'**
+  String get connectorNoneTooltip;
+
+  /// No description provided for @connectorBracket.
+  ///
+  /// In en, this message translates to:
+  /// **'Bracket'**
+  String get connectorBracket;
+
+  /// No description provided for @connectorBracketTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Bracket Connector'**
+  String get connectorBracketTooltip;
+
+  /// No description provided for @connectorBrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Brace'**
+  String get connectorBrace;
+
+  /// No description provided for @connectorBraceTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Brace Connector'**
+  String get connectorBraceTooltip;
 }
 
 class _AppLocalizationsDelegate

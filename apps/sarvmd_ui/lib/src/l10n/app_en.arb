@@ -323,5 +323,43 @@
   "baseline96Dpi": "baseline (96 DPI)",
   "physicalDensity": "physical density",
   "apply": "Apply",
-  "changingLanguage": "Changing language..."
+  "changingLanguage": "Changing language...",
+  "continuousBarlinesTooltip": "Connect barlines continuously across staves",
+  "staffNumber": "Staff {number}",
+  "@staffNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "linesCount": "{count} Lines",
+  "@linesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noClef": "No Clef",
+  "clefWithLine": "{clef} (L{line})",
+  "@clefWithLine": {
+    "placeholders": {
+      "clef": {
+        "type": "String"
+      },
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "hidden": "Hidden",
+  "configureStaff": "Configure Staff",
+  "removeStaff": "Remove Staff",
+  "connectorNone": "None",
+  "connectorNoneTooltip": "No Connector",
+  "connectorBracket": "Bracket",
+  "connectorBracketTooltip": "Bracket Connector",
+  "connectorBrace": "Brace",
+  "connectorBraceTooltip": "Brace Connector"
 }

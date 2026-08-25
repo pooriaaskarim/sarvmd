@@ -817,4 +817,52 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get changingLanguage => 'در حال تغییر زبان...';
+
+  @override
+  String get continuousBarlinesTooltip => 'اتصال پیوسته خطوط میزان بین حامل‌ها';
+
+  @override
+  String staffNumber(int number) {
+    return 'حامل $number';
+  }
+
+  @override
+  String linesCount(int count) {
+    return '$count خط';
+  }
+
+  @override
+  String get noClef => 'بدون کلید';
+
+  @override
+  String clefWithLine(String clef, int line) {
+    return '$clef (خط $line)';
+  }
+
+  @override
+  String get hidden => 'مخفی';
+
+  @override
+  String get configureStaff => 'تنظیمات حامل';
+
+  @override
+  String get removeStaff => 'حذف حامل';
+
+  @override
+  String get connectorNone => 'بدون اتصال';
+
+  @override
+  String get connectorNoneTooltip => 'بدون خط اتصال';
+
+  @override
+  String get connectorBracket => 'قلاب';
+
+  @override
+  String get connectorBracketTooltip => 'خط اتصال قلاب (کروشه)';
+
+  @override
+  String get connectorBrace => 'آکولاد';
+
+  @override
+  String get connectorBraceTooltip => 'خط اتصال آکولاد';
 }
