@@ -67,9 +67,14 @@ class _ProfilePickerState extends State<ProfilePicker> {
           ...core.ProfileCategory.values
         ];
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        final isPersian = Localizations.localeOf(context).languageCode == 'fa';
+        final textDirection = isPersian ? TextDirection.rtl : TextDirection.ltr;
+
+        return Directionality(
+          textDirection: textDirection,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // ── Responsive Category Pill Selector (Wraps cleanly to sidebar width) ───
             Wrap(
               spacing: 6,
@@ -162,9 +167,10 @@ class _ProfilePickerState extends State<ProfilePicker> {
               ),
             ),
           ],
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 }
 
@@ -188,18 +194,20 @@ class _ProfileCard extends StatefulWidget {
 class _ProfileCardState extends State<_ProfileCard> {
   bool _isHovered = false;
 
-  String _getCategoryLabel(core.ProfileCategory category) {
+  String _getCategoryLabel(
+      BuildContext context, core.ProfileCategory category) {
+    final l10n = AppLocalizations.of(context)!;
     switch (category) {
       case core.ProfileCategory.standard:
-        return 'Standard';
+        return l10n.categoryStandard;
       case core.ProfileCategory.ensemble:
-        return 'Ensemble';
+        return l10n.categoryEnsemble;
       case core.ProfileCategory.tablature:
-        return 'Tablature';
+        return l10n.categoryTablature;
       case core.ProfileCategory.percussion:
-        return 'Percussion';
+        return l10n.categoryPercussion;
       case core.ProfileCategory.blank:
-        return 'Other';
+        return l10n.categoryOther;
     }
   }
 
@@ -285,6 +293,7 @@ class _ProfileCardState extends State<_ProfileCard> {
                       _getProfileTitle(context, widget.profile),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.start,
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: active ? FontWeight.bold : FontWeight.w600,
@@ -301,10 +310,12 @@ class _ProfileCardState extends State<_ProfileCard> {
                       const SizedBox(height: 2),
                       SizedBox(
                         height: 32, // Accommodate Persian line height
+                        width: double.infinity,
                         child: Text(
                           _getProfileDescription(context, widget.profile)!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.start,
                           style: TextStyle(
                             fontSize: 11,
                             height: 1.3,
@@ -332,8 +343,9 @@ class _ProfileCardState extends State<_ProfileCard> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          _getCategoryLabel(widget.profile.category)
+                          _getCategoryLabel(context, widget.profile.category)
                               .toUpperCase(),
+                          textAlign: TextAlign.start,
                           style: TextStyle(
                             fontSize: 7,
                             fontWeight: FontWeight.w800,
