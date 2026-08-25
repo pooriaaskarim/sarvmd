@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_version.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../logic/services/changelog_service.dart';
@@ -34,6 +35,38 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
   void initState() {
     super.initState();
     _changelogFuture = ChangelogService.loadChangelog();
+  }
+
+  Future<void> _launchGitHub() async {
+    final uri = Uri.parse(AppVersion.githubUrl);
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.inAppBrowserView,
+      );
+      if (!launched) {
+        await launchUrl(uri);
+      }
+    } catch (_) {
+      await Clipboard.setData(const ClipboardData(text: AppVersion.githubUrl));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.link, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text('GitHub URL copied to clipboard'),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    }
   }
 
   void _copyBuildInfo(BuildContext context, String version, String date) {
@@ -216,6 +249,18 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
                       Row(
                         children: [
                           OutlinedButton.icon(
+                            onPressed: _launchGitHub,
+                            icon: const Icon(Icons.code_outlined, size: 14),
+                            label: const Text('GitHub',
+                                style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          OutlinedButton.icon(
                             onPressed: () => _openLicenses(context, version),
                             icon: const Icon(Icons.gavel_outlined, size: 14),
                             label: const Text('Licenses',
@@ -226,7 +271,7 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           IconButton(
                             onPressed: () =>
                                 _copyBuildInfo(context, version, date),
