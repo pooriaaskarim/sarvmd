@@ -17,50 +17,55 @@ class SystemHierarchyPanel extends StatelessWidget {
       builder: (context, state) {
         final cs = Theme.of(context).colorScheme;
         final layout = state.systemLayout;
+        final isPersian = Localizations.localeOf(context).languageCode == 'fa';
+        final textDirection = isPersian ? TextDirection.rtl : TextDirection.ltr;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    AppLocalizations.of(context)!.systemSettings,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: cs.onSurface,
-                      letterSpacing: 0.5,
+        return Directionality(
+          textDirection: textDirection,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.systemSettings,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                        letterSpacing: 0.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                TextButton.icon(
-                  onPressed: () => notifier.addStaff(),
-                  icon: const Icon(Icons.add_circle_outline, size: 14),
-                  label:
-                      Text(AppLocalizations.of(context)!.addStaff, style: const TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  TextButton.icon(
+                    onPressed: () => notifier.addStaff(),
+                    icon: const Icon(Icons.add_circle_outline, size: 14),
+                    label: Text(AppLocalizations.of(context)!.addStaff,
+                        style: const TextStyle(fontSize: 12)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _StaffGroupWidget(
-              group: layout.rootGroup,
-              isRoot: true,
-              notifier: notifier,
-            ),
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 16),
-            _buildMolaSummary(context, state),
-          ],
+                ],
+              ),
+              const SizedBox(height: 12),
+              _StaffGroupWidget(
+                group: layout.rootGroup,
+                isRoot: true,
+                notifier: notifier,
+              ),
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 16),
+              _buildMolaSummary(context, state),
+            ],
+          ),
         );
       },
     );
@@ -164,7 +169,7 @@ class _StaffGroupWidget extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 300;
+          final isCompact = constraints.maxWidth < 360;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
