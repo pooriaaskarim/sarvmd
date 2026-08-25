@@ -3,7 +3,11 @@
 # See the LICENSE file in the project root for details.
 
 name: sarvmd_cli
-description: CLI application for Sarv music score notebook.
+description: "Command-line interface tool for SarvMD music manuscript designer and LaTeX vector compiler."
+homepage: https://github.com/pooriaaskarim/sarvmd
+repository: https://github.com/pooriaaskarim/sarvmd
+issue_tracker: https://github.com/pooriaaskarim/sarvmd/issues
+documentation: https://github.com/pooriaaskarim/sarvmd#readme
 publish_to: none
 resolution: workspace
 environment:

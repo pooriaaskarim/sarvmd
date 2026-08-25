@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'SarvMD';
 
   @override
-  String get appSubtitle => 'Music Manuscript Generator';
+  String get appSubtitle => 'Manuscript Designer';
 
   @override
   String get language => 'Language';

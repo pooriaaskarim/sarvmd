@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @appSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Music Manuscript Generator'**
+  /// **'Manuscript Designer'**
   String get appSubtitle;
 
   /// No description provided for @language.

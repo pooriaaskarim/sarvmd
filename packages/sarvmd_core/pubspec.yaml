@@ -3,7 +3,11 @@
 # See the LICENSE file in the project root for details.
 
 name: sarvmd_core
-description: Core library for Sarv music score notebook — config, layout, LaTeX emitter, compiler.
+description: "Core library for SarvMD music manuscript designer — layout engine, LaTeX emitter, compiler, and vector engraving pipeline."
+homepage: https://github.com/pooriaaskarim/sarvmd
+repository: https://github.com/pooriaaskarim/sarvmd
+issue_tracker: https://github.com/pooriaaskarim/sarvmd/issues
+documentation: https://github.com/pooriaaskarim/sarvmd#readme
 publish_to: none
 resolution: workspace
 environment:

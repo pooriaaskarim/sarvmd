@@ -3,8 +3,12 @@
 # See the LICENSE file in the project root for details.
 
 name: sarvmd_ui
-description: "A new Flutter project."
+description: "A flexible, high-precision music manuscript designer for composers, educators, and engravers to create custom printable staff notebooks and layout designs."
 version: 0.6.1
+homepage: https://github.com/pooriaaskarim/sarvmd
+repository: https://github.com/pooriaaskarim/sarvmd
+issue_tracker: https://github.com/pooriaaskarim/sarvmd/issues
+documentation: https://github.com/pooriaaskarim/sarvmd#readme
 publish_to: 'none'
 resolution: workspace
 environment:

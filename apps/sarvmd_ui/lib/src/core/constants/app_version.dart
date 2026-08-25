@@ -6,7 +6,7 @@ abstract class AppVersion {
   static const String tagline = 'Manuscript Designer';
   static const String version = '0.6.1';
   static const String description =
-      'A zero-dependency music manuscript notebook generator powered by Gouldian spacing and high-fidelity LaTeX vector compilation.';
+      'A flexible, high-precision music manuscript designer for composers, educators, and engravers to create custom printable staff notebooks and layout designs.';
   static const String author = 'Pooria Askari Moqaddam';
   static const String copyright = 'Copyright © 2026 Pooria Askari Moqaddam';
   static const String license = 'Business Source License 1.1 (BUSL-1.1)';
