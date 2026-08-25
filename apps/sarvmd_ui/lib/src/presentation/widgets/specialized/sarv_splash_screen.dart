@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/constants/app_version.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../logic/services/changelog_service.dart';
 
@@ -37,7 +38,7 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
   late AnimationController _animController;
   late Animation<double> _logoFadeAnimation;
   late Animation<double> _subtitleFadeAnimation;
-  String _displayVersion = '0.6.0';
+  String _displayVersion = AppVersion.version;
 
   @override
   void initState() {

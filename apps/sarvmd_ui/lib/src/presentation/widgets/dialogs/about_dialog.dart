@@ -84,7 +84,7 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
             final entries = snapshot.data ?? [];
             final version = entries.isNotEmpty
                 ? entries.first.version
-                : AppVersion.fallbackVersion;
+                : AppVersion.version;
             final date = entries.isNotEmpty ? entries.first.date : '';
 
             return Padding(

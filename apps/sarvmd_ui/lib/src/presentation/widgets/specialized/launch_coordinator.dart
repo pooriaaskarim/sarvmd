@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/constants/app_version.dart';
 import '../../../logic/locale/locale_cubit.dart';
 import '../../../logic/locale/locale_state.dart';
 import '../../../logic/view/view_cubit.dart';
@@ -27,7 +28,7 @@ class LaunchCoordinator extends StatefulWidget {
 }
 
 class _LaunchCoordinatorState extends State<LaunchCoordinator> {
-  String _version = '0.6.0';
+  String _version = AppVersion.version;
   bool _hasNavigated = false;
 
   @override

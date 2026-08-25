@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/services.dart' show rootBundle;
+import '../../core/constants/app_version.dart';
 import '../../core/utils/app_logger.dart';
 
 final _log = AppLogger.config;
@@ -50,13 +51,13 @@ class ChangelogService {
     }
   }
 
-  /// Returns the latest parsed version string from [CHANGELOG.md], or '0.6.0' fallback.
+  /// Returns the latest parsed version string from [CHANGELOG.md], or [AppVersion.version].
   static Future<String> getLatestVersion() async {
     final entries = await loadChangelog();
     if (entries.isNotEmpty) {
       return entries.first.version;
     }
-    return '0.6.0';
+    return AppVersion.version;
   }
 
   /// Parses standard Keep-a-Changelog Markdown format into structured models.

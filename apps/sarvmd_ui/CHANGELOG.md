@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Single-Source Version Consolidation**: Refactored `SarvSplashScreen`, `LaunchCoordinator`, `AboutSarvDialog`, and `ChangelogService` to eliminate hardcoded version strings (`'0.6.0'`) and redundant alias constants (`fallbackVersion`). Standardized static baseline version resolution on `AppVersion.version` and dynamic resolution on `ChangelogService.getLatestVersion()`.
+
+### Added
+- **Release Versioning Procedure Ruleset**: Established and documented a formal 5-step release versioning procedure and architectural invariants in `.agents/AGENTS.md`.
+
 ---
 
 ## [0.6.1] - 2026-08-24
