@@ -9,9 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.6.2] - 2026-08-25
+
 ### Added
 - **GitHub Repository Launcher**: Added `url_launcher` integration and an interactive GitHub action button to `AboutSarvDialog` with in-app browser launch mode and automated copy-to-clipboard fallback.
 - **Advanced Builder Panel Localization Keys**: Added ARB localization keys for staff counts (`staffNumber`, `linesCount`), clef badges (`noClef`, `clefWithLine`), connector pickers, tooltips, and badges across English (`app_en.arb`) and Persian (`app_fa.arb`).
+- **Release Versioning Procedure Ruleset**: Established and documented a formal 5-step release versioning procedure and architectural invariants in `.agents/AGENTS.md`.
 
 ### Changed
 - **Single-Source Version Consolidation**: Refactored `SarvSplashScreen`, `LaunchCoordinator`, `AboutSarvDialog`, and `ChangelogService` to eliminate hardcoded version strings (`'0.6.0'`) and redundant alias constants (`fallbackVersion`). Standardized static baseline version resolution on `AppVersion.version` and dynamic resolution on `ChangelogService.getLatestVersion()`.
@@ -20,9 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **System Hierarchy Header RTL Reactivity & Pixel Overflows**: Resolved static LTR positioning of the system settings title and `"Add Staff"` button row, and eliminated narrow-sidebar `RenderFlex` pixel overflows in `_StaffGroupWidget` by adjusting compact threshold bounds.
-
-### Added
-- **Release Versioning Procedure Ruleset**: Established and documented a formal 5-step release versioning procedure and architectural invariants in `.agents/AGENTS.md`.
 
 ---
 

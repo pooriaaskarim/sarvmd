@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sarvmd_ui/src/core/constants/app_version.dart';
 import 'package:sarvmd_ui/src/core/theme/app_theme.dart';
 import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
 import 'package:sarvmd_ui/src/logic/config/config_cubit.dart';
@@ -15,6 +16,8 @@ import 'package:sarvmd_ui/src/presentation/widgets/specialized/sarv_splash_scree
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('SarvSplashScreen & LaunchCoordinator Tests', () {
     testWidgets('SarvSplashScreen renders branding and typography correctly in English', (tester) async {
       tester.view.devicePixelRatio = 1.0;
@@ -26,7 +29,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: SarvSplashScreen(
             accent: SarvAccent.sky,
-            brightness: Brightness.light,
+            brightness: Brightness.dark,
             isPersian: false,
           ),
         ),
@@ -36,7 +39,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('MANUSCRIPT DESIGNER'), findsOneWidget);
-      expect(find.text('SARVMD  •  v0.6.1'), findsOneWidget);
+      expect(find.text('SARVMD  •  v${AppVersion.version}'), findsOneWidget);
     });
 
     testWidgets('SarvSplashScreen renders Persian calligraphy in Persian locale', (tester) async {
@@ -58,7 +61,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('MANUSCRIPT DESIGNER'), findsOneWidget);
-      expect(find.text('SARVMD  •  v0.6.1'), findsOneWidget);
+      expect(find.text('SARVMD  •  v${AppVersion.version}'), findsOneWidget);
     });
 
     testWidgets('LaunchCoordinator transitions from splash screen to editor screen after min duration', (tester) async {
