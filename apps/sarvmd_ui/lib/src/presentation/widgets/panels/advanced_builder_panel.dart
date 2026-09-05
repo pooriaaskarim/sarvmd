@@ -146,7 +146,7 @@ class _StaffGroupWidget extends StatelessWidget {
     required this.notifier,
   });
 
-  final core.StaffGroup group;
+  final core.StaffNodeGroup group;
   final bool isRoot;
   final int? index;
   final ConfigCubit notifier;
@@ -283,25 +283,20 @@ class _StaffGroupWidget extends StatelessWidget {
                 },
                 itemBuilder: (context, idx) {
                   final child = group.children[idx];
-                  if (child is core.StaffDefinition) {
-                    return _StaffItem(
-                      key: ValueKey('staff_${child.uid}'),
-                      index: idx,
-                      staff: child,
-                      notifier: notifier,
-                    );
-                  } else if (child is core.StaffGroup) {
-                    return _StaffGroupWidget(
-                      key: ValueKey('group_${child.hashCode}_$idx'),
-                      group: child,
-                      index: idx,
-                      notifier: notifier,
-                    );
-                  }
-                  return SizedBox(
-                    key: ValueKey('empty_${group.hashCode}_$idx'),
-                    child: const SizedBox.shrink(),
-                  );
+                  return switch (child) {
+                    core.StaffDefinition def => _StaffItem(
+                        key: ValueKey('staff_${def.uid}'),
+                        index: idx,
+                        staff: def,
+                        notifier: notifier,
+                      ),
+                    core.StaffNodeGroup subGroup => _StaffGroupWidget(
+                        key: ValueKey('group_${subGroup.hashCode}_$idx'),
+                        group: subGroup,
+                        index: idx,
+                        notifier: notifier,
+                      ),
+                  };
                 },
               ),
             ],

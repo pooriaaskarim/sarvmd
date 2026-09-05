@@ -80,12 +80,18 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   }
 
   void _onSave() {
-    core.ClefConfig? newClef;
+    core.Clef? newClef;
     if (_selectedClefSymbol != null) {
-      newClef = core.ClefConfig(
-        symbol: _selectedClefSymbol!,
-        anchorLine: _selectedAnchorLine,
-      );
+      newClef = switch (_selectedClefSymbol!) {
+        core.ClefSymbol.g => core.TrebleClef(anchorLine: _selectedAnchorLine),
+        core.ClefSymbol.f => core.BassClef(anchorLine: _selectedAnchorLine),
+        core.ClefSymbol.c => _selectedAnchorLine == 4
+            ? core.TenorClef(anchorLine: _selectedAnchorLine)
+            : core.AltoClef(anchorLine: _selectedAnchorLine),
+        core.ClefSymbol.percussion =>
+          core.PercussionClef(anchorLine: _selectedAnchorLine),
+        core.ClefSymbol.tab => core.TabClef(anchorLine: _selectedAnchorLine),
+      };
     }
 
     widget.notifier.updateStaffConfigDetails(

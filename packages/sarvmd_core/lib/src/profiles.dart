@@ -4,6 +4,7 @@
 /// providing fast, one-tap configuration for the most common musical setups.
 
 import 'config.dart';
+import 'domain/clef.dart';
 
 /// Categories for grouping staff profiles in the UI.
 enum ProfileCategory { standard, ensemble, tablature, percussion, blank }
@@ -51,13 +52,11 @@ abstract final class StaffProfiles {
     id: 'piano',
     label: 'Piano',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         connector: SystemConnector.brace,
         children: [
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.f, anchorLine: 4)),
+          StaffDefinition(lines: 5, clef: Clef.treble),
+          StaffDefinition(lines: 5, clef: Clef.bass),
         ],
       ),
     ),
@@ -69,10 +68,9 @@ abstract final class StaffProfiles {
     id: 'treble',
     label: 'Treble',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
+          StaffDefinition(lines: 5, clef: Clef.treble),
         ],
       ),
     ),
@@ -84,10 +82,9 @@ abstract final class StaffProfiles {
     id: 'bass',
     label: 'Bass',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.f, anchorLine: 4)),
+          StaffDefinition(lines: 5, clef: Clef.bass),
         ],
       ),
     ),
@@ -99,10 +96,9 @@ abstract final class StaffProfiles {
     id: 'alto',
     label: 'Alto',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.c, anchorLine: 3)),
+          StaffDefinition(lines: 5, clef: Clef.alto),
         ],
       ),
     ),
@@ -114,11 +110,9 @@ abstract final class StaffProfiles {
     id: 'guitarTab',
     label: 'Guitar TAB',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 6,
-              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
+          StaffDefinition(lines: 6, clef: Clef.tab),
         ],
       ),
     ),
@@ -134,14 +128,11 @@ abstract final class StaffProfiles {
     id: 'guitarGrand',
     label: 'Guitar + TAB',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         connector: SystemConnector.bracket,
         children: [
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
-          StaffDefinition(
-              lines: 6,
-              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
+          StaffDefinition(lines: 5, clef: Clef.treble),
+          StaffDefinition(lines: 6, clef: Clef.tab),
         ],
       ),
     ),
@@ -157,11 +148,9 @@ abstract final class StaffProfiles {
     id: 'bassTab',
     label: 'Bass TAB',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 4,
-              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 2)),
+          StaffDefinition(lines: 4, clef: Clef.tab),
         ],
       ),
     ),
@@ -177,11 +166,9 @@ abstract final class StaffProfiles {
     id: 'banjoTab',
     label: 'Banjo TAB',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 5,
-              clef: ClefConfig(symbol: ClefSymbol.tab, anchorLine: 3)),
+          StaffDefinition(lines: 5, clef: Clef.tab),
         ],
       ),
     ),
@@ -197,11 +184,9 @@ abstract final class StaffProfiles {
     id: 'drumSet',
     label: 'Drum Set',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 5,
-              clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 3)),
+          StaffDefinition(lines: 5, clef: Clef.percussion),
         ],
       ),
     ),
@@ -214,11 +199,9 @@ abstract final class StaffProfiles {
     id: 'percussion1',
     label: 'Percussion (1-line)',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 1,
-              clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 1)),
+          StaffDefinition(lines: 1, clef: Clef.percussion),
         ],
       ),
     ),
@@ -231,11 +214,9 @@ abstract final class StaffProfiles {
     id: 'percussion3',
     label: 'Percussion (3-line)',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(
-              lines: 3,
-              clef: ClefConfig(symbol: ClefSymbol.percussion, anchorLine: 2)),
+          StaffDefinition(lines: 3, clef: Clef.percussion),
         ],
       ),
     ),
@@ -248,17 +229,13 @@ abstract final class StaffProfiles {
     id: 'stringQuartet',
     label: 'String Quartet',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         connector: SystemConnector.bracket,
         children: [
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.g, anchorLine: 2)),
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.c, anchorLine: 3)),
-          StaffDefinition(
-              lines: 5, clef: ClefConfig(symbol: ClefSymbol.f, anchorLine: 4)),
+          StaffDefinition(lines: 5, clef: Clef.treble),
+          StaffDefinition(lines: 5, clef: Clef.treble),
+          StaffDefinition(lines: 5, clef: Clef.alto),
+          StaffDefinition(lines: 5, clef: Clef.bass),
         ],
       ),
     ),
@@ -271,7 +248,7 @@ abstract final class StaffProfiles {
     id: 'blank',
     label: 'Blank',
     systemLayout: SystemLayout(
-      rootGroup: StaffGroup(
+      rootGroup: StaffNodeGroup(
         children: [
           StaffDefinition(lines: 5),
         ],

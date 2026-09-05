@@ -14,9 +14,7 @@ core.Score createSampleScore(core.PageConfig config) {
 
   for (var i = 0; i < staves.length; i++) {
     final staff = staves[i];
-    final clef = staff.clef != null
-        ? _mapClefConfigToDomain(staff.clef!)
-        : (i == 1 ? core.Clef.bass : core.Clef.treble);
+    final clef = staff.clef ?? (i == 1 ? core.Clef.bass : core.Clef.treble);
 
     final String partName = staff.instrumentName ?? 'Staff ${i + 1}';
     final measures = <core.Measure>[];
@@ -125,26 +123,16 @@ core.Score createSampleScore(core.PageConfig config) {
   );
 }
 
-/// Recursively flattens the nested StaffGroup layout to find all leaf staves definitions.
-List<core.StaffDefinition> _getStaffDefinitions(core.StaffGroup group) {
+/// Recursively flattens the nested StaffNodeGroup layout to find all leaf staff definitions.
+List<core.StaffDefinition> _getStaffDefinitions(core.StaffNodeGroup group) {
   final list = <core.StaffDefinition>[];
   for (final child in group.children) {
-    if (child is core.StaffDefinition) {
-      list.add(child);
-    } else if (child is core.StaffGroup) {
-      list.addAll(_getStaffDefinitions(child));
+    switch (child) {
+      case core.StaffDefinition def:
+        list.add(def);
+      case core.StaffNodeGroup subGroup:
+        list.addAll(_getStaffDefinitions(subGroup));
     }
   }
   return list;
-}
-
-/// Helper mapping configuration clef symbols to domain object instances.
-core.Clef _mapClefConfigToDomain(core.ClefConfig config) {
-  return switch (config.symbol) {
-    core.ClefSymbol.g => core.Clef.treble,
-    core.ClefSymbol.f => core.Clef.bass,
-    core.ClefSymbol.c => core.Clef.alto,
-    core.ClefSymbol.percussion => core.Clef.percussion,
-    core.ClefSymbol.tab => core.Clef.tab,
-  };
 }

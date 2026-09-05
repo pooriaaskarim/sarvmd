@@ -130,22 +130,23 @@ PageLayout computeLayout(PageConfig config) {
 
     double currentTopY = systemTopY;
 
-    void traverse(StaffGroup group, int level) {
+    void traverse(StaffNodeGroup group, int level) {
       final startIdx = staves.length;
 
       for (final child in group.children) {
-        if (child is StaffDefinition) {
-          final sStaff = StaffPosition(
-            topY: currentTopY,
-            lines: child.lines,
-            lineGapMm: lineGap,
-            scale: child.scale,
-            definition: child,
-          );
-          staves.add(sStaff);
-          currentTopY += sStaff.height + config.staffConfig.interStaffGapMm;
-        } else if (child is StaffGroup) {
-          traverse(child, level + 1);
+        switch (child) {
+          case StaffDefinition def:
+            final sStaff = StaffPosition(
+              topY: currentTopY,
+              lines: def.lines,
+              lineGapMm: lineGap,
+              scale: def.scale,
+              definition: def,
+            );
+            staves.add(sStaff);
+            currentTopY += sStaff.height + config.staffConfig.interStaffGapMm;
+          case StaffNodeGroup subGroup:
+            traverse(subGroup, level + 1);
         }
       }
 

@@ -1,6 +1,7 @@
 /// Configuration models for Sarv manuscript paper generation.
 
 import 'engraving_config.dart';
+import 'domain/clef.dart';
 
 /// Supported page orientations.
 enum PageOrientation {
@@ -46,8 +47,30 @@ enum SystemConnector {
 /// Style of barlines drawn through or between staves.
 enum BarlineStyle { standard, dashed, none }
 
-/// Represents a single physical staff on the page.
-class StaffDefinition {
+/// Sealed base class representing a node in the staff layout hierarchy tree.
+sealed class StaffNode {
+  const StaffNode();
+
+  Map<String, dynamic> toJson();
+
+  factory StaffNode.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String?;
+    final data = json['data'] != null && json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
+    if (type == 'staff' || type == 'leaf' || json.containsKey('lines') || data.containsKey('lines')) {
+      return StaffDefinition.fromJson(data);
+    }
+    if (type == 'group' || json.containsKey('connector') || json.containsKey('children') || data.containsKey('children')) {
+      return StaffNodeGroup.fromJson(data);
+    }
+    throw FormatException('Unknown StaffNode JSON structure: $json');
+  }
+}
+
+/// Represents a single physical staff leaf node on the page.
+class StaffDefinition extends StaffNode {
   const StaffDefinition({
     this.uid = '',
     this.lines = 5,
@@ -66,7 +89,7 @@ class StaffDefinition {
 
   final String uid;
   final int lines;
-  final ClefConfig? clef;
+  final Clef? clef;
   final double scale;
   final String? instrumentName;
   final String? instrumentAbbreviation;
@@ -81,7 +104,7 @@ class StaffDefinition {
   StaffDefinition copyWith({
     String? uid,
     int? lines,
-    ClefConfig? Function()? clef,
+    Clef? Function()? clef,
     double? scale,
     String? Function()? instrumentName,
     String? Function()? instrumentAbbreviation,
@@ -113,6 +136,7 @@ class StaffDefinition {
         barlineStyle: barlineStyle ?? this.barlineStyle,
       );
 
+  @override
   Map<String, dynamic> toJson() => {
         'uid': uid,
         'lines': lines,
@@ -129,29 +153,33 @@ class StaffDefinition {
         'barlineStyle': barlineStyle.name,
       };
 
-  factory StaffDefinition.fromJson(Map<String, dynamic> json) =>
-      StaffDefinition(
-        uid: json['uid'] as String? ??
-            DateTime.now().microsecondsSinceEpoch.toString(),
-        lines: json['lines'] as int? ?? 5,
-        clef: json['clef'] != null
-            ? ClefConfig.fromJson(json['clef'] as Map<String, dynamic>)
-            : null,
-        scale: (json['scale'] as num?)?.toDouble() ?? 1.0,
-        instrumentName: json['instrumentName'] as String?,
-        instrumentAbbreviation: json['instrumentAbbreviation'] as String?,
-        labelVisible: json['labelVisible'] as bool? ?? true,
-        labelHorizontalOffset:
-            (json['labelHorizontalOffset'] as num?)?.toDouble() ?? 0.0,
-        labelVerticalOffset:
-            (json['labelVerticalOffset'] as num?)?.toDouble() ?? 0.0,
-        labelFontFamily: json['labelFontFamily'] as String? ?? 'serif',
-        labelFontSize: (json['labelFontSize'] as num?)?.toDouble() ?? 11.0,
-        labelItalic: json['labelItalic'] as bool? ?? true,
-        barlineStyle: json['barlineStyle'] != null
-            ? BarlineStyle.values.byName(json['barlineStyle'] as String)
-            : BarlineStyle.standard,
-      );
+  factory StaffDefinition.fromJson(Map<String, dynamic> json) {
+    final map = json.containsKey('data') && json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+    return StaffDefinition(
+      uid: map['uid'] as String? ??
+          DateTime.now().microsecondsSinceEpoch.toString(),
+      lines: map['lines'] as int? ?? 5,
+      clef: map['clef'] != null
+          ? Clef.fromJson(map['clef'] as Map<String, dynamic>)
+          : null,
+      scale: (map['scale'] as num?)?.toDouble() ?? 1.0,
+      instrumentName: map['instrumentName'] as String?,
+      instrumentAbbreviation: map['instrumentAbbreviation'] as String?,
+      labelVisible: map['labelVisible'] as bool? ?? true,
+      labelHorizontalOffset:
+          (map['labelHorizontalOffset'] as num?)?.toDouble() ?? 0.0,
+      labelVerticalOffset:
+          (map['labelVerticalOffset'] as num?)?.toDouble() ?? 0.0,
+      labelFontFamily: map['labelFontFamily'] as String? ?? 'serif',
+      labelFontSize: (map['labelFontSize'] as num?)?.toDouble() ?? 11.0,
+      labelItalic: map['labelItalic'] as bool? ?? true,
+      barlineStyle: map['barlineStyle'] != null
+          ? BarlineStyle.values.byName(map['barlineStyle'] as String)
+          : BarlineStyle.standard,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -188,9 +216,9 @@ class StaffDefinition {
       barlineStyle.hashCode;
 }
 
-/// A hierarchical grouping of staves.
-class StaffGroup {
-  const StaffGroup({
+/// A hierarchical grouping of staves in a system layout tree.
+class StaffNodeGroup extends StaffNode {
+  const StaffNodeGroup({
     this.connector = SystemConnector.none,
     this.children = const [],
     this.continuousBarlines = true,
@@ -198,50 +226,54 @@ class StaffGroup {
 
   final SystemConnector connector;
 
-  /// Can be StaffDefinition or StaffGroup
-  final List<Object> children;
+  /// Strongly-typed list of child [StaffNode] elements (staves or sub-groups).
+  final List<StaffNode> children;
   final bool continuousBarlines;
 
-  StaffGroup copyWith({
+  StaffNodeGroup copyWith({
     SystemConnector? connector,
-    List<Object>? children,
+    List<StaffNode>? children,
     bool? continuousBarlines,
   }) =>
-      StaffGroup(
+      StaffNodeGroup(
         connector: connector ?? this.connector,
         children: children ?? this.children,
         continuousBarlines: continuousBarlines ?? this.continuousBarlines,
       );
 
+  @override
   Map<String, dynamic> toJson() => {
         'connector': connector.name,
         'children': children.map((c) {
-          if (c is StaffDefinition)
+          if (c is StaffDefinition) {
             return {'type': 'staff', 'data': c.toJson()};
-          if (c is StaffGroup) return {'type': 'group', 'data': c.toJson()};
-          throw Exception('Unknown child type in StaffGroup');
+          }
+          if (c is StaffNodeGroup) {
+            return {'type': 'group', 'data': c.toJson()};
+          }
+          return c.toJson();
         }).toList(),
         'continuousBarlines': continuousBarlines,
       };
 
-  factory StaffGroup.fromJson(Map<String, dynamic> json) => StaffGroup(
-        connector: SystemConnector.values
-            .byName(json['connector'] as String? ?? 'none'),
-        children: (json['children'] as List<dynamic>? ?? []).map((c) {
-          final map = c as Map<String, dynamic>;
-          final type = map['type'] as String;
-          final data = map['data'] as Map<String, dynamic>;
-          if (type == 'staff') return StaffDefinition.fromJson(data);
-          if (type == 'group') return StaffGroup.fromJson(data);
-          throw Exception('Unknown child type in StaffGroup JSON');
-        }).toList(),
-        continuousBarlines: json['continuousBarlines'] as bool? ?? true,
-      );
+  factory StaffNodeGroup.fromJson(Map<String, dynamic> json) {
+    final data = json.containsKey('data') && json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+    return StaffNodeGroup(
+      connector: SystemConnector.values
+          .byName(data['connector'] as String? ?? 'none'),
+      children: (data['children'] as List<dynamic>? ?? []).map((c) {
+        return StaffNode.fromJson(c as Map<String, dynamic>);
+      }).toList(),
+      continuousBarlines: data['continuousBarlines'] as bool? ?? true,
+    );
+  }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! StaffGroup ||
+    if (other is! StaffNodeGroup ||
         runtimeType != other.runtimeType ||
         connector != other.connector ||
         continuousBarlines != other.continuousBarlines ||
@@ -256,19 +288,23 @@ class StaffGroup {
 
   @override
   int get hashCode =>
-      connector.hashCode ^ children.hashCode ^ continuousBarlines.hashCode;
+      connector.hashCode ^ Object.hashAll(children) ^ continuousBarlines.hashCode;
 }
+
+/// Legacy alias for [StaffNodeGroup].
+@Deprecated('Use StaffNodeGroup instead')
+typedef StaffGroup = StaffNodeGroup;
 
 /// The new core layout defining the system hierarchy.
 class SystemLayout {
   const SystemLayout({
-    this.rootGroup = const StaffGroup(),
+    this.rootGroup = const StaffNodeGroup(),
   });
 
-  final StaffGroup rootGroup;
+  final StaffNodeGroup rootGroup;
 
   SystemLayout copyWith({
-    StaffGroup? rootGroup,
+    StaffNodeGroup? rootGroup,
   }) =>
       SystemLayout(
         rootGroup: rootGroup ?? this.rootGroup,
@@ -280,8 +316,8 @@ class SystemLayout {
 
   factory SystemLayout.fromJson(Map<String, dynamic> json) => SystemLayout(
         rootGroup: json['rootGroup'] != null
-            ? StaffGroup.fromJson(json['rootGroup'] as Map<String, dynamic>)
-            : const StaffGroup(),
+            ? StaffNodeGroup.fromJson(json['rootGroup'] as Map<String, dynamic>)
+            : const StaffNodeGroup(),
       );
 
   @override

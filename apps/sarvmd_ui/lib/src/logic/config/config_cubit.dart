@@ -90,8 +90,8 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     return child is core.StaffDefinition ? child : null;
   }
 
-  core.ClefConfig? get primaryClef => _primaryDef?.clef;
-  core.ClefConfig? get secondaryClef => _secondaryDef?.clef;
+  core.Clef? get primaryClef => _primaryDef?.clef;
+  core.Clef? get secondaryClef => _secondaryDef?.clef;
   int get primaryLines => _primaryDef?.lines ?? 5;
   int get secondaryLines => _secondaryDef?.lines ?? 5;
 
@@ -192,11 +192,11 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     ));
   }
 
-  void updatePrimaryClef(core.ClefConfig? clef) {
+  void updatePrimaryClef(core.Clef? clef) {
     _updateStaffDefinition(0, (staff) => staff.copyWith(clef: () => clef));
   }
 
-  void updateSecondaryClef(core.ClefConfig? clef) {
+  void updateSecondaryClef(core.Clef? clef) {
     _updateStaffDefinition(1, (staff) => staff.copyWith(clef: () => clef));
   }
 
@@ -207,7 +207,7 @@ class ConfigCubit extends Cubit<core.PageConfig> {
 
     final child = root.children[index];
     if (child is core.StaffDefinition) {
-      final newChildren = List<Object>.from(root.children);
+      final newChildren = List<core.StaffNode>.from(root.children);
       newChildren[index] = updater(child);
 
       _updateSystemLayout(state.systemLayout.copyWith(
@@ -223,7 +223,7 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     final newDef = (def ?? const core.StaffDefinition()).copyWith(
       uid: DateTime.now().microsecondsSinceEpoch.toString(),
     );
-    final newChildren = List<Object>.from(root.children)..add(newDef);
+    final newChildren = List<core.StaffNode>.from(root.children)..add(newDef);
     _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
@@ -233,7 +233,7 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     final root = state.systemLayout.rootGroup;
     if (index < 0 || index >= root.children.length) return;
 
-    final newChildren = List<Object>.from(root.children)..removeAt(index);
+    final newChildren = List<core.StaffNode>.from(root.children)..removeAt(index);
     _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
@@ -243,7 +243,7 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     _updateStaffByUid(uid, (staff) => staff.copyWith(lines: lines));
   }
 
-  void updateStaffClef(String uid, core.ClefConfig? clef) {
+  void updateStaffClef(String uid, core.Clef? clef) {
     _updateStaffByUid(uid, (staff) => staff.copyWith(clef: () => clef));
   }
 
@@ -258,7 +258,7 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     String? Function()? abbreviation,
     bool? visible,
     int? lines,
-    core.ClefConfig? Function()? clef,
+    core.Clef? Function()? clef,
     double? horizontalOffset,
     double? verticalOffset,
     String? fontFamily,
@@ -286,19 +286,16 @@ class ConfigCubit extends Cubit<core.PageConfig> {
       String uid, core.StaffDefinition Function(core.StaffDefinition) updater) {
     final root = state.systemLayout.rootGroup;
 
-    Object? findAndUpdate(Object node) {
-      if (node is core.StaffDefinition) {
-        if (node.uid == uid) return updater(node);
-        return node;
-      } else if (node is core.StaffGroup) {
-        final newChildren =
-            node.children.map((c) => findAndUpdate(c)!).toList();
-        return node.copyWith(children: newChildren);
-      }
-      return node;
+    core.StaffNode findAndUpdate(core.StaffNode node) {
+      return switch (node) {
+        core.StaffDefinition def => def.uid == uid ? updater(def) : def,
+        core.StaffNodeGroup group => group.copyWith(
+            children: group.children.map(findAndUpdate).toList(),
+          ),
+      };
     }
 
-    final newRoot = findAndUpdate(root) as core.StaffGroup;
+    final newRoot = findAndUpdate(root) as core.StaffNodeGroup;
     _updateSystemLayout(state.systemLayout.copyWith(rootGroup: newRoot));
   }
 
@@ -319,23 +316,22 @@ class ConfigCubit extends Cubit<core.PageConfig> {
   void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {
     final root = state.systemLayout.rootGroup;
 
-    Object? findAndReorder(Object node) {
-      if (node is core.StaffGroup) {
+    core.StaffNode findAndReorder(core.StaffNode node) {
+      if (node is core.StaffNodeGroup) {
         if (node.hashCode == groupHash) {
-          final children = List<Object>.from(node.children);
+          final children = List<core.StaffNode>.from(node.children);
           final item = children.removeAt(oldIndex);
           children.insert(newIndex, item);
           return node.copyWith(children: children);
         } else {
-          final newChildren =
-              node.children.map((c) => findAndReorder(c)!).toList();
+          final newChildren = node.children.map(findAndReorder).toList();
           return node.copyWith(children: newChildren);
         }
       }
       return node;
     }
 
-    final newRoot = findAndReorder(root) as core.StaffGroup;
+    final newRoot = findAndReorder(root) as core.StaffNodeGroup;
     _updateSystemLayout(state.systemLayout.copyWith(rootGroup: newRoot));
   }
 

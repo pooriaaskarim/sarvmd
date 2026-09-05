@@ -432,7 +432,7 @@ class _ManuscriptPainter extends CustomPainter {
     }
   }
 
-  void _paintStandardClef(Canvas canvas, core.ClefConfig clef, double x,
+  void _paintStandardClef(Canvas canvas, core.Clef clef, double x,
       double topY, int lines, double gap, Color color,
       {double scale = 1.0}) {
     const fontScale = 4.0;
