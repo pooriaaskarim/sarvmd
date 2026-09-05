@@ -12,7 +12,9 @@ import '../../core/theme/layout_policy.dart';
 import '../widgets/common/section_header.dart';
 import '../widgets/staff/staff_spacing_group.dart';
 import '../widgets/animations/fade_in_slide.dart';
-import '../widgets/layout/sarv_header.dart';
+import '../widgets/layout/sarv_top_bar.dart';
+
+import '../widgets/common/shortcut_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/staff/profile_picker.dart';
 import '../widgets/staff/zoom_feedback_overlay.dart';
@@ -158,34 +160,37 @@ class _EditorScreenState extends State<EditorScreen> {
             builder: (context, viewState) {
               return Scaffold(
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                body: Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: Row(
+                body: SarvShortcutGateway(
+                  child: Column(
                     children: [
-                      // Sidebar (Left)
-                      AnimatedContainer(
-                        duration: _isDraggingSidebar
-                            ? Duration.zero
-                            : const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        width: _sidebarCollapsed ? 0 : _sidebarWidth,
-                        color: Theme.of(context).colorScheme.surfaceContainer,
-                        child: ClipRect(
-                          child: OverflowBox(
-                            minWidth: 0,
-                            maxWidth: _sidebarWidth,
-                            alignment: Alignment.topLeft,
-                            child: Column(
-                              children: [
-                              Expanded(
-                                child: ListView(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.paddingLarge),
-                                  children: [
-                                    const SizedBox(height: 48),
-                                    const SarvHeader(),
-                                    const SizedBox(
-                                        height: AppSpacing.sectionGap),
+                      const SarvTopBar(),
+                      Expanded(
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(
+                            children: [
+                              // Sidebar (Left)
+                              AnimatedContainer(
+                                duration: _isDraggingSidebar
+                                    ? Duration.zero
+                                    : const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                                width: _sidebarCollapsed ? 0 : _sidebarWidth,
+                                color: Theme.of(context).colorScheme.surfaceContainer,
+                                child: ClipRect(
+                                  child: OverflowBox(
+                                    minWidth: 0,
+                                    maxWidth: _sidebarWidth,
+                                    alignment: Alignment.topLeft,
+                                    child: Column(
+                                      children: [
+                                      Expanded(
+                                        child: ListView(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.paddingLarge),
+                                          children: [
+                                            const SizedBox(height: AppSpacing.paddingMedium),
+
                                     FadeInSlide(
                                       delay: 1,
                                       child: Column(
@@ -570,7 +575,11 @@ class _EditorScreenState extends State<EditorScreen> {
                   ],
                 ),
               ),
-            );
+            ),
+          ],
+        ),
+      ),
+    );
             },
           );
         },
@@ -578,3 +587,6 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 }
+
+
+
