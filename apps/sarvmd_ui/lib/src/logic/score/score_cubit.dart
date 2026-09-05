@@ -3,7 +3,6 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import 'score_command.dart';
 import '../../core/utils/app_logger.dart';
 
 final _log = AppLogger.score;
@@ -14,10 +13,10 @@ class ScoreState {
   final core.Score score;
 
   /// The history stack of executed commands.
-  final List<ScoreCommand> undoStack;
+  final List<core.ScoreCommand> undoStack;
 
   /// The history stack of reverted commands.
-  final List<ScoreCommand> redoStack;
+  final List<core.ScoreCommand> redoStack;
 
   const ScoreState({
     required this.score,
@@ -28,8 +27,8 @@ class ScoreState {
   /// Returns a modified copy of this state with updated properties.
   ScoreState copyWith({
     core.Score? score,
-    List<ScoreCommand>? undoStack,
-    List<ScoreCommand>? redoStack,
+    List<core.ScoreCommand>? undoStack,
+    List<core.ScoreCommand>? redoStack,
   }) {
     return ScoreState(
       score: score ?? this.score,
@@ -47,22 +46,29 @@ class ScoreState {
 
 /// Cubit managing the document's musical score AST and command execution pipeline.
 class ScoreCubit extends Cubit<ScoreState> {
-  ScoreCubit()
-      : super(const ScoreState(
-          score: core.Score(title: 'New Score', parts: []),
+  final core.CommandHistory _history;
+
+  ScoreCubit([core.CommandHistory? history])
+      : _history = history ?? core.CommandHistory(),
+        super(ScoreState(
+          score: (history ?? core.CommandHistory()).score,
+          undoStack: (history ?? core.CommandHistory()).undoStack,
+          redoStack: (history ?? core.CommandHistory()).redoStack,
         ));
 
-  /// Executes a new command, updating the score and appending to the undo stack.
-  void execute(ScoreCommand command) {
-    _log.debug('Executing command: ${command.runtimeType}');
-    final nextScore = command.execute(state.score);
-    final nextUndo = List<ScoreCommand>.from(state.undoStack)..add(command);
+  void _syncState() {
     emit(state.copyWith(
-      score: nextScore,
-      undoStack: nextUndo,
-      redoStack: const [], // Standard: executing a new command clears the redo history.
+      score: _history.score,
+      undoStack: _history.undoStack,
+      redoStack: _history.redoStack,
     ));
-    _log.trace('Undo stack depth: ${nextUndo.length}');
+  }
+
+  /// Executes a new command, updating the score and appending to the undo stack.
+  void execute(core.ScoreCommand command) {
+    _log.debug('Executing command: ${command.runtimeType}');
+    _history.execute(command);
+    _syncState();
   }
 
   /// Reverts the most recently executed command on the undo stack.
@@ -71,17 +77,9 @@ class ScoreCubit extends Cubit<ScoreState> {
       _log.warning('undo() called with empty undo stack');
       return;
     }
-    final nextUndo = List<ScoreCommand>.from(state.undoStack);
-    final command = nextUndo.removeLast();
-    _log.debug('Undoing command: ${command.runtimeType}');
-    final prevScore = command.undo(state.score);
-    final nextRedo = List<ScoreCommand>.from(state.redoStack)..add(command);
-
-    emit(state.copyWith(
-      score: prevScore,
-      undoStack: nextUndo,
-      redoStack: nextRedo,
-    ));
+    _log.debug('Undoing command');
+    _history.undo();
+    _syncState();
   }
 
   /// Re-applies the most recently reverted command on the redo stack.
@@ -90,16 +88,8 @@ class ScoreCubit extends Cubit<ScoreState> {
       _log.warning('redo() called with empty redo stack');
       return;
     }
-    final nextRedo = List<ScoreCommand>.from(state.redoStack);
-    final command = nextRedo.removeLast();
-    _log.debug('Redoing command: ${command.runtimeType}');
-    final nextScore = command.execute(state.score);
-    final nextUndo = List<ScoreCommand>.from(state.undoStack)..add(command);
-
-    emit(state.copyWith(
-      score: nextScore,
-      undoStack: nextUndo,
-      redoStack: nextRedo,
-    ));
+    _log.debug('Redoing command');
+    _history.redo();
+    _syncState();
   }
 }
