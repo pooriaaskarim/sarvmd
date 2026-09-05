@@ -2,6 +2,7 @@
 // Use of this source code is governed by a Business Source License 1.1
 // license that can be found in the LICENSE file in the root of this project.
 
+import '../config.dart';
 import 'pitch.dart';
 
 /// Represents a musical clef with anchoring rules and octave shifts.
@@ -47,6 +48,15 @@ sealed class Clef {
   /// User-friendly display name of the clef (e.g. 'Treble', 'Bass', 'TAB').
   String get displayName;
 
+  /// The [ClefSymbol] corresponding to this clef.
+  ClefSymbol get symbol => switch (this) {
+        TrebleClef() => ClefSymbol.g,
+        BassClef() => ClefSymbol.f,
+        AltoClef() || TenorClef() => ClefSymbol.c,
+        PercussionClef() => ClefSymbol.percussion,
+        TabClef() => ClefSymbol.tab,
+      };
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -60,6 +70,56 @@ sealed class Clef {
 
   @override
   String toString() => '$displayName (line $anchorLine, shift $octaveShift)';
+
+  /// Serializes this [Clef] instance to JSON.
+  Map<String, dynamic> toJson() => {
+        'type': switch (this) {
+          TrebleClef() => 'treble',
+          BassClef() => 'bass',
+          AltoClef() => 'alto',
+          TenorClef() => 'tenor',
+          PercussionClef() => 'percussion',
+          TabClef() => 'tab',
+        },
+        'anchorLine': anchorLine,
+        'octaveShift': octaveShift,
+      };
+
+  /// Deserializes a [Clef] from JSON, supporting both domain type and legacy ClefConfig symbols.
+  factory Clef.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String? ?? json['symbol'] as String? ?? 'treble';
+    final anchorLine = json['anchorLine'] as int?;
+    final octaveShift = json['octaveShift'] as int? ?? 0;
+
+    return switch (type.toLowerCase()) {
+      'treble' || 'g' => TrebleClef(
+          anchorLine: anchorLine ?? 2,
+          octaveShift: octaveShift,
+        ),
+      'bass' || 'f' => BassClef(
+          anchorLine: anchorLine ?? 4,
+          octaveShift: octaveShift,
+        ),
+      'alto' => AltoClef(
+          anchorLine: anchorLine ?? 3,
+          octaveShift: octaveShift,
+        ),
+      'tenor' => TenorClef(
+          anchorLine: anchorLine ?? 4,
+          octaveShift: octaveShift,
+        ),
+      'percussion' => PercussionClef(
+          anchorLine: anchorLine ?? 3,
+        ),
+      'tab' => TabClef(
+          anchorLine: anchorLine ?? 3,
+        ),
+      _ => TrebleClef(
+          anchorLine: anchorLine ?? 2,
+          octaveShift: octaveShift,
+        ),
+    };
+  }
 
   /// Predefined Treble G-Clef anchored on staff line 2.
   static const Clef treble = TrebleClef();
