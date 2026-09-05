@@ -865,4 +865,10 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get connectorBraceTooltip => 'خط اتصال آکولاد';
+
+  @override
+  String get undo => 'بازگردانی';
+
+  @override
+  String get redo => 'انجام مجدد';
 }

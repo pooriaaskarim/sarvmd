@@ -1705,6 +1705,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Brace Connector'**
   String get connectorBraceTooltip;
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// No description provided for @redo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get redo;
 }
 
 class _AppLocalizationsDelegate

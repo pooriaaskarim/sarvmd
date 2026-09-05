@@ -275,5 +275,7 @@
   "connectorBracket": "قلاب",
   "connectorBracketTooltip": "خط اتصال قلاب (کروشه)",
   "connectorBrace": "آکولاد",
-  "connectorBraceTooltip": "خط اتصال آکولاد"
+  "connectorBraceTooltip": "خط اتصال آکولاد",
+  "undo": "بازگردانی",
+  "redo": "انجام مجدد"
 }

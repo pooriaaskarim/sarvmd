@@ -361,5 +361,7 @@
   "connectorBracket": "Bracket",
   "connectorBracketTooltip": "Bracket Connector",
   "connectorBrace": "Brace",
-  "connectorBraceTooltip": "Brace Connector"
+  "connectorBraceTooltip": "Brace Connector",
+  "undo": "Undo",
+  "redo": "Redo"
 }
