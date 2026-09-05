@@ -2,21 +2,11 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
+import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
-/// Defines the directionality & layout contract mode for different UI subdomains in SarvMD.
-enum LayoutPolicyMode {
-  /// Standard application UI (sidebars, dialogs, property panels, headers).
-  /// Labels align to start edge (Right in RTL, Left in LTR), while precision slider
-  /// tracks preserve natural internal left-to-right gesture directions.
-  bilingualFluid,
-
-  /// Manuscript Canvas & Notation Previews (PreviewCanvas, RulerBox, LiveStaffPreview).
-  /// Enforces strict LTR spatial coordinate system regardless of active UI locale.
-  canvasStrict,
-
-  /// Full standard RTL document flow (documentation, localized help dialogs).
-  documentRtl,
-}
+/// Deprecated UI alias for [core.LayoutPolicyMode].
+@Deprecated('Use core.LayoutPolicyMode from package:sarvmd_core instead')
+typedef LayoutPolicyMode = core.LayoutPolicyMode;
 
 /// An InheritedWidget that provides explicit layout policy contracts to its subtree.
 class LayoutPolicy extends InheritedWidget {
@@ -26,18 +16,18 @@ class LayoutPolicy extends InheritedWidget {
     required super.child,
   });
 
-  final LayoutPolicyMode mode;
+  final core.LayoutPolicyMode mode;
 
   /// Retrieves the nearest [LayoutPolicyMode] from the widget tree context.
   /// Defaults to [LayoutPolicyMode.bilingualFluid] if not explicitly specified.
-  static LayoutPolicyMode of(BuildContext context) {
+  static core.LayoutPolicyMode of(BuildContext context) {
     final policy = context.dependOnInheritedWidgetOfExactType<LayoutPolicy>();
-    return policy?.mode ?? LayoutPolicyMode.bilingualFluid;
+    return policy?.mode ?? core.LayoutPolicyMode.bilingualFluid;
   }
 
   /// Convenience helper to check if the current context is strictly LTR canvas territory.
   static bool isCanvasStrict(BuildContext context) {
-    return of(context) == LayoutPolicyMode.canvasStrict;
+    return of(context) == core.LayoutPolicyMode.canvasStrict;
   }
 
   @override
@@ -59,7 +49,7 @@ class CanvasStrictScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutPolicy(
-      mode: LayoutPolicyMode.canvasStrict,
+      mode: core.LayoutPolicyMode.canvasStrict,
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: child,
@@ -81,7 +71,7 @@ class BilingualFluidScope extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPersian = Localizations.localeOf(context).languageCode == 'fa';
     return LayoutPolicy(
-      mode: LayoutPolicyMode.bilingualFluid,
+      mode: core.LayoutPolicyMode.bilingualFluid,
       child: Directionality(
         textDirection: isPersian ? TextDirection.rtl : TextDirection.ltr,
         child: child,
