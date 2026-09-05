@@ -85,22 +85,14 @@ abstract final class AppTheme {
           paperColor: brightness == Brightness.light
               ? accent.paperLight
               : accent.paperDark,
-          brandSubtitleStyle: isPersian
-              ? TextStyle(
-                  color: scheme.primary.withValues(alpha: 0.85),
-                  fontSize: 23,
-                  fontFamily: 'IranNastaliq',
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  height: 1.35,
-                )
-              : TextStyle(
-                  color: scheme.primary.withValues(alpha: 0.85),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                  height: 1.3,
-                ),
+          brandSubtitleStyle: TextStyle(
+            color: scheme.primary.withValues(alpha: 0.85),
+            fontSize: isPersian ? 23 : 13.5,
+            fontFamily: 'IranNastaliq',
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+            height: 1.35,
+          ),
         ),
       ],
     );
