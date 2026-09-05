@@ -37,45 +37,8 @@ class ExportResult {
 
 class ExportService {
   /// Generates an intelligent, clean default filename based on the page configuration.
-  ///
-  /// Examples: `Piano_A4_Portrait`, `Treble_A4_Portrait`, `Ensemble_4Staff_A4_Portrait`, `Manuscript_A4_Portrait`.
   static String getDefaultFileName(core.PageConfig config) {
-    final size = config.pageSize.name.toUpperCase();
-    final orient = config.orientation.name[0].toUpperCase() +
-        config.orientation.name.substring(1);
-
-    // Try to match against predefined staff profiles first
-    for (final profile in core.StaffProfiles.all) {
-      if (config.systemLayout == profile.systemLayout) {
-        final cleanLabel = profile.label
-            .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')
-            .replaceAll(RegExp(r'_+'), '_')
-            .trim();
-        return '${cleanLabel}_${size}_$orient';
-      }
-    }
-
-    // Infer layout description from staves
-    final count = config.staffCount;
-    if (count == 0) {
-      return 'Manuscript_${size}_$orient';
-    }
-
-    if (count == 1) {
-      // Find clef of first staff
-      final group = config.systemLayout.rootGroup;
-      if (group.children.isNotEmpty && group.children.first is core.StaffDefinition) {
-        final staff = group.children.first as core.StaffDefinition;
-        final clef = staff.clef?.symbol;
-        if (clef != null) {
-          final clefName = clef.displayName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
-          return '${clefName}_${size}_$orient';
-        }
-      }
-      return 'Staff_${size}_$orient';
-    }
-
-    return 'Ensemble_${count}Staff_${size}_$orient';
+    return core.ScoreCompiler.getDefaultFileName(config);
   }
 
   /// Default output directory.
@@ -86,16 +49,7 @@ class ExportService {
 
   /// Sanitize filename input from user.
   static String _cleanFileName(String name, core.PageConfig config) {
-    var trimmed = name.trim();
-    if (trimmed.isEmpty) {
-      trimmed = getDefaultFileName(config);
-    }
-    // Remove extension if user entered one
-    if (trimmed.endsWith('.tex') || trimmed.endsWith('.pdf') || trimmed.endsWith('.svg')) {
-      trimmed = p.basenameWithoutExtension(trimmed);
-    }
-    // Sanitize illegal characters
-    return trimmed.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    return core.ScoreCompiler.sanitizeFileName(name, config);
   }
 
   /// Export the configuration to a LaTeX file.
@@ -113,7 +67,7 @@ class ExportService {
     });
     final sw = Stopwatch()..start();
     try {
-      final tex = core.emit(config, layout, pageCount: pageCount);
+      final tex = core.ScoreCompiler.compileToTex(config, layout, pageCount: pageCount);
       final name = _cleanFileName(fileName ?? '', config);
 
       if (kIsWeb) {
@@ -169,7 +123,7 @@ class ExportService {
       final name = _cleanFileName(fileName ?? '', config);
 
       if (kIsWeb || !useLatexCompiler) {
-        final pdfBytes = await core.emitPdf(config, layout, pageCount: pageCount);
+        final pdfBytes = await core.ScoreCompiler.compileToPdf(config, layout, pageCount: pageCount);
 
         if (kIsWeb) {
           downloadFileWeb('$name.pdf', pdfBytes, 'application/pdf');
@@ -210,7 +164,7 @@ class ExportService {
         pageCount: pageCount,
         outputDir: dir,
       );
-      final pdfPath = await core.compile(texResult.filePath, outputDir: dir);
+      final pdfPath = await core.ScoreCompiler.compileTexFileToPdf(texResult.filePath, outputDir: dir);
       final file = File(pdfPath);
       final size = await file.length();
 
@@ -248,7 +202,7 @@ class ExportService {
     });
     final sw = Stopwatch()..start();
     try {
-      final svg = core.emitSvg(config, layout, layeringMode: layeringMode);
+      final svg = core.ScoreCompiler.compileToSvg(config, layout, layeringMode: layeringMode);
       final name = _cleanFileName(fileName ?? '', config);
 
       if (kIsWeb) {

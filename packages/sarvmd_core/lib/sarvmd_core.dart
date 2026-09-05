@@ -32,3 +32,15 @@ export 'src/domain/svg_layering_mode.dart';
 export 'src/layout/spacing_spindle.dart';
 export 'src/layout/positioned_element.dart';
 export 'src/layout/engraver.dart';
+export 'src/layout/layout_policy.dart';
+
+// Command Pipeline & Transactional Engine
+export 'src/command/score_command.dart';
+export 'src/command/command_history.dart';
+
+// Registries & Presets
+export 'src/registry/instrument_registry.dart';
+
+// Compiler Engine
+export 'src/compiler/score_compiler.dart';
+
