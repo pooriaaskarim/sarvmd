@@ -1,0 +1,17 @@
+name: sarvmd_composer
+description: Advanced music composition, playback event streaming, and MusicXML transcription engine for SarvMD.
+version: 0.1.0
+publish_to: 'none'
+resolution: workspace
+
+environment:
+  sdk: '^3.6.0'
+
+
+dependencies:
+  sarvmd_core:
+    path: ../sarvmd_core
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.25.0

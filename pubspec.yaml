@@ -8,5 +8,7 @@ environment:
   sdk: ^3.6.0
 workspace:
   - packages/sarvmd_core
+  - packages/sarvmd_composer
   - apps/sarvmd_cli
   - apps/sarvmd_ui
+
