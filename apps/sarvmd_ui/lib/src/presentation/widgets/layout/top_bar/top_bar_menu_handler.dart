@@ -8,6 +8,7 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../../logic/config/config_cubit.dart';
 import '../../../../logic/locale/locale_cubit.dart';
 import '../../../../logic/score/score_cubit.dart';
+import '../../../../logic/view/view_cubit.dart';
 import '../../dialogs/about_dialog.dart';
 import '../../dialogs/export_dialog.dart';
 import '../../dialogs/staff_config_dialog.dart';
@@ -114,9 +115,11 @@ void handleTopBarMenuSelection(
       } catch (_) {}
       break;
     case 'theme':
-      // Theme toggle is handled by the parent scaffold via ThemeCubit / similar.
-      // No-op here; the View menu widget wires onSelected directly to its own handler
-      // for theme so this branch is a no-op safety fallback.
+      // Compact menu fires 'theme' directly; wide-mode View menu intercepts it
+      // before reaching this handler via its own onSelected callback.
+      try {
+        context.read<ViewCubit>().toggleThemeMode();
+      } catch (_) {}
       break;
     case 'preset_a3':
       configCubit.updatePageSize(core.PageSize.a3);
@@ -149,6 +152,31 @@ void handleTopBarMenuSelection(
       break;
     case 'reset_config':
       configCubit.resetToDefaults();
+      break;
+
+    default:
+      // ── Per-staff actions (compact menu: edit_staff_N / remove_staff_N) ──
+      if (value.startsWith('edit_staff_')) {
+        final index = int.tryParse(value.substring('edit_staff_'.length));
+        if (index != null) {
+          final staves = configCubit.allStaves;
+          if (index >= 0 && index < staves.length) {
+            showDialog(
+              context: context,
+              barrierDismissible: true,
+              builder: (dialogCtx) => StaffConfigDialog(
+                staff: staves[index],
+                notifier: configCubit,
+              ),
+            );
+          }
+        }
+      } else if (value.startsWith('remove_staff_')) {
+        final index = int.tryParse(value.substring('remove_staff_'.length));
+        if (index != null) {
+          configCubit.removeStaff(index);
+        }
+      }
       break;
   }
 }
