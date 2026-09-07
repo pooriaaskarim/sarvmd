@@ -95,6 +95,22 @@ class ConfigCubit extends Cubit<core.PageConfig> {
   int get primaryLines => _primaryDef?.lines ?? 5;
   int get secondaryLines => _secondaryDef?.lines ?? 5;
 
+  List<core.StaffDefinition> get allStaves =>
+      _extractStaves(state.systemLayout.rootGroup);
+
+  static List<core.StaffDefinition> _extractStaves(core.StaffNodeGroup group) {
+    final list = <core.StaffDefinition>[];
+    for (final child in group.children) {
+      switch (child) {
+        case core.StaffDefinition def:
+          list.add(def);
+        case core.StaffNodeGroup subGroup:
+          list.addAll(_extractStaves(subGroup));
+      }
+    }
+    return list;
+  }
+
   // --- State Mutator Actions ---
 
   void updatePageSize(core.PageSize size) {
@@ -218,7 +234,7 @@ class ConfigCubit extends Cubit<core.PageConfig> {
 
   // --- Tree Mutation Methods ---
 
-  void addStaff({core.StaffDefinition? def}) {
+  core.StaffDefinition addStaff({core.StaffDefinition? def}) {
     final root = state.systemLayout.rootGroup;
     final newDef = (def ?? const core.StaffDefinition()).copyWith(
       uid: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -227,13 +243,33 @@ class ConfigCubit extends Cubit<core.PageConfig> {
     _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));
+    return newDef;
   }
 
   void removeStaff(int index) {
     final root = state.systemLayout.rootGroup;
     if (index < 0 || index >= root.children.length) return;
+    if (root.children.length <= 1) return;
 
     final newChildren = List<core.StaffNode>.from(root.children)..removeAt(index);
+    _updateSystemLayout(state.systemLayout.copyWith(
+      rootGroup: root.copyWith(children: newChildren),
+    ));
+  }
+
+  void removeStaffByUid(String uid) {
+    final root = state.systemLayout.rootGroup;
+    if (root.children.length <= 1) return;
+
+    final newChildren = root.children.where((child) {
+      if (child is core.StaffDefinition) {
+        return child.uid != uid;
+      }
+      return true;
+    }).toList();
+
+    if (newChildren.length == root.children.length) return;
+
     _updateSystemLayout(state.systemLayout.copyWith(
       rootGroup: root.copyWith(children: newChildren),
     ));

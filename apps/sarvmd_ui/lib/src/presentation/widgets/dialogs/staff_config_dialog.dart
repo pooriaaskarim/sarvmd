@@ -217,8 +217,19 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  IconButton(
+                    onPressed: widget.notifier.allStaves.length > 1
+                        ? () {
+                            widget.notifier.removeStaffByUid(widget.staff.uid);
+                            Navigator.of(context).pop();
+                          }
+                        : null,
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    color: theme.colorScheme.error,
+                    tooltip: AppLocalizations.of(context)!.removeStaff,
+                  ),
+                  const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
