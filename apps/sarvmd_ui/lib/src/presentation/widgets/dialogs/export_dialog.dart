@@ -6,12 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
-import '../../../logic/config/config_cubit.dart';
+import '../../../logic/document/document_cubit.dart';
 import '../../../logic/services/export_directory_service.dart';
 import '../../../logic/services/export_service.dart';
 import '../../../l10n/app_localizations.dart';
-
-import '../../../logic/score/score_cubit.dart';
 
 enum ExportFormat {
   pdf(
@@ -29,12 +27,18 @@ enum ExportFormat {
     description: 'Editable vector paths.',
   ),
   tex(
-    label: 'LaTeX Source (TeX)',
+    label: 'LaTeX Source (.tex)',
     shortLabel: 'TeX',
     icon: Icons.code,
     ext: '.tex',
-    description: 'pdfliteral LaTeX code.',
+    description: 'Raw LaTeX manuscript code.',
   );
+
+  final String label;
+  final String shortLabel;
+  final IconData icon;
+  final String ext;
+  final String description;
 
   const ExportFormat({
     required this.label,
@@ -43,12 +47,6 @@ enum ExportFormat {
     required this.ext,
     required this.description,
   });
-
-  final String label;
-  final String shortLabel;
-  final IconData icon;
-  final String ext;
-  final String description;
 
   String getLocalizedDescription(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -65,16 +63,12 @@ Future<ExportResult?> showExportDialog(
   BuildContext context, {
   ExportFormat initialFormat = ExportFormat.pdf,
 }) {
-  final configCubit = context.read<ConfigCubit>();
-  final scoreCubit = context.read<ScoreCubit>();
+  final documentCubit = context.read<DocumentCubit>();
   return showDialog<ExportResult>(
     context: context,
     barrierColor: Colors.black54,
-    builder: (_) => MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: configCubit),
-        BlocProvider.value(value: scoreCubit),
-      ],
+    builder: (_) => BlocProvider.value(
+      value: documentCubit,
       child: ExportDialog(initialFormat: initialFormat),
     ),
   );
@@ -113,8 +107,9 @@ class _ExportDialogState extends State<ExportDialog> {
   void initState() {
     super.initState();
     _selectedFormat = widget.initialFormat;
-    final config = context.read<ConfigCubit>().state;
-    final score = context.read<ScoreCubit>().state.score;
+    final docCubit = context.read<DocumentCubit>();
+    final config = docCubit.state.config;
+    final score = docCubit.state.score;
     _isCustomName = score.title.trim().isNotEmpty;
     _nameController.text = core.ScoreCompiler.getEffectiveTitle(score, config);
     _pageController.text = '$_pageCount';
@@ -151,10 +146,11 @@ class _ExportDialogState extends State<ExportDialog> {
   }
 
   void _resetToDefaultName() {
-    final config = context.read<ConfigCubit>().state;
-    final score = context.read<ScoreCubit>().state.score;
+    final docCubit = context.read<DocumentCubit>();
+    final config = docCubit.state.config;
+    final score = docCubit.state.score;
     if (score.title.isNotEmpty) {
-      context.read<ScoreCubit>().execute(core.SetTitleCommand('', score.title));
+      docCubit.execute(core.SetTitleCommand('', score.title));
     }
     setState(() {
       _isCustomName = false;
@@ -171,15 +167,15 @@ class _ExportDialogState extends State<ExportDialog> {
       _errorMessage = null;
     });
 
-    final configCubit = context.read<ConfigCubit>();
-    final config = configCubit.state;
-    final layout = configCubit.layout;
+    final documentCubit = context.read<DocumentCubit>();
+    final config = documentCubit.state.config;
+    final layout = documentCubit.layout;
     final rawName = _nameController.text.trim();
-    final score = context.read<ScoreCubit>().state.score;
+    final score = documentCubit.state.score;
     final effectiveExportName = core.ScoreCompiler.sanitizeFileName(rawName, config);
 
     if (rawName != score.title) {
-      context.read<ScoreCubit>().execute(core.SetTitleCommand(rawName, score.title));
+      documentCubit.execute(core.SetTitleCommand(rawName, score.title));
     }
 
     try {
@@ -379,7 +375,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.zero,
                                 hintText: core.ScoreCompiler.getDefaultFileName(
-                                  context.read<ConfigCubit>().state,
+                                  context.read<DocumentCubit>().state.config,
                                 ),
                               ),
                               onChanged: (val) {
@@ -772,7 +768,7 @@ class _ExportDialogState extends State<ExportDialog> {
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  'File: ${core.ScoreCompiler.sanitizeFileName(_nameController.text, context.read<ConfigCubit>().state)}${_selectedFormat.ext}',
+                                  'File: ${core.ScoreCompiler.sanitizeFileName(_nameController.text, context.read<DocumentCubit>().state.config)}${_selectedFormat.ext}',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'monospace',

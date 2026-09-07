@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../widgets/staff/document_settings_group.dart';
 import '../widgets/staff/margins_settings_group.dart';
 import '../../core/theme/app_metrics.dart';
@@ -23,7 +22,8 @@ import '../widgets/panels/view_panel.dart';
 import '../widgets/canvas/ruler_box.dart';
 import '../widgets/common/integrated_scale_control.dart';
 import '../widgets/panels/advanced_builder_panel.dart';
-import '../../logic/config/config_cubit.dart';
+import '../../logic/document/document_cubit.dart';
+import '../../logic/document/document_state.dart';
 import '../../logic/view/view_cubit.dart';
 import '../../logic/view/view_state.dart';
 
@@ -77,7 +77,7 @@ class _EditorScreenState extends State<EditorScreen> {
     final constraints = _lastConstraints;
     if (constraints == null) return;
 
-    final config = context.read<ConfigCubit>().state;
+    final config = context.read<DocumentCubit>().state.config;
     final viewState = context.read<ViewCubit>().state;
 
     const double lpmm = 96 / 25.4; // canvas internal scale
@@ -144,18 +144,19 @@ class _EditorScreenState extends State<EditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final configCubit = context.read<ConfigCubit>();
-    return BlocListener<ConfigCubit, core.PageConfig>(
+    final documentCubit = context.read<DocumentCubit>();
+    return BlocListener<DocumentCubit, DocumentState>(
       listenWhen: (previous, current) =>
-          previous.effectiveWidth != current.effectiveWidth ||
-          previous.effectiveHeight != current.effectiveHeight,
+          previous.config.effectiveWidth != current.config.effectiveWidth ||
+          previous.config.effectiveHeight != current.config.effectiveHeight,
       listener: (context, state) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _applyZoomPreset(ZoomPreset.fitScreen);
         });
       },
-      child: BlocBuilder<ConfigCubit, core.PageConfig>(
-        builder: (context, configState) {
+      child: BlocBuilder<DocumentCubit, DocumentState>(
+        builder: (context, docState) {
+          final configState = docState.config;
           return BlocBuilder<ViewCubit, ViewState>(
             builder: (context, viewState) {
               return Scaffold(
@@ -204,7 +205,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                           ProfilePicker(
                                             currentConfig: configState,
                                             onProfileSelected: (p) =>
-                                                configCubit.applyProfile(p),
+                                                documentCubit.applyProfile(p),
                                           ),
                                         ],
                                       ),
@@ -223,11 +224,11 @@ class _EditorScreenState extends State<EditorScreen> {
                                           DocumentSettingsGroup(
                                             pageSize: configState.pageSize,
                                             onPageSizeChanged:
-                                                configCubit.updatePageSize,
+                                                documentCubit.updatePageSize,
                                             orientation:
                                                 configState.orientation,
                                             onOrientationChanged:
-                                                configCubit.updateOrientation,
+                                                documentCubit.updateOrientation,
                                           ),
                                         ],
                                       ),
@@ -238,18 +239,18 @@ class _EditorScreenState extends State<EditorScreen> {
                                       child: MarginsSettingsGroup(
                                         margins: configState.margins,
                                         onLeftChanged:
-                                            configCubit.updateLeftMargin,
+                                            documentCubit.updateLeftMargin,
                                         onRightChanged:
-                                            configCubit.updateRightMargin,
+                                            documentCubit.updateRightMargin,
                                         onTopChanged:
-                                            configCubit.updateTopMargin,
+                                            documentCubit.updateTopMargin,
                                         onBottomChanged:
-                                            configCubit.updateBottomMargin,
+                                            documentCubit.updateBottomMargin,
                                         onHorizontalChanged:
-                                            configCubit.updateHorizontalMargins,
+                                            documentCubit.updateHorizontalMargins,
                                         onVerticalChanged:
-                                            configCubit.updateVerticalMargins,
-                                        onReset: configCubit.resetMargins,
+                                            documentCubit.updateVerticalMargins,
+                                        onReset: documentCubit.resetMargins,
                                         onScrubStart: (side) => context
                                             .read<ViewCubit>()
                                             .setActiveScrubbingMargin(side),
@@ -267,21 +268,21 @@ class _EditorScreenState extends State<EditorScreen> {
                                         children: [
                                           SectionHeader(
                                             title: AppLocalizations.of(context)!.staffSpacing,
-                                            onReset: configCubit.resetSpacing,
+                                            onReset: documentCubit.resetSpacing,
                                           ),
                                           StaffSpacingGroup(
                                             staffConfig:
                                                 configState.staffConfig,
                                             isDoubleLine:
                                                 configState.staffCount > 1,
-                                            lines: configCubit.primaryLines,
+                                            lines: documentCubit.primaryLines,
                                             onLineGapChanged:
-                                                configCubit.updateLineGap,
+                                                documentCubit.updateLineGap,
                                             onSystemGapChanged:
-                                                configCubit.updateSystemGap,
+                                                documentCubit.updateSystemGap,
                                             onInterStaffGapChanged:
-                                                configCubit.updateInterStaffGap,
-                                            hints: configCubit.uiHints,
+                                                documentCubit.updateInterStaffGap,
+                                            hints: documentCubit.uiHints,
                                           ),
                                         ],
                                       ),
@@ -289,7 +290,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                     const Divider(height: 32),
                                     SystemHierarchyPanel(
                                       key: const ValueKey('advanced_panel'),
-                                      notifier: configCubit,
+                                      notifier: documentCubit,
                                     ),
                                     const SizedBox(
                                         height: AppSpacing.paddingLarge),
@@ -308,7 +309,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      AppLocalizations.of(context)!.systemsCount(configCubit.layout.systemCount),
+                                      AppLocalizations.of(context)!.systemsCount(documentCubit.layout.systemCount),
                                       style: TextStyle(
                                           fontSize: 11,
                                           color: Theme.of(context)
@@ -318,7 +319,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                     Tooltip(
                                       message: AppLocalizations.of(context)!.resetAllSettings,
                                       child: TextButton.icon(
-                                        onPressed: configCubit.resetToDefaults,
+                                        onPressed: documentCubit.resetToDefaults,
                                         icon:
                                             const Icon(Icons.restore, size: 14),
                                         label: Text(AppLocalizations.of(context)!.reset,
@@ -427,7 +428,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                           constrained: false,
                                           alignment: Alignment.topLeft,
                                           child: PreviewCanvas(
-                                            layout: configCubit.layout,
+                                            layout: documentCubit.layout,
                                             viewState: viewState,
                                           ),
                                         ),

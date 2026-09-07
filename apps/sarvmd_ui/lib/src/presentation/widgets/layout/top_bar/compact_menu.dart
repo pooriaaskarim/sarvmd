@@ -8,8 +8,8 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../logic/config/config_cubit.dart';
-import '../../../../logic/score/score_cubit.dart';
+import '../../../../logic/document/document_cubit.dart';
+import '../../../../logic/document/document_state.dart';
 
 /// Builds the flat [PopupMenuEntry] list used by the compact (< 960 px) app-menu.
 ///
@@ -25,11 +25,11 @@ List<PopupMenuEntry<String>> buildCompactMenuItems(
   AppLocalizations l10n,
   ColorScheme cs,
   SarvThemeExtension? themeExt,
-  ScoreState scoreState,
+  DocumentState documentState,
   core.PageConfig configState,
 ) {
-  final configCubit = context.read<ConfigCubit>();
-  final allStaves = configCubit.allStaves;
+  final documentCubit = context.read<DocumentCubit>();
+  final allStaves = documentCubit.allStaves;
   final isDark = Theme.of(context).brightness == Brightness.dark;
 
   return [
@@ -89,13 +89,13 @@ List<PopupMenuEntry<String>> buildCompactMenuItems(
     // Undo
     PopupMenuItem<String>(
       value: 'undo',
-      enabled: scoreState.canUndo,
+      enabled: documentState.canUndo,
       child: _menuRow(
         icon: Icons.undo_rounded,
-        label: l10n.undo,
+        label: documentState.lastUndoLabel != null ? '${l10n.undo} ${documentState.lastUndoLabel}' : l10n.undo,
         cs: cs,
-        iconColor: scoreState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
-        labelColor: scoreState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
+        iconColor: documentState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
+        labelColor: documentState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
         trailing: 'Ctrl+Z',
       ),
     ),
@@ -103,13 +103,13 @@ List<PopupMenuEntry<String>> buildCompactMenuItems(
     // Redo
     PopupMenuItem<String>(
       value: 'redo',
-      enabled: scoreState.canRedo,
+      enabled: documentState.canRedo,
       child: _menuRow(
         icon: Icons.redo_rounded,
-        label: l10n.redo,
+        label: documentState.lastRedoLabel != null ? '${l10n.redo} ${documentState.lastRedoLabel}' : l10n.redo,
         cs: cs,
-        iconColor: scoreState.canRedo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
-        labelColor: scoreState.canRedo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
+        iconColor: documentState.canRedo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
+        labelColor: documentState.canRedo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
         trailing: 'Ctrl+Y',
       ),
     ),
@@ -119,7 +119,7 @@ List<PopupMenuEntry<String>> buildCompactMenuItems(
       enabled: false,
       child: _menuRow(
         icon: Icons.history,
-        label: l10n.editHistoryCount(scoreState.undoStack.length),
+        label: l10n.editHistoryCount(documentState.undoStack.length),
         cs: cs,
         iconColor: cs.onSurface.withValues(alpha: 0.55),
         labelColor: cs.onSurface.withValues(alpha: 0.55),

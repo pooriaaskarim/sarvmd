@@ -4,15 +4,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../logic/score/score_cubit.dart';
+import '../../../../../logic/document/document_state.dart';
 import '../top_bar_menu_handler.dart';
 import '../top_bar_menu_header.dart';
 
 /// `File` desktop menu for the top bar.
 class TopBarFileMenu extends StatelessWidget {
-  final ScoreState scoreState;
+  final DocumentState documentState;
 
-  const TopBarFileMenu({super.key, required this.scoreState});
+  const TopBarFileMenu({super.key, required this.documentState});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class TopBarFileMenu extends StatelessWidget {
 
     return TopBarMenuHeader(
       label: l10n.menuFile,
-      onSelected: (value) => handleTopBarMenuSelection(context, value, scoreState),
+      onSelected: (value) => handleTopBarMenuSelection(context, value, documentState),
       itemBuilder: (context) => [
         PopupMenuItem<String>(
           value: 'export',

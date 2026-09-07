@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../logic/score/score_cubit.dart';
+import '../../../../../logic/document/document_state.dart';
 import '../top_bar_menu_handler.dart';
 import '../top_bar_menu_header.dart';
 
@@ -15,13 +15,13 @@ import '../top_bar_menu_header.dart';
 /// The [onThemeToggle] callback is provided by the parent so the menu stays decoupled
 /// from the concrete theme management implementation (ThemeCubit, etc.).
 class TopBarViewMenu extends StatelessWidget {
-  final ScoreState scoreState;
+  final DocumentState documentState;
   final core.PageConfig configState;
   final VoidCallback onThemeToggle;
 
   const TopBarViewMenu({
     super.key,
-    required this.scoreState,
+    required this.documentState,
     required this.configState,
     required this.onThemeToggle,
   });
@@ -38,7 +38,7 @@ class TopBarViewMenu extends StatelessWidget {
         if (value == 'theme') {
           onThemeToggle();
         } else {
-          handleTopBarMenuSelection(context, value, scoreState);
+          handleTopBarMenuSelection(context, value, documentState);
         }
       },
       itemBuilder: (context) => [

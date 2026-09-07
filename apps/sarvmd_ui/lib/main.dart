@@ -10,10 +10,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'src/l10n/app_localizations.dart';
 import 'src/core/utils/app_logger.dart';
-import 'src/logic/config/config_cubit.dart';
+import 'src/logic/document/document_cubit.dart';
 import 'src/logic/view/view_state.dart';
 import 'src/logic/view/view_cubit.dart';
-import 'src/logic/score/score_cubit.dart';
 import 'src/logic/locale/locale_cubit.dart';
 import 'src/logic/locale/locale_state.dart';
 import 'src/core/theme/app_theme.dart';
@@ -58,9 +57,8 @@ void main() {
       MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => LocaleCubit()),
-          BlocProvider(create: (_) => ConfigCubit()),
+          BlocProvider(create: (_) => DocumentCubit()),
           BlocProvider(create: (_) => ViewCubit()),
-          BlocProvider(create: (_) => ScoreCubit()),
         ],
         child: const SarvApp(),
       ),

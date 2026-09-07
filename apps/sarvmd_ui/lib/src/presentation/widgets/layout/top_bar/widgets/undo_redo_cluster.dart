@@ -4,21 +4,19 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../logic/score/score_cubit.dart';
+import '../../../../../logic/document/document_state.dart';
 
 /// Undo and Redo icon button pair used in the top bar's left zone.
 ///
-/// Reads [scoreState] to decide whether each button is enabled.
-/// Callbacks ([onUndo], [onRedo]) are wired by the parent so this widget
-/// stays stateless and trivially testable.
+/// Reads [documentState] to decide whether each button is enabled and show action labels.
 class UndoRedoCluster extends StatelessWidget {
-  final ScoreState scoreState;
+  final DocumentState documentState;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
 
   const UndoRedoCluster({
     super.key,
-    required this.scoreState,
+    required this.documentState,
     required this.onUndo,
     required this.onRedo,
   });
@@ -28,29 +26,40 @@ class UndoRedoCluster extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
+    final undoLabel = documentState.lastUndoLabel;
+    final redoLabel = documentState.lastRedoLabel;
+
+    final undoMsg = documentState.canUndo
+        ? (undoLabel != null ? 'Undo $undoLabel (Ctrl+Z)' : 'Undo (Ctrl+Z)')
+        : 'Undo (${l10n.hidden})';
+
+    final redoMsg = documentState.canRedo
+        ? (redoLabel != null ? 'Redo $redoLabel (Ctrl+Y)' : 'Redo (Ctrl+Y)')
+        : 'Redo (${l10n.hidden})';
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Tooltip(
-          message: scoreState.canUndo ? 'Undo (Ctrl+Z)' : 'Undo (${l10n.hidden})',
+          message: undoMsg,
           child: IconButton(
             constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
             padding: const EdgeInsets.all(5),
             icon: const Icon(Icons.undo_rounded, size: 18.0),
             color: cs.onSurface,
             disabledColor: cs.onSurface.withValues(alpha: 0.38),
-            onPressed: scoreState.canUndo ? onUndo : null,
+            onPressed: documentState.canUndo ? onUndo : null,
           ),
         ),
         Tooltip(
-          message: scoreState.canRedo ? 'Redo (Ctrl+Y)' : 'Redo (${l10n.hidden})',
+          message: redoMsg,
           child: IconButton(
             constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
             padding: const EdgeInsets.all(5),
             icon: const Icon(Icons.redo_rounded, size: 18.0),
             color: cs.onSurface,
             disabledColor: cs.onSurface.withValues(alpha: 0.38),
-            onPressed: scoreState.canRedo ? onRedo : null,
+            onPressed: documentState.canRedo ? onRedo : null,
           ),
         ),
       ],

@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../logic/config/config_cubit.dart';
-import '../../../../../logic/score/score_cubit.dart';
+import '../../../../../logic/document/document_cubit.dart';
+import '../../../../../logic/document/document_state.dart';
 import '../../../dialogs/staff_config_dialog.dart';
 import '../top_bar_menu_handler.dart';
 
@@ -15,9 +15,9 @@ import '../top_bar_menu_handler.dart';
 /// Uses [MenuAnchor] + [SubmenuButton] to support cascading sub-menus for
 /// "Add Staff" and "Edit Staff" — something [PopupMenuButton] cannot do.
 class TopBarEditMenu extends StatelessWidget {
-  final ScoreState scoreState;
+  final DocumentState documentState;
 
-  const TopBarEditMenu({super.key, required this.scoreState});
+  const TopBarEditMenu({super.key, required this.documentState});
 
   @override
   Widget build(BuildContext context) {
@@ -54,23 +54,23 @@ class TopBarEditMenu extends StatelessWidget {
           leadingIcon: Icon(
             Icons.undo_rounded,
             size: 17,
-            color: scoreState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
+            color: documentState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
           ),
           onPressed:
-              scoreState.canUndo ? () => handleTopBarMenuSelection(context, 'undo', scoreState) : null,
+              documentState.canUndo ? () => handleTopBarMenuSelection(context, 'undo', documentState) : null,
           trailingIcon: Text('Ctrl+Z', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-          child: Text(l10n.undo),
+          child: Text(documentState.lastUndoLabel != null ? '${l10n.undo} ${documentState.lastUndoLabel}' : l10n.undo),
         ),
         MenuItemButton(
           leadingIcon: Icon(
             Icons.redo_rounded,
             size: 17,
-            color: scoreState.canRedo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
+            color: documentState.canRedo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
           ),
           onPressed:
-              scoreState.canRedo ? () => handleTopBarMenuSelection(context, 'redo', scoreState) : null,
+              documentState.canRedo ? () => handleTopBarMenuSelection(context, 'redo', documentState) : null,
           trailingIcon: Text('Ctrl+Y', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-          child: Text(l10n.redo),
+          child: Text(documentState.lastRedoLabel != null ? '${l10n.redo} ${documentState.lastRedoLabel}' : l10n.redo),
         ),
         const Divider(),
 
@@ -80,33 +80,33 @@ class TopBarEditMenu extends StatelessWidget {
           menuChildren: [
             MenuItemButton(
               leadingIcon: Icon(Icons.music_note_outlined, size: 17, color: cs.onSurface),
-              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_5line', scoreState),
+              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_5line', documentState),
               child: Text(l10n.staffPreset5LineTreble),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.music_note_outlined, size: 17, color: cs.onSurface),
-              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_5line_bass', scoreState),
+              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_5line_bass', documentState),
               child: Text(l10n.staffPreset5LineBass),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.piano_outlined, size: 17, color: cs.onSurface),
-              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_grand', scoreState),
+              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_grand', documentState),
               child: Text(l10n.staffPresetGrandPair),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.grid_on_outlined, size: 17, color: cs.onSurface),
-              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_tab', scoreState),
+              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_tab', documentState),
               child: Text(l10n.staffPreset6LineTab),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.horizontal_rule_outlined, size: 17, color: cs.onSurface),
-              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_rhythm', scoreState),
+              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_rhythm', documentState),
               child: Text(l10n.staffPreset1LineRhythm),
             ),
             const Divider(),
             MenuItemButton(
               leadingIcon: Icon(Icons.tune_outlined, size: 17, color: cs.primary),
-              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_custom', scoreState),
+              onPressed: () => handleTopBarMenuSelection(context, 'add_staff_custom', documentState),
               child: Text(
                 l10n.staffPresetCustomConfigure,
                 style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
@@ -135,8 +135,8 @@ class TopBarEditMenu extends StatelessWidget {
         // ── History (informational) ───────────────────────────────────────
         MenuItemButton(
           leadingIcon: Icon(Icons.history, size: 17, color: cs.onSurface),
-          onPressed: () => handleTopBarMenuSelection(context, 'history', scoreState),
-          child: Text(l10n.editHistoryCount(scoreState.undoStack.length)),
+          onPressed: () => handleTopBarMenuSelection(context, 'history', documentState),
+          child: Text(l10n.editHistoryCount(documentState.undoStack.length)),
         ),
       ],
     );
@@ -144,8 +144,8 @@ class TopBarEditMenu extends StatelessWidget {
 
   /// Builds the list of [MenuItemButton]s for each active staff in the layout.
   List<Widget> _buildEditStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
-    final configCubit = context.read<ConfigCubit>();
-    final allStaves = configCubit.allStaves;
+    final documentCubit = context.read<DocumentCubit>();
+    final allStaves = documentCubit.allStaves;
 
     if (allStaves.isEmpty) {
       return [
@@ -171,7 +171,7 @@ class TopBarEditMenu extends StatelessWidget {
                 barrierDismissible: true,
                 builder: (dialogCtx) => StaffConfigDialog(
                   staff: staff,
-                  notifier: configCubit,
+                  notifier: documentCubit,
                 ),
               );
             },
@@ -183,8 +183,8 @@ class TopBarEditMenu extends StatelessWidget {
 
   /// Builds the list of [MenuItemButton]s to remove active staves in the layout.
   List<Widget> _buildRemoveStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
-    final configCubit = context.read<ConfigCubit>();
-    final allStaves = configCubit.allStaves;
+    final documentCubit = context.read<DocumentCubit>();
+    final allStaves = documentCubit.allStaves;
 
     if (allStaves.length <= 1) {
       return [
@@ -205,7 +205,7 @@ class TopBarEditMenu extends StatelessWidget {
           return MenuItemButton(
             leadingIcon: Icon(Icons.remove_circle_outline, size: 16, color: cs.error),
             onPressed: () {
-              configCubit.removeStaff(i);
+              documentCubit.removeStaff(i);
             },
             child: Text(l10n.staffMenuSummary(i + 1, label, staff.lines)),
           );

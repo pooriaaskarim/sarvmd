@@ -6,11 +6,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../logic/config/config_cubit.dart';
+import '../../../../../logic/document/document_cubit.dart';
 
 /// Ensemble profile quick-picker dropdown rendered in the left zone of the top bar.
 ///
-/// Selecting a profile calls [ConfigCubit.applyProfile] which replaces the current
+/// Selecting a profile calls [DocumentCubit.applyProfile] which replaces the current
 /// system layout with the preset's stave configuration.
 class EnsembleProfilePicker extends StatelessWidget {
   final core.StaffProfile? activeProfile;
@@ -55,7 +55,7 @@ class EnsembleProfilePicker extends StatelessWidget {
       ),
       color: cs.surfaceContainerHigh,
       onSelected: (profile) {
-        context.read<ConfigCubit>().applyProfile(profile);
+        context.read<DocumentCubit>().applyProfile(profile);
       },
       itemBuilder: (context) {
         return [

@@ -8,6 +8,8 @@ class PrecisionSlider extends StatefulWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.onChangeStart,
+    this.onChangeEnd,
     required this.min,
     required this.max,
   });
@@ -15,6 +17,8 @@ class PrecisionSlider extends StatefulWidget {
   final String label;
   final double value;
   final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChangeStart;
+  final ValueChanged<double>? onChangeEnd;
   final double min;
   final double max;
 
@@ -105,6 +109,8 @@ class _PrecisionSliderState extends State<PrecisionSlider> {
             min: widget.min,
             max: widget.max,
             onChanged: widget.onChanged,
+            onChangeStart: widget.onChangeStart,
+            onChangeEnd: widget.onChangeEnd,
             activeColor: Theme.of(context).colorScheme.primary,
             inactiveColor:
                 Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),

@@ -6,13 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../logic/score/score_cubit.dart';
+import '../../../../../logic/document/document_cubit.dart';
 
 /// Center-zone inline-editable score header.
 ///
 /// Renders the score **Title** (single source of truth for score title & export name)
 /// as a tappable label that switches to an inline [TextField] on tap.
-/// On submit (Enter or tap-outside), dispatches [core.SetTitleCommand] through [ScoreCubit].
+/// On submit (Enter or tap-outside), dispatches [core.SetTitleCommand] through [DocumentCubit].
 ///
 /// If cleared (empty input), falls back to the default file name format generated from page config.
 class EditableScoreHeader extends StatefulWidget {
@@ -61,7 +61,7 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
     if (!_isEditingTitle) return;
     final newTitle = _titleController.text.trim();
     if (newTitle != widget.score.title) {
-      context.read<ScoreCubit>().execute(
+      context.read<DocumentCubit>().execute(
             core.SetTitleCommand(newTitle, widget.score.title),
           );
     }

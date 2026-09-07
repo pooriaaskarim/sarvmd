@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../logic/score/score_cubit.dart';
+import '../../../logic/document/document_cubit.dart';
 
 class UndoIntent extends Intent {
   const UndoIntent();
@@ -18,7 +18,7 @@ class RedoIntent extends Intent {
 /// Global keyboard shortcut interceptor gateway for SarvMD.
 ///
 /// Binds standard desktop & web keyboard shortcuts for Undo/Redo (`Ctrl+Z`, `Cmd+Z`, `Ctrl+Y`, `Cmd+Shift+Z`)
-/// to dispatch transactions on [ScoreCubit].
+/// to dispatch transactions on [DocumentCubit].
 class SarvShortcutGateway extends StatelessWidget {
   final Widget child;
 
@@ -42,7 +42,7 @@ class SarvShortcutGateway extends StatelessWidget {
         actions: <Type, Action<Intent>>{
           UndoIntent: CallbackAction<UndoIntent>(
             onInvoke: (intent) {
-              final cubit = context.read<ScoreCubit>();
+              final cubit = context.read<DocumentCubit>();
               if (cubit.state.canUndo) {
                 cubit.undo();
               }
@@ -51,7 +51,7 @@ class SarvShortcutGateway extends StatelessWidget {
           ),
           RedoIntent: CallbackAction<RedoIntent>(
             onInvoke: (intent) {
-              final cubit = context.read<ScoreCubit>();
+              final cubit = context.read<DocumentCubit>();
               if (cubit.state.canRedo) {
                 cubit.redo();
               }

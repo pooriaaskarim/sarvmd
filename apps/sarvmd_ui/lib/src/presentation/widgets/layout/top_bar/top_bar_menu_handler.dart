@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
-import '../../../../logic/config/config_cubit.dart';
+import '../../../../logic/document/document_cubit.dart';
+import '../../../../logic/document/document_state.dart';
 import '../../../../logic/locale/locale_cubit.dart';
-import '../../../../logic/score/score_cubit.dart';
 import '../../../../logic/view/view_cubit.dart';
 import '../../dialogs/about_dialog.dart';
 import '../../dialogs/export_dialog.dart';
@@ -19,24 +19,23 @@ import '../../dialogs/staff_config_dialog.dart';
 void handleTopBarMenuSelection(
   BuildContext context,
   String value,
-  ScoreState scoreState,
+  DocumentState documentState,
 ) {
-  final scoreCubit = context.read<ScoreCubit>();
-  final configCubit = context.read<ConfigCubit>();
+  final documentCubit = context.read<DocumentCubit>();
 
   switch (value) {
     case 'undo':
-      if (scoreState.canUndo) scoreCubit.undo();
+      if (documentState.canUndo) documentCubit.undo();
       break;
     case 'redo':
-      if (scoreState.canRedo) scoreCubit.redo();
+      if (documentState.canRedo) documentCubit.redo();
       break;
 
     // ── Add Staff presets ───────────────────────────────────────────────────
     case 'add_staff':
     case 'add_staff_5line':
-      configCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
-      scoreCubit.execute(core.AddPartCommand(
+      documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
+      documentCubit.execute(core.AddPartCommand(
         core.Part(
           id: 'part_${DateTime.now().microsecondsSinceEpoch}',
           name: 'Standard Treble Staff',
@@ -44,8 +43,8 @@ void handleTopBarMenuSelection(
       ));
       break;
     case 'add_staff_5line_bass':
-      configCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
-      scoreCubit.execute(core.AddPartCommand(
+      documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
+      documentCubit.execute(core.AddPartCommand(
         core.Part(
           id: 'part_${DateTime.now().microsecondsSinceEpoch}',
           name: 'Standard Bass Staff',
@@ -53,20 +52,20 @@ void handleTopBarMenuSelection(
       ));
       break;
     case 'add_staff_grand':
-      configCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
-      configCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
+      documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
+      documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
       final now = DateTime.now().microsecondsSinceEpoch;
-      scoreCubit.execute(core.AddPartCommand(
+      documentCubit.execute(core.AddPartCommand(
         core.Part(id: 'part_${now}_1', name: 'Grand Staff Treble'),
       ));
-      scoreCubit.execute(core.AddPartCommand(
+      documentCubit.execute(core.AddPartCommand(
         core.Part(id: 'part_${now}_2', name: 'Grand Staff Bass'),
       ));
       break;
     case 'add_staff_tab':
-      configCubit.addStaff(
+      documentCubit.addStaff(
           def: const core.StaffDefinition(lines: 6, clef: core.Clef.tab, instrumentName: 'TAB'));
-      scoreCubit.execute(core.AddPartCommand(
+      documentCubit.execute(core.AddPartCommand(
         core.Part(
           id: 'part_${DateTime.now().microsecondsSinceEpoch}',
           name: 'Guitar TAB',
@@ -74,10 +73,10 @@ void handleTopBarMenuSelection(
       ));
       break;
     case 'add_staff_rhythm':
-      configCubit.addStaff(
+      documentCubit.addStaff(
           def: const core.StaffDefinition(
               lines: 1, clef: core.Clef.percussion, instrumentName: 'Rhythm'));
-      scoreCubit.execute(core.AddPartCommand(
+      documentCubit.execute(core.AddPartCommand(
         core.Part(
           id: 'part_${DateTime.now().microsecondsSinceEpoch}',
           name: 'Rhythm Staff',
@@ -85,12 +84,12 @@ void handleTopBarMenuSelection(
       ));
       break;
     case 'add_staff_custom':
-      final newStaff = configCubit.addStaff(
+      final newStaff = documentCubit.addStaff(
           def: const core.StaffDefinition(
         lines: 5,
         clef: core.TrebleClef(),
       ));
-      scoreCubit.execute(core.AddPartCommand(
+      documentCubit.execute(core.AddPartCommand(
         core.Part(
           id: 'part_${DateTime.now().microsecondsSinceEpoch}',
           name: '',
@@ -99,7 +98,7 @@ void handleTopBarMenuSelection(
       showDialog(
         context: context,
         barrierDismissible: true,
-        builder: (dialogCtx) => StaffConfigDialog(staff: newStaff, notifier: configCubit),
+        builder: (dialogCtx) => StaffConfigDialog(staff: newStaff, notifier: documentCubit),
       );
       break;
 
@@ -122,28 +121,28 @@ void handleTopBarMenuSelection(
       } catch (_) {}
       break;
     case 'preset_a3':
-      configCubit.updatePageSize(core.PageSize.a3);
+      documentCubit.updatePageSize(core.PageSize.a3);
       break;
     case 'preset_a4':
-      configCubit.updatePageSize(core.PageSize.a4);
+      documentCubit.updatePageSize(core.PageSize.a4);
       break;
     case 'preset_a5':
-      configCubit.updatePageSize(core.PageSize.a5);
+      documentCubit.updatePageSize(core.PageSize.a5);
       break;
     case 'preset_b4':
-      configCubit.updatePageSize(core.PageSize.b4);
+      documentCubit.updatePageSize(core.PageSize.b4);
       break;
     case 'preset_b5':
-      configCubit.updatePageSize(core.PageSize.b5);
+      documentCubit.updatePageSize(core.PageSize.b5);
       break;
     case 'preset_letter':
-      configCubit.updatePageSize(core.PageSize.letter);
+      documentCubit.updatePageSize(core.PageSize.letter);
       break;
     case 'toggle_orientation':
-      final next = configCubit.state.orientation == core.PageOrientation.portrait
+      final next = documentCubit.state.config.orientation == core.PageOrientation.portrait
           ? core.PageOrientation.landscape
           : core.PageOrientation.portrait;
-      configCubit.updateOrientation(next);
+      documentCubit.updateOrientation(next);
       break;
 
     // ── Misc ────────────────────────────────────────────────────────────────
@@ -151,7 +150,7 @@ void handleTopBarMenuSelection(
       showSarvAboutDialog(context);
       break;
     case 'reset_config':
-      configCubit.resetToDefaults();
+      documentCubit.resetToDefaults();
       break;
 
     default:
@@ -159,14 +158,14 @@ void handleTopBarMenuSelection(
       if (value.startsWith('edit_staff_')) {
         final index = int.tryParse(value.substring('edit_staff_'.length));
         if (index != null) {
-          final staves = configCubit.allStaves;
+          final staves = documentCubit.allStaves;
           if (index >= 0 && index < staves.length) {
             showDialog(
               context: context,
               barrierDismissible: true,
               builder: (dialogCtx) => StaffConfigDialog(
                 staff: staves[index],
-                notifier: configCubit,
+                notifier: documentCubit,
               ),
             );
           }
@@ -174,7 +173,7 @@ void handleTopBarMenuSelection(
       } else if (value.startsWith('remove_staff_')) {
         final index = int.tryParse(value.substring('remove_staff_'.length));
         if (index != null) {
-          configCubit.removeStaff(index);
+          documentCubit.removeStaff(index);
         }
       }
       break;

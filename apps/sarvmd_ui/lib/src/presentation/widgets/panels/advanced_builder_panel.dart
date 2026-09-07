@@ -2,21 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/utils/unit_formatter.dart';
-import '../../../logic/config/config_cubit.dart';
+import '../../../logic/document/document_cubit.dart';
+import '../../../logic/document/document_state.dart';
 import '../dialogs/staff_config_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
 class SystemHierarchyPanel extends StatelessWidget {
   const SystemHierarchyPanel({super.key, required this.notifier});
 
-  final ConfigCubit notifier;
+  final DocumentCubit notifier;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConfigCubit, core.PageConfig>(
-      builder: (context, state) {
+    return BlocBuilder<DocumentCubit, DocumentState>(
+      builder: (context, docState) {
         final cs = Theme.of(context).colorScheme;
-        final layout = state.systemLayout;
+        final layout = docState.config.systemLayout;
         final isPersian = Localizations.localeOf(context).languageCode == 'fa';
         final textDirection = isPersian ? TextDirection.rtl : TextDirection.ltr;
 
@@ -63,7 +64,7 @@ class SystemHierarchyPanel extends StatelessWidget {
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
-              _buildMolaSummary(context, state),
+              _buildMolaSummary(context, docState.config),
             ],
           ),
         );
@@ -149,7 +150,7 @@ class _StaffGroupWidget extends StatelessWidget {
   final core.StaffNodeGroup group;
   final bool isRoot;
   final int? index;
-  final ConfigCubit notifier;
+  final DocumentCubit notifier;
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +318,7 @@ class _StaffItem extends StatelessWidget {
 
   final int index;
   final core.StaffDefinition staff;
-  final ConfigCubit notifier;
+  final DocumentCubit notifier;
 
   void _openConfigDialog(BuildContext context) {
     showDialog(
