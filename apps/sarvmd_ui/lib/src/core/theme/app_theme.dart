@@ -87,7 +87,7 @@ abstract final class AppTheme {
               : accent.paperDark,
           brandSubtitleStyle: TextStyle(
             color: scheme.primary.withValues(alpha: 0.85),
-            fontSize: isPersian ? 23 : 13.5,
+            fontSize: 13.5,
             fontFamily: 'IranNastaliq',
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,

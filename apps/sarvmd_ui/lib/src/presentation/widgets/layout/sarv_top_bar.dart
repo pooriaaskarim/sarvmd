@@ -3,24 +3,56 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../logic/config/config_cubit.dart';
-import '../../../logic/locale/locale_cubit.dart';
 import '../../../logic/score/score_cubit.dart';
-import '../dialogs/about_dialog.dart';
 import '../dialogs/export_dialog.dart';
 
 import 'sarv_reactive_brand_logo.dart';
+import 'top_bar/compact_menu.dart';
+import 'top_bar/menus/edit_menu.dart';
+import 'top_bar/menus/file_menu.dart';
+import 'top_bar/menus/help_menu.dart';
+import 'top_bar/menus/view_menu.dart';
+import 'top_bar/top_bar_menu_handler.dart';
+import 'top_bar/widgets/editable_score_header.dart';
+import 'top_bar/widgets/ensemble_profile_picker.dart';
+import 'top_bar/widgets/split_export_button.dart';
+import 'top_bar/widgets/undo_redo_cluster.dart';
 
-/// Photoshop / Figma-style top control header bar for SarvMD.
+/// Professional Dorico / Figma-style top control header bar for SarvMD.
 ///
-/// Responsive: In wide screens, renders full horizontal control bar with hover-expanding logo.
-/// In narrow screens (<720px), secondary tools collapse into a smart logo dropdown menu,
-/// while keeping Undo/Redo instant accessible at the top beside the logo.
+/// This widget is intentionally thin — it is a **layout orchestrator** only.
+/// All interactive logic lives in the specialised modules under `top_bar/`:
+///
+/// ```
+/// top_bar/
+///   compact_menu.dart            – flat popup items for < 960 px mode
+///   top_bar_menu_handler.dart    – central action dispatcher (switch)
+///   top_bar_menu_header.dart     – shared PopupMenuButton shell
+///   menus/
+///     file_menu.dart             – File ▸ Export
+///     edit_menu.dart             – Edit ▸ Undo/Redo, Add/Edit Staff
+///     view_menu.dart             – View ▸ Page sizes, orientation, theme
+///     help_menu.dart             – Help ▸ About
+///   widgets/
+///     undo_redo_cluster.dart     – Undo / Redo icon buttons
+///     ensemble_profile_picker.dart – Ensemble preset quick-picker
+///     editable_score_header.dart – Inline-editable Title & Composer
+///     split_export_button.dart   – Split CTA export button
+/// ```
+///
+/// ## Layout Zones
+/// - **Left Zone**: Brand Logo → Desktop Menus (File, Edit, View, Help) → Undo/Redo → Ensemble Picker
+/// - **Center Zone**: Inline-editable Title • Composer + Layout Status Pill
+/// - **Right Zone**: Split Export CTA Button
+///
+/// ## Responsiveness
+/// [LayoutBuilder] switches between wide (≥ 960 px) and compact (< 960 px) layouts.
+/// The compact layout collapses all menus into a single logo-triggered popup.
 class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
   const SarvTopBar({super.key});
 
@@ -37,14 +69,16 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
       builder: (context, scoreState) {
         return BlocBuilder<ConfigCubit, core.PageConfig>(
           builder: (context, configState) {
+            final activeProfile = context.read<ConfigCubit>().activeProfile;
+
             return Directionality(
               textDirection: TextDirection.ltr,
               child: Container(
                 height: 52.0,
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  color: cs.surfaceContainerHigh,
                   border: Border(
                     bottom: BorderSide(
                       color: cs.outlineVariant.withValues(alpha: 0.5),
@@ -54,342 +88,39 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final isCompact = constraints.maxWidth < 720;
+                    final isCompact = constraints.maxWidth < 960;
 
-                    // Common Undo / Redo Cluster (always beside the logo)
-                    final undoRedoCluster = [
-                      Tooltip(
-                        message: scoreState.canUndo
-                            ? 'Undo (Ctrl+Z)'
-                            : 'Undo (${l10n.hidden})',
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.undo_rounded,
-                            size: 20.0,
-                          ),
-                          color: cs.onSurface,
-                          disabledColor: cs.onSurface.withValues(alpha: 0.38),
-                          onPressed: scoreState.canUndo
-                              ? () => context.read<ScoreCubit>().undo()
-                              : null,
-                        ),
-                      ),
-                      Tooltip(
-                        message: scoreState.canRedo
-                            ? 'Redo (Ctrl+Y)'
-                            : 'Redo (${l10n.hidden})',
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.redo_rounded,
-                            size: 20.0,
-                          ),
-                          color: cs.onSurface,
-                          disabledColor: cs.onSurface.withValues(alpha: 0.38),
-                          onPressed: scoreState.canRedo
-                              ? () => context.read<ScoreCubit>().redo()
-                              : null,
-                        ),
-                      ),
-                    ];
+                    final undoRedoCluster = UndoRedoCluster(
+                      scoreState: scoreState,
+                      onUndo: () => context.read<ScoreCubit>().undo(),
+                      onRedo: () => context.read<ScoreCubit>().redo(),
+                    );
+
+                    final exportButton = SplitExportButton(
+                      label: l10n.export,
+                      onPrimaryPressed: () => showExportDialog(context),
+                      onMenuSelected: (value) =>
+                          handleTopBarMenuSelection(context, value, scoreState),
+                    );
 
                     if (isCompact) {
-                      // Narrow mode: Logo opens smart app menu dropdown; Undo/Redo beside logo
-                      return SizedBox(
-                        height: 51.0,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PopupMenuButton<String>(
-                              tooltip: 'App Menu',
-                              offset: const Offset(0, 44),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.0),
-                              ),
-                              color: cs.surfaceContainerHigh,
-                              onSelected: (value) {
-                                switch (value) {
-                                  case 'export':
-                                    showExportDialog(context);
-                                    break;
-                                  case 'language':
-                                    context.read<LocaleCubit>().toggleLocale();
-                                    break;
-                                  case 'about':
-                                    showSarvAboutDialog(context);
-                                    break;
-                                }
-                              },
-                              itemBuilder: (context) {
-                                return [
-                                  // Header: Full Sarv logo (top) + Manuscript Designer (underneath)
-                                  PopupMenuItem<String>(
-                                    enabled: false,
-                                    child: Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 10.0,
-                                        horizontal: 8.0,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                                        borderRadius: BorderRadius.circular(8.0),
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/handwriting/Sarv Handwriting.svg',
-                                            height: 28.0,
-                                            colorFilter: ColorFilter.mode(
-                                              cs.onSurface,
-                                              BlendMode.srcIn,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4.0),
-                                          Text(
-                                            l10n.appSubtitle,
-                                            style: themeExt?.brandSubtitleStyle ??
-                                                TextStyle(
-                                                  fontSize: 13.5,
-                                                  fontFamily: 'IranNastaliq',
-                                                  fontWeight: FontWeight.bold,
-                                                  color: cs.primary,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const PopupMenuDivider(),
-                                  // History info item
-                                  PopupMenuItem<String>(
-                                    value: 'history',
-                                    enabled: false,
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.history, size: 18, color: cs.onSurfaceVariant),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          'History (${scoreState.undoStack.length})',
-                                          style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Document status item
-                                  PopupMenuItem<String>(
-                                    enabled: false,
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.description_outlined, size: 18, color: cs.primary),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            '${scoreState.score.title} • ${configState.pageSize.name.toUpperCase()} ${configState.orientation.name}',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: cs.onSurface,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuDivider(),
-                                  // Export item
-                                  PopupMenuItem<String>(
-                                    value: 'export',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.file_upload_outlined, size: 18, color: cs.onSurface),
-                                        const SizedBox(width: 12),
-                                        Text(l10n.export),
-                                      ],
-                                    ),
-                                  ),
-                                  // Language switcher item
-                                  PopupMenuItem<String>(
-                                    value: 'language',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.language, size: 18, color: cs.onSurface),
-                                        const SizedBox(width: 12),
-                                        Text(l10n.toggleLanguage),
-                                      ],
-                                    ),
-                                  ),
-                                  // About item
-                                  PopupMenuItem<String>(
-                                    value: 'about',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.info_outline, size: 18, color: cs.onSurface),
-                                        const SizedBox(width: 12),
-                                        Text(l10n.aboutSarvMD),
-                                      ],
-                                    ),
-                                  ),
-                                ];
-                              },
-                              child: const SarvReactiveBrandLogo(isMenuMode: true),
-                            ),
-
-                            const SizedBox(width: 8.0),
-                            const VerticalDivider(indent: 12, endIndent: 12, width: 16),
-
-                            ...undoRedoCluster,
-                          ],
-                        ),
+                      return _CompactLayout(
+                        scoreState: scoreState,
+                        configState: configState,
+                        l10n: l10n,
+                        cs: cs,
+                        themeExt: themeExt,
+                        undoRedoCluster: undoRedoCluster,
+                        exportButton: exportButton,
                       );
                     }
 
-                    // Wide mode: Full toolbar with horizontal scroll fallback
-                    return Align(
-                      alignment: Alignment.centerLeft,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: SizedBox(
-                          height: 51.0,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SarvReactiveBrandLogo(isMenuMode: false),
-
-                              const SizedBox(width: 12.0),
-                              const VerticalDivider(indent: 12, endIndent: 12, width: 16),
-
-                              ...undoRedoCluster,
-                              const SizedBox(width: 4.0),
-
-                              // History Popover / Badge
-                              PopupMenuButton<int>(
-                                enabled: scoreState.undoStack.isNotEmpty || scoreState.redoStack.isNotEmpty,
-                                tooltip: 'Action History Stack',
-                                offset: const Offset(0, 40),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                itemBuilder: (context) {
-                                  final items = <PopupMenuEntry<int>>[];
-
-                                  items.add(const PopupMenuItem<int>(
-                                    enabled: false,
-                                    child: Text(
-                                      'Transaction History',
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                                    ),
-                                  ));
-                                  items.add(const PopupMenuDivider());
-
-                                  if (scoreState.undoStack.isEmpty && scoreState.redoStack.isEmpty) {
-                                    items.add(const PopupMenuItem<int>(
-                                      enabled: false,
-                                      child: Text('No actions performed yet', style: TextStyle(fontSize: 12)),
-                                    ));
-                                  } else {
-                                    for (int i = scoreState.undoStack.length - 1; i >= 0; i--) {
-                                      final cmd = scoreState.undoStack[i];
-                                      items.add(PopupMenuItem<int>(
-                                        value: i,
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.check_circle_outline, size: 14, color: cs.primary),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              cmd.runtimeType.toString(),
-                                              style: const TextStyle(fontSize: 12),
-                                            ),
-                                          ],
-                                        ),
-                                      ));
-                                    }
-                                  }
-                                  return items;
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                                  decoration: BoxDecoration(
-                                    color: cs.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(6.0),
-                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.history, size: 14.0, color: cs.onSurfaceVariant),
-                                      const SizedBox(width: 4.0),
-                                      Text(
-                                        'History (${scoreState.undoStack.length})',
-                                        style: TextStyle(fontSize: 11.0, color: cs.onSurfaceVariant),
-                                      ),
-                                      const SizedBox(width: 2.0),
-                                      Icon(Icons.arrow_drop_down, size: 14.0, color: cs.onSurfaceVariant),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(width: 24.0),
-
-                              // Document Status Badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-                                decoration: BoxDecoration(
-                                  color: cs.primaryContainer.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(12.0),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.description_outlined, size: 14.0, color: cs.onPrimaryContainer),
-                                    const SizedBox(width: 6.0),
-                                    Text(
-                                      '${scoreState.score.title} • ${configState.pageSize.name.toUpperCase()} ${configState.orientation.name}',
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: cs.onPrimaryContainer,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(width: 24.0),
-
-                              // Master Export Trigger Button
-                              OutlinedButton.icon(
-                                onPressed: () => showExportDialog(context),
-                                icon: const Icon(Icons.file_upload_outlined, size: 16.0),
-                                label: Text(l10n.export),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-                                ),
-                              ),
-
-                              const SizedBox(width: 8.0),
-
-                              // Language Switcher
-                              IconButton(
-                                icon: const Icon(Icons.language, size: 20.0),
-                                tooltip: l10n.toggleLanguage,
-                                onPressed: () => context.read<LocaleCubit>().toggleLocale(),
-                              ),
-
-                              const SizedBox(width: 4.0),
-
-                              // About Dialog Info Trigger
-                              IconButton(
-                                icon: const Icon(Icons.info_outline, size: 20.0),
-                                tooltip: l10n.aboutSarvMD,
-                                onPressed: () => showSarvAboutDialog(context),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    return _WideLayout(
+                      scoreState: scoreState,
+                      configState: configState,
+                      activeProfile: activeProfile,
+                      undoRedoCluster: undoRedoCluster,
+                      exportButton: exportButton,
                     );
                   },
                 ),
@@ -398,6 +129,133 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
           },
         );
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Layout variants
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Compact top-bar layout for viewports narrower than 960 px.
+///
+/// All menus collapse into a single [PopupMenuButton] triggered by the brand
+/// logo. Undo/Redo and the export button remain visible.
+class _CompactLayout extends StatelessWidget {
+  final ScoreState scoreState;
+  final core.PageConfig configState;
+  final AppLocalizations l10n;
+  final ColorScheme cs;
+  final SarvThemeExtension? themeExt;
+  final Widget undoRedoCluster;
+  final Widget exportButton;
+
+  const _CompactLayout({
+    required this.scoreState,
+    required this.configState,
+    required this.l10n,
+    required this.cs,
+    required this.themeExt,
+    required this.undoRedoCluster,
+    required this.exportButton,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        PopupMenuButton<String>(
+          tooltip: 'App Menu',
+          offset: const Offset(0, 44),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          color: cs.surfaceContainerHigh,
+          onSelected: (value) => handleTopBarMenuSelection(context, value, scoreState),
+          itemBuilder: (context) => buildCompactMenuItems(
+            context,
+            l10n,
+            cs,
+            themeExt,
+            scoreState,
+            configState,
+          ),
+          child: const SarvReactiveBrandLogo(isMenuMode: true),
+        ),
+        const SizedBox(width: 4.0),
+        undoRedoCluster,
+        const SizedBox(width: 6.0),
+        Expanded(
+          child: Center(
+            child: EditableScoreHeader(
+              score: scoreState.score,
+              configState: configState,
+              isCompact: true,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6.0),
+        exportButton,
+      ],
+    );
+  }
+}
+
+/// Full wide-mode top-bar layout for viewports at least 960 px wide.
+///
+/// Shows the brand logo, all four desktop menus, undo/redo, ensemble picker,
+/// inline score header, and the export button.
+class _WideLayout extends StatelessWidget {
+  final ScoreState scoreState;
+  final core.PageConfig configState;
+  final core.StaffProfile? activeProfile;
+  final Widget undoRedoCluster;
+  final Widget exportButton;
+
+  const _WideLayout({
+    required this.scoreState,
+    required this.configState,
+    required this.activeProfile,
+    required this.undoRedoCluster,
+    required this.exportButton,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // ── Zone 1: Brand, Menus & Ensemble Picker ────────────────────────
+        const SarvReactiveBrandLogo(isMenuMode: false),
+        const SizedBox(width: 8.0),
+
+        TopBarFileMenu(scoreState: scoreState),
+        TopBarEditMenu(scoreState: scoreState),
+        TopBarViewMenu(
+          scoreState: scoreState,
+          configState: configState,
+          // Theme toggle is handled inside the handler via a 'theme' key.
+          // The view menu fires the same handler; the orchestrator owns nothing.
+          onThemeToggle: () => handleTopBarMenuSelection(context, 'theme', scoreState),
+        ),
+        TopBarHelpMenu(scoreState: scoreState),
+
+        const SizedBox(width: 4.0),
+        undoRedoCluster,
+        const SizedBox(width: 6.0),
+
+        EnsembleProfilePicker(activeProfile: activeProfile),
+
+        // ── Zone 2: Center Metadata ───────────────────────────────────────
+        Expanded(
+          child: Center(
+            child: EditableScoreHeader(
+              score: scoreState.score,
+              configState: configState,
+            ),
+          ),
+        ),
+
+        // ── Zone 3: Export CTA ────────────────────────────────────────────
+        exportButton,
+      ],
     );
   }
 }
