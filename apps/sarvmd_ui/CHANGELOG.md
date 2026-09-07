@@ -14,19 +14,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.0] - 2026-09-07
 
 ### Added
-- **Unified Document State & Transactional Undo/Redo Engine**: Introduced `SarvDocument` (combining `Score` AST and `PageConfig` physical layout) and `DocumentCubit` to manage unified document state and transactional undo/redo across both score notation and page layout mutations (`Ctrl+Z`, `Ctrl+Y`, top bar cluster, and Edit menu).
+- **Unified Document State & Transactional Undo/Redo Engine**: Introduced `SarvDocument` domain model (combining `Score` AST and `PageConfig` physical layout) and `DocumentCubit` to manage unified document state and transactional undo/redo across both score notation and page layout mutations (`Ctrl+Z`, `Ctrl+Y`, top bar cluster, and Edit menu).
 - **Command Coalescing Engine**: Automatic time-window command merging (`coalesceThreshold: 600ms`) in `CommandHistory` and drag-end commit callbacks (`onChangeStart`, `onChangeEnd`) in `PrecisionSlider`, ensuring continuous slider/stepper adjustments do not pollute the undo stack.
+- **Sealed Domain Class Hierarchies**: Refactored `StaffNode` (`StaffNodeGroup`, `StaffDefinition`) and `Clef` (`TrebleClef`, `BassClef`, `AltoClef`, `TenorClef`, `PercussionClef`, `TabClef`) to sealed class hierarchies with pattern matching, type safety, and direct JSON serialization.
+- **Instrument Preset Registry**: Introduced `InstrumentRegistry` featuring 5 instrument families, presets with exact line counts and default clefs, and `LayoutPolicyMode` support.
+- **`ScoreCompiler` Service**: Centralized service in `sarvmd_core` for LaTeX/PDF/SVG compilation, effective title resolution (`getEffectiveTitle`), default file name generation, and query sanitization.
 - **Top Bar Staff Management Sub-Menus**: Added standard **Add Staff to System** sub-menu (Treble, Bass, Grand Staff, Guitar TAB, Rhythm, Custom), **Edit Staff** sub-menu (launches `StaffConfigDialog` for any active staff), and **Remove Staff** sub-menu with safety checks in `TopBarEditMenu`.
-- **`sarvmd_composer` Package Infrastructure**: Initialized new monorepo package `packages/sarvmd_composer` for playback engine integration and MusicXML transcription support.
+- **Global Keyboard Shortcut Gateway**: Integrated `SarvShortcutGateway` wrapping the application layout to catch global `Ctrl+Z` (Undo) and `Ctrl+Y` (Redo) keyboard shortcuts seamlessly.
+- **Calligraphic Reactive Brand Logo**: Created `SarvReactiveBrandLogo` with mouse hover expansion animation, compact menu trigger, and calligraphic vector branding.
+- **`sarvmd_composer` Monorepo Package**: Initialized `packages/sarvmd_composer` housing `PlaybackEngine` for audio synthesis and `MusicXMLTranscriber` for score transcription.
+- **Complete Top Bar Persian Localization**: Added Persian ARB translations for all top bar menus, headers, status badges, profile names, sub-menus, and tooltips in `app_fa.arb`.
+- **Monorepo Validation Gate Script**: Added executable `scripts/full_validation_gate.sh` bash script to automate full multi-package static analysis and test suite verification.
 
 ### Changed
-- **Modular Top Bar System Architecture**: Refactored `SarvTopBar` into modular components (`top_bar_menu_header.dart`, `top_bar_menu_handler.dart`, `editable_score_header.dart`, `ensemble_profile_picker.dart`, `undo_redo_cluster.dart`, `file_menu.dart`, `edit_menu.dart`, `view_menu.dart`, `help_menu.dart`, `compact_menu.dart`), with responsive viewport adaptation for compact (<960px) and wide viewports.
-- **Custom Staff Preset Defaults**: Removed default `"Custom Staff"` label fallback when creating a custom staff so new custom staves initialize with clean, empty labels.
-- **State Management Consolidation**: Removed obsolete separate `ScoreCubit` and `ConfigCubit` implementations across the codebase.
+- **Modular Top Bar Architecture**: Refactored `SarvTopBar` into decoupled modular components (`top_bar_menu_header.dart`, `top_bar_menu_handler.dart`, `editable_score_header.dart`, `ensemble_profile_picker.dart`, `undo_redo_cluster.dart`, `file_menu.dart`, `edit_menu.dart`, `view_menu.dart`, `help_menu.dart`, `compact_menu.dart`).
+- **Compact Viewport Menu Parity**: Ported all desktop menu bar features (Add/Edit/Remove Staff, View settings, Export, About, Language switch) to the compact logo dropdown menu (<960px).
+- **Single Source of Truth Title Synchronization**: Synchronized score title with file export names via `EditableScoreHeader` center-zone inline editing and `ScoreCompiler.getEffectiveTitle`.
+- **Score AST Streamlining**: Removed obsolete `composer` field from `Score` AST and commands to focus `Score` strictly on title metadata and part definitions.
+- **State Management Consolidation**: Deleted obsolete separate `ScoreCubit` and `ConfigCubit` implementations, unifying all state under `DocumentCubit`.
+- **Custom Staff Preset Defaults**: Custom staves now initialize with clean, empty labels instead of defaulting to `"Custom Staff"`.
 
 ### Fixed
-- **History Counter Status Badge**: Clarified history counter representation (`History (#)`) in the Edit menu to accurately display current undo stack depth.
+- **Staff Deletion Safety Guards**: Implemented minimum staff count guards in `RemoveStaffByUidCommand` and `StaffConfigDialog` to prevent accidental deletion of the last remaining staff in a manuscript layout.
 - **Continuous Input Undo History**: Resolved undo history bloat during live slider drag operations by executing coalesced transactional commands on drag completion.
+- **History Counter Status Badge**: Clarified history counter representation (`History (#)`) in the Edit menu to accurately display current undo stack depth.
 
 ---
 
