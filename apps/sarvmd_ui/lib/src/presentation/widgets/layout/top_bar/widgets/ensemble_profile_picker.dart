@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../../logic/config/config_cubit.dart';
 
 /// Ensemble profile quick-picker dropdown rendered in the left zone of the top bar.
@@ -16,13 +17,38 @@ class EnsembleProfilePicker extends StatelessWidget {
 
   const EnsembleProfilePicker({super.key, required this.activeProfile});
 
+  String _getProfileTitle(AppLocalizations l10n, core.StaffProfile profile) {
+    return switch (profile.id) {
+      'piano' => l10n.profilePianoTitle,
+      'treble' => l10n.profileTrebleTitle,
+      'bass' => l10n.profileBassTitle,
+      'alto' => l10n.profileAltoTitle,
+      'tenor' => l10n.profileTenorTitle,
+      'stringQuartet' => l10n.profileStringQuartetTitle,
+      'choirSATB' => l10n.profileChoirSATBTitle,
+      'leadSheet' => l10n.profileLeadSheetTitle,
+      'guitarTab' => l10n.profileGuitarTabTitle,
+      'guitarGrand' => l10n.profileGuitarGrandTitle,
+      'bassTab' => l10n.profileBassTabTitle,
+      'banjoTab' => l10n.profileBanjoTabTitle,
+      'drumSet' => l10n.profileDrumKitTitle,
+      'percussion1' => l10n.profilePercussion1Title,
+      'percussion3' => l10n.profilePercussion3Title,
+      'blank' => l10n.profileBlankTitle,
+      _ => profile.label,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final currentLabel = activeProfile?.label ?? 'Ensemble';
+    final l10n = AppLocalizations.of(context)!;
+    final currentLabel = activeProfile != null
+        ? _getProfileTitle(l10n, activeProfile!)
+        : l10n.categoryEnsemble;
 
     return PopupMenuButton<core.StaffProfile>(
-      tooltip: 'Select Ensemble Preset Profile',
+      tooltip: l10n.tooltipEnsemblePicker,
       offset: const Offset(0, 38),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.0),
@@ -33,11 +59,11 @@ class EnsembleProfilePicker extends StatelessWidget {
       },
       itemBuilder: (context) {
         return [
-          const PopupMenuItem<core.StaffProfile>(
+          PopupMenuItem<core.StaffProfile>(
             enabled: false,
             child: Text(
-              'ENSEMBLE PROFILES',
-              style: TextStyle(
+              l10n.headerEnsembleProfiles,
+              style: const TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.1,
@@ -59,7 +85,7 @@ class EnsembleProfilePicker extends StatelessWidget {
                   const SizedBox(width: 10.0),
                   Expanded(
                     child: Text(
-                      p.label,
+                      _getProfileTitle(l10n, p),
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

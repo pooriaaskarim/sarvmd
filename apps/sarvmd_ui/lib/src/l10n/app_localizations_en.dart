@@ -870,4 +870,93 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get redo => 'Redo';
+
+  @override
+  String get menuFile => 'File';
+
+  @override
+  String get menuEdit => 'Edit';
+
+  @override
+  String get menuView => 'View';
+
+  @override
+  String get menuHelp => 'Help';
+
+  @override
+  String get addStaffToSystem => 'Add Staff to System';
+
+  @override
+  String get staffPreset5LineTreble => 'Standard 5-Line Treble Staff';
+
+  @override
+  String get staffPreset5LineBass => 'Standard 5-Line Bass Staff';
+
+  @override
+  String get staffPresetGrandPair => 'Grand Staff Pair (Piano Brace)';
+
+  @override
+  String get staffPreset6LineTab => '6-Line Guitar TAB Staff';
+
+  @override
+  String get staffPreset1LineRhythm => '1-Line Rhythm Staff';
+
+  @override
+  String get staffPresetCustomConfigure => 'Custom Staff… (Configure)';
+
+  @override
+  String get editStaff => 'Edit Staff';
+
+  @override
+  String get noActiveStaves => 'No Active Staves';
+
+  @override
+  String staffNumberWithHash(int number) {
+    return 'Staff #$number';
+  }
+
+  @override
+  String staffMenuSummary(int number, String label, int lines) {
+    return '$number. $label ($lines L)';
+  }
+
+  @override
+  String get minOneStaffRequired => 'Minimum 1 Staff Required';
+
+  @override
+  String editHistoryCount(int count) {
+    return 'History ($count)';
+  }
+
+  @override
+  String get headerScorePageSizes => 'SCORE PAGE SIZES';
+
+  @override
+  String orientationToggleSummary(String orientation) {
+    return 'Orientation: $orientation (Toggle)';
+  }
+
+  @override
+  String get lightTheme => 'Light Theme';
+
+  @override
+  String get darkTheme => 'Dark Theme';
+
+  @override
+  String get headerEnsembleProfiles => 'ENSEMBLE PROFILES';
+
+  @override
+  String get tooltipEnsemblePicker => 'Select Ensemble Preset Profile';
+
+  @override
+  String get newScore => 'New Score';
+
+  @override
+  String get appMenuTooltip => 'App Menu';
+
+  @override
+  String get exportOptionsTooltip => 'Export Options';
+
+  @override
+  String get exportFormatsSummary => 'Export PDF / TeX / SVG…';
 }

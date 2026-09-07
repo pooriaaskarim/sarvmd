@@ -33,7 +33,7 @@ class TopBarViewMenu extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return TopBarMenuHeader(
-      label: 'View',
+      label: l10n.menuView,
       onSelected: (value) {
         if (value == 'theme') {
           onThemeToggle();
@@ -42,11 +42,11 @@ class TopBarViewMenu extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           enabled: false,
           child: Text(
-            'SCORE PAGE SIZES',
-            style: TextStyle(
+            l10n.headerScorePageSizes,
+            style: const TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.1,
@@ -100,7 +100,11 @@ class TopBarViewMenu extends StatelessWidget {
         PopupMenuItem<String>(
           value: 'toggle_orientation',
           child: Text(
-            'Orientation: ${configState.orientation.name.toUpperCase()} (Toggle)',
+            l10n.orientationToggleSummary(
+              configState.orientation == core.PageOrientation.portrait
+                  ? l10n.portrait
+                  : l10n.landscape,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -117,7 +121,7 @@ class TopBarViewMenu extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  isDark ? 'Light Theme' : 'Dark Theme',
+                  isDark ? l10n.lightTheme : l10n.darkTheme,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),

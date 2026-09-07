@@ -38,7 +38,7 @@ class TopBarEditMenu extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
             child: Text(
-              'Edit',
+              l10n.menuEdit,
               style: TextStyle(
                 fontSize: 13.0,
                 fontWeight: FontWeight.w500,
@@ -81,52 +81,52 @@ class TopBarEditMenu extends StatelessWidget {
             MenuItemButton(
               leadingIcon: Icon(Icons.music_note_outlined, size: 17, color: cs.onSurface),
               onPressed: () => handleTopBarMenuSelection(context, 'add_staff_5line', scoreState),
-              child: const Text('Standard 5-Line Treble Staff'),
+              child: Text(l10n.staffPreset5LineTreble),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.music_note_outlined, size: 17, color: cs.onSurface),
               onPressed: () => handleTopBarMenuSelection(context, 'add_staff_5line_bass', scoreState),
-              child: const Text('Standard 5-Line Bass Staff'),
+              child: Text(l10n.staffPreset5LineBass),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.piano_outlined, size: 17, color: cs.onSurface),
               onPressed: () => handleTopBarMenuSelection(context, 'add_staff_grand', scoreState),
-              child: const Text('Grand Staff Pair (Piano Brace)'),
+              child: Text(l10n.staffPresetGrandPair),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.grid_on_outlined, size: 17, color: cs.onSurface),
               onPressed: () => handleTopBarMenuSelection(context, 'add_staff_tab', scoreState),
-              child: const Text('6-Line Guitar TAB Staff'),
+              child: Text(l10n.staffPreset6LineTab),
             ),
             MenuItemButton(
               leadingIcon: Icon(Icons.horizontal_rule_outlined, size: 17, color: cs.onSurface),
               onPressed: () => handleTopBarMenuSelection(context, 'add_staff_rhythm', scoreState),
-              child: const Text('1-Line Rhythm Staff'),
+              child: Text(l10n.staffPreset1LineRhythm),
             ),
             const Divider(),
             MenuItemButton(
               leadingIcon: Icon(Icons.tune_outlined, size: 17, color: cs.primary),
               onPressed: () => handleTopBarMenuSelection(context, 'add_staff_custom', scoreState),
               child: Text(
-                'Custom Staff… (Configure)',
+                l10n.staffPresetCustomConfigure,
                 style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
               ),
             ),
           ],
-          child: const Text('Add Staff to System'),
+          child: Text(l10n.addStaffToSystem),
         ),
 
         // ── Edit Staff ▸ ─────────────────────────────────────────────────
         SubmenuButton(
           leadingIcon: Icon(Icons.edit_note_outlined, size: 17, color: cs.onSurface),
-          menuChildren: _buildEditStaffChildren(context, cs),
-          child: const Text('Edit Staff'),
+          menuChildren: _buildEditStaffChildren(context, cs, l10n),
+          child: Text(l10n.editStaff),
         ),
 
         // ── Remove Staff ▸ ───────────────────────────────────────────────
         SubmenuButton(
           leadingIcon: Icon(Icons.delete_outline, size: 17, color: cs.error),
-          menuChildren: _buildRemoveStaffChildren(context, cs),
+          menuChildren: _buildRemoveStaffChildren(context, cs, l10n),
           child: Text(l10n.removeStaff),
         ),
 
@@ -136,22 +136,22 @@ class TopBarEditMenu extends StatelessWidget {
         MenuItemButton(
           leadingIcon: Icon(Icons.history, size: 17, color: cs.onSurface),
           onPressed: () => handleTopBarMenuSelection(context, 'history', scoreState),
-          child: Text('History (${scoreState.undoStack.length})'),
+          child: Text(l10n.editHistoryCount(scoreState.undoStack.length)),
         ),
       ],
     );
   }
 
   /// Builds the list of [MenuItemButton]s for each active staff in the layout.
-  List<Widget> _buildEditStaffChildren(BuildContext context, ColorScheme cs) {
+  List<Widget> _buildEditStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
     final configCubit = context.read<ConfigCubit>();
     final allStaves = configCubit.allStaves;
 
     if (allStaves.isEmpty) {
-      return const [
+      return [
         MenuItemButton(
           onPressed: null,
-          child: Text('No Active Staves'),
+          child: Text(l10n.noActiveStaves),
         ),
       ];
     }
@@ -162,7 +162,7 @@ class TopBarEditMenu extends StatelessWidget {
           final staff = allStaves[i];
           final label = staff.instrumentName?.isNotEmpty == true
               ? staff.instrumentName!
-              : 'Staff #${i + 1}';
+              : l10n.staffNumberWithHash(i + 1);
           return MenuItemButton(
             leadingIcon: Icon(Icons.tune_outlined, size: 16, color: cs.onSurface),
             onPressed: () {
@@ -175,22 +175,22 @@ class TopBarEditMenu extends StatelessWidget {
                 ),
               );
             },
-            child: Text('${i + 1}. $label (${staff.lines} L)'),
+            child: Text(l10n.staffMenuSummary(i + 1, label, staff.lines)),
           );
         }(),
     ];
   }
 
   /// Builds the list of [MenuItemButton]s to remove active staves in the layout.
-  List<Widget> _buildRemoveStaffChildren(BuildContext context, ColorScheme cs) {
+  List<Widget> _buildRemoveStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
     final configCubit = context.read<ConfigCubit>();
     final allStaves = configCubit.allStaves;
 
     if (allStaves.length <= 1) {
-      return const [
+      return [
         MenuItemButton(
           onPressed: null,
-          child: Text('Minimum 1 Staff Required'),
+          child: Text(l10n.minOneStaffRequired),
         ),
       ];
     }
@@ -201,13 +201,13 @@ class TopBarEditMenu extends StatelessWidget {
           final staff = allStaves[i];
           final label = staff.instrumentName?.isNotEmpty == true
               ? staff.instrumentName!
-              : 'Staff #${i + 1}';
+              : l10n.staffNumberWithHash(i + 1);
           return MenuItemButton(
             leadingIcon: Icon(Icons.remove_circle_outline, size: 16, color: cs.error),
             onPressed: () {
               configCubit.removeStaff(i);
             },
-            child: Text('${i + 1}. $label (${staff.lines} L)'),
+            child: Text(l10n.staffMenuSummary(i + 1, label, staff.lines)),
           );
         }(),
     ];

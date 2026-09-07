@@ -20,7 +20,7 @@ class TopBarFileMenu extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return TopBarMenuHeader(
-      label: 'File',
+      label: l10n.menuFile,
       onSelected: (value) => handleTopBarMenuSelection(context, value, scoreState),
       itemBuilder: (context) => [
         PopupMenuItem<String>(

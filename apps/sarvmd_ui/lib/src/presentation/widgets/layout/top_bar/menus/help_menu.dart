@@ -20,7 +20,7 @@ class TopBarHelpMenu extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return TopBarMenuHeader(
-      label: 'Help',
+      label: l10n.menuHelp,
       onSelected: (value) => handleTopBarMenuSelection(context, value, scoreState),
       itemBuilder: (context) => [
         PopupMenuItem<String>(

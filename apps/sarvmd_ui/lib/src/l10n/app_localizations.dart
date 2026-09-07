@@ -1717,6 +1717,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Redo'**
   String get redo;
+
+  /// No description provided for @menuFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get menuFile;
+
+  /// No description provided for @menuEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get menuEdit;
+
+  /// No description provided for @menuView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get menuView;
+
+  /// No description provided for @menuHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get menuHelp;
+
+  /// No description provided for @addStaffToSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Staff to System'**
+  String get addStaffToSystem;
+
+  /// No description provided for @staffPreset5LineTreble.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard 5-Line Treble Staff'**
+  String get staffPreset5LineTreble;
+
+  /// No description provided for @staffPreset5LineBass.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard 5-Line Bass Staff'**
+  String get staffPreset5LineBass;
+
+  /// No description provided for @staffPresetGrandPair.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Staff Pair (Piano Brace)'**
+  String get staffPresetGrandPair;
+
+  /// No description provided for @staffPreset6LineTab.
+  ///
+  /// In en, this message translates to:
+  /// **'6-Line Guitar TAB Staff'**
+  String get staffPreset6LineTab;
+
+  /// No description provided for @staffPreset1LineRhythm.
+  ///
+  /// In en, this message translates to:
+  /// **'1-Line Rhythm Staff'**
+  String get staffPreset1LineRhythm;
+
+  /// No description provided for @staffPresetCustomConfigure.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Staff… (Configure)'**
+  String get staffPresetCustomConfigure;
+
+  /// No description provided for @editStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Staff'**
+  String get editStaff;
+
+  /// No description provided for @noActiveStaves.
+  ///
+  /// In en, this message translates to:
+  /// **'No Active Staves'**
+  String get noActiveStaves;
+
+  /// No description provided for @staffNumberWithHash.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff #{number}'**
+  String staffNumberWithHash(int number);
+
+  /// No description provided for @staffMenuSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{number}. {label} ({lines} L)'**
+  String staffMenuSummary(int number, String label, int lines);
+
+  /// No description provided for @minOneStaffRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum 1 Staff Required'**
+  String get minOneStaffRequired;
+
+  /// No description provided for @editHistoryCount.
+  ///
+  /// In en, this message translates to:
+  /// **'History ({count})'**
+  String editHistoryCount(int count);
+
+  /// No description provided for @headerScorePageSizes.
+  ///
+  /// In en, this message translates to:
+  /// **'SCORE PAGE SIZES'**
+  String get headerScorePageSizes;
+
+  /// No description provided for @orientationToggleSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Orientation: {orientation} (Toggle)'**
+  String orientationToggleSummary(String orientation);
+
+  /// No description provided for @lightTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Light Theme'**
+  String get lightTheme;
+
+  /// No description provided for @darkTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Theme'**
+  String get darkTheme;
+
+  /// No description provided for @headerEnsembleProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'ENSEMBLE PROFILES'**
+  String get headerEnsembleProfiles;
+
+  /// No description provided for @tooltipEnsemblePicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Ensemble Preset Profile'**
+  String get tooltipEnsemblePicker;
+
+  /// No description provided for @newScore.
+  ///
+  /// In en, this message translates to:
+  /// **'New Score'**
+  String get newScore;
+
+  /// No description provided for @appMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'App Menu'**
+  String get appMenuTooltip;
+
+  /// No description provided for @exportOptionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Options'**
+  String get exportOptionsTooltip;
+
+  /// No description provided for @exportFormatsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Export PDF / TeX / SVG…'**
+  String get exportFormatsSummary;
 }
 
 class _AppLocalizationsDelegate

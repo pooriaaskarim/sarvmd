@@ -871,4 +871,93 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get redo => 'انجام مجدد';
+
+  @override
+  String get menuFile => 'فایل';
+
+  @override
+  String get menuEdit => 'ویرایش';
+
+  @override
+  String get menuView => 'نمایش';
+
+  @override
+  String get menuHelp => 'راهنما';
+
+  @override
+  String get addStaffToSystem => 'افزودن حامل به سیستم';
+
+  @override
+  String get staffPreset5LineTreble => 'حامل ۵ خطی استاندارد (کلید سل)';
+
+  @override
+  String get staffPreset5LineBass => 'حامل ۵ خطی استاندارد (کلید فا)';
+
+  @override
+  String get staffPresetGrandPair => 'آکولاد دوگانه (پیانو)';
+
+  @override
+  String get staffPreset6LineTab => 'تبلچر ۶ خطی گیتار';
+
+  @override
+  String get staffPreset1LineRhythm => 'حامل ریتم تک‌خطی';
+
+  @override
+  String get staffPresetCustomConfigure => 'حامل سفارشی… (تنظیمات)';
+
+  @override
+  String get editStaff => 'ویرایش حامل';
+
+  @override
+  String get noActiveStaves => 'هیچ حاملی فعال نیست';
+
+  @override
+  String staffNumberWithHash(int number) {
+    return 'حامل شماره $number';
+  }
+
+  @override
+  String staffMenuSummary(int number, String label, int lines) {
+    return '$number. $label ($lines خط)';
+  }
+
+  @override
+  String get minOneStaffRequired => 'حداقل وجود ۱ حامل الزامی است';
+
+  @override
+  String editHistoryCount(int count) {
+    return 'تاریخچه ($count)';
+  }
+
+  @override
+  String get headerScorePageSizes => 'ابعاد کاغذ نت';
+
+  @override
+  String orientationToggleSummary(String orientation) {
+    return 'جهت کاغذ: $orientation (تغییر)';
+  }
+
+  @override
+  String get lightTheme => 'تم روشن';
+
+  @override
+  String get darkTheme => 'تم تاریک';
+
+  @override
+  String get headerEnsembleProfiles => 'پروفایل‌های آنسامبل';
+
+  @override
+  String get tooltipEnsemblePicker => 'انتخاب پیش‌فرض آنسامبل';
+
+  @override
+  String get newScore => 'نت جدید';
+
+  @override
+  String get appMenuTooltip => 'منوی برنامه';
+
+  @override
+  String get exportOptionsTooltip => 'گزینه‌های خروجی';
+
+  @override
+  String get exportFormatsSummary => 'خروجی PDF / TeX / SVG…';
 }

@@ -363,5 +363,66 @@
   "connectorBrace": "Brace",
   "connectorBraceTooltip": "Brace Connector",
   "undo": "Undo",
-  "redo": "Redo"
+  "redo": "Redo",
+  "menuFile": "File",
+  "menuEdit": "Edit",
+  "menuView": "View",
+  "menuHelp": "Help",
+  "addStaffToSystem": "Add Staff to System",
+  "staffPreset5LineTreble": "Standard 5-Line Treble Staff",
+  "staffPreset5LineBass": "Standard 5-Line Bass Staff",
+  "staffPresetGrandPair": "Grand Staff Pair (Piano Brace)",
+  "staffPreset6LineTab": "6-Line Guitar TAB Staff",
+  "staffPreset1LineRhythm": "1-Line Rhythm Staff",
+  "staffPresetCustomConfigure": "Custom Staff… (Configure)",
+  "editStaff": "Edit Staff",
+  "noActiveStaves": "No Active Staves",
+  "staffNumberWithHash": "Staff #{number}",
+  "@staffNumberWithHash": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "staffMenuSummary": "{number}. {label} ({lines} L)",
+  "@staffMenuSummary": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      },
+      "lines": {
+        "type": "int"
+      }
+    }
+  },
+  "minOneStaffRequired": "Minimum 1 Staff Required",
+  "editHistoryCount": "History ({count})",
+  "@editHistoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "headerScorePageSizes": "SCORE PAGE SIZES",
+  "orientationToggleSummary": "Orientation: {orientation} (Toggle)",
+  "@orientationToggleSummary": {
+    "placeholders": {
+      "orientation": {
+        "type": "String"
+      }
+    }
+  },
+  "lightTheme": "Light Theme",
+  "darkTheme": "Dark Theme",
+  "headerEnsembleProfiles": "ENSEMBLE PROFILES",
+  "tooltipEnsemblePicker": "Select Ensemble Preset Profile",
+  "newScore": "New Score",
+  "appMenuTooltip": "App Menu",
+  "exportOptionsTooltip": "Export Options",
+  "exportFormatsSummary": "Export PDF / TeX / SVG…"
 }
