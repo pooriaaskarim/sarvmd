@@ -14,9 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.0] - 2026-09-07
 
 ### Added
+- **Core Domain & Engraving Abstractions (`sarvmd_core`)**:
+  - **Sealed `Clef` Hierarchy**: Polymorphic sealed `Clef` class hierarchy (`TrebleClef`, `BassClef`, `AltoClef`, `TenorClef`, `PercussionClef`, `TabClef`) replacing procedural string/enum switches with reference pitch (`referencePitch`), anchor line (`anchorLine`), and octave shift (`octaveShift`) properties.
+  - **Sealed `StaffNode` Tree Hierarchy**: Structural system layout representation using composable `StaffNodeGroup` and `StaffDefinition` tree nodes supporting system connectors (`brace`, `bracket`, `line`, `none`) and continuous barlines.
+  - **Unified `SarvDocument` Value Model**: Combined immutable domain snapshot encapsulating `Score` notation AST and `PageConfig` physical layout into a single source of truth.
+  - **Engraving Token Abstraction (`EngravingConfig`)**: Centralized layout spacing, Gouldian engraving rules, SMuFL glyph scales, and barline overhang tokens embedded in `PageConfig`.
+  - **Layout Policy Abstraction (`LayoutPolicyMode`)**: Core policy modes (`bilingualFluid`, `canvasStrict`, `documentRtl`) abstracting physical CAD boundaries, canvas orientation, and BiDi parameter enforcement.
+  - **Direct PDF Vector Emitter Abstraction (`pdf_emitter.dart`)**: Pure Dart zero-dependency vector PDF compilation engine operating in memory.
 - **Unified Document State & Transactional Undo/Redo Engine**: Introduced `SarvDocument` domain model (combining `Score` AST and `PageConfig` physical layout) and `DocumentCubit` to manage unified document state and transactional undo/redo across both score notation and page layout mutations (`Ctrl+Z`, `Ctrl+Y`, top bar cluster, and Edit menu).
 - **Command Coalescing Engine**: Automatic time-window command merging (`coalesceThreshold: 600ms`) in `CommandHistory` and drag-end commit callbacks (`onChangeStart`, `onChangeEnd`) in `PrecisionSlider`, ensuring continuous slider/stepper adjustments do not pollute the undo stack.
-- **Sealed Domain Class Hierarchies**: Refactored `StaffNode` (`StaffNodeGroup`, `StaffDefinition`) and `Clef` (`TrebleClef`, `BassClef`, `AltoClef`, `TenorClef`, `PercussionClef`, `TabClef`) to sealed class hierarchies with pattern matching, type safety, and direct JSON serialization.
 - **Instrument Preset Registry**: Introduced `InstrumentRegistry` featuring 5 instrument families, presets with exact line counts and default clefs, and `LayoutPolicyMode` support.
 - **`ScoreCompiler` Service**: Centralized service in `sarvmd_core` for LaTeX/PDF/SVG compilation, effective title resolution (`getEffectiveTitle`), default file name generation, and query sanitization.
 - **Top Bar Staff Management Sub-Menus**: Added standard **Add Staff to System** sub-menu (Treble, Bass, Grand Staff, Guitar TAB, Rhythm, Custom), **Edit Staff** sub-menu (launches `StaffConfigDialog` for any active staff), and **Remove Staff** sub-menu with safety checks in `TopBarEditMenu`.
