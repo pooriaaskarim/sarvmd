@@ -73,7 +73,7 @@ class Part {
 /// Represents the top-level musical score AST (Abstract Syntax Tree).
 ///
 /// `Score` is the root node of our native engraving domain model. It contains:
-/// 1. Top-level metadata like [title] and [composer] which are formatted and rendered on the first page.
+/// 1. Top-level metadata like [title] which is formatted and rendered on the first page.
 /// 2. A list of instrumental [parts] which are engraved as parallel staves system-by-system.
 ///
 /// Downstream compilers (like the LaTeX coordinate emitter or SMuFL vector layout engines)
@@ -82,20 +82,15 @@ class Score {
   
   /// Creates a [Score] representing the complete multi-instrumental work.
   ///
-  /// * [title]: The title of the composition.
-  /// * [composer]: The composer's or arranger's name. Defaults to an empty string.
+  /// * [title]: The title of the composition. Defaults to empty string.
   /// * [parts]: The list of instrumental parts in this score.
   const Score({
-    required this.title,
-    this.composer = '',
+    this.title = '',
     this.parts = const [],
   });
 
   /// The title of the score (e.g., "Symphony No. 5", "Autumn Leaves").
   final String title;
-
-  /// The composer's name (e.g., "L. van Beethoven").
-  final String composer;
 
   /// The list of instrument parts contained within this score.
   final List<Part> parts;
@@ -103,12 +98,10 @@ class Score {
   /// Creates a copy of this score with optional field overrides.
   Score copyWith({
     String? title,
-    String? composer,
     List<Part>? parts,
   }) =>
       Score(
         title: title ?? this.title,
-        composer: composer ?? this.composer,
         parts: parts ?? this.parts,
       );
 
@@ -117,7 +110,6 @@ class Score {
     if (identical(this, other)) return true;
     if (other is! Score ||
         title != other.title ||
-        composer != other.composer ||
         parts.length != other.parts.length) {
       return false;
     }
@@ -128,8 +120,8 @@ class Score {
   }
 
   @override
-  int get hashCode => Object.hash(title, composer, Object.hashAll(parts));
+  int get hashCode => Object.hash(title, Object.hashAll(parts));
 
   @override
-  String toString() => 'Score($title, composer: $composer, partsCount: ${parts.length})';
+  String toString() => 'Score($title, partsCount: ${parts.length})';
 }

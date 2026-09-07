@@ -118,7 +118,6 @@ core.Score createSampleScore(core.PageConfig config) {
     title: config.systemLayout.rootGroup.children.length > 1
         ? 'Duo Ensemble'
         : 'Solo Manuscript',
-    composer: 'SarvMD Core Engraver',
     parts: parts,
   );
 }

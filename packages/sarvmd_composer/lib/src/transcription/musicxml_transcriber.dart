@@ -14,9 +14,6 @@ abstract final class MusicXmlTranscriber {
     buffer.writeln('  <work>');
     buffer.writeln('    <work-title>${score.title}</work-title>');
     buffer.writeln('  </work>');
-    buffer.writeln('  <identification>');
-    buffer.writeln('    <creator type="composer">${score.composer}</creator>');
-    buffer.writeln('  </identification>');
     buffer.writeln('  <part-list>');
     if (score.parts.isEmpty) {
       buffer.writeln('    <score-part id="P1">');
@@ -91,14 +88,10 @@ abstract final class MusicXmlTranscriber {
   /// Parses a MusicXML string document into a [Score] AST object.
   static Score musicXmlToScore(String xmlContent) {
     final titleMatch = RegExp(r'<work-title>(.*?)</work-title>').firstMatch(xmlContent);
-    final composerMatch = RegExp(r'<creator type="composer">(.*?)</creator>').firstMatch(xmlContent);
-
     final title = titleMatch?.group(1)?.trim() ?? 'Untitled Score';
-    final composer = composerMatch?.group(1)?.trim() ?? 'Anonymous';
 
     return Score(
       title: title,
-      composer: composer,
       parts: const [],
     );
   }

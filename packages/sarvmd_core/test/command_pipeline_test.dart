@@ -10,13 +10,12 @@ void main() {
 
     setUp(() {
       history = CommandHistory(
-        initialScore: const Score(title: 'Initial Title', composer: 'Initial Composer', parts: []),
+        initialScore: const Score(title: 'Initial Title', parts: []),
       );
     });
 
     test('Initial CommandHistory state', () {
       expect(history.score.title, equals('Initial Title'));
-      expect(history.score.composer, equals('Initial Composer'));
       expect(history.canUndo, isFalse);
       expect(history.canRedo, isFalse);
       expect(history.undoStack, isEmpty);
@@ -34,14 +33,6 @@ void main() {
 
       history.redo();
       expect(history.score.title, equals('Symphony No. 5'));
-    });
-
-    test('SetComposerCommand updates composer and undoes accurately', () {
-      history.execute(SetComposerCommand('Beethoven', 'Initial Composer'));
-      expect(history.score.composer, equals('Beethoven'));
-
-      history.undo();
-      expect(history.score.composer, equals('Initial Composer'));
     });
 
     test('AddPartCommand and RemovePartCommand mutate parts list transactionally', () {

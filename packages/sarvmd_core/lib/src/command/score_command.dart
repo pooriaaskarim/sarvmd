@@ -40,20 +40,6 @@ class SetTitleCommand extends ScoreCommand {
   Score undo(Score current) => current.copyWith(title: _previousTitle);
 }
 
-/// Transactional command to set the composer name.
-class SetComposerCommand extends ScoreCommand {
-  final String newComposer;
-  final String _previousComposer;
-
-  SetComposerCommand(this.newComposer, [this._previousComposer = '']);
-
-  @override
-  Score execute(Score current) => current.copyWith(composer: newComposer);
-
-  @override
-  Score undo(Score current) => current.copyWith(composer: _previousComposer);
-}
-
 /// Transactional command to add an instrumental part to the score.
 class AddPartCommand extends ScoreCommand {
   final Part part;

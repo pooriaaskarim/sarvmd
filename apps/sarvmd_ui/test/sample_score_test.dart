@@ -12,7 +12,6 @@ void main() {
       final score = createSampleScore(config);
 
       expect(score.title, equals('Solo Manuscript'));
-      expect(score.composer, equals('SarvMD Core Engraver'));
       expect(score.parts.length, equals(1));
 
       final part = score.parts.first;
