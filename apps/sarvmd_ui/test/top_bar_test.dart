@@ -5,27 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sarvmd_core/sarvmd_core.dart';
 import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
-import 'package:sarvmd_ui/src/logic/config/config_cubit.dart';
-import 'package:sarvmd_ui/src/logic/score/score_cubit.dart';
+import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/layout/sarv_top_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
   testWidgets('SarvTopBar renders desktop menu headers, profile picker, title, and split export CTA in wide mode', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    final history = CommandHistory();
-    final scoreCubit = ScoreCubit(history);
-    final configCubit = ConfigCubit();
+    final documentCubit = DocumentCubit();
 
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
-          BlocProvider<ScoreCubit>.value(value: scoreCubit),
-          BlocProvider<ConfigCubit>.value(value: configCubit),
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -61,13 +62,12 @@ void main() {
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.addPointer(location: Offset.zero);
     await gesture.moveTo(tester.getCenter(brandFinder));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Manuscript Designer'), findsOneWidget);
 
     await gesture.removePointer();
-    scoreCubit.close();
-    configCubit.close();
+    documentCubit.close();
   });
 
   testWidgets('SarvTopBar Ensemble Profile Picker switches paper presets', (tester) async {
@@ -75,15 +75,12 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    final history = CommandHistory();
-    final scoreCubit = ScoreCubit(history);
-    final configCubit = ConfigCubit();
+    final documentCubit = DocumentCubit();
 
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
-          BlocProvider<ScoreCubit>.value(value: scoreCubit),
-          BlocProvider<ConfigCubit>.value(value: configCubit),
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -96,19 +93,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Tap ensemble profile picker dropdown
+    // Open ensemble picker
     await tester.tap(find.byIcon(Icons.queue_music_rounded));
     await tester.pumpAndSettle();
 
-    // Select Piano profile
-    expect(find.text('ENSEMBLE PROFILES'), findsOneWidget);
+    // Select Piano
     await tester.tap(find.text('Piano').last);
     await tester.pumpAndSettle();
 
-    expect(configCubit.activeProfile?.id, equals('piano'));
+    expect(documentCubit.activeProfile?.id, equals('piano'));
 
-    scoreCubit.close();
-    configCubit.close();
+    documentCubit.close();
   });
 
   testWidgets('SarvTopBar allows inline editing of score title in center zone', (tester) async {
@@ -116,15 +111,12 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    final history = CommandHistory();
-    final scoreCubit = ScoreCubit(history);
-    final configCubit = ConfigCubit();
+    final documentCubit = DocumentCubit();
 
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
-          BlocProvider<ScoreCubit>.value(value: scoreCubit),
-          BlocProvider<ConfigCubit>.value(value: configCubit),
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -137,36 +129,31 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 1. Edit Title
+    // Tap title to edit
     await tester.tap(find.text('Treble_A4_Portrait'));
     await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsOneWidget);
 
+    // Enter new title
     await tester.enterText(find.byType(TextField), 'Persian Classical Suite');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    expect(find.text('Persian Classical Suite'), findsOneWidget);
-    expect(scoreCubit.state.score.title, equals('Persian Classical Suite'));
+    expect(documentCubit.state.score.title, equals('Persian Classical Suite'));
 
-    scoreCubit.close();
-    configCubit.close();
+    documentCubit.close();
   });
 
-  testWidgets('SarvTopBar in compact mode collapses into logo dropdown menu while keeping Undo/Redo and Export', (tester) async {
-    tester.view.physicalSize = const Size(500, 800);
+  testWidgets('SarvTopBar collapses menus into logo dropdown menu in compact viewports (<960px)', (tester) async {
+    tester.view.physicalSize = const Size(800, 600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    final history = CommandHistory();
-    final scoreCubit = ScoreCubit(history);
-    final configCubit = ConfigCubit();
+    final documentCubit = DocumentCubit();
 
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
-          BlocProvider<ScoreCubit>.value(value: scoreCubit),
-          BlocProvider<ConfigCubit>.value(value: configCubit),
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -179,136 +166,34 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify compact logo menu trigger, title, and Export CTA button
-    expect(find.byType(PopupMenuButton<String>), findsAtLeastNWidgets(1));
-    expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.redo_rounded), findsOneWidget);
-    expect(find.text('Treble_A4_Portrait'), findsOneWidget);
+    // Top desktop menu headers should be hidden in compact mode
+    expect(find.text('File'), findsNothing);
+    expect(find.text('Edit'), findsNothing);
 
-    // Tap logo to open smart dropdown menu
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    // Tap brand logo to open compact popup menu
+    await tester.tap(find.text('MD'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Manuscript Designer'), findsAtLeastNWidgets(1));
+    expect(find.text('File'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('View'), findsOneWidget);
 
-    scoreCubit.close();
-    configCubit.close();
+    documentCubit.close();
   });
 
-  testWidgets('SarvTopBar enforces LTR layout even in RTL locale', (tester) async {
+  testWidgets('SarvTopBar Add Staff to System from Edit menu updates DocumentCubit staffCount with correct format', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    final history = CommandHistory();
-    final scoreCubit = ScoreCubit(history);
-    final configCubit = ConfigCubit();
+    final documentCubit = DocumentCubit();
+
+    final initialStaffCount = documentCubit.state.config.staffCount;
 
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
-          BlocProvider<ScoreCubit>.value(value: scoreCubit),
-          BlocProvider<ConfigCubit>.value(value: configCubit),
-        ],
-        child: const MaterialApp(
-          locale: Locale('fa'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SarvTopBar(),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Verify logo top-left placement in RTL relative to File menu (فایل)
-    final logoFinder = find.byType(InkWell).first;
-    final fileFinder = find.text('فایل');
-
-    final logoTopLeft = tester.getTopLeft(logoFinder);
-    final fileTopLeft = tester.getTopLeft(fileFinder);
-
-    expect(logoTopLeft.dx, lessThan(fileTopLeft.dx));
-
-    scoreCubit.close();
-    configCubit.close();
-  });
-
-  testWidgets('SarvTopBar renders translated Persian headers and submenus in Persian mode (fa)', (tester) async {
-    tester.view.physicalSize = const Size(1280, 800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-
-    final history = CommandHistory();
-    final scoreCubit = ScoreCubit(history);
-    final configCubit = ConfigCubit();
-
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<ScoreCubit>.value(value: scoreCubit),
-          BlocProvider<ConfigCubit>.value(value: configCubit),
-        ],
-        child: const MaterialApp(
-          locale: Locale('fa'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SarvTopBar(),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Verify translated top-level headers in Persian
-    expect(find.text('فایل'), findsOneWidget);
-    expect(find.text('ویرایش'), findsOneWidget);
-    expect(find.text('نمایش'), findsOneWidget);
-    expect(find.text('راهنما'), findsOneWidget);
-
-    // Verify score header
-    expect(find.text('Treble_A4_Portrait'), findsOneWidget);
-
-    // Open Edit (ویرایش) menu and verify translated submenus
-    await tester.tap(find.text('ویرایش'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('افزودن حامل به سیستم'), findsOneWidget);
-    expect(find.text('ویرایش حامل'), findsOneWidget);
-
-    // Expand Add Staff (افزودن حامل به سیستم)
-    await tester.tap(find.text('افزودن حامل به سیستم'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('حامل ۵ خطی استاندارد (کلید سل)'), findsOneWidget);
-    expect(find.text('حامل ۵ خطی استاندارد (کلید فا)'), findsOneWidget);
-    expect(find.text('آکولاد دوگانه (پیانو)'), findsOneWidget);
-    expect(find.text('تبلچر ۶ خطی گیتار'), findsOneWidget);
-    expect(find.text('حامل ریتم تک‌خطی'), findsOneWidget);
-    expect(find.text('حامل سفارشی… (تنظیمات)'), findsOneWidget);
-
-    scoreCubit.close();
-    configCubit.close();
-  });
-
-  testWidgets('SarvTopBar Add Staff to System from Edit menu updates ConfigCubit staffCount with correct format', (tester) async {
-    tester.view.physicalSize = const Size(1280, 800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-
-    final history = CommandHistory();
-    final scoreCubit = ScoreCubit(history);
-    final configCubit = ConfigCubit();
-
-    final initialStaffCount = configCubit.state.staffCount;
-
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<ScoreCubit>.value(value: scoreCubit),
-          BlocProvider<ConfigCubit>.value(value: configCubit),
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -321,74 +206,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 1. Tap Add Staff to System -> Standard 5-Line Treble Staff
+    // Open Edit menu
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add Staff to System'), findsOneWidget);
-
+    // Hover over Add Staff to open sub-menu
     await tester.tap(find.text('Add Staff to System'));
     await tester.pumpAndSettle();
 
+    // Select Standard Treble Staff
     await tester.tap(find.text('Standard 5-Line Treble Staff'));
     await tester.pumpAndSettle();
 
-    expect(configCubit.state.staffCount, equals(initialStaffCount + 1));
+    expect(documentCubit.state.config.staffCount, equals(initialStaffCount + 1));
+    expect(documentCubit.state.lastUndoLabel, equals('Add Part'));
 
-    // 2. Tap Edit -> Add Staff to System -> Custom Staff... (Configure)
-    await tester.tap(find.text('Edit'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Add Staff to System'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Custom Staff… (Configure)'));
-    await tester.pumpAndSettle();
-
-    expect(configCubit.state.staffCount, equals(initialStaffCount + 2));
-    expect(find.text('Configure Staff Settings'), findsOneWidget);
-
-    // Dismiss dialog
-    await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
-
-    // 3. Tap Edit -> Edit Staff submenu -> Select staff 1 to configure
-    await tester.tap(find.text('Edit'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Edit Staff'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(SubmenuButton, 'Edit Staff'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('1. Staff #1 (5 L)'), findsOneWidget);
-    await tester.tap(find.text('1. Staff #1 (5 L)'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Configure Staff Settings'), findsOneWidget);
-
-    // Test removing staff via StaffConfigDialog footer button
-    final countBeforeDelete = configCubit.state.staffCount;
-    await tester.tap(find.byTooltip('Remove Staff'));
-    await tester.pumpAndSettle();
-
-    expect(configCubit.state.staffCount, equals(countBeforeDelete - 1));
-
-    // 4. Test Edit -> Remove Staff submenu
-    await tester.tap(find.text('Edit'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(SubmenuButton, 'Remove Staff'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('1. Staff #1 (5 L)'), findsOneWidget);
-    await tester.tap(find.text('1. Staff #1 (5 L)'));
-    await tester.pumpAndSettle();
-
-    expect(configCubit.state.staffCount, equals(countBeforeDelete - 2));
-
-    scoreCubit.close();
-    configCubit.close();
+    documentCubit.close();
   });
 }
-

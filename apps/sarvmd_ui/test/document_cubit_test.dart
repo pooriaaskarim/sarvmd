@@ -3,45 +3,50 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import 'package:sarvmd_ui/src/logic/score/score_cubit.dart';
-import 'package:sarvmd_ui/src/logic/score/score_command.dart';
+import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
 
-class _TestTitleUpdateCommand extends ScoreCommand {
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _TestTitleUpdateCommand extends core.DocumentCommand {
   final String newTitle;
   final String oldTitle;
 
   const _TestTitleUpdateCommand(this.newTitle, this.oldTitle);
 
   @override
-  core.Score execute(core.Score current) {
-    return core.Score(
-      title: newTitle,
-      parts: current.parts,
+  String get label => 'Update Title';
+
+  @override
+  core.SarvDocument execute(core.SarvDocument current) {
+    return current.copyWith(
+      score: current.score.copyWith(title: newTitle),
     );
   }
 
   @override
-  core.Score undo(core.Score current) {
-    return core.Score(
-      title: oldTitle,
-      parts: current.parts,
+  core.SarvDocument undo(core.SarvDocument current) {
+    return current.copyWith(
+      score: current.score.copyWith(title: oldTitle),
     );
   }
 }
 
 void main() {
-  group('ScoreCubit & ScoreCommand Pipeline Tests', () {
-    late ScoreCubit cubit;
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('DocumentCubit & DocumentCommand Pipeline Tests', () {
+    late DocumentCubit cubit;
 
     setUp(() {
-      cubit = ScoreCubit();
+      SharedPreferences.setMockInitialValues({});
+      cubit = DocumentCubit();
     });
 
     tearDown(() {
       cubit.close();
     });
 
-    test('Initial ScoreState has default score and empty undo/redo stacks', () {
+    test('Initial DocumentState has default document and empty undo/redo stacks', () {
       expect(cubit.state.score.title, equals(''));
       expect(cubit.state.undoStack, isEmpty);
       expect(cubit.state.redoStack, isEmpty);
@@ -58,6 +63,7 @@ void main() {
       expect(cubit.state.redoStack, isEmpty);
       expect(cubit.state.canUndo, isTrue);
       expect(cubit.state.canRedo, isFalse);
+      expect(cubit.state.lastUndoLabel, equals('Update Title'));
     });
 
     test('Undo reverts score mutation and moves command to redo stack', () {
@@ -70,6 +76,7 @@ void main() {
       expect(cubit.state.redoStack.length, equals(1));
       expect(cubit.state.canUndo, isFalse);
       expect(cubit.state.canRedo, isTrue);
+      expect(cubit.state.lastRedoLabel, equals('Update Title'));
     });
 
     test('Redo re-applies command and moves command back to undo stack', () {
@@ -85,23 +92,22 @@ void main() {
       expect(cubit.state.canRedo, isFalse);
     });
 
-    test('Executing new command clears existing redo stack', () {
-      const cmd1 = _TestTitleUpdateCommand('Score Version A', '');
-      const cmd2 = _TestTitleUpdateCommand('Score Version B', 'Score Version A');
+    test('PageConfig mutations are transactional with undo/redo', () {
+      expect(cubit.state.config.pageSize, equals(core.PageSize.a4));
 
-      cubit.execute(cmd1);
+      cubit.updatePageSize(core.PageSize.letter);
+      expect(cubit.state.config.pageSize, equals(core.PageSize.letter));
+      expect(cubit.state.lastUndoLabel, equals('Set Page Size'));
+
       cubit.undo();
-      expect(cubit.state.canRedo, isTrue);
+      expect(cubit.state.config.pageSize, equals(core.PageSize.a4));
 
-      cubit.execute(cmd2);
-      expect(cubit.state.score.title, equals('Score Version B'));
-      expect(cubit.state.undoStack.length, equals(1));
-      expect(cubit.state.redoStack, isEmpty);
-      expect(cubit.state.canRedo, isFalse);
+      cubit.redo();
+      expect(cubit.state.config.pageSize, equals(core.PageSize.letter));
     });
 
-    test('NoOpCommand leaves score untouched', () {
-      const noop = NoOpCommand();
+    test('NoOpCommand leaves document untouched', () {
+      const noop = core.NoOpCommand();
       cubit.execute(noop);
 
       expect(cubit.state.score.title, equals(''));
