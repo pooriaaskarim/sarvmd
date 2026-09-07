@@ -9,7 +9,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../logic/config/config_cubit.dart';
 import '../../../logic/score/score_cubit.dart';
-import '../dialogs/export_dialog.dart';
 
 import 'sarv_reactive_brand_logo.dart';
 import 'top_bar/compact_menu.dart';
@@ -20,7 +19,6 @@ import 'top_bar/menus/view_menu.dart';
 import 'top_bar/top_bar_menu_handler.dart';
 import 'top_bar/widgets/editable_score_header.dart';
 import 'top_bar/widgets/ensemble_profile_picker.dart';
-import 'top_bar/widgets/split_export_button.dart';
 import 'top_bar/widgets/undo_redo_cluster.dart';
 
 /// Professional Dorico / Figma-style top control header bar for SarvMD.
@@ -42,13 +40,11 @@ import 'top_bar/widgets/undo_redo_cluster.dart';
 ///     undo_redo_cluster.dart     – Undo / Redo icon buttons
 ///     ensemble_profile_picker.dart – Ensemble preset quick-picker
 ///     editable_score_header.dart – Inline-editable Title & Composer
-///     split_export_button.dart   – Split CTA export button
 /// ```
 ///
 /// ## Layout Zones
 /// - **Left Zone**: Brand Logo → Desktop Menus (File, Edit, View, Help) → Undo/Redo → Ensemble Picker
 /// - **Center Zone**: Inline-editable Title • Composer + Layout Status Pill
-/// - **Right Zone**: Split Export CTA Button
 ///
 /// ## Responsiveness
 /// [LayoutBuilder] switches between wide (≥ 960 px) and compact (< 960 px) layouts.
@@ -96,13 +92,6 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
                       onRedo: () => context.read<ScoreCubit>().redo(),
                     );
 
-                    final exportButton = SplitExportButton(
-                      label: l10n.export,
-                      onPrimaryPressed: () => showExportDialog(context),
-                      onMenuSelected: (value) =>
-                          handleTopBarMenuSelection(context, value, scoreState),
-                    );
-
                     if (isCompact) {
                       return _CompactLayout(
                         scoreState: scoreState,
@@ -111,7 +100,6 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
                         cs: cs,
                         themeExt: themeExt,
                         undoRedoCluster: undoRedoCluster,
-                        exportButton: exportButton,
                       );
                     }
 
@@ -120,7 +108,6 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
                       configState: configState,
                       activeProfile: activeProfile,
                       undoRedoCluster: undoRedoCluster,
-                      exportButton: exportButton,
                     );
                   },
                 ),
@@ -140,7 +127,7 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
 /// Compact top-bar layout for viewports narrower than 960 px.
 ///
 /// All menus collapse into a single [PopupMenuButton] triggered by the brand
-/// logo. Undo/Redo and the export button remain visible.
+/// logo. Undo/Redo remains visible.
 class _CompactLayout extends StatelessWidget {
   final ScoreState scoreState;
   final core.PageConfig configState;
@@ -148,7 +135,6 @@ class _CompactLayout extends StatelessWidget {
   final ColorScheme cs;
   final SarvThemeExtension? themeExt;
   final Widget undoRedoCluster;
-  final Widget exportButton;
 
   const _CompactLayout({
     required this.scoreState,
@@ -157,7 +143,6 @@ class _CompactLayout extends StatelessWidget {
     required this.cs,
     required this.themeExt,
     required this.undoRedoCluster,
-    required this.exportButton,
   });
 
   @override
@@ -165,7 +150,7 @@ class _CompactLayout extends StatelessWidget {
     return Row(
       children: [
         PopupMenuButton<String>(
-          tooltip: 'App Menu',
+          tooltip: l10n.appMenuTooltip,
           offset: const Offset(0, 44),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
           color: cs.surfaceContainerHigh,
@@ -192,8 +177,6 @@ class _CompactLayout extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 6.0),
-        exportButton,
       ],
     );
   }
@@ -202,20 +185,18 @@ class _CompactLayout extends StatelessWidget {
 /// Full wide-mode top-bar layout for viewports at least 960 px wide.
 ///
 /// Shows the brand logo, all four desktop menus, undo/redo, ensemble picker,
-/// inline score header, and the export button.
+/// and inline score header.
 class _WideLayout extends StatelessWidget {
   final ScoreState scoreState;
   final core.PageConfig configState;
   final core.StaffProfile? activeProfile;
   final Widget undoRedoCluster;
-  final Widget exportButton;
 
   const _WideLayout({
     required this.scoreState,
     required this.configState,
     required this.activeProfile,
     required this.undoRedoCluster,
-    required this.exportButton,
   });
 
   @override
@@ -252,9 +233,6 @@ class _WideLayout extends StatelessWidget {
             ),
           ),
         ),
-
-        // ── Zone 3: Export CTA ────────────────────────────────────────────
-        exportButton,
       ],
     );
   }
