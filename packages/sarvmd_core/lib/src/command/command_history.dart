@@ -13,7 +13,7 @@ class CommandHistory {
   final void Function(Score score)? onScoreChanged;
 
   CommandHistory({
-    Score initialScore = const Score(title: 'New Score', parts: []),
+    Score initialScore = const Score(title: '', parts: []),
     this.maxDepth = 100,
     this.onScoreChanged,
   }) : _score = initialScore;

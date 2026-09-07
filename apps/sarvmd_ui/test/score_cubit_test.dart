@@ -16,7 +16,6 @@ class _TestTitleUpdateCommand extends ScoreCommand {
   core.Score execute(core.Score current) {
     return core.Score(
       title: newTitle,
-      composer: current.composer,
       parts: current.parts,
     );
   }
@@ -25,7 +24,6 @@ class _TestTitleUpdateCommand extends ScoreCommand {
   core.Score undo(core.Score current) {
     return core.Score(
       title: oldTitle,
-      composer: current.composer,
       parts: current.parts,
     );
   }
@@ -44,7 +42,7 @@ void main() {
     });
 
     test('Initial ScoreState has default score and empty undo/redo stacks', () {
-      expect(cubit.state.score.title, equals('New Score'));
+      expect(cubit.state.score.title, equals(''));
       expect(cubit.state.undoStack, isEmpty);
       expect(cubit.state.redoStack, isEmpty);
       expect(cubit.state.canUndo, isFalse);
@@ -52,7 +50,7 @@ void main() {
     });
 
     test('Executing command updates score and pushes to undo stack', () {
-      const command = _TestTitleUpdateCommand('Symphony No. 1', 'New Score');
+      const command = _TestTitleUpdateCommand('Symphony No. 1', '');
       cubit.execute(command);
 
       expect(cubit.state.score.title, equals('Symphony No. 1'));
@@ -63,11 +61,11 @@ void main() {
     });
 
     test('Undo reverts score mutation and moves command to redo stack', () {
-      const command = _TestTitleUpdateCommand('Symphony No. 1', 'New Score');
+      const command = _TestTitleUpdateCommand('Symphony No. 1', '');
       cubit.execute(command);
       cubit.undo();
 
-      expect(cubit.state.score.title, equals('New Score'));
+      expect(cubit.state.score.title, equals(''));
       expect(cubit.state.undoStack, isEmpty);
       expect(cubit.state.redoStack.length, equals(1));
       expect(cubit.state.canUndo, isFalse);
@@ -75,7 +73,7 @@ void main() {
     });
 
     test('Redo re-applies command and moves command back to undo stack', () {
-      const command = _TestTitleUpdateCommand('Symphony No. 1', 'New Score');
+      const command = _TestTitleUpdateCommand('Symphony No. 1', '');
       cubit.execute(command);
       cubit.undo();
       cubit.redo();
@@ -88,7 +86,7 @@ void main() {
     });
 
     test('Executing new command clears existing redo stack', () {
-      const cmd1 = _TestTitleUpdateCommand('Score Version A', 'New Score');
+      const cmd1 = _TestTitleUpdateCommand('Score Version A', '');
       const cmd2 = _TestTitleUpdateCommand('Score Version B', 'Score Version A');
 
       cubit.execute(cmd1);
@@ -106,7 +104,7 @@ void main() {
       const noop = NoOpCommand();
       cubit.execute(noop);
 
-      expect(cubit.state.score.title, equals('New Score'));
+      expect(cubit.state.score.title, equals(''));
       expect(cubit.state.undoStack.length, equals(1));
     });
   });

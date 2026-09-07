@@ -5,15 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../../logic/score/score_cubit.dart';
 
-/// Center-zone dual inline-editable score header.
+/// Center-zone inline-editable score header.
 ///
-/// Renders the score **Title** and **Composer** as tappable labels that switch
-/// to inline [TextField]s on tap.  On submit (Enter or tap-outside), dispatches
-/// [core.SetTitleCommand] / [core.SetComposerCommand] through [ScoreCubit].
+/// Renders the score **Title** (single source of truth for score title & export name)
+/// as a tappable label that switches to an inline [TextField] on tap.
+/// On submit (Enter or tap-outside), dispatches [core.SetTitleCommand] through [ScoreCubit].
 ///
-/// In compact mode ([isCompact] == true) only the title is shown.
+/// If cleared (empty input), falls back to the default file name format generated from page config.
 class EditableScoreHeader extends StatefulWidget {
   final core.Score score;
   final core.PageConfig configState;
@@ -32,17 +33,13 @@ class EditableScoreHeader extends StatefulWidget {
 
 class _EditableScoreHeaderState extends State<EditableScoreHeader> {
   bool _isEditingTitle = false;
-  bool _isEditingComposer = false;
   late TextEditingController _titleController;
-  late TextEditingController _composerController;
   final FocusNode _titleFocusNode = FocusNode();
-  final FocusNode _composerFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.score.title);
-    _composerController = TextEditingController(text: widget.score.composer);
   }
 
   @override
@@ -51,53 +48,35 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
     if (!_isEditingTitle && oldWidget.score.title != widget.score.title) {
       _titleController.text = widget.score.title;
     }
-    if (!_isEditingComposer && oldWidget.score.composer != widget.score.composer) {
-      _composerController.text = widget.score.composer;
-    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _composerController.dispose();
     _titleFocusNode.dispose();
-    _composerFocusNode.dispose();
     super.dispose();
   }
 
   void _submitTitle() {
     if (!_isEditingTitle) return;
     final newTitle = _titleController.text.trim();
-    if (newTitle.isNotEmpty && newTitle != widget.score.title) {
+    if (newTitle != widget.score.title) {
       context.read<ScoreCubit>().execute(
             core.SetTitleCommand(newTitle, widget.score.title),
           );
-    } else {
-      _titleController.text = widget.score.title;
     }
     setState(() => _isEditingTitle = false);
-  }
-
-  void _submitComposer() {
-    if (!_isEditingComposer) return;
-    final newComposer = _composerController.text.trim();
-    if (newComposer != widget.score.composer) {
-      context.read<ScoreCubit>().execute(
-            core.SetComposerCommand(newComposer, widget.score.composer),
-          );
-    } else {
-      _composerController.text = widget.score.composer;
-    }
-    setState(() => _isEditingComposer = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    final effectiveTitle = core.ScoreCompiler.getEffectiveTitle(widget.score, widget.configState);
 
     final titleWidget = _isEditingTitle
         ? SizedBox(
-            width: 140.0,
+            width: 180.0,
             height: 28.0,
             child: TextField(
               controller: _titleController,
@@ -109,6 +88,7 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
                 color: cs.onSurface,
               ),
               decoration: InputDecoration(
+                hintText: effectiveTitle,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
                 isDense: true,
                 filled: true,
@@ -124,14 +104,19 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
           )
         : InkWell(
             onTap: () {
-              setState(() => _isEditingTitle = true);
+              setState(() {
+                _isEditingTitle = true;
+                _titleController.text = widget.score.title.isEmpty
+                    ? effectiveTitle
+                    : widget.score.title;
+              });
               _titleFocusNode.requestFocus();
             },
             borderRadius: BorderRadius.circular(5.0),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
               child: Text(
-                widget.score.title.isEmpty ? 'New Score' : widget.score.title,
+                effectiveTitle,
                 style: TextStyle(
                   fontSize: 13.0,
                   fontWeight: FontWeight.bold,
@@ -149,60 +134,15 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
       );
     }
 
-    final composerWidget = _isEditingComposer
-        ? SizedBox(
-            width: 120.0,
-            height: 28.0,
-            child: TextField(
-              controller: _composerController,
-              focusNode: _composerFocusNode,
-              autofocus: true,
-              style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
-                isDense: true,
-                filled: true,
-                fillColor: cs.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6.0),
-                  borderSide: BorderSide(color: cs.primary, width: 1.5),
-                ),
-              ),
-              onSubmitted: (_) => _submitComposer(),
-              onTapOutside: (_) => _submitComposer(),
-            ),
-          )
-        : InkWell(
-            onTap: () {
-              setState(() => _isEditingComposer = true);
-              _composerFocusNode.requestFocus();
-            },
-            borderRadius: BorderRadius.circular(5.0),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-              child: Text(
-                widget.score.composer.isEmpty ? 'Composer' : widget.score.composer,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontStyle:
-                      widget.score.composer.isEmpty ? FontStyle.italic : FontStyle.normal,
-                  color: cs.onSurfaceVariant,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          );
+    final orientationLabel = widget.configState.orientation == core.PageOrientation.portrait
+        ? l10n.portrait.toUpperCase()
+        : l10n.landscape.toUpperCase();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(child: titleWidget),
-        Text(
-          ' • ',
-          style: TextStyle(fontSize: 12.0, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
-        ),
-        Flexible(child: composerWidget),
-        const SizedBox(width: 6.0),
+        const SizedBox(width: 8.0),
         // Layout status pill (e.g. "A4 • PORTRAIT")
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 7.0, vertical: 2.5),
@@ -212,7 +152,7 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
             border: Border.all(color: cs.primary.withValues(alpha: 0.2), width: 0.8),
           ),
           child: Text(
-            '${widget.configState.pageSize.name.toUpperCase()} • ${widget.configState.orientation.name.toUpperCase()}',
+            '${widget.configState.pageSize.name.toUpperCase()} • $orientationLabel',
             style: TextStyle(
               fontSize: 10.0,
               fontWeight: FontWeight.bold,

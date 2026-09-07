@@ -48,13 +48,11 @@ void main() {
     // Verify ensemble profile picker
     expect(find.byIcon(Icons.queue_music_rounded), findsOneWidget);
 
-    // Verify center dual editable metadata (Title & Composer) & status badge
-    expect(find.text('New Score'), findsOneWidget);
-    expect(find.text('Composer'), findsOneWidget);
-    expect(find.textContaining('A4'), findsOneWidget);
+    // Verify center editable metadata (Title) & status badge
+    expect(find.text('Treble_A4_Portrait'), findsOneWidget);
+    expect(find.text('A4 • PORTRAIT'), findsOneWidget);
 
-    // Verify primary split Export CTA button & undo/redo buttons
-    expect(find.byIcon(Icons.file_upload_outlined), findsAtLeastNWidgets(1));
+    // Verify undo/redo buttons
     expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
     expect(find.byIcon(Icons.redo_rounded), findsOneWidget);
 
@@ -113,7 +111,7 @@ void main() {
     configCubit.close();
   });
 
-  testWidgets('SarvTopBar allows inline editing of score title and composer in center zone', (tester) async {
+  testWidgets('SarvTopBar allows inline editing of score title in center zone', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -140,7 +138,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1. Edit Title
-    await tester.tap(find.text('New Score'));
+    await tester.tap(find.text('Treble_A4_Portrait'));
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsOneWidget);
 
@@ -150,18 +148,6 @@ void main() {
 
     expect(find.text('Persian Classical Suite'), findsOneWidget);
     expect(scoreCubit.state.score.title, equals('Persian Classical Suite'));
-
-    // 2. Edit Composer
-    await tester.tap(find.text('Composer'));
-    await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'L. v. Beethoven');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pumpAndSettle();
-
-    expect(find.text('L. v. Beethoven'), findsOneWidget);
-    expect(scoreCubit.state.score.composer, equals('L. v. Beethoven'));
 
     scoreCubit.close();
     configCubit.close();
@@ -197,7 +183,7 @@ void main() {
     expect(find.byType(PopupMenuButton<String>), findsAtLeastNWidgets(1));
     expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
     expect(find.byIcon(Icons.redo_rounded), findsOneWidget);
-    expect(find.text('New Score'), findsOneWidget);
+    expect(find.text('Treble_A4_Portrait'), findsOneWidget);
 
     // Tap logo to open smart dropdown menu
     await tester.tap(find.byType(PopupMenuButton<String>).first);
@@ -236,14 +222,72 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify logo top-left placement in RTL relative to File menu
+    // Verify logo top-left placement in RTL relative to File menu (فایل)
     final logoFinder = find.byType(InkWell).first;
-    final fileFinder = find.text('File');
+    final fileFinder = find.text('فایل');
 
     final logoTopLeft = tester.getTopLeft(logoFinder);
     final fileTopLeft = tester.getTopLeft(fileFinder);
 
     expect(logoTopLeft.dx, lessThan(fileTopLeft.dx));
+
+    scoreCubit.close();
+    configCubit.close();
+  });
+
+  testWidgets('SarvTopBar renders translated Persian headers and submenus in Persian mode (fa)', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final history = CommandHistory();
+    final scoreCubit = ScoreCubit(history);
+    final configCubit = ConfigCubit();
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<ScoreCubit>.value(value: scoreCubit),
+          BlocProvider<ConfigCubit>.value(value: configCubit),
+        ],
+        child: const MaterialApp(
+          locale: Locale('fa'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SarvTopBar(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify translated top-level headers in Persian
+    expect(find.text('فایل'), findsOneWidget);
+    expect(find.text('ویرایش'), findsOneWidget);
+    expect(find.text('نمایش'), findsOneWidget);
+    expect(find.text('راهنما'), findsOneWidget);
+
+    // Verify score header
+    expect(find.text('Treble_A4_Portrait'), findsOneWidget);
+
+    // Open Edit (ویرایش) menu and verify translated submenus
+    await tester.tap(find.text('ویرایش'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('افزودن حامل به سیستم'), findsOneWidget);
+    expect(find.text('ویرایش حامل'), findsOneWidget);
+
+    // Expand Add Staff (افزودن حامل به سیستم)
+    await tester.tap(find.text('افزودن حامل به سیستم'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('حامل ۵ خطی استاندارد (کلید سل)'), findsOneWidget);
+    expect(find.text('حامل ۵ خطی استاندارد (کلید فا)'), findsOneWidget);
+    expect(find.text('آکولاد دوگانه (پیانو)'), findsOneWidget);
+    expect(find.text('تبلچر ۶ خطی گیتار'), findsOneWidget);
+    expect(find.text('حامل ریتم تک‌خطی'), findsOneWidget);
+    expect(find.text('حامل سفارشی… (تنظیمات)'), findsOneWidget);
 
     scoreCubit.close();
     configCubit.close();

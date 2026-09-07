@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import '../compiler.dart' as pdflatex;
 import '../config.dart';
+import '../domain/score.dart';
 import '../domain/svg_layering_mode.dart';
 import '../emitter.dart' as tex_emitter;
 import '../layout.dart';
@@ -14,6 +15,18 @@ import '../svg_emitter.dart' as svg_emitter;
 
 /// High-level compilation & code generation engine for SarvMD manuscript scores.
 abstract final class ScoreCompiler {
+  /// Returns the single source of truth title for the score and export operations.
+  ///
+  /// If [score.title] is non-empty, returns it. Otherwise returns the default filename format
+  /// derived from [config].
+  static String getEffectiveTitle(Score score, PageConfig config) {
+    final trimmed = score.title.trim();
+    if (trimmed.isEmpty) {
+      return getDefaultFileName(config);
+    }
+    return trimmed;
+  }
+
   /// Generates a default clean filename based on page configuration.
   ///
   /// Examples: `Piano_A4_Portrait`, `Treble_A4_Portrait`, `Ensemble_4Staff_A4_Portrait`, `Manuscript_A4_Portrait`.
