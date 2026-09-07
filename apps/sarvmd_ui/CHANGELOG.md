@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.7.0] - 2026-09-07
+
+### Added
+- **Unified Document State & Transactional Undo/Redo Engine**: Introduced `SarvDocument` (combining `Score` AST and `PageConfig` physical layout) and `DocumentCubit` to manage unified document state and transactional undo/redo across both score notation and page layout mutations (`Ctrl+Z`, `Ctrl+Y`, top bar cluster, and Edit menu).
+- **Command Coalescing Engine**: Automatic time-window command merging (`coalesceThreshold: 600ms`) in `CommandHistory` and drag-end commit callbacks (`onChangeStart`, `onChangeEnd`) in `PrecisionSlider`, ensuring continuous slider/stepper adjustments do not pollute the undo stack.
+- **Top Bar Staff Management Sub-Menus**: Added standard **Add Staff to System** sub-menu (Treble, Bass, Grand Staff, Guitar TAB, Rhythm, Custom), **Edit Staff** sub-menu (launches `StaffConfigDialog` for any active staff), and **Remove Staff** sub-menu with safety checks in `TopBarEditMenu`.
+- **`sarvmd_composer` Package Infrastructure**: Initialized new monorepo package `packages/sarvmd_composer` for playback engine integration and MusicXML transcription support.
+
+### Changed
+- **Modular Top Bar System Architecture**: Refactored `SarvTopBar` into modular components (`top_bar_menu_header.dart`, `top_bar_menu_handler.dart`, `editable_score_header.dart`, `ensemble_profile_picker.dart`, `undo_redo_cluster.dart`, `file_menu.dart`, `edit_menu.dart`, `view_menu.dart`, `help_menu.dart`, `compact_menu.dart`), with responsive viewport adaptation for compact (<960px) and wide viewports.
+- **Custom Staff Preset Defaults**: Removed default `"Custom Staff"` label fallback when creating a custom staff so new custom staves initialize with clean, empty labels.
+- **State Management Consolidation**: Removed obsolete separate `ScoreCubit` and `ConfigCubit` implementations across the codebase.
+
+### Fixed
+- **History Counter Status Badge**: Clarified history counter representation (`History (#)`) in the Edit menu to accurately display current undo stack depth.
+- **Continuous Input Undo History**: Resolved undo history bloat during live slider drag operations by executing coalesced transactional commands on drag completion.
+
+---
+
 ## [0.6.2] - 2026-08-25
 
 ### Added
