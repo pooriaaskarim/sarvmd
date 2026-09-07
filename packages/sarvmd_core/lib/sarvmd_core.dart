@@ -18,6 +18,7 @@ export 'src/svg_emitter.dart';
 export 'src/pdf_emitter.dart';
 
 // Domain models
+export 'src/domain/document.dart';
 export 'src/domain/duration.dart';
 export 'src/domain/pitch.dart';
 export 'src/domain/clef.dart';
@@ -35,7 +36,9 @@ export 'src/layout/engraver.dart';
 export 'src/layout/layout_policy.dart';
 
 // Command Pipeline & Transactional Engine
+export 'src/command/document_command.dart';
 export 'src/command/score_command.dart';
+export 'src/command/config_command.dart';
 export 'src/command/command_history.dart';
 
 // Registries & Presets

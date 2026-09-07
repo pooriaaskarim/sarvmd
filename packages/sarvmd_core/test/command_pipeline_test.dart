@@ -88,6 +88,7 @@ void main() {
       final boundedHistory = CommandHistory(
         initialScore: const Score(title: 'Base', parts: []),
         maxDepth: 2,
+        coalesceThreshold: Duration.zero,
       );
 
       boundedHistory.execute(SetTitleCommand('T1', 'Base'));
@@ -96,6 +97,63 @@ void main() {
 
       expect(boundedHistory.undoStack.length, equals(2));
       expect((boundedHistory.undoStack.first as SetTitleCommand).newTitle, equals('T2'));
+    });
+
+    test('PageConfig commands mutate document layout and undo accurately', () {
+      expect(history.config.pageSize, equals(PageSize.a4));
+      expect(history.config.orientation, equals(PageOrientation.portrait));
+
+      history.execute(SetPageSizeCommand(PageSize.letter));
+      expect(history.config.pageSize, equals(PageSize.letter));
+      expect(history.lastUndoLabel, equals('Set Page Size'));
+
+      history.execute(SetOrientationCommand(PageOrientation.landscape));
+      expect(history.config.orientation, equals(PageOrientation.landscape));
+      expect(history.lastUndoLabel, equals('Set Orientation'));
+
+      history.undo();
+      expect(history.config.orientation, equals(PageOrientation.portrait));
+      expect(history.lastRedoLabel, equals('Set Orientation'));
+
+      history.undo();
+      expect(history.config.pageSize, equals(PageSize.a4));
+    });
+
+    test('AddStaffCommand and RemoveStaffByUidCommand undo layout changes transactionally', () {
+      final initialCount = history.config.systemLayout.rootGroup.children.length;
+
+      history.execute(AddStaffCommand(def: const StaffDefinition(instrumentName: 'Violin')));
+      expect(history.config.systemLayout.rootGroup.children.length, equals(initialCount + 1));
+      expect(history.lastUndoLabel, equals('Add Staff'));
+
+      final addedStaff = history.config.systemLayout.rootGroup.children.last as StaffDefinition;
+      expect(addedStaff.instrumentName, equals('Violin'));
+
+      history.execute(RemoveStaffByUidCommand(addedStaff.uid));
+      expect(history.config.systemLayout.rootGroup.children.length, equals(initialCount));
+
+      history.undo();
+      expect(history.config.systemLayout.rootGroup.children.length, equals(initialCount + 1));
+
+      history.undo();
+      expect(history.config.systemLayout.rootGroup.children.length, equals(initialCount));
+    });
+
+    test('Command coalescing merges consecutive commands within threshold', () {
+      final coalesceHistory = CommandHistory(
+        initialScore: const Score(title: 'Base', parts: []),
+        coalesceThreshold: const Duration(milliseconds: 500),
+      );
+
+      coalesceHistory.execute(SetMarginsCommand(const Margins(top: 10, bottom: 10, left: 10, right: 10)));
+      coalesceHistory.execute(SetMarginsCommand(const Margins(top: 15, bottom: 15, left: 15, right: 15)));
+      coalesceHistory.execute(SetMarginsCommand(const Margins(top: 20, bottom: 20, left: 20, right: 20)));
+
+      expect(coalesceHistory.undoStack.length, equals(1));
+      expect(coalesceHistory.config.margins.top, equals(20));
+
+      coalesceHistory.undo();
+      expect(coalesceHistory.config.margins.top, equals(const PageConfig().margins.top));
     });
   });
 }
