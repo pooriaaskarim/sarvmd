@@ -157,6 +157,9 @@ class _EditorScreenState extends State<EditorScreen> {
       child: BlocBuilder<DocumentCubit, DocumentState>(
         builder: (context, docState) {
           final configState = docState.config;
+          final isFa = Localizations.localeOf(context).languageCode == 'fa';
+          final sidebarTextDir = isFa ? TextDirection.rtl : TextDirection.ltr;
+
           return BlocBuilder<ViewCubit, ViewState>(
             builder: (context, viewState) {
               return Scaffold(
@@ -186,11 +189,13 @@ class _EditorScreenState extends State<EditorScreen> {
                                     child: Column(
                                       children: [
                                       Expanded(
-                                        child: ListView(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: AppSpacing.paddingLarge),
-                                          children: [
-                                            const SizedBox(height: AppSpacing.paddingMedium),
+                                        child: Directionality(
+                                          textDirection: sidebarTextDir,
+                                          child: ListView(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: AppSpacing.paddingLarge),
+                                            children: [
+                                              const SizedBox(height: AppSpacing.paddingMedium),
 
                                     FadeInSlide(
                                       delay: 1,
@@ -199,7 +204,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           SectionHeader(
-                                              title: AppLocalizations.of(context)!.profiles),
+                                              title: AppLocalizations.of(context)!.headerEnsembleProfiles),
                                           const SizedBox(
                                               height: AppSpacing.itemGapSmall),
                                           ProfilePicker(
@@ -218,7 +223,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           SectionHeader(
-                                              title: AppLocalizations.of(context)!.document),
+                                              title: AppLocalizations.of(context)!.pageSettings),
                                           const SizedBox(
                                               height: AppSpacing.itemGapSmall),
                                           DocumentSettingsGroup(
@@ -296,6 +301,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                         height: AppSpacing.paddingLarge),
                                   ],
                                 ),
+                              ),
                               ),
                               Divider(
                                   color: Theme.of(context).colorScheme.outline,

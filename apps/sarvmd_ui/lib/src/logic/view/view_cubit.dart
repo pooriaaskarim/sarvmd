@@ -59,6 +59,7 @@ class ViewCubit extends Cubit<ViewState> {
     // Load Notation Preview
     final showNotation = prefs.getBool(_keyShowNotation) ?? false;
 
+    if (isClosed) return;
     emit(state.copyWith(
       themeMode: themeMode,
       accent: accent,

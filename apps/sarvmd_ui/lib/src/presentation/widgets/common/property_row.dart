@@ -36,30 +36,20 @@ class PropertyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCanvasStrict = LayoutPolicy.isCanvasStrict(context);
     final isRtl = !isCanvasStrict &&
-        Localizations.localeOf(context).languageCode == 'fa';
+        (Directionality.of(context) == TextDirection.rtl ||
+            Localizations.localeOf(context).languageCode == 'fa');
 
     return Row(
       crossAxisAlignment: crossAxisAlignment,
       children: [
-        if (isRtl) ...[
-          control,
-          SizedBox(width: spacing),
-          Expanded(
-            child: DefaultTextStyle.merge(
-              textAlign: TextAlign.right,
-              child: label,
-            ),
+        Expanded(
+          child: DefaultTextStyle.merge(
+            textAlign: isRtl ? TextAlign.right : TextAlign.left,
+            child: label,
           ),
-        ] else ...[
-          Expanded(
-            child: DefaultTextStyle.merge(
-              textAlign: TextAlign.left,
-              child: label,
-            ),
-          ),
-          SizedBox(width: spacing),
-          control,
-        ],
+        ),
+        SizedBox(width: spacing),
+        control,
       ],
     );
   }

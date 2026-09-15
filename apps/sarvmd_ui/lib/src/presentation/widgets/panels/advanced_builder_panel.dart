@@ -75,40 +75,46 @@ class SystemHierarchyPanel extends StatelessWidget {
   Widget _buildMolaSummary(BuildContext context, core.PageConfig state) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final isFa = Localizations.localeOf(context).languageCode == 'fa';
+    final textDir = isFa ? TextDirection.rtl : TextDirection.ltr;
     final staffCount = state.staffCount;
     final totalHeight = state.systemHeight;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.ensembleSummary,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: cs.primary,
-              letterSpacing: 0.5,
+    return Directionality(
+      textDirection: textDir,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cs.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.ensembleSummary,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: cs.primary,
+                letterSpacing: 0.5,
+              ),
+              textAlign: isFa ? TextAlign.right : TextAlign.left,
             ),
-          ),
-          const SizedBox(height: 8),
-          _SummaryRow(
-              label: l10n.totalStaves,
-              value: '$staffCount'),
-          _SummaryRow(
-              label: l10n.systemHeight,
-              value: UnitFormatter.formatMm(totalHeight)),
-          _SummaryRow(
-            label: l10n.density,
-            value: l10n.systemsCount(notifier.layout.systemCount),
-          ),
-        ],
+            const SizedBox(height: 8),
+            _SummaryRow(
+                label: l10n.totalStaves,
+                value: '$staffCount'),
+            _SummaryRow(
+                label: l10n.systemHeight,
+                value: UnitFormatter.formatMm(totalHeight)),
+            _SummaryRow(
+              label: l10n.density,
+              value: l10n.systemsCount(notifier.layout.systemCount),
+            ),
+          ],
+        ),
       ),
     );
   }

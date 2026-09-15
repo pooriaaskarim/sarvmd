@@ -3,9 +3,16 @@ import '../../../core/theme/app_metrics.dart';
 import 'property_row.dart';
 
 class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, required this.title, this.onReset});
+  const SectionHeader({
+    super.key,
+    required this.title,
+    this.onReset,
+    this.action,
+  });
+
   final String title;
   final VoidCallback? onReset;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +41,24 @@ class SectionHeader extends StatelessWidget {
             ),
           );
 
+    final controlWidget = (action == null && resetButton == null)
+        ? const SizedBox.shrink()
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (action != null) ...[
+                action!,
+                if (resetButton != null) const SizedBox(width: 8),
+              ],
+              if (resetButton != null) resetButton,
+            ],
+          );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.headerBottom),
       child: PropertyRow(
         label: label,
-        control: resetButton ?? const SizedBox.shrink(),
+        control: controlWidget,
       ),
     );
   }
