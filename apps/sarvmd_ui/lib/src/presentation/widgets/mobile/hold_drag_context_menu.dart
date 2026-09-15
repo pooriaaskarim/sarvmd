@@ -17,6 +17,7 @@ class HoldDragContextMenu<T> extends StatefulWidget {
     required this.menuBuilder,
     required this.items,
     required this.onSelect,
+    this.previewBuilder,
     this.menuOffset = const Offset(0, 8),
   });
 
@@ -27,6 +28,7 @@ class HoldDragContextMenu<T> extends StatefulWidget {
     Map<T, GlobalKey> itemKeys,
     ValueChanged<T> onSelect,
   ) menuBuilder;
+  final Widget Function(BuildContext context, T hoveredValue)? previewBuilder;
   final List<T> items;
   final ValueChanged<T> onSelect;
   final Offset menuOffset;
@@ -41,6 +43,7 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
   OverlayEntry? _overlayEntry;
   Timer? _holdTimer;
   Offset? _downPos;
+  Offset? _currentPointerPos;
   bool _isHoldDragMode = false;
   T? _hoveredValue;
 
@@ -77,12 +80,19 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
     final buttonSize = renderBox.size;
     final screenSize = MediaQuery.sizeOf(context);
     final isRightSide = buttonPos.dx > (screenSize.width * 0.5);
+    final renderAbove = buttonPos.dy > (screenSize.height * 0.5);
+    final mediaPadding = MediaQuery.paddingOf(context);
 
     _overlayEntry = OverlayEntry(
       builder: (overlayContext) {
         return StatefulBuilder(
           builder: (context, setOverlayState) {
-            final double top = buttonPos.dy + buttonSize.height + widget.menuOffset.dy;
+            final double? top = renderAbove
+                ? null
+                : buttonPos.dy + buttonSize.height + widget.menuOffset.dy;
+            final double? bottom = renderAbove
+                ? (screenSize.height - buttonPos.dy + widget.menuOffset.dy + 4.0)
+                : null;
 
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -106,12 +116,13 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
                   // Positioned Context Menu
                   Positioned(
                     top: top,
+                    bottom: bottom,
                     left: isRightSide
                         ? null
-                        : (buttonPos.dx + widget.menuOffset.dx).clamp(10.0, screenSize.width - 240.0),
+                        : (buttonPos.dx + widget.menuOffset.dx).clamp(10.0, screenSize.width - 260.0),
                     right: isRightSide
                         ? (screenSize.width - buttonPos.dx - buttonSize.width - widget.menuOffset.dx)
-                            .clamp(10.0, screenSize.width - 240.0)
+                            .clamp(10.0, screenSize.width - 260.0)
                         : null,
                     child: Directionality(
                       textDirection: TextDirection.ltr,
@@ -129,6 +140,33 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
                       ),
                     ),
                   ),
+
+                  // Fingertip Active Selection Preview Bubble (Offset above user's finger)
+                  if (_isHoldDragMode && _hoveredValue != null && _currentPointerPos != null)
+                    Positioned(
+                      left: (_currentPointerPos!.dx - 70.0).clamp(16.0, screenSize.width - 156.0),
+                      top: (_currentPointerPos!.dy - 68.0).clamp(mediaPadding.top + 8.0, screenSize.height - 80.0),
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: IgnorePointer(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: _FingertipPreviewBubble(
+                              child: widget.previewBuilder != null
+                                  ? widget.previewBuilder!(context, _hoveredValue!)
+                                  : Text(
+                                      _hoveredValue.toString(),
+                                      style: TextStyle(
+                                        fontSize: 13.0,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             );
@@ -147,6 +185,7 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
     _overlayEntry = null;
     _isHoldDragMode = false;
     _hoveredValue = null;
+    _currentPointerPos = null;
   }
 
   void _updateHoverFromPointer(Offset pointerPos) {
@@ -175,6 +214,7 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
 
   void _onPointerDown(PointerDownEvent event) {
     _downPos = event.position;
+    _currentPointerPos = event.position;
     _isHoldDragMode = false;
     _hoveredValue = null;
 
@@ -188,6 +228,7 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
   }
 
   void _onPointerMove(PointerMoveEvent event) {
+    _currentPointerPos = event.position;
     if (_downPos != null && !_isHoldDragMode) {
       final dist = (event.position - _downPos!).distance;
       if (dist > 8.0) {
@@ -198,6 +239,7 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
 
     if (_isHoldDragMode) {
       _updateHoverFromPointer(event.position);
+      _overlayEntry?.markNeedsBuild();
     }
   }
 
@@ -217,11 +259,13 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
       }
     }
     _downPos = null;
+    _currentPointerPos = null;
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
     _hideOverlay();
     _downPos = null;
+    _currentPointerPos = null;
   }
 
   @override
@@ -253,6 +297,48 @@ class _HoldDragContextMenuState<T> extends State<HoldDragContextMenu<T>> {
             _hideOverlay();
           }
         }),
+      ),
+    );
+  }
+}
+
+/// Elevated callout bubble rendered clear of the user's fingertip during hold-drag selection.
+class _FingertipPreviewBubble extends StatelessWidget {
+  const _FingertipPreviewBubble({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return AnimatedScale(
+      scale: 1.05,
+      duration: const Duration(milliseconds: 100),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(20.0),
+          border: Border.all(
+            color: cs.primary,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: cs.primary.withValues(alpha: 0.3),
+              blurRadius: 16.0,
+              spreadRadius: 1.0,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 12.0,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: child,
       ),
     );
   }

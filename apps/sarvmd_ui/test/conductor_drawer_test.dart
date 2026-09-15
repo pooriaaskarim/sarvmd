@@ -131,11 +131,11 @@ void main() {
       expect(find.text('Light'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
 
-      // Verify accent options exist: Lavender, Lemon, Sage, Sky
-      expect(find.text('Lavender'), findsOneWidget);
-      expect(find.text('Lemon'), findsOneWidget);
-      expect(find.text('Sage'), findsOneWidget);
-      expect(find.text('Sky'), findsOneWidget);
+      // Verify accent options exist via tooltips: Lavender, Lemon, Sage, Sky
+      expect(find.byTooltip('Lavender'), findsOneWidget);
+      expect(find.byTooltip('Lemon'), findsOneWidget);
+      expect(find.byTooltip('Sage'), findsOneWidget);
+      expect(find.byTooltip('Sky'), findsOneWidget);
 
       // Select Dark mode
       await tester.tap(find.text('Dark'));
@@ -147,7 +147,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select Sage accent
-      await tester.tap(find.text('Sage'));
+      await tester.tap(find.byTooltip('Sage'));
       await tester.pumpAndSettle();
       expect(viewCubit.state.accent, SarvAccent.sage);
     });

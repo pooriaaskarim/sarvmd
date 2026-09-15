@@ -65,32 +65,102 @@ class MobileThemeButton extends StatelessWidget {
           viewCubit.updateAccent(option.accent);
         }
       },
+      previewBuilder: (context, option) {
+        if (option is ModeOption) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(option.icon, size: 16.0, color: cs.primary),
+              const SizedBox(width: 6.0),
+              Text(
+                option.label,
+                style: TextStyle(
+                  fontSize: 13.0,
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
+          );
+        } else if (option is AccentOption) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 14.0,
+                height: 14.0,
+                decoration: BoxDecoration(
+                  color: option.accent.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: option.accent.primary.withValues(alpha: 0.6),
+                      blurRadius: 6.0,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6.0),
+              Text(
+                option.accent.label,
+                style: TextStyle(
+                  fontSize: 13.0,
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
+              ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      },
       buttonBuilder: (context, onTap) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+          height: 38.0,
+          constraints: const BoxConstraints(minWidth: 44.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(12.0),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(19.0),
             border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.5),
+              color: cs.outlineVariant.withValues(alpha: 0.6),
               width: 1.0,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 4.0,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                modeIcon,
-                size: 16.0,
-                color: cs.primary,
+              Container(
+                width: 22.0,
+                height: 22.0,
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  modeIcon,
+                  size: 13.0,
+                  color: cs.primary,
+                ),
               ),
               const SizedBox(width: 6.0),
               Container(
-                width: 8.0,
-                height: 8.0,
+                width: 10.0,
+                height: 10.0,
                 decoration: BoxDecoration(
                   color: viewState.accent.primary,
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: cs.onSurface.withValues(alpha: 0.2),
+                    width: 1.0,
+                  ),
                 ),
               ),
             ],
@@ -99,19 +169,24 @@ class MobileThemeButton extends StatelessWidget {
       },
       menuBuilder: (context, hoveredValue, itemKeys, onSelect) {
         return Container(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(16.0),
+            color: cs.surfaceContainerHigh.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(24.0),
             border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.6),
-              width: 1.0,
+              color: cs.primary.withValues(alpha: 0.25),
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.22),
+                color: cs.primary.withValues(alpha: 0.15),
                 blurRadius: 16.0,
-                offset: const Offset(0, 6),
+                spreadRadius: 1.0,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20.0,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -142,22 +217,22 @@ class MobileThemeButton extends StatelessWidget {
                     onTap: () => onSelect(opt),
                     child: AnimatedContainer(
                       key: itemKeys[opt],
-                      duration: const Duration(milliseconds: 120),
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
-                      margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                      duration: const Duration(milliseconds: 140),
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
                       decoration: BoxDecoration(
                         color: isHovered
                             ? cs.primaryContainer
                             : (isCurrent
-                                ? cs.primary.withValues(alpha: 0.15)
-                                : Colors.transparent),
-                        borderRadius: BorderRadius.circular(10.0),
+                                ? cs.primary.withValues(alpha: 0.18)
+                                : cs.surfaceContainerHighest.withValues(alpha: 0.4)),
+                        borderRadius: BorderRadius.circular(16.0),
                         border: Border.all(
                           color: isHovered
                               ? cs.primary
                               : (isCurrent
-                                  ? cs.primary.withValues(alpha: 0.4)
-                                  : Colors.transparent),
+                                  ? cs.primary.withValues(alpha: 0.5)
+                                  : cs.outlineVariant.withValues(alpha: 0.3)),
                           width: 1.2,
                         ),
                       ),
@@ -166,19 +241,19 @@ class MobileThemeButton extends StatelessWidget {
                         children: [
                           Icon(
                             opt.icon,
-                            size: 13.0,
+                            size: 14.0,
                             color: isHovered
                                 ? cs.onPrimaryContainer
                                 : (isCurrent ? cs.primary : cs.onSurfaceVariant),
                           ),
-                          const SizedBox(width: 4.0),
+                          const SizedBox(width: 5.0),
                           Text(
                             opt.label,
                             style: TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 12.0,
                               fontWeight: (isCurrent || isHovered)
                                   ? FontWeight.bold
-                                  : FontWeight.normal,
+                                  : FontWeight.w500,
                               color: isHovered
                                   ? cs.onPrimaryContainer
                                   : (isCurrent ? cs.primary : cs.onSurface),
@@ -191,15 +266,15 @@ class MobileThemeButton extends StatelessWidget {
                 }).toList(),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Divider(
                   height: 1.0,
-                  color: cs.outlineVariant.withValues(alpha: 0.4),
+                  color: cs.outlineVariant.withValues(alpha: 0.3),
                 ),
               ),
               // Row 2 Header: Accent Color
               Padding(
-                padding: const EdgeInsets.only(left: 6.0, bottom: 4.0),
+                padding: const EdgeInsets.only(left: 6.0, bottom: 6.0),
                 child: Text(
                   'ACCENT',
                   style: TextStyle(
@@ -216,54 +291,45 @@ class MobileThemeButton extends StatelessWidget {
                   final isCurrent = viewState.accent == opt.accent;
                   final isHovered = hoveredValue == opt;
 
-                  return GestureDetector(
-                    onTap: () => onSelect(opt),
-                    child: AnimatedContainer(
-                      key: itemKeys[opt],
-                      duration: const Duration(milliseconds: 120),
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-                      margin: const EdgeInsets.symmetric(horizontal: 2.0),
-                      decoration: BoxDecoration(
-                        color: isHovered
-                            ? cs.primaryContainer
-                            : (isCurrent
-                                ? cs.primary.withValues(alpha: 0.15)
-                                : Colors.transparent),
-                        borderRadius: BorderRadius.circular(10.0),
-                        border: Border.all(
-                          color: isHovered
-                              ? cs.primary
-                              : (isCurrent
-                                  ? cs.primary.withValues(alpha: 0.4)
-                                  : Colors.transparent),
-                          width: 1.2,
+                  return Tooltip(
+                    message: opt.accent.label,
+                    child: GestureDetector(
+                      onTap: () => onSelect(opt),
+                      child: AnimatedContainer(
+                        key: itemKeys[opt],
+                        duration: const Duration(milliseconds: 140),
+                        width: 36.0,
+                        height: 36.0,
+                        margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                        decoration: BoxDecoration(
+                          color: opt.accent.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: (isCurrent || isHovered)
+                                ? cs.onSurface
+                                : Colors.transparent,
+                            width: isHovered ? 2.5 : (isCurrent ? 2.0 : 0),
+                          ),
+                          boxShadow: [
+                            if (isCurrent || isHovered)
+                              BoxShadow(
+                                color: opt.accent.primary.withValues(alpha: 0.6),
+                                blurRadius: isHovered ? 12.0 : 6.0,
+                                spreadRadius: isHovered ? 2.0 : 1.0,
+                              ),
+                          ],
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 10.0,
-                            height: 10.0,
-                            decoration: BoxDecoration(
-                              color: opt.accent.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4.0),
-                          Text(
-                            opt.accent.label,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: (isCurrent || isHovered)
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isHovered
-                                  ? cs.onPrimaryContainer
-                                  : (isCurrent ? cs.primary : cs.onSurface),
-                            ),
-                          ),
-                        ],
+                        child: Center(
+                          child: (isCurrent || isHovered)
+                              ? Icon(
+                                  Icons.check_rounded,
+                                  size: 18.0,
+                                  color: opt.accent.primary.computeLuminance() > 0.5
+                                      ? Colors.black87
+                                      : Colors.white,
+                                )
+                              : null,
+                        ),
                       ),
                     ),
                   );
