@@ -327,10 +327,10 @@ class _StaffItem extends StatelessWidget {
   final DocumentCubit notifier;
 
   void _openConfigDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => StaffConfigDialog(staff: staff, notifier: notifier),
+    showStaffConfigDialog(
+      context,
+      staff: staff,
+      notifier: notifier,
     );
   }
 
