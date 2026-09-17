@@ -48,7 +48,7 @@ class ViewCubit extends Cubit<ViewState> {
       // If no manual calibration exists, attempt to detect physical PPI from host OS.
       final detectedPpi = await detectPhysicalPpi();
       if (detectedPpi != null) {
-        calibrationFactor = (detectedPpi / 96.0).clamp(0.5, 4.0);
+        calibrationFactor = (detectedPpi / 96.0).clamp(0.3, 6.0);
         _log.debug('Auto-detected physical PPI',
             context: {'ppi': detectedPpi, 'factor': calibrationFactor});
       } else {
@@ -74,7 +74,7 @@ class ViewCubit extends Cubit<ViewState> {
   }
 
   void updateCalibrationFactor(double factor) async {
-    final finalFactor = factor.clamp(0.3, 5.0);
+    final finalFactor = factor.clamp(0.3, 6.0);
     _log.debug('Calibration updated', context: {'factor': finalFactor});
     emit(state.copyWith(calibrationFactor: finalFactor));
     final prefs = await SharedPreferences.getInstance();

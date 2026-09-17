@@ -1,16 +1,56 @@
+// Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
+// Licensed under the Business Source License 1.1 (BUSL-1.1).
+
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 
 Future<double?> detectPhysicalPpi() async {
   try {
-    if (Platform.isLinux) {
-      return _getPpiLinux();
+    if (Platform.isAndroid) {
+      return _getPpiMobile();
+    } else if (Platform.isIOS) {
+      return _getPpiMobile();
+    } else if (Platform.isLinux) {
+      final ppi = await _getPpiLinux();
+      return ppi ?? _getPpiFlutterView();
     } else if (Platform.isMacOS) {
-      return _getPpiMacOS();
+      final ppi = await _getPpiMacOS();
+      return ppi ?? _getPpiFlutterView();
     } else if (Platform.isWindows) {
-      return _getPpiWindows();
+      final ppi = await _getPpiWindows();
+      return ppi ?? _getPpiFlutterView();
     }
   } catch (e) {
     // Fail silently
+  }
+  return _getPpiFlutterView();
+}
+
+double? _getPpiMobile() {
+  final view = WidgetsBinding.instance.platformDispatcher.implicitView ??
+      (WidgetsBinding.instance.platformDispatcher.views.isNotEmpty
+          ? WidgetsBinding.instance.platformDispatcher.views.first
+          : null);
+  if (view != null) {
+    final dpr = view.devicePixelRatio;
+    if (dpr > 0) {
+      return dpr * 160.0;
+    }
+  }
+  return 160.0;
+}
+
+double? _getPpiFlutterView() {
+  final view = WidgetsBinding.instance.platformDispatcher.implicitView ??
+      (WidgetsBinding.instance.platformDispatcher.views.isNotEmpty
+          ? WidgetsBinding.instance.platformDispatcher.views.first
+          : null);
+  if (view != null) {
+    final dpr = view.devicePixelRatio;
+    if (dpr > 0) {
+      final baseDpi = dpr >= 2.0 ? 160.0 : 96.0;
+      return dpr * baseDpi;
+    }
   }
   return null;
 }
