@@ -18,16 +18,26 @@ class ExportDirectoryService {
   /// Returns true if running on a browser (Web).
   static bool get isWeb => kIsWeb;
 
-  /// Returns the default fallback export directory.
+  /// Returns the default fallback export directory string synchronously.
   static String getDefaultDirectory() {
     if (isWeb) return 'Browser Downloads';
-    return p.join(Directory.current.path, 'output');
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      return 'System File Picker';
+    }
+    final currentPath = Directory.current.path;
+    if (currentPath == '/' || currentPath.isEmpty) {
+      return 'System File Picker';
+    }
+    return p.join(currentPath, 'output');
   }
 
   /// Loads the persisted export directory from [SharedPreferences],
   /// or returns the default fallback directory.
   static Future<String> getExportDirectory() async {
     if (isWeb) return 'Browser Downloads';
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      return 'System File Picker';
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_prefKey);
