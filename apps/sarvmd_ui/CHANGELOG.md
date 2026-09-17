@@ -11,6 +11,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0] - 2026-09-17
+
+### Added
+- **Redesigned Mobile Interface & Workspace**:
+  - **Full-Bleed Canvas & Ultra-Minimal Header**: Maximized manuscript view on mobile screens with quick document title editing and instant export access.
+  - **Floating Baton Control Dock**: Combined drawer triggers, undo/redo, real-time zoom steppers, preset shortcuts (`Fit Width`, `Fit Screen`), and overlay guide toggles into a single floating frosted-glass dock.
+  - **Smart Toolbar Auto-Collapse**: Floating baton dock automatically collapses after 4s of inactivity into a compact FAB and temporarily hides during active canvas gestures to keep the screen uncluttered.
+- **Interactive Measurement & Touch Inspection Tools**:
+  - **Real-Time Glassmorphic Coordinate HUD**: Interactive floating HUD bar displaying live millimeter dimensions (X, Y) and physical `PAPER` vs `MARGIN` status badges on hold & drag.
+  - **Touch-Guided Ruler Wings**: Real-time crosshair indicator lines on the top and left rulers tracking finger movement on hold & drag.
+- **Enhanced Mobile Navigation Drawer**:
+  - **Categorized Workspace Sections**: Dedicated navigation sections for profile presets, page setup, staff spacing, system hierarchy, and manuscript export.
+  - **Manuscript Summary Metrics Card**: Live readout of total systems count, staves count, system height, density, and physical page size.
+  - **Touch-Friendly Control Group**: Quick theme mode, accent color picker, and application language selector.
+- **Adaptive Modal Bottom Sheets**:
+  - Settings dialogs now seamlessly render as drag-to-dismiss bottom sheets on mobile devices and centered modals on desktop.
+  - Enhanced layout boundaries to ensure smooth scrolling and prevent keyboard overlap across screen sizes.
+
+### Changed
+- **Unified Manuscript Metrics**: Consolidated document layout summary calculations into a single shared component across desktop and mobile.
+- **Refined Touch Feedback**: Improved touch target areas and added subtle haptic feedback for long-press coordinate inspection.
+
+### Fixed
+- **Android Export Path Permission**: Resolved file export issues on Android devices using native file picker saving.
+- **Landscape Zoom Boundaries**: Optimized minimum scale limits for landscape viewport fitting.
+
+---
+
 ## [0.7.0] - 2026-09-07
 
 ### Added
