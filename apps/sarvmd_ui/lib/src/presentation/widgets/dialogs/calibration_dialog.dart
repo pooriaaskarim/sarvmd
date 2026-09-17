@@ -54,7 +54,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
 
   void _nudge(double delta) {
     setState(() {
-      _localFactor = (_localFactor + delta).clamp(0.3, 5.0);
+      _localFactor = (_localFactor + delta).clamp(0.3, 6.0);
     });
   }
 
@@ -179,9 +179,9 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                                 const RoundSliderOverlayShape(overlayRadius: 16),
                           ),
                           child: Slider(
-                            value: _localFactor,
-                            min: 0.5,
-                            max: 3.5,
+                            value: _localFactor.clamp(0.3, 6.0),
+                            min: 0.3,
+                            max: 6.0,
                             onChanged: (v) => setState(() => _localFactor = v),
                             activeColor: cs.primary,
                             inactiveColor: cs.primary.withValues(alpha: 0.1),
