@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Refined Touch Feedback**: Improved touch target areas and added subtle haptic feedback for long-press coordinate inspection.
 
 ### Fixed
+- **Physical "Actual Size" DPI Auto-Calibration**: Fixed physical 1:1 scale calculation logic on mobile and high-DPI displays by factoring `devicePixelRatio` into auto-detected screen density math, ensuring 100% "Actual Size" zoom precisely matches real-world physical millimeter dimensions across devices.
 - **Android Export Path Permission**: Resolved file export issues on Android devices using native file picker saving.
 - **Landscape Zoom Boundaries**: Optimized minimum scale limits for landscape viewport fitting.
 
