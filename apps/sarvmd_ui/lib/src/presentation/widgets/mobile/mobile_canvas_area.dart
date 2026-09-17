@@ -45,10 +45,6 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
   bool _hasCentered = false;
   ZoomPreset _currentPreset = ZoomPreset.fitWidth;
 
-  // Track pointers for 2-finger tap detection (Undo)
-  int _activePointers = 0;
-  DateTime? _twoPointerDownTime;
-
   void toggleFitZoom() {
     final next = _currentPreset == ZoomPreset.fitWidth
         ? ZoomPreset.fitScreen
@@ -112,38 +108,6 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
       ..multiply(Matrix4.diagonal3Values(fitScale, fitScale, 1.0));
   }
 
-  void _handlePointerDown(PointerDownEvent event) {
-    _activePointers++;
-    if (_activePointers == 2) {
-      _twoPointerDownTime = DateTime.now();
-    }
-  }
-
-  void _handlePointerUp(PointerUpEvent event) {
-    if (_activePointers == 2 && _twoPointerDownTime != null) {
-      final elapsed = DateTime.now().difference(_twoPointerDownTime!);
-      if (elapsed.inMilliseconds < 300) {
-        // Quick 2-finger tap detected -> Trigger Undo
-        final cubit = context.read<DocumentCubit>();
-        if (cubit.state.canUndo) {
-          cubit.undo();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Undo (2-finger tap)'),
-              duration: Duration(milliseconds: 1000),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    }
-    _activePointers = (_activePointers - 1).clamp(0, 10);
-  }
-
-  void _handlePointerCancel(PointerCancelEvent event) {
-    _activePointers = (_activePointers - 1).clamp(0, 10);
-  }
-
   @override
   Widget build(BuildContext context) {
     final documentCubit = context.watch<DocumentCubit>();
@@ -175,12 +139,8 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
                 configState.effectiveWidth,
                 configState.effectiveHeight,
               ),
-              child: Listener(
-                onPointerDown: _handlePointerDown,
-                onPointerUp: _handlePointerUp,
-                onPointerCancel: _handlePointerCancel,
-                child: Stack(
-                  children: [
+              child: Stack(
+                children: [
                     Positioned.fill(
                       child: InteractiveViewer(
                         transformationController: widget.transformationController,
@@ -219,7 +179,6 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
                     ),
                   ],
                 ),
-              ),
             ),
           );
         },
