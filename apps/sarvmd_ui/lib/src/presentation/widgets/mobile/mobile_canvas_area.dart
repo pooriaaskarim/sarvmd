@@ -10,7 +10,6 @@ import '../../../logic/view/view_cubit.dart';
 import '../canvas/preview_canvas.dart';
 import '../canvas/ruler_box.dart';
 import '../common/integrated_scale_control.dart';
-import '../staff/zoom_feedback_overlay.dart';
 
 /// Touch & gesture optimized interactive mobile canvas area for SarvMD manuscript rendering.
 class MobileCanvasArea extends StatefulWidget {
@@ -175,16 +174,6 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
                           child: PreviewCanvas(
                             layout: documentCubit.layout,
                             viewState: viewState,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 24 + widget.bottomPadding,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: ZoomFeedbackOverlay(
-                            controller: widget.transformationController,
                           ),
                         ),
                       ),

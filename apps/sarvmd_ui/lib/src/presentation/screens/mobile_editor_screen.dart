@@ -130,7 +130,8 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
               right: 0.0,
               child: Center(
                 child: ConductorToolbar(
-                  onFitZoom: _triggerFitZoom,
+                  transformationController: _transformationController,
+                  onZoomPreset: _onZoomPresetSelected,
                 ),
               ),
             ),

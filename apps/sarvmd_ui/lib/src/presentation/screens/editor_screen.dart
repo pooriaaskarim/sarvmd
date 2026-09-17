@@ -16,7 +16,6 @@ import '../widgets/layout/sarv_top_bar.dart';
 import '../widgets/common/shortcut_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/staff/profile_picker.dart';
-import '../widgets/staff/zoom_feedback_overlay.dart';
 import '../widgets/canvas/preview_canvas.dart';
 import '../widgets/panels/view_panel.dart';
 import '../widgets/canvas/ruler_box.dart';
@@ -439,17 +438,6 @@ class _EditorScreenState extends State<EditorScreen> {
                                           ),
                                         ),
                                       ),
-                                      Positioned(
-                                        bottom: 24,
-                                        left: 0,
-                                        right: 0,
-                                        child: Center(
-                                          child: ZoomFeedbackOverlay(
-                                              controller:
-                                                  _transformationController),
-                                        ),
-                                      ),
-
                                       // Sidebar Toggle (Left)
                                       Positioned(
                                         top: 16,

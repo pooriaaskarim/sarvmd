@@ -41,50 +41,13 @@ class ViewPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                SectionHeader(title: AppLocalizations.of(context)!.zoom),
+                SectionHeader(title: AppLocalizations.of(context)!.appearance),
                 const SizedBox(height: AppSpacing.itemGapSmall),
-                IntegratedScaleControl(
-                  viewState: viewState,
-                  viewCubit: viewCubit,
-                  transformationController: transformationController,
-                  onZoomPreset: onZoomPreset,
-                ),
-                const SizedBox(height: AppSpacing.itemGap),
-                SectionHeader(title: AppLocalizations.of(context)!.guides),
-                const SizedBox(height: AppSpacing.itemGapSmall),
-                Column(
-                  children: [
-                    GuideToggle(
-                      label: AppLocalizations.of(context)!.mouseWings,
-                      value: viewState.isGuideActive(GuideType.rulerWings),
-                      onChanged: (v) => viewCubit.toggleGuide(
-                          GuideType.rulerWings, v ?? false),
-                    ),
-                    GuideToggle(
-                      label: AppLocalizations.of(context)!.paperEdges,
-                      value: viewState.isGuideActive(GuideType.paperEdges),
-                      onChanged: (v) => viewCubit.toggleGuide(
-                          GuideType.paperEdges, v ?? false),
-                    ),
-                    GuideToggle(
-                      label: AppLocalizations.of(context)!.paperCenters,
-                      value: viewState.isGuideActive(GuideType.paperCenters),
-                      onChanged: (v) => viewCubit.toggleGuide(
-                          GuideType.paperCenters, v ?? false),
-                    ),
-                    GuideToggle(
-                      label: AppLocalizations.of(context)!.documentMargins,
-                      value: viewState.isGuideActive(GuideType.margins),
-                      onChanged: (v) => viewCubit.toggleGuide(
-                          GuideType.margins, v ?? false),
-                    ),
-                    GuideToggle(
-                      label: AppLocalizations.of(context)!.staffBounds,
-                      value: viewState.isGuideActive(GuideType.staffBounds),
-                      onChanged: (v) => viewCubit.toggleGuide(
-                          GuideType.staffBounds, v ?? false),
-                    ),
-                  ],
+                _AppearanceSettings(
+                  themeMode: viewState.themeMode,
+                  accent: viewState.accent,
+                  onThemeModeChanged: viewCubit.updateThemeMode,
+                  onAccentChanged: viewCubit.updateAccent,
                 ),
               ],
             );
@@ -98,115 +61,117 @@ class ViewPanel extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainer,
         child: Column(
           children: [
-          Expanded(
-            child: BlocBuilder<ViewCubit, ViewState>(
-              builder: (context, viewState) {
-                return ListView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.paddingLarge),
-                  children: [
-                    const SizedBox(height: 48),
-                    FadeInSlide(
-                      delay: 0,
-                      child: PropertyRow(
-                        label: Text(
-                          AppLocalizations.of(context)!.view,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
+            Expanded(
+              child: BlocBuilder<ViewCubit, ViewState>(
+                builder: (context, viewState) {
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.paddingLarge),
+                    children: [
+                      const SizedBox(height: 48),
+                      FadeInSlide(
+                        delay: 0,
+                        child: PropertyRow(
+                          label: Text(
+                            AppLocalizations.of(context)!.view,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
                           ),
+                          control: const LanguageToggleButton(),
                         ),
-                        control: const LanguageToggleButton(),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.sectionGap),
-                    FadeInSlide(
-                        delay: 1, child: SectionHeader(title: AppLocalizations.of(context)!.appearance)),
-                    FadeInSlide(
-                      delay: 2,
-                      child: _AppearanceSettings(
-                        themeMode: viewState.themeMode,
-                        accent: viewState.accent,
-                        onThemeModeChanged: viewCubit.updateThemeMode,
-                        onAccentChanged: viewCubit.updateAccent,
+                      const SizedBox(height: AppSpacing.sectionGap),
+                      FadeInSlide(
+                          delay: 1,
+                          child: SectionHeader(
+                              title: AppLocalizations.of(context)!.appearance)),
+                      FadeInSlide(
+                        delay: 2,
+                        child: _AppearanceSettings(
+                          themeMode: viewState.themeMode,
+                          accent: viewState.accent,
+                          onThemeModeChanged: viewCubit.updateThemeMode,
+                          onAccentChanged: viewCubit.updateAccent,
+                        ),
                       ),
-                    ),
-                    const FadeInSlide(
-                      delay: 3,
-                      child: Divider(height: 32),
-                    ),
-                    FadeInSlide(
-                        delay: 4, child: SectionHeader(title: AppLocalizations.of(context)!.zoom)),
-                    FadeInSlide(
-                      delay: 5,
-                      child: IntegratedScaleControl(
-                        viewState: viewState,
-                        viewCubit: viewCubit,
-                        transformationController: transformationController,
-                        onZoomPreset: onZoomPreset,
+                      const FadeInSlide(
+                        delay: 3,
+                        child: Divider(height: 32),
                       ),
-                    ),
-                    const FadeInSlide(
-                      delay: 6,
-                      child: Divider(height: 32),
-                    ),
-
-                    FadeInSlide(
-                        delay: 7, child: SectionHeader(title: AppLocalizations.of(context)!.guides)),
-                    FadeInSlide(
-                      delay: 11,
-                      child: Column(
-                        children: [
-                          GuideToggle(
-                            label: AppLocalizations.of(context)!.mouseWings,
-                            value:
-                                viewState.isGuideActive(GuideType.rulerWings),
-                            onChanged: (v) => viewCubit.toggleGuide(
-                                GuideType.rulerWings, v ?? false),
-                          ),
-                          GuideToggle(
-                            label: AppLocalizations.of(context)!.paperEdges,
-                            value:
-                                viewState.isGuideActive(GuideType.paperEdges),
-                            onChanged: (v) => viewCubit.toggleGuide(
-                                GuideType.paperEdges, v ?? false),
-                          ),
-                          GuideToggle(
-                            label: AppLocalizations.of(context)!.paperCenters,
-                            value:
-                                viewState.isGuideActive(GuideType.paperCenters),
-                            onChanged: (v) => viewCubit.toggleGuide(
-                                GuideType.paperCenters, v ?? false),
-                          ),
-                          GuideToggle(
-                            label: AppLocalizations.of(context)!.documentMargins,
-                            value: viewState.isGuideActive(GuideType.margins),
-                            onChanged: (v) => viewCubit.toggleGuide(
-                                GuideType.margins, v ?? false),
-                          ),
-                          GuideToggle(
-                            label: AppLocalizations.of(context)!.staffBounds,
-                            value:
-                                viewState.isGuideActive(GuideType.staffBounds),
-                            onChanged: (v) => viewCubit.toggleGuide(
-                                GuideType.staffBounds, v ?? false),
-                          ),
-                        ],
+                      FadeInSlide(
+                          delay: 4, child: SectionHeader(title: AppLocalizations.of(context)!.zoom)),
+                      FadeInSlide(
+                        delay: 5,
+                        child: IntegratedScaleControl(
+                          viewState: viewState,
+                          viewCubit: viewCubit,
+                          transformationController: transformationController,
+                          onZoomPreset: onZoomPreset,
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                      const FadeInSlide(
+                        delay: 6,
+                        child: Divider(height: 32),
+                      ),
+                      FadeInSlide(
+                          delay: 7, child: SectionHeader(title: AppLocalizations.of(context)!.guides)),
+                      FadeInSlide(
+                        delay: 8,
+                        child: Column(
+                          children: [
+                            GuideToggle(
+                              label: AppLocalizations.of(context)!.mouseWings,
+                              value:
+                                  viewState.isGuideActive(GuideType.rulerWings),
+                              onChanged: (v) => viewCubit.toggleGuide(
+                                  GuideType.rulerWings, v ?? false),
+                            ),
+                            GuideToggle(
+                              label: AppLocalizations.of(context)!.paperEdges,
+                              value:
+                                  viewState.isGuideActive(GuideType.paperEdges),
+                              onChanged: (v) => viewCubit.toggleGuide(
+                                  GuideType.paperEdges, v ?? false),
+                            ),
+                            GuideToggle(
+                              label: AppLocalizations.of(context)!.paperCenters,
+                              value:
+                                  viewState.isGuideActive(GuideType.paperCenters),
+                              onChanged: (v) => viewCubit.toggleGuide(
+                                  GuideType.paperCenters, v ?? false),
+                            ),
+                            GuideToggle(
+                              label: AppLocalizations.of(context)!.documentMargins,
+                              value: viewState.isGuideActive(GuideType.margins),
+                              onChanged: (v) => viewCubit.toggleGuide(
+                                  GuideType.margins, v ?? false),
+                            ),
+                            GuideToggle(
+                              label: AppLocalizations.of(context)!.staffBounds,
+                              value:
+                                  viewState.isGuideActive(GuideType.staffBounds),
+                              onChanged: (v) => viewCubit.toggleGuide(
+                                  GuideType.staffBounds, v ?? false),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-          const FadeInSlide(
-            delay: 12,
-            child: ExportPanel(),
-          ),
-        ],
+            const FadeInSlide(
+              delay: 3,
+              child: ExportPanel(),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }

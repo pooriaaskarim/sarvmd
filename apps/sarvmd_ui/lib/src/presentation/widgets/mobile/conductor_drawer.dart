@@ -13,7 +13,6 @@ import '../common/section_header.dart';
 import '../layout/sarv_reactive_brand_logo.dart';
 import '../panels/advanced_builder_panel.dart';
 import '../panels/export_panel.dart';
-import '../panels/view_panel.dart';
 import '../staff/document_settings_group.dart';
 import '../staff/margins_settings_group.dart';
 import '../staff/profile_picker.dart';
@@ -191,24 +190,6 @@ class ConductorDrawer extends StatelessWidget {
 
                         // Section 4: System Layout & Hierarchy
                         SystemHierarchyPanel(notifier: cubit),
-                        const Divider(height: 28),
-
-                        // Section 5: Display & Canvas Controls
-                        Directionality(
-                          textDirection: sectionTextDir,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SectionHeader(title: l10n.appearance),
-                              const SizedBox(height: 8),
-                              ViewPanel(
-                                isEmbedded: true,
-                                transformationController: transformationController,
-                                onZoomPreset: onZoomPreset,
-                              ),
-                            ],
-                          ),
-                        ),
                         const Divider(height: 28),
 
                         // Section 5: Export Panel
