@@ -6,9 +6,12 @@ import 'package:flutter/widgets.dart';
 
 Future<double?> detectPhysicalPpi() async {
   try {
-    if (Platform.isAndroid) {
-      return _getPpiMobile();
-    } else if (Platform.isIOS) {
+    // In test environment, avoid spawning subprocesses or un-pumped timers.
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return _getPpiFlutterView();
+    }
+
+    if (Platform.isAndroid || Platform.isIOS) {
       return _getPpiMobile();
     } else if (Platform.isLinux) {
       final ppi = await _getPpiLinux();
@@ -56,7 +59,13 @@ double? _getPpiFlutterView() {
 }
 
 Future<double?> _getPpiLinux() async {
-  final result = await Process.run('xrandr', ['--current']);
+  if (Platform.environment['DISPLAY'] == null &&
+      Platform.environment['WAYLAND_DISPLAY'] == null) {
+    return null;
+  }
+  const timeout = Duration(seconds: 2);
+  final result =
+      await Process.run('xrandr', ['--current']).timeout(timeout, onTimeout: () => ProcessResult(0, 1, '', ''));
   if (result.exitCode != 0) return null;
   final output = result.stdout as String;
   final match =
@@ -70,7 +79,9 @@ Future<double?> _getPpiLinux() async {
 }
 
 Future<double?> _getPpiMacOS() async {
-  final result = await Process.run('system_profiler', ['SPDisplaysDataType']);
+  const timeout = Duration(seconds: 2);
+  final result = await Process.run('system_profiler', ['SPDisplaysDataType'])
+      .timeout(timeout, onTimeout: () => ProcessResult(0, 1, '', ''));
   if (result.exitCode != 0) return null;
   final output = result.stdout as String;
   if (output.contains('Retina')) return 227.0;
@@ -78,10 +89,11 @@ Future<double?> _getPpiMacOS() async {
 }
 
 Future<double?> _getPpiWindows() async {
+  const timeout = Duration(seconds: 2);
   final result = await Process.run('powershell', [
     '-Command',
     'Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams | Select-Object -Property MaxHorizontalImageSize'
-  ]);
+  ]).timeout(timeout, onTimeout: () => ProcessResult(0, 1, '', ''));
   if (result.exitCode != 0) return null;
   final output = result.stdout as String;
   final match = RegExp(r'(\d+)').firstMatch(output);

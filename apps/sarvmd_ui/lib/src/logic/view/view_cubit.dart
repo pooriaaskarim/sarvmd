@@ -48,9 +48,20 @@ class ViewCubit extends Cubit<ViewState> {
       // If no manual calibration exists, attempt to detect physical PPI from host OS.
       final detectedPpi = await detectPhysicalPpi();
       if (detectedPpi != null) {
-        calibrationFactor = (detectedPpi / 96.0).clamp(0.3, 6.0);
+        // The canvas renders at 96 logical DPI. Flutter scales logical pixels
+        // by devicePixelRatio to physical pixels, so the effective physical DPI
+        // at calibrationFactor=1.0 is 96 * dpr. To match real-world dimensions
+        // we solve:  calibrationFactor * 96 * dpr = physicalPpi
+        final dpr = WidgetsBinding
+                .instance.platformDispatcher.implicitView?.devicePixelRatio ??
+            1.0;
+        calibrationFactor = (detectedPpi / (96.0 * dpr)).clamp(0.3, 6.0);
         _log.debug('Auto-detected physical PPI',
-            context: {'ppi': detectedPpi, 'factor': calibrationFactor});
+            context: {
+              'ppi': detectedPpi,
+              'dpr': dpr,
+              'factor': calibrationFactor,
+            });
       } else {
         _log.debug('Physical PPI detection returned null; using default factor');
       }
