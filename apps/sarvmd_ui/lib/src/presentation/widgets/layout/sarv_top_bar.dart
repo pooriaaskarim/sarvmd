@@ -38,13 +38,19 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
       builder: (context, documentState) {
         final activeProfile = context.read<DocumentCubit>().activeProfile;
         final configState = documentState.config;
+        final topPadding = MediaQuery.paddingOf(context).top;
+        final totalHeight = 52.0 + topPadding;
 
         return Directionality(
           textDirection: TextDirection.ltr,
           child: Container(
-            height: 52.0,
+            height: totalHeight,
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            padding: EdgeInsets.only(
+              top: topPadding,
+              left: 12.0,
+              right: 12.0,
+            ),
             decoration: BoxDecoration(
               color: cs.surfaceContainerHigh,
               border: Border(

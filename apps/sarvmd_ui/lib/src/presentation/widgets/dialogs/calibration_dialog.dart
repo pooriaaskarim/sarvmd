@@ -5,15 +5,16 @@ import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/view/view_cubit.dart';
 import '../../../l10n/app_localizations.dart';
 
+import 'adaptive_dialog_helper.dart';
+
 /// Opens the display calibration dialog.
 Future<void> showCalibrationDialog(
   BuildContext context,
   ViewCubit viewCubit,
 ) {
-  return showDialog<void>(
+  return showSarvAdaptiveModal<void>(
     context: context,
-    barrierColor: Colors.black54,
-    builder: (_) => CalibrationDialog(viewCubit: viewCubit),
+    builder: (ctx, isMobile) => CalibrationDialog(viewCubit: viewCubit),
   );
 }
 
@@ -53,7 +54,7 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
 
   void _nudge(double delta) {
     setState(() {
-      _localFactor = (_localFactor + delta).clamp(0.3, 5.0);
+      _localFactor = (_localFactor + delta).clamp(0.3, 6.0);
     });
   }
 
@@ -66,36 +67,34 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final media = MediaQuery.of(context);
+    final isMobile = media.size.width < 600;
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        width: 440,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Header ───────────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.straighten_rounded,
-                      color: cs.primary,
-                      size: 20,
-                    ),
+    final content = SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Header ───────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+            color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(width: 12),
+                  child: Icon(
+                    Icons.straighten_rounded,
+                    color: cs.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,9 +179,9 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                                 const RoundSliderOverlayShape(overlayRadius: 16),
                           ),
                           child: Slider(
-                            value: _localFactor,
-                            min: 0.5,
-                            max: 3.5,
+                            value: _localFactor.clamp(0.3, 6.0),
+                            min: 0.3,
+                            max: 6.0,
                             onChanged: (v) => setState(() => _localFactor = v),
                             activeColor: cs.primary,
                             inactiveColor: cs.primary.withValues(alpha: 0.1),
@@ -311,6 +310,18 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
             ),
           ],
         ),
+      );
+
+    if (isMobile) {
+      return content;
+    }
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: 440,
+        child: content,
       ),
     );
   }

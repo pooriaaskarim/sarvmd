@@ -301,33 +301,37 @@ class _MolaGuidanceHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final meetsMola = staffHeightMm >= 7.0;
+    final isFa = Localizations.localeOf(context).languageCode == 'fa';
+    final textDir = isFa ? TextDirection.rtl : TextDirection.ltr;
 
-    return MouseRegion(
-      onEnter: (_) => onHover(true),
-      onExit: (_) => onHover(false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onToggle,
-        onLongPressStart: (_) => onHover(true),
-        onLongPressEnd: (_) => onHover(false),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: isPinned
-                ? cs.primary.withValues(alpha: 0.08)
-                : cs.onSurface.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
+    return Directionality(
+      textDirection: textDir,
+      child: MouseRegion(
+        onEnter: (_) => onHover(true),
+        onExit: (_) => onHover(false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onToggle,
+          onLongPressStart: (_) => onHover(true),
+          onLongPressEnd: (_) => onHover(false),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
               color: isPinned
-                  ? cs.primary.withValues(alpha: 0.3)
-                  : cs.outlineVariant.withValues(alpha: 0.2),
-              width: 1,
+                  ? cs.primary.withValues(alpha: 0.08)
+                  : cs.onSurface.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isPinned
+                    ? cs.primary.withValues(alpha: 0.3)
+                    : cs.outlineVariant.withValues(alpha: 0.2),
+                width: 1,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 8,
-            children: [
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
               // MOLA Badge with Definition Tooltip
               Tooltip(
                 message: AppLocalizations.of(context)!.molaTooltipMessage,
@@ -418,6 +422,7 @@ class _MolaGuidanceHeader extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -480,6 +485,10 @@ class _AnnotatedSlider extends StatefulWidget {
 
 class _AnnotatedSliderState extends State<_AnnotatedSlider> {
   late final TextEditingController _controller;
+  double _dragStartValue = 0.0;
+  double _cumulativeDelta = 0.0;
+  bool _isScrubbing = false;
+  bool _isLabelHovered = false;
 
   @override
   void initState() {
@@ -513,41 +522,104 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
     }
   }
 
+  void _onDragStart(DragStartDetails details) {
+    if (!widget.enabled) return;
+    _dragStartValue = widget.value;
+    _cumulativeDelta = 0.0;
+    setState(() => _isScrubbing = true);
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (!widget.enabled) return;
+    _cumulativeDelta += details.delta.dx;
+    final range = widget.max - widget.min;
+    final sensitivity = (range / 250.0).clamp(0.01, 0.2);
+    final double newValue = (_dragStartValue + _cumulativeDelta * sensitivity)
+        .clamp(widget.min, widget.max);
+    final rounded = double.parse(newValue.toStringAsFixed(2));
+    if (rounded != widget.value) {
+      widget.onChanged(rounded);
+      _controller.text = rounded.toStringAsFixed(2);
+    }
+  }
+
+  void _onDragEnd() {
+    if (!widget.enabled) return;
+    setState(() => _isScrubbing = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final enabledAlpha = widget.enabled ? 1.0 : AppOpacities.disabled;
 
-    final valueInput = Container(
-      width: 62,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.5)),
-      ),
-      child: TextField(
-        controller: _controller,
-        enabled: widget.enabled,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: cs.onSurface,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          fontFeatures: const [FontFeature.tabularFigures()],
+    final valueInput = GestureDetector(
+      onHorizontalDragStart: _onDragStart,
+      onHorizontalDragUpdate: _onDragUpdate,
+      onHorizontalDragEnd: (_) => _onDragEnd(),
+      onHorizontalDragCancel: _onDragEnd,
+      child: MouseRegion(
+        cursor: widget.enabled ? SystemMouseCursors.resizeLeftRight : SystemMouseCursors.basic,
+        onEnter: (_) => setState(() => _isLabelHovered = true),
+        onExit: (_) => setState(() => _isLabelHovered = false),
+        child: Tooltip(
+          message: '${widget.label}: drag left/right to scrub',
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 68,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            decoration: BoxDecoration(
+              color: _isScrubbing
+                  ? cs.primary.withValues(alpha: 0.12)
+                  : (_isLabelHovered ? cs.primary.withValues(alpha: 0.06) : cs.surfaceContainerHighest),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: (_isScrubbing || _isLabelHovered)
+                    ? cs.primary
+                    : cs.outline.withValues(alpha: 0.5),
+                width: (_isScrubbing || _isLabelHovered) ? 1.5 : 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    enabled: widget.enabled,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: (_isScrubbing || _isLabelHovered) ? cs.primary : cs.onSurface,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: _submit,
+                    onTapOutside: (_) {
+                      _submit(_controller.text);
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        decoration: const InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-          border: InputBorder.none,
-        ),
-        onSubmitted: _submit,
-        onTapOutside: (_) {
-          _submit(_controller.text);
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
       ),
+    );
+
+    final labelWidget = Text(
+      widget.label,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
     );
 
     return Opacity(
@@ -558,15 +630,9 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 2,
           children: [
-            // ── Label + numeric field ─────────────────────────────────
+            // ── Clean Label + Scrubbable numeric field ─────────────────
             PropertyRow(
-              label: Text(
-                widget.label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
+              label: labelWidget,
               control: valueInput,
             ),
 
@@ -682,44 +748,53 @@ class _SpacingGuidanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final (icon, title, message, tint) = _context(context, staffHeightMm);
+    final isFa = Localizations.localeOf(context).languageCode == 'fa';
+    final textDir = isFa ? TextDirection.rtl : TextDirection.ltr;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: tint.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: tint.withValues(alpha: 0.2), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            spacing: 8,
-            children: [
-              Icon(icon, size: 14, color: tint.withValues(alpha: 0.9)),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: tint.withValues(alpha: 0.9),
-                  letterSpacing: 0.2,
+    return Directionality(
+      textDirection: textDir,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: tint.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: tint.withValues(alpha: 0.2), width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              spacing: 8,
+              children: [
+                Icon(icon, size: 14, color: tint.withValues(alpha: 0.9)),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: tint.withValues(alpha: 0.9),
+                      letterSpacing: 0.2,
+                    ),
+                    textAlign: isFa ? TextAlign.right : TextAlign.left,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 11,
-              color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-              height: 1.5,
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 11,
+                color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                height: 1.5,
+              ),
+              textAlign: isFa ? TextAlign.right : TextAlign.left,
+            ),
+          ],
+        ),
       ),
     );
   }

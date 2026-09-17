@@ -4,6 +4,22 @@ import '../../../logic/document/document_cubit.dart';
 import '../staff/instrument_preset.dart';
 import '../staff/live_staff_preview.dart';
 import '../../../l10n/app_localizations.dart';
+import 'adaptive_dialog_helper.dart';
+
+/// Opens the adaptive Staff Configuration dialog or bottom sheet.
+Future<void> showStaffConfigDialog(
+  BuildContext context, {
+  required core.StaffDefinition staff,
+  required DocumentCubit notifier,
+}) {
+  return showSarvAdaptiveModal<void>(
+    context: context,
+    builder: (ctx, isMobile) => StaffConfigDialog(
+      staff: staff,
+      notifier: notifier,
+    ),
+  );
+}
 
 class StaffConfigDialog extends StatefulWidget {
   final core.StaffDefinition staff;
@@ -117,19 +133,18 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final media = MediaQuery.of(context);
+    final isMobile = media.size.width < 600;
 
-    return Dialog(
-      backgroundColor: theme.colorScheme.surface,
-      elevation: 24,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: 550,
-          maxHeight:
-              (MediaQuery.sizeOf(context).height * 0.85).clamp(450.0, 720.0),
-        ),
-        child: Column(
-          children: [
+    final content = Container(
+      constraints: BoxConstraints(
+        maxWidth: 550,
+        maxHeight: isMobile
+            ? media.size.height * 0.90
+            : (media.size.height * 0.85).clamp(320.0, 720.0),
+      ),
+      child: Column(
+        children: [
             // ── Dialog Header ──────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 16, 8),
@@ -254,7 +269,20 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             ),
           ],
         ),
-      ),
+      );
+
+    if (isMobile) {
+      return Material(
+        color: theme.colorScheme.surface,
+        child: content,
+      );
+    }
+
+    return Dialog(
+      backgroundColor: theme.colorScheme.surface,
+      elevation: 24,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: content,
     );
   }
 

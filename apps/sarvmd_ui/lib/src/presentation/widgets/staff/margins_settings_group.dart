@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/utils/unit_formatter.dart';
 import '../common/section_header.dart';
-import '../common/property_row.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// A professional, highly elegant page margin control widget that adapts fluidly
@@ -47,11 +46,6 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    final headerWidget = SectionHeader(
-      title: AppLocalizations.of(context)!.margins,
-      onReset: widget.onReset,
-    );
-
     final linkButton = IconButton(
       icon: Icon(
         _isLinked ? Icons.link : Icons.link_off,
@@ -79,13 +73,16 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
       ),
     );
 
+    final headerWidget = SectionHeader(
+      title: AppLocalizations.of(context)!.margins,
+      onReset: widget.onReset,
+      action: linkButton,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PropertyRow(
-          label: headerWidget,
-          control: linkButton,
-        ),
+        headerWidget,
         const SizedBox(height: 8),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
@@ -275,66 +272,47 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        color: _isHovering
+            ? colorScheme.primary.withValues(alpha: 0.08)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          color: _isHovering
+              ? colorScheme.primary
+              : colorScheme.outlineVariant.withValues(alpha: 0.3),
+          width: _isHovering ? 1.5 : 1.0,
         ),
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onHorizontalDragStart: (details) {
-              _dragStartValue = widget.value;
-              _cumulativeDelta = 0.0;
-              widget.onScrubStart();
-            },
-            onHorizontalDragUpdate: (details) {
-              _cumulativeDelta += details.delta.dx;
-              final double newValue = (_dragStartValue + _cumulativeDelta * 0.1)
-                  .clamp(widget.min, widget.max);
-              widget.onChanged(double.parse(newValue.toStringAsFixed(1)));
-            },
-            onHorizontalDragEnd: (details) => widget.onScrubEnd(),
-            onHorizontalDragCancel: () => widget.onScrubEnd(),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.resizeLeftRight,
-              onEnter: (_) => setState(() => _isHovering = true),
-              onExit: (_) => setState(() => _isHovering = false),
-              child: Tooltip(
-                message: '${widget.label}: drag left/right to scrub',
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.icon != null) ...[
-                        Icon(
-                          widget.icon,
-                          size: 14,
-                          color: _isHovering
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      Text(
-                        widget.shortLabel ?? widget.label,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          color: _isHovering
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
+          // Label and icon (clean display)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.icon != null) ...[
+                  Icon(
+                    widget.icon,
+                    size: 14,
+                    color: _isHovering
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  widget.shortLabel ?? widget.label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: _isHovering
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
           const SizedBox(width: 4),
@@ -344,27 +322,51 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
             color: colorScheme.outlineVariant.withValues(alpha: 0.25),
           ),
           const SizedBox(width: 4),
+          // Scrubbable textfield input box
           Expanded(
-            child: TextField(
-              controller: _controller,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: const InputDecoration(
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                border: InputBorder.none,
-              ),
-              onSubmitted: _submit,
-              onTapOutside: (_) {
-                _submit(_controller.text);
-                FocusManager.instance.primaryFocus?.unfocus();
+            child: GestureDetector(
+              onHorizontalDragStart: (details) {
+                _dragStartValue = widget.value;
+                _cumulativeDelta = 0.0;
+                widget.onScrubStart();
               },
+              onHorizontalDragUpdate: (details) {
+                _cumulativeDelta += details.delta.dx;
+                final double newValue = (_dragStartValue + _cumulativeDelta * 0.1)
+                    .clamp(widget.min, widget.max);
+                widget.onChanged(double.parse(newValue.toStringAsFixed(1)));
+              },
+              onHorizontalDragEnd: (details) => widget.onScrubEnd(),
+              onHorizontalDragCancel: () => widget.onScrubEnd(),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.resizeLeftRight,
+                onEnter: (_) => setState(() => _isHovering = true),
+                onExit: (_) => setState(() => _isHovering = false),
+                child: Tooltip(
+                  message: '${widget.label}: drag left/right to scrub',
+                  child: TextField(
+                    controller: _controller,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _isHovering ? colorScheme.primary : colorScheme.onSurface,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      border: InputBorder.none,
+                    ),
+                    onSubmitted: _submit,
+                    onTapOutside: (_) {
+                      _submit(_controller.text);
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
         ],

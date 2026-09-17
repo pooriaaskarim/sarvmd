@@ -20,7 +20,7 @@ class AppOpacities {
 }
 
 class ScaleMetrics {
-  static const double minZoom = 0.5; // 50%
-  static const double maxZoom = 4.0; // 400%
+  static const double minZoom = 0.15; // 15%
+  static const double maxZoom = 6.0; // 600%
   static const double defaultZoom = 1.0; // 100%
 }

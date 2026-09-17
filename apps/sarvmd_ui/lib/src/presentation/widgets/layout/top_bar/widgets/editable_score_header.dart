@@ -8,13 +8,11 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../logic/document/document_cubit.dart';
 
-/// Center-zone inline-editable score header.
+/// Center-zone inline-editable score header with premium aesthetic animations & minimal underline styling.
 ///
 /// Renders the score **Title** (single source of truth for score title & export name)
 /// as a tappable label that switches to an inline [TextField] on tap.
 /// On submit (Enter or tap-outside), dispatches [core.SetTitleCommand] through [DocumentCubit].
-///
-/// If cleared (empty input), falls back to the default file name format generated from page config.
 class EditableScoreHeader extends StatefulWidget {
   final core.Score score;
   final core.PageConfig configState;
@@ -33,6 +31,7 @@ class EditableScoreHeader extends StatefulWidget {
 
 class _EditableScoreHeaderState extends State<EditableScoreHeader> {
   bool _isEditingTitle = false;
+  bool _isHovered = false;
   late TextEditingController _titleController;
   final FocusNode _titleFocusNode = FocusNode();
 
@@ -73,56 +72,130 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final effectiveTitle = core.ScoreCompiler.getEffectiveTitle(widget.score, widget.configState);
+    final defaultTitle = core.ScoreCompiler.getDefaultFileName(widget.configState);
+    final isCentered = widget.isCompact;
 
     final titleWidget = _isEditingTitle
-        ? SizedBox(
-            width: 180.0,
-            height: 28.0,
-            child: TextField(
-              controller: _titleController,
-              focusNode: _titleFocusNode,
-              autofocus: true,
-              style: TextStyle(
-                fontSize: 13.0,
-                fontWeight: FontWeight.bold,
-                color: cs.onSurface,
-              ),
-              decoration: InputDecoration(
-                hintText: effectiveTitle,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
-                isDense: true,
-                filled: true,
-                fillColor: cs.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6.0),
-                  borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ? ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: 140.0,
+              maxWidth: widget.isCompact ? 220.0 : 340.0,
+            ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              height: 28.0,
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.08),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
+                border: Border(
+                  bottom: BorderSide(
+                    color: cs.primary,
+                    width: 2.0,
+                  ),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.primary.withValues(alpha: 0.12),
+                    blurRadius: 8.0,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              onSubmitted: (_) => _submitTitle(),
-              onTapOutside: (_) => _submitTitle(),
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              alignment: Alignment.center,
+              child: TextField(
+                controller: _titleController,
+                focusNode: _titleFocusNode,
+                autofocus: true,
+                textAlign: isCentered ? TextAlign.center : TextAlign.start,
+                cursorColor: cs.primary,
+                cursorWidth: 2.0,
+                cursorRadius: const Radius.circular(1.0),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                  letterSpacing: 0.3,
+                ),
+                decoration: InputDecoration(
+                  hintText: defaultTitle,
+                  hintStyle: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                  border: InputBorder.none,
+                ),
+                onSubmitted: (_) => _submitTitle(),
+                onTapOutside: (_) => _submitTitle(),
+              ),
             ),
           )
-        : InkWell(
-            onTap: () {
-              setState(() {
-                _isEditingTitle = true;
-                _titleController.text = widget.score.title.isEmpty
-                    ? effectiveTitle
-                    : widget.score.title;
-              });
-              _titleFocusNode.requestFocus();
-            },
-            borderRadius: BorderRadius.circular(5.0),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-              child: Text(
-                effectiveTitle,
-                style: TextStyle(
-                  fontSize: 13.0,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurface,
+        : MouseRegion(
+            onEnter: (_) => setState(() => _isHovered = true),
+            onExit: (_) => setState(() => _isHovered = false),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isEditingTitle = true;
+                  _titleController.text = widget.score.title;
+                });
+                _titleFocusNode.requestFocus();
+              },
+              child: AnimatedScale(
+                scale: _isHovered ? 1.02 : 1.0,
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOutCubic,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 28.0,
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+                  decoration: BoxDecoration(
+                    color: _isHovered
+                        ? cs.primary.withValues(alpha: 0.08)
+                        : cs.surfaceContainerHighest.withValues(alpha: 0.25),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: _isHovered
+                            ? cs.primary
+                            : cs.outlineVariant.withValues(alpha: 0.35),
+                        width: _isHovered ? 1.8 : 1.0,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: isCentered ? MainAxisAlignment.center : MainAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          effectiveTitle,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: _isHovered ? cs.primary : cs.onSurface,
+                            letterSpacing: 0.3,
+                          ),
+                          textAlign: isCentered ? TextAlign.center : TextAlign.start,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 5.0),
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 150),
+                        opacity: _isHovered ? 1.0 : 0.45,
+                        child: Icon(
+                          Icons.edit_note_rounded,
+                          size: 15.0,
+                          color: _isHovered ? cs.primary : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           );

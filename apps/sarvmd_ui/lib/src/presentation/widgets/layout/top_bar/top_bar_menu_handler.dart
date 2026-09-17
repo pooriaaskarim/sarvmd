@@ -95,10 +95,10 @@ void handleTopBarMenuSelection(
           name: '',
         ),
       ));
-      showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (dialogCtx) => StaffConfigDialog(staff: newStaff, notifier: documentCubit),
+      showStaffConfigDialog(
+        context,
+        staff: newStaff,
+        notifier: documentCubit,
       );
       break;
 
@@ -160,13 +160,10 @@ void handleTopBarMenuSelection(
         if (index != null) {
           final staves = documentCubit.allStaves;
           if (index >= 0 && index < staves.length) {
-            showDialog(
-              context: context,
-              barrierDismissible: true,
-              builder: (dialogCtx) => StaffConfigDialog(
-                staff: staves[index],
-                notifier: documentCubit,
-              ),
+            showStaffConfigDialog(
+              context,
+              staff: staves[index],
+              notifier: documentCubit,
             );
           }
         }
