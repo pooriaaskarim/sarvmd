@@ -19,12 +19,22 @@ class MobileCanvasArea extends StatefulWidget {
     required this.cursorNotifier,
     this.bottomPadding = 0,
     this.onLongPressCanvas,
+    this.onLongPressStartCanvas,
+    this.onLongPressMoveCanvas,
+    this.onLongPressEndCanvas,
+    this.onInteractionStart,
+    this.onInteractionEnd,
   });
 
   final TransformationController transformationController;
   final ValueNotifier<Offset?> cursorNotifier;
   final double bottomPadding;
   final void Function(Offset localPosition)? onLongPressCanvas;
+  final void Function(Offset localPosition)? onLongPressStartCanvas;
+  final void Function(Offset localPosition)? onLongPressMoveCanvas;
+  final VoidCallback? onLongPressEndCanvas;
+  final void Function(ScaleStartDetails details)? onInteractionStart;
+  final void Function(ScaleEndDetails details)? onInteractionEnd;
 
   @override
   State<MobileCanvasArea> createState() => MobileCanvasAreaState();
@@ -33,12 +43,21 @@ class MobileCanvasArea extends StatefulWidget {
 class MobileCanvasAreaState extends State<MobileCanvasArea> {
   BoxConstraints? _lastConstraints;
   bool _hasCentered = false;
+  ZoomPreset _currentPreset = ZoomPreset.fitWidth;
 
   // Track pointers for 2-finger tap detection (Undo)
   int _activePointers = 0;
   DateTime? _twoPointerDownTime;
 
+  void toggleFitZoom() {
+    final next = _currentPreset == ZoomPreset.fitWidth
+        ? ZoomPreset.fitScreen
+        : ZoomPreset.fitWidth;
+    applyZoomPreset(next);
+  }
+
   void applyZoomPreset(ZoomPreset preset) {
+    _currentPreset = preset;
     final constraints = _lastConstraints;
     if (constraints == null) return;
 
@@ -140,7 +159,10 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
           if (!_hasCentered) {
             _hasCentered = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) applyZoomPreset(ZoomPreset.fitScreen);
+              if (mounted) {
+                final isPortrait = MediaQuery.orientationOf(context) == Orientation.portrait;
+                applyZoomPreset(isPortrait ? ZoomPreset.fitWidth : ZoomPreset.fitScreen);
+              }
             });
           }
 
@@ -157,28 +179,45 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
                 onPointerDown: _handlePointerDown,
                 onPointerUp: _handlePointerUp,
                 onPointerCancel: _handlePointerCancel,
-                child: GestureDetector(
-                  onLongPressStart: widget.onLongPressCanvas != null
-                      ? (details) => widget.onLongPressCanvas!(details.localPosition)
-                      : null,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: InteractiveViewer(
-                          transformationController: widget.transformationController,
-                          boundaryMargin: const EdgeInsets.all(100000),
-                          minScale: ScaleMetrics.minZoom,
-                          maxScale: ScaleMetrics.maxZoom,
-                          constrained: false,
-                          alignment: Alignment.topLeft,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        transformationController: widget.transformationController,
+                        boundaryMargin: const EdgeInsets.all(100000),
+                        minScale: ScaleMetrics.minZoom,
+                        maxScale: ScaleMetrics.maxZoom,
+                        constrained: false,
+                        alignment: Alignment.topLeft,
+                        onInteractionStart: widget.onInteractionStart,
+                        onInteractionEnd: widget.onInteractionEnd,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onDoubleTap: toggleFitZoom,
+                          onLongPressStart: (details) {
+                            if (widget.onLongPressStartCanvas != null) {
+                              widget.onLongPressStartCanvas!(details.localPosition);
+                            } else if (widget.onLongPressCanvas != null) {
+                              widget.onLongPressCanvas!(details.localPosition);
+                            }
+                          },
+                          onLongPressMoveUpdate: widget.onLongPressMoveCanvas != null
+                              ? (details) => widget.onLongPressMoveCanvas!(details.localPosition)
+                              : null,
+                          onLongPressEnd: widget.onLongPressEndCanvas != null
+                              ? (_) => widget.onLongPressEndCanvas!()
+                              : null,
+                          onLongPressCancel: widget.onLongPressEndCanvas != null
+                              ? () => widget.onLongPressEndCanvas!()
+                              : null,
                           child: PreviewCanvas(
                             layout: documentCubit.layout,
                             viewState: viewState,
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

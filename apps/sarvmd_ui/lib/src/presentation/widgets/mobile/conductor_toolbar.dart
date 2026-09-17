@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,33 +18,91 @@ import '../../../core/utils/unit_formatter.dart';
 
 /// Single Unified Mobile HUD ("Conductor Baton") for SarvMD.
 /// Combines drawer triggers, undo/redo, real-time zoom stepper/presets, and overlay guides into a single floating dock.
-class ConductorToolbar extends StatelessWidget {
+/// Auto-collapses to a compact frosted FAB after 4 seconds of inactivity, and hides during canvas gestures.
+class ConductorToolbar extends StatefulWidget {
   const ConductorToolbar({
     super.key,
     required this.transformationController,
     required this.onZoomPreset,
+    this.isVisible = true,
   });
 
   final TransformationController transformationController;
   final ValueChanged<ZoomPreset> onZoomPreset;
+  final bool isVisible;
+
+  @override
+  State<ConductorToolbar> createState() => _ConductorToolbarState();
+}
+
+class _ConductorToolbarState extends State<ConductorToolbar> {
+  Timer? _idleTimer;
+  bool _isCollapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetIdleTimer();
+  }
+
+  @override
+  void didUpdateWidget(ConductorToolbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible != oldWidget.isVisible) {
+      if (widget.isVisible) {
+        _resetIdleTimer();
+      }
+    }
+  }
+
+  void _resetIdleTimer() {
+    _idleTimer?.cancel();
+    if (_isCollapsed) {
+      setState(() {
+        _isCollapsed = false;
+      });
+    }
+    _idleTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _isCollapsed = true;
+        });
+      }
+    });
+  }
+
+  void _expandBaton() {
+    setState(() {
+      _isCollapsed = false;
+    });
+    _resetIdleTimer();
+  }
+
+  @override
+  void dispose() {
+    _idleTimer?.cancel();
+    super.dispose();
+  }
 
   void _stepZoom(double factor) {
-    final matrix = transformationController.value.clone();
+    _resetIdleTimer();
+    final matrix = widget.transformationController.value.clone();
     final currentScale = matrix.row0[0];
     final targetScale = (currentScale * factor)
         .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
     final translation = matrix.getTranslation();
 
-    transformationController.value =
+    widget.transformationController.value =
         Matrix4.translationValues(translation.x, translation.y, 0.0)
           ..multiply(Matrix4.diagonal3Values(targetScale, targetScale, 1.0));
   }
 
   void _setScale(double targetScale) {
-    final matrix = transformationController.value.clone();
+    _resetIdleTimer();
+    final matrix = widget.transformationController.value.clone();
     final translation = matrix.getTranslation();
 
-    transformationController.value =
+    widget.transformationController.value =
         Matrix4.translationValues(translation.x, translation.y, 0.0)
           ..multiply(Matrix4.diagonal3Values(
             targetScale.clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom),
@@ -53,6 +112,7 @@ class ConductorToolbar extends StatelessWidget {
   }
 
   void _showGuidesSheet(BuildContext context) {
+    _resetIdleTimer();
     final viewCubit = context.read<ViewCubit>();
     showSarvAdaptiveModal<void>(
       context: context,
@@ -74,7 +134,78 @@ class ConductorToolbar extends StatelessWidget {
     final viewState = context.watch<ViewCubit>().state;
     final activeGuidesCount = viewState.activeGuides.length;
 
+    return AnimatedSlide(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      offset: widget.isVisible ? Offset.zero : const Offset(0, 1.8),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: widget.isVisible ? 1.0 : 0.0,
+        child: GestureDetector(
+          onTapDown: (_) => _resetIdleTimer(),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeInCubic,
+            child: _isCollapsed
+                ? _buildCollapsedFab(context, cs, l10n)
+                : _buildExpandedBaton(context, cs, l10n, viewState, activeGuidesCount),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsedFab(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
+    return ClipRRect(
+      key: const ValueKey('collapsed_fab'),
+      borderRadius: BorderRadius.circular(26.0),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: InkWell(
+          onTap: _expandBaton,
+          borderRadius: BorderRadius.circular(26.0),
+          child: Container(
+            width: 52.0,
+            height: 52.0,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.35),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 16.0,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Tooltip(
+              message: l10n.appMenuTooltip,
+              child: Icon(
+                Icons.tune,
+                size: 22,
+                color: cs.primary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedBaton(
+    BuildContext context,
+    ColorScheme cs,
+    AppLocalizations l10n,
+    ViewState viewState,
+    int activeGuidesCount,
+  ) {
     return BlocBuilder<DocumentCubit, DocumentState>(
+      key: const ValueKey('expanded_baton'),
       builder: (context, docState) {
         final cubit = context.read<DocumentCubit>();
         final canUndo = docState.canUndo;
@@ -102,9 +233,9 @@ class ConductorToolbar extends StatelessWidget {
                 ],
               ),
               child: ListenableBuilder(
-                listenable: transformationController,
+                listenable: widget.transformationController,
                 builder: (context, _) {
-                  final currentScale = transformationController.value.row0[0];
+                  final currentScale = widget.transformationController.value.row0[0];
 
                   return Row(
                     mainAxisSize: MainAxisSize.min,
@@ -113,7 +244,10 @@ class ConductorToolbar extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.tune, size: 18),
                         tooltip: l10n.appMenuTooltip,
-                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        onPressed: () {
+                          _resetIdleTimer();
+                          Scaffold.of(context).openDrawer();
+                        },
                         color: cs.primary,
                         visualDensity: VisualDensity.compact,
                       ),
@@ -131,7 +265,12 @@ class ConductorToolbar extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.undo, size: 18),
                         tooltip: l10n.undo,
-                        onPressed: canUndo ? () => cubit.undo() : null,
+                        onPressed: canUndo
+                            ? () {
+                                _resetIdleTimer();
+                                cubit.undo();
+                              }
+                            : null,
                         color: canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.30),
                         visualDensity: VisualDensity.compact,
                       ),
@@ -140,7 +279,12 @@ class ConductorToolbar extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.redo, size: 18),
                         tooltip: l10n.redo,
-                        onPressed: canRedo ? () => cubit.redo() : null,
+                        onPressed: canRedo
+                            ? () {
+                                _resetIdleTimer();
+                                cubit.redo();
+                              }
+                            : null,
                         color: canRedo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.30),
                         visualDensity: VisualDensity.compact,
                       ),
@@ -209,7 +353,10 @@ class ConductorToolbar extends StatelessWidget {
                           ),
                           const PopupMenuDivider(),
                           PopupMenuItem(
-                            onTap: () => onZoomPreset(ZoomPreset.fitScreen),
+                            onTap: () {
+                              _resetIdleTimer();
+                              widget.onZoomPreset(ZoomPreset.fitScreen);
+                            },
                             child: Row(
                               children: [
                                 Icon(Icons.fit_screen_outlined, size: 16, color: cs.primary),
@@ -219,7 +366,10 @@ class ConductorToolbar extends StatelessWidget {
                             ),
                           ),
                           PopupMenuItem(
-                            onTap: () => onZoomPreset(ZoomPreset.fitWidth),
+                            onTap: () {
+                              _resetIdleTimer();
+                              widget.onZoomPreset(ZoomPreset.fitWidth);
+                            },
                             child: Row(
                               children: [
                                 Icon(Icons.width_wide_outlined, size: 16, color: cs.primary),

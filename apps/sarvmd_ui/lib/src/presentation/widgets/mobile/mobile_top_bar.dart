@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
-import '../layout/sarv_reactive_brand_logo.dart';
 import '../layout/top_bar/top_bar_menu_handler.dart';
 import '../layout/top_bar/widgets/editable_score_header.dart';
 
@@ -54,14 +53,12 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             child: Row(
               children: [
-                // Left Zone: Conductor Drawer Trigger + Brand Logo
+                // Left Zone: Conductor Drawer Trigger
                 IconButton(
                   icon: const Icon(Icons.menu, size: 20),
                   tooltip: l10n.appMenuTooltip,
                   onPressed: onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
                 ),
-                const SizedBox(width: 2),
-                const SarvReactiveBrandLogo(logoHeight: 18.0),
 
                 // Center Zone: Centered Document Score Title (Inline Editable)
                 Expanded(
@@ -77,35 +74,11 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
 
-                // Right Zone: Options & Export Dropdown Menu
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, size: 18),
-                  tooltip: l10n.appMenuTooltip,
-                  onSelected: (action) {
-                    handleTopBarMenuSelection(context, action, docState);
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'export',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.ios_share, size: 18),
-                          const SizedBox(width: 8),
-                          Text('${l10n.exportManuscriptTitle}...'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'about',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline, size: 18),
-                          const SizedBox(width: 8),
-                          Text(l10n.aboutSarvMD),
-                        ],
-                      ),
-                    ),
-                  ],
+                // Right Zone: Export Quick Action
+                IconButton(
+                  icon: const Icon(Icons.ios_share, size: 19),
+                  tooltip: l10n.exportManuscriptTitle,
+                  onPressed: () => handleTopBarMenuSelection(context, 'export', docState),
                 ),
               ],
             ),
