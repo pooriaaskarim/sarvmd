@@ -166,13 +166,10 @@ class TopBarEditMenu extends StatelessWidget {
           return MenuItemButton(
             leadingIcon: Icon(Icons.tune_outlined, size: 16, color: cs.onSurface),
             onPressed: () {
-              showDialog(
-                context: context,
-                barrierDismissible: true,
-                builder: (dialogCtx) => StaffConfigDialog(
-                  staff: staff,
-                  notifier: documentCubit,
-                ),
+              showStaffConfigDialog(
+                context,
+                staff: staff,
+                notifier: documentCubit,
               );
             },
             child: Text(l10n.staffMenuSummary(i + 1, label, staff.lines)),

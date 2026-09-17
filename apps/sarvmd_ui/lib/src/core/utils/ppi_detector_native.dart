@@ -1,22 +1,71 @@
+// Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
+// Licensed under the Business Source License 1.1 (BUSL-1.1).
+
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 
 Future<double?> detectPhysicalPpi() async {
   try {
-    if (Platform.isLinux) {
-      return _getPpiLinux();
+    // In test environment, avoid spawning subprocesses or un-pumped timers.
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return _getPpiFlutterView();
+    }
+
+    if (Platform.isAndroid || Platform.isIOS) {
+      return _getPpiMobile();
+    } else if (Platform.isLinux) {
+      final ppi = await _getPpiLinux();
+      return ppi ?? _getPpiFlutterView();
     } else if (Platform.isMacOS) {
-      return _getPpiMacOS();
+      final ppi = await _getPpiMacOS();
+      return ppi ?? _getPpiFlutterView();
     } else if (Platform.isWindows) {
-      return _getPpiWindows();
+      final ppi = await _getPpiWindows();
+      return ppi ?? _getPpiFlutterView();
     }
   } catch (e) {
     // Fail silently
+  }
+  return _getPpiFlutterView();
+}
+
+double? _getPpiMobile() {
+  final view = WidgetsBinding.instance.platformDispatcher.implicitView ??
+      (WidgetsBinding.instance.platformDispatcher.views.isNotEmpty
+          ? WidgetsBinding.instance.platformDispatcher.views.first
+          : null);
+  if (view != null) {
+    final dpr = view.devicePixelRatio;
+    if (dpr > 0) {
+      return dpr * 160.0;
+    }
+  }
+  return 160.0;
+}
+
+double? _getPpiFlutterView() {
+  final view = WidgetsBinding.instance.platformDispatcher.implicitView ??
+      (WidgetsBinding.instance.platformDispatcher.views.isNotEmpty
+          ? WidgetsBinding.instance.platformDispatcher.views.first
+          : null);
+  if (view != null) {
+    final dpr = view.devicePixelRatio;
+    if (dpr > 0) {
+      final baseDpi = dpr >= 2.0 ? 160.0 : 96.0;
+      return dpr * baseDpi;
+    }
   }
   return null;
 }
 
 Future<double?> _getPpiLinux() async {
-  final result = await Process.run('xrandr', ['--current']);
+  if (Platform.environment['DISPLAY'] == null &&
+      Platform.environment['WAYLAND_DISPLAY'] == null) {
+    return null;
+  }
+  const timeout = Duration(seconds: 2);
+  final result =
+      await Process.run('xrandr', ['--current']).timeout(timeout, onTimeout: () => ProcessResult(0, 1, '', ''));
   if (result.exitCode != 0) return null;
   final output = result.stdout as String;
   final match =
@@ -30,7 +79,9 @@ Future<double?> _getPpiLinux() async {
 }
 
 Future<double?> _getPpiMacOS() async {
-  final result = await Process.run('system_profiler', ['SPDisplaysDataType']);
+  const timeout = Duration(seconds: 2);
+  final result = await Process.run('system_profiler', ['SPDisplaysDataType'])
+      .timeout(timeout, onTimeout: () => ProcessResult(0, 1, '', ''));
   if (result.exitCode != 0) return null;
   final output = result.stdout as String;
   if (output.contains('Retina')) return 227.0;
@@ -38,10 +89,11 @@ Future<double?> _getPpiMacOS() async {
 }
 
 Future<double?> _getPpiWindows() async {
+  const timeout = Duration(seconds: 2);
   final result = await Process.run('powershell', [
     '-Command',
     'Get-CimInstance -Namespace root\\wmi -ClassName WmiMonitorBasicDisplayParams | Select-Object -Property MaxHorizontalImageSize'
-  ]);
+  ]).timeout(timeout, onTimeout: () => ProcessResult(0, 1, '', ''));
   if (result.exitCode != 0) return null;
   final output = result.stdout as String;
   final match = RegExp(r'(\d+)').firstMatch(output);

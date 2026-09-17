@@ -20,10 +20,12 @@ class SarvReactiveBrandLogo extends StatefulWidget {
     super.key,
     this.logoHeight = 26.0,
     this.isMenuMode = false,
+    this.enableExpandAnimation = true,
   });
 
   final double logoHeight;
   final bool isMenuMode;
+  final bool enableExpandAnimation;
 
   @override
   State<SarvReactiveBrandLogo> createState() => _SarvReactiveBrandLogoState();
@@ -33,7 +35,7 @@ class _SarvReactiveBrandLogoState extends State<SarvReactiveBrandLogo> {
   bool _isHoveredOrHeld = false;
 
   void _setExpanded(bool expanded) {
-    if (widget.isMenuMode) return;
+    if (widget.isMenuMode || !widget.enableExpandAnimation) return;
     if (_isHoveredOrHeld != expanded) {
       setState(() => _isHoveredOrHeld = expanded);
     }
@@ -53,7 +55,7 @@ class _SarvReactiveBrandLogoState extends State<SarvReactiveBrandLogo> {
           height: 1.35,
         );
 
-    final isExpanded = !widget.isMenuMode && _isHoveredOrHeld;
+    final isExpanded = !widget.isMenuMode && widget.enableExpandAnimation && _isHoveredOrHeld;
 
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 150),

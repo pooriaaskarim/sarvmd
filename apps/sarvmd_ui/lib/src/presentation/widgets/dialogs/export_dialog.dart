@@ -10,6 +10,7 @@ import '../../../logic/document/document_cubit.dart';
 import '../../../logic/services/export_directory_service.dart';
 import '../../../logic/services/export_service.dart';
 import '../../../l10n/app_localizations.dart';
+import 'adaptive_dialog_helper.dart';
 
 enum ExportFormat {
   pdf(
@@ -64,10 +65,9 @@ Future<ExportResult?> showExportDialog(
   ExportFormat initialFormat = ExportFormat.pdf,
 }) {
   final documentCubit = context.read<DocumentCubit>();
-  return showDialog<ExportResult>(
+  return showSarvAdaptiveModal<ExportResult>(
     context: context,
-    barrierColor: Colors.black54,
-    builder: (_) => BlocProvider.value(
+    builder: (ctx, isMobile) => BlocProvider.value(
       value: documentCubit,
       child: ExportDialog(initialFormat: initialFormat),
     ),
@@ -99,20 +99,15 @@ class _ExportDialogState extends State<ExportDialog> {
   bool _isCustomName = false;
   String _outputDir = ExportDirectoryService.getDefaultDirectory();
 
-  bool _isExporting = false;
-  ExportResult? _lastResult;
-  String? _errorMessage;
-
   @override
   void initState() {
     super.initState();
     _selectedFormat = widget.initialFormat;
     final docCubit = context.read<DocumentCubit>();
     final config = docCubit.state.config;
-    final score = docCubit.state.score;
-    _isCustomName = score.title.trim().isNotEmpty;
-    _nameController.text = core.ScoreCompiler.getEffectiveTitle(score, config);
-    _pageController.text = '$_pageCount';
+    final defaultName = ExportService.getDefaultFileName(config);
+    _nameController.text = defaultName;
+    _pageController.text = '1';
     _loadOutputDir();
   }
 
@@ -235,24 +230,23 @@ class _ExportDialogState extends State<ExportDialog> {
     );
   }
 
+  bool _isExporting = false;
+  ExportResult? _lastResult;
+  String? _errorMessage;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final maxDialogHeight = MediaQuery.of(context).size.height * 0.85;
+    final media = MediaQuery.of(context);
+    final isMobile = media.size.width < 600;
+    final maxDialogHeight = isMobile ? media.size.height * 0.90 : media.size.height * 0.85;
 
-    return Dialog(
-      backgroundColor: cs.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outline.withValues(alpha: 0.4), width: 1),
-      ),
-      child: Container(
-        width: 580,
-        constraints: BoxConstraints(maxHeight: maxDialogHeight),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    final content = Container(
+      width: isMobile ? double.infinity : 580,
+      constraints: BoxConstraints(maxHeight: maxDialogHeight),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
             // --- Fixed Header Bar ---
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 20, 16),
@@ -979,7 +973,20 @@ class _ExportDialogState extends State<ExportDialog> {
             ),
           ],
         ),
+      );
+
+    if (isMobile) {
+      return content;
+    }
+
+    return Dialog(
+      backgroundColor: cs.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outline.withValues(alpha: 0.4), width: 1),
       ),
+      child: content,
     );
   }
 }

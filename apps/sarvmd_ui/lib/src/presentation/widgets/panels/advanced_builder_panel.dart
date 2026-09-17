@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
-import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
+import '../common/ensemble_summary_widget.dart';
 import '../dialogs/staff_config_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -64,76 +64,11 @@ class SystemHierarchyPanel extends StatelessWidget {
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
-              _buildMolaSummary(context, docState.config),
+              const EnsembleSummaryWidget(),
             ],
           ),
         );
       },
-    );
-  }
-
-  Widget _buildMolaSummary(BuildContext context, core.PageConfig state) {
-    final cs = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-    final staffCount = state.staffCount;
-    final totalHeight = state.systemHeight;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.ensembleSummary,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: cs.primary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _SummaryRow(
-              label: l10n.totalStaves,
-              value: '$staffCount'),
-          _SummaryRow(
-              label: l10n.systemHeight,
-              value: UnitFormatter.formatMm(totalHeight)),
-          _SummaryRow(
-            label: l10n.density,
-            value: l10n.systemsCount(notifier.layout.systemCount),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 11)),
-          Text(
-            value,
-            style:
-                const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -321,10 +256,10 @@ class _StaffItem extends StatelessWidget {
   final DocumentCubit notifier;
 
   void _openConfigDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => StaffConfigDialog(staff: staff, notifier: notifier),
+    showStaffConfigDialog(
+      context,
+      staff: staff,
+      notifier: notifier,
     );
   }
 

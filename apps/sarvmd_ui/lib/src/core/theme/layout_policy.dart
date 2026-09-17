@@ -79,3 +79,21 @@ class BilingualFluidScope extends StatelessWidget {
     );
   }
 }
+
+/// Responsive breakpoints helper for SarvMD UI layouts.
+abstract final class SarvBreakpoints {
+  /// Returns true if the screen width is strictly less than 600px (mobile form factor).
+  static bool isMobile(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 600;
+
+  /// Returns true if the screen width is between 600px and 1024px (tablet form factor).
+  static bool isTablet(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= 600 && width < 1024;
+  }
+
+  /// Returns true if the screen width is 1024px or greater (desktop form factor).
+  static bool isDesktop(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 1024;
+}
+

@@ -55,5 +55,27 @@ void main() {
       // PPI readout should return to 96 PPI
       expect(find.text('96 PPI'), findsOneWidget);
     });
+
+    testWidgets('CalibrationDialog loads high-density mobile factors without assertion failure', (tester) async {
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const highDensityFactor = 5.416666666666667;
+      SharedPreferences.setMockInitialValues({'view_calibration_factor': highDensityFactor});
+      final viewCubit = ViewCubit(const ViewState(calibrationFactor: highDensityFactor));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CalibrationDialog(viewCubit: viewCubit),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CalibrationDialog), findsOneWidget);
+      expect(find.byType(Slider), findsOneWidget);
+    });
   });
 }
