@@ -1,10 +1,16 @@
+// Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
+// Licensed under the Business Source License 1.1 (BUSL-1.1).
+
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../staff/instrument_preset.dart';
 import '../staff/live_staff_preview.dart';
-import '../../../l10n/app_localizations.dart';
 import 'adaptive_dialog_helper.dart';
+import 'staff_config/clef_lines_tab.dart';
+import 'staff_config/fine_tuning_tab.dart';
+import 'staff_config/labeling_tab.dart';
 
 /// Opens the adaptive Staff Configuration dialog or bottom sheet.
 Future<void> showStaffConfigDialog(
@@ -21,6 +27,7 @@ Future<void> showStaffConfigDialog(
   );
 }
 
+/// Adaptive modal dialog for configuring individual staff parameters.
 class StaffConfigDialog extends StatefulWidget {
   final core.StaffDefinition staff;
   final DocumentCubit notifier;
@@ -40,7 +47,6 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   late TabController _tabController;
 
   late String _currentName;
-  TextEditingController? _autoCompleteController;
   late TextEditingController _abbrController;
 
   late bool _labelVisible;
@@ -85,7 +91,6 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   void _applyPreset(InstrumentPreset preset) {
     setState(() {
       _currentName = preset.name;
-      _autoCompleteController?.text = preset.name;
       _abbrController.text = preset.abbreviation;
       _selectedLines = preset.defaultLines;
       if (preset.defaultClef != null) {
@@ -96,19 +101,9 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   }
 
   void _onSave() {
-    core.Clef? newClef;
-    if (_selectedClefSymbol != null) {
-      newClef = switch (_selectedClefSymbol!) {
-        core.ClefSymbol.g => core.TrebleClef(anchorLine: _selectedAnchorLine),
-        core.ClefSymbol.f => core.BassClef(anchorLine: _selectedAnchorLine),
-        core.ClefSymbol.c => _selectedAnchorLine == 4
-            ? core.TenorClef(anchorLine: _selectedAnchorLine)
-            : core.AltoClef(anchorLine: _selectedAnchorLine),
-        core.ClefSymbol.percussion =>
-          core.PercussionClef(anchorLine: _selectedAnchorLine),
-        core.ClefSymbol.tab => core.TabClef(anchorLine: _selectedAnchorLine),
-      };
-    }
+    core.Clef? newClef = _selectedClefSymbol?.createClef(
+      anchorLine: _selectedAnchorLine,
+    );
 
     widget.notifier.updateStaffConfigDetails(
       widget.staff.uid,
@@ -135,6 +130,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
     final textTheme = theme.textTheme;
     final media = MediaQuery.of(context);
     final isMobile = media.size.width < 600;
+    final l10n = AppLocalizations.of(context)!;
 
     final content = Container(
       constraints: BoxConstraints(
@@ -145,1403 +141,159 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
       ),
       child: Column(
         children: [
-            // ── Dialog Header ──────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 16, 8),
-              child: Row(
-                children: [
-                  Icon(Icons.settings_outlined,
-                      color: theme.colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.configureStaffSettings,
-                      style: textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
+          // ── Dialog Header ──────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 16, 8),
+            child: Row(
+              children: [
+                Icon(Icons.settings_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.configureStaffSettings,
+                    style: textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Tab Bar ───────────────────────────────────────────
-            TabBar(
-              controller: _tabController,
-              labelColor: theme.colorScheme.primary,
-              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-              indicatorColor: theme.colorScheme.primary,
-              indicatorSize: TabBarIndicatorSize.tab,
-              tabs: [
-                Tab(icon: const Icon(Icons.label_outlined), text: AppLocalizations.of(context)!.tabLabeling),
-                Tab(
-                    icon: const Icon(Icons.music_note_outlined),
-                    text: AppLocalizations.of(context)!.tabClefLines),
-                Tab(icon: const Icon(Icons.tune_outlined), text: AppLocalizations.of(context)!.tabFineTuning),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
               ],
             ),
-
-            const Divider(height: 1),
-
-            // ── Interactive Live Preview Panel ─────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: LiveStaffPreview(
-                name: _currentName.isEmpty ? AppLocalizations.of(context)!.defaultInstrumentName : _currentName,
-                abbrev: _abbrController.text,
-                lines: _selectedLines,
-                clefSymbol: _selectedClefSymbol,
-                anchorLine: _selectedAnchorLine,
-                visible: _labelVisible,
-                hOffset: _horizontalOffset,
-                vOffset: _verticalOffset,
-                fontFamily: _fontFamily,
-                fontSize: _fontSize,
-                italic: _italic,
-                onAnchorLineChanged: (newLine) {
-                  setState(() {
-                    _selectedAnchorLine = newLine;
-                  });
-                },
-              ),
-            ),
-
-            // ── Tab Bar Views (Scrollable with fading edges) ────────
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Tab 1: Labeling & Presets
-                  _buildLabelingTab(theme),
-
-                  // Tab 2: Clef & Lines
-                  _buildClefTab(theme),
-
-                  // Tab 3: Fine-Tuning & Styling
-                  _buildFineTuningTab(theme),
-                ],
-              ),
-            ),
-
-            const Divider(height: 1),
-
-            // ── Dialog Actions ─────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: widget.notifier.allStaves.length > 1
-                        ? () {
-                            widget.notifier.removeStaffByUid(widget.staff.uid);
-                            Navigator.of(context).pop();
-                          }
-                        : null,
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    color: theme.colorScheme.error,
-                    tooltip: AppLocalizations.of(context)!.removeStaff,
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.cancel),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _onSave,
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.applyChanges),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-
-    if (isMobile) {
-      return Material(
-        color: theme.colorScheme.surface,
-        child: content,
-      );
-    }
-
-    return Dialog(
-      backgroundColor: theme.colorScheme.surface,
-      elevation: 24,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: content,
-    );
-  }
-
-  // ── Tab 1: Labeling & Presets ────────────────────────────────────
-  Widget _buildLabelingTab(ThemeData theme) {
-    final cs = theme.colorScheme;
-
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      children: [
-        const SizedBox(height: 16),
-
-        // Presets Header Section
-        Text(
-          AppLocalizations.of(context)!.quickInstrumentPresets,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: cs.onSurface,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          AppLocalizations.of(context)!.selectFamilyPresetDesc,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: InstrumentPresets.allFamilies.map((family) {
-            final IconData familyIcon = switch (family.name) {
-              'Woodwinds' => Icons.air,
-              'Brass' => Icons.music_note,
-              'Percussion' => Icons.circle_outlined,
-              'Strings' => Icons.line_weight,
-              'Keyboard & Plucked' => Icons.piano,
-              _ => Icons.music_video_outlined,
-            };
 
-            return PopupMenuButton<InstrumentPreset>(
-              offset: const Offset(0, 40),
-              tooltip: 'Select ${family.name} Preset',
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: cs.primary.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(familyIcon, size: 14, color: cs.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      _getFamilyName(context, family.name),
-                      style: TextStyle(
-                        color: cs.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_drop_down,
-                      size: 16,
-                      color: cs.primary,
-                    ),
-                  ],
-                ),
-              ),
-              itemBuilder: (context) {
-                return family.instruments.map((preset) {
-                  return PopupMenuItem<InstrumentPreset>(
-                    value: preset,
-                    child: Text('${preset.name} (${preset.abbreviation})'),
-                  );
-                }).toList();
-              },
-              onSelected: _applyPreset,
-            );
-          }).toList(),
-        ),
-
-        const SizedBox(height: 20),
-        const Divider(),
-        const SizedBox(height: 20),
-
-        // Cohesive Label Details Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.3),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Show Label Switch Row
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.showLabelOnCanvas,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          AppLocalizations.of(context)!.showLabelOnCanvasDesc,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Transform.scale(
-                    scale: 0.9,
-                    child: Switch(
-                      value: _labelVisible,
-                      onChanged: (val) => setState(() => _labelVisible = val),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
-
-              // Animated Opacity and IgnorePointer when disabled
-              AnimatedOpacity(
-                opacity: _labelVisible ? 1.0 : 0.4,
-                duration: const Duration(milliseconds: 200),
-                child: IgnorePointer(
-                  ignoring: !_labelVisible,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Full Name Autocomplete Input
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.instrumentNameLabel,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurface,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Autocomplete<InstrumentPreset>(
-                              initialValue:
-                                  TextEditingValue(text: _currentName),
-                              displayStringForOption: (option) => option.name,
-                              optionsBuilder: (textEditingValue) {
-                                if (textEditingValue.text.isEmpty) {
-                                  return const Iterable<
-                                      InstrumentPreset>.empty();
-                                }
-                                return InstrumentPresets.allPresets.where(
-                                    (preset) => preset.name
-                                        .toLowerCase()
-                                        .contains(textEditingValue.text
-                                            .toLowerCase()));
-                              },
-                              onSelected: _applyPreset,
-                              fieldViewBuilder: (context, textController,
-                                  focusNode, onFieldSubmitted) {
-                                if (_autoCompleteController != textController) {
-                                  _autoCompleteController = textController;
-                                  textController.addListener(() {
-                                    if (_currentName != textController.text) {
-                                      setState(() {
-                                        _currentName = textController.text;
-                                      });
-                                    }
-                                  });
-                                }
-
-                                return TextField(
-                                  controller: textController,
-                                  focusNode: focusNode,
-                                  decoration: InputDecoration(
-                                    hintText: AppLocalizations.of(context)!.instrumentNameHint,
-                                    prefixIcon:
-                                        const Icon(Icons.search, size: 18),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: cs.outlineVariant, width: 1.2),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: cs.outlineVariant, width: 1.2),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: cs.primary, width: 1.8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 12),
-                                    isDense: true,
-                                  ),
-                                  style: const TextStyle(fontSize: 13),
-                                  onSubmitted: (_) => onFieldSubmitted(),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 16),
-
-                      // Abbreviation Input
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.abbreviationLabel,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurface,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _abbrController,
-                              decoration: InputDecoration(
-                                hintText: AppLocalizations.of(context)!.abbreviationHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                      color: cs.outlineVariant, width: 1.2),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                      color: cs.outlineVariant, width: 1.2),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: cs.primary, width: 1.8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 12),
-                                isDense: true,
-                              ),
-                              style: const TextStyle(fontSize: 13),
-                              onChanged: (val) => setState(() {}),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          // ── Tab Bar ───────────────────────────────────────────
+          TabBar(
+            controller: _tabController,
+            labelColor: theme.colorScheme.primary,
+            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+            indicatorColor: theme.colorScheme.primary,
+            indicatorSize: TabBarIndicatorSize.tab,
+            tabs: [
+              Tab(icon: const Icon(Icons.label_outlined), text: l10n.tabLabeling),
+              Tab(
+                  icon: const Icon(Icons.music_note_outlined),
+                  text: l10n.tabClefLines),
+              Tab(icon: const Icon(Icons.tune_outlined), text: l10n.tabFineTuning),
             ],
           ),
-        ),
 
-        const SizedBox(height: 24),
-      ],
-    );
-  }
+          const Divider(height: 1),
 
-  // ── Tab 2: Clef & Lines ──────────────────────────────────────────
-  // ── Tab 2: Clef & Lines ──────────────────────────────────────────
-  Widget _buildClefTab(ThemeData theme) {
-    final cs = theme.colorScheme;
-    final isFixedLines = _selectedClefSymbol?.requiresFixedLines ?? false;
-
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      children: [
-        const SizedBox(height: 16),
-        Text(
-          AppLocalizations.of(context)!.clefSettingsHeader,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
-        ),
-        const SizedBox(height: 12),
-
-        // Clef Symbol Column - Spacious & Informative Rows
-        Column(
-          children: core.ClefSymbol.values.map((symbol) {
-            final isSelected = _selectedClefSymbol == symbol;
-
-            String glyph = switch (symbol) {
-              core.ClefSymbol.g => '\u{E050}',
-              core.ClefSymbol.c => '\u{E05C}',
-              core.ClefSymbol.f => '\u{E062}',
-              _ => '',
-            };
-
-            String title = switch (symbol) {
-              core.ClefSymbol.g => AppLocalizations.of(context)!.clefTrebleTitle,
-              core.ClefSymbol.c => AppLocalizations.of(context)!.clefMovableCTitle,
-              core.ClefSymbol.f => AppLocalizations.of(context)!.clefBassTitle,
-              core.ClefSymbol.tab => AppLocalizations.of(context)!.clefTabTitle,
-              core.ClefSymbol.percussion => AppLocalizations.of(context)!.clefPercussionTitle,
-            };
-
-            String description = switch (symbol) {
-              core.ClefSymbol.g => AppLocalizations.of(context)!.clefTrebleDesc,
-              core.ClefSymbol.c => AppLocalizations.of(context)!.clefMovableCDesc,
-              core.ClefSymbol.f => AppLocalizations.of(context)!.clefBassDesc,
-              core.ClefSymbol.tab => AppLocalizations.of(context)!.clefTabDesc,
-              core.ClefSymbol.percussion => AppLocalizations.of(context)!.clefPercussionDesc,
-            };
-
-            return _buildClefRowCard(
-              theme: theme,
-              symbol: symbol,
-              glyph: glyph,
-              title: title,
-              description: description,
-              isSelected: isSelected,
-              onTap: () {
+          // ── Interactive Live Preview Panel ─────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: LiveStaffPreview(
+              name: _currentName.isEmpty
+                  ? l10n.defaultInstrumentName
+                  : _currentName,
+              abbrev: _abbrController.text,
+              lines: _selectedLines,
+              clefSymbol: _selectedClefSymbol,
+              anchorLine: _selectedAnchorLine,
+              visible: _labelVisible,
+              hOffset: _horizontalOffset,
+              vOffset: _verticalOffset,
+              fontFamily: _fontFamily,
+              fontSize: _fontSize,
+              italic: _italic,
+              onAnchorLineChanged: (newLine) {
                 setState(() {
-                  _selectedClefSymbol = symbol;
-                  _selectedAnchorLine = switch (symbol) {
-                    core.ClefSymbol.g => 2,
-                    core.ClefSymbol.c => 3,
-                    core.ClefSymbol.f => 4,
-                    _ => 3,
-                  };
-                  if (symbol.requiresFixedLines) {
-                    _selectedLines = symbol.defaultLines;
-                  }
+                  _selectedAnchorLine = newLine;
                 });
               },
-            );
-          }).toList(),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Clef Presets / Register Chips (Dynamic based on selected Clef Symbol)
-        if (_selectedClefSymbol != null) ...[
-          Text(
-            AppLocalizations.of(context)!.clefPresetRegisterHeader,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (_selectedClefSymbol == core.ClefSymbol.g) ...[
-                _buildClefPresetChip(
-                    theme, 'Treble (G2)', core.ClefSymbol.g, 2),
-              ],
-              if (_selectedClefSymbol == core.ClefSymbol.c) ...[
-                _buildClefPresetChip(theme, 'Alto (C3)', core.ClefSymbol.c, 3),
-                _buildClefPresetChip(theme, 'Tenor (C4)', core.ClefSymbol.c, 4),
-                _buildClefPresetChip(
-                    theme, 'Soprano (C1)', core.ClefSymbol.c, 1),
-                _buildClefPresetChip(
-                    theme, 'Mezzo-Soprano (C2)', core.ClefSymbol.c, 2),
-              ],
-              if (_selectedClefSymbol == core.ClefSymbol.f) ...[
-                _buildClefPresetChip(theme, 'Bass (F4)', core.ClefSymbol.f, 4),
-                _buildClefPresetChip(
-                    theme, 'Baritone (F3)', core.ClefSymbol.f, 3),
-              ],
-              if (_selectedClefSymbol == core.ClefSymbol.tab) ...[
-                _buildClefPresetChip(
-                    theme, 'Guitar TAB', core.ClefSymbol.tab, 3),
-              ],
-              if (_selectedClefSymbol == core.ClefSymbol.percussion) ...[
-                _buildClefPresetChip(
-                    theme, 'Percussion', core.ClefSymbol.percussion, 2),
-              ],
-            ],
-          ),
-          const SizedBox(height: 20),
-        ],
-
-        // Anchor Line Slider Container
-        if (_selectedClefSymbol?.supportsAnchorOffset ?? false) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: cs.outlineVariant.withValues(alpha: 0.3),
-                width: 1.2,
-              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+
+          // ── Tab Bar Views ─────────────────────────────────────
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.clefAnchorLineHeader,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          AppLocalizations.of(context)!.clefAnchorLineDesc,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: cs.primaryContainer.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: cs.primary.withValues(alpha: 0.2)),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.clefAnchorLineReadout(_selectedAnchorLine),
-                        style: TextStyle(
-                          color: cs.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
+                LabelingTab(
+                  currentName: _currentName,
+                  abbrController: _abbrController,
+                  labelVisible: _labelVisible,
+                  onApplyPreset: _applyPreset,
+                  onLabelVisibleChanged: (val) =>
+                      setState(() => _labelVisible = val),
+                  onNameChanged: (val) => setState(() => _currentName = val),
                 ),
-                const SizedBox(height: 12),
-                Slider(
-                  min: 1,
-                  max: 5,
-                  divisions: 4,
-                  value: _selectedAnchorLine.toDouble(),
-                  onChanged: (val) =>
-                      setState(() => _selectedAnchorLine = val.round()),
-                  activeColor: cs.primary,
-                  inactiveColor: cs.outlineVariant.withValues(alpha: 0.6),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.lightbulb_outline, size: 14, color: cs.primary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        AppLocalizations.of(context)!.clefAnchorTip,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-
-        // Staff Lines Slider Container
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.3),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.numberOfStaffLinesHeader,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        AppLocalizations.of(context)!.numberOfStaffLinesDesc,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isFixedLines
-                          ? cs.outlineVariant.withValues(alpha: 0.2)
-                          : cs.primaryContainer.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: isFixedLines
-                              ? cs.outlineVariant
-                              : cs.primary.withValues(alpha: 0.2)),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.numberOfLinesReadout(_selectedLines),
-                      style: TextStyle(
-                        color: isFixedLines ? cs.onSurfaceVariant : cs.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Slider(
-                min: 1,
-                max: 8,
-                divisions: 7,
-                value: _selectedLines.toDouble(),
-                onChanged: isFixedLines
-                    ? null
-                    : (val) => setState(() => _selectedLines = val.round()),
-                activeColor: cs.primary,
-                inactiveColor: cs.outlineVariant.withValues(alpha: 0.6),
-              ),
-              if (isFixedLines) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 14, color: cs.onSurfaceVariant),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        AppLocalizations.of(context)!.lineCountLockedNote,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildClefRowCard({
-    required ThemeData theme,
-    required core.ClefSymbol symbol,
-    required String glyph,
-    required String title,
-    required String description,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final cs = theme.colorScheme;
-
-    // Custom graphical indicator for Percussion and TAB
-    Widget graphicsIndicator;
-    if (symbol == core.ClefSymbol.percussion) {
-      graphicsIndicator = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 4,
-            height: 24,
-            decoration: BoxDecoration(
-              color: isSelected ? cs.primary : cs.onSurfaceVariant,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 3),
-          Container(
-            width: 4,
-            height: 24,
-            decoration: BoxDecoration(
-              color: isSelected ? cs.primary : cs.onSurfaceVariant,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ],
-      );
-    } else if (symbol == core.ClefSymbol.tab) {
-      graphicsIndicator = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'T',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              height: 0.9,
-              fontFamily: 'NotoSerif',
-              color: isSelected ? cs.primary : cs.onSurface,
-            ),
-          ),
-          Text(
-            'A',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              height: 0.9,
-              fontFamily: 'NotoSerif',
-              color: isSelected ? cs.primary : cs.onSurface,
-            ),
-          ),
-          Text(
-            'B',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              height: 0.9,
-              fontFamily: 'NotoSerif',
-              color: isSelected ? cs.primary : cs.onSurface,
-            ),
-          ),
-        ],
-      );
-    } else {
-      graphicsIndicator = Text(
-        glyph,
-        style: TextStyle(
-          fontFamily: 'Bravura',
-          fontSize: 32,
-          height: 1.0,
-          color: isSelected ? cs.primary : cs.onSurface,
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? cs.primaryContainer.withValues(alpha: 0.15)
-            : cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected ? cs.primary : cs.outlineVariant,
-          width: isSelected ? 1.8 : 1.2,
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Left: Icon Box
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? cs.primary.withValues(alpha: 0.1)
-                      : cs.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: graphicsIndicator,
-              ),
-              const SizedBox(width: 16),
-              // Right: Title & Description Column
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: cs.onSurfaceVariant,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildClefPresetChip(
-      ThemeData theme, String title, core.ClefSymbol sym, int line) {
-    final isSelected =
-        _selectedClefSymbol == sym && _selectedAnchorLine == line;
-    return ChoiceChip(
-      label: Text(title),
-      selected: isSelected,
-      onSelected: (_) {
-        setState(() {
-          _selectedClefSymbol = sym;
-          _selectedAnchorLine = line;
-          if (sym.requiresFixedLines) {
-            _selectedLines = sym.defaultLines;
-          }
-        });
-      },
-      labelStyle: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: isSelected
-            ? theme.colorScheme.onPrimaryContainer
-            : theme.colorScheme.onSurface,
-      ),
-      backgroundColor: theme.colorScheme.surfaceContainerLow,
-      selectedColor: theme.colorScheme.primaryContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.outlineVariant,
-          width: isSelected ? 1.5 : 1.0,
-        ),
-      ),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  // ── Tab 3: Fine-Tuning & Styling ─────────────────────────────────
-  Widget _buildFineTuningTab(ThemeData theme) {
-    final cs = theme.colorScheme;
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      children: [
-        const SizedBox(height: 16),
-        Text(
-          AppLocalizations.of(context)!.typographyStylingHeader,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
-        ),
-        const SizedBox(height: 12),
-
-        // Font Family Visual Previews Row
-        Row(
-          children: [
-            _buildFontFamilyCard(
-              theme: theme,
-              title: AppLocalizations.of(context)!.fontSerifTitle,
-              fontFamily: 'serif',
-              preview: 'Aa',
-              isSelected: _fontFamily == 'serif',
-              onTap: () => setState(() => _fontFamily = 'serif'),
-            ),
-            const SizedBox(width: 12),
-            _buildFontFamilyCard(
-              theme: theme,
-              title: AppLocalizations.of(context)!.fontSansTitle,
-              fontFamily: 'sans',
-              preview: 'Aa',
-              isSelected: _fontFamily == 'sans',
-              onTap: () => setState(() => _fontFamily = 'sans'),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Typography Settings Container
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.3),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Font Size Dual Slider
-              _PrecisionNumericSlider(
-                label: AppLocalizations.of(context)!.labelFontSizeLabel,
-                value: _fontSize,
-                min: 8.0,
-                max: 20.0,
-                step: 0.5,
-                fractionDigits: 1,
-                onChanged: (val) => setState(() => _fontSize = val),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1),
-              ),
-              // Italics Toggle
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.italicizeLabelHeader,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold, color: cs.onSurface),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          AppLocalizations.of(context)!.italicizeLabelDesc,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: _italic,
-                    onChanged: (val) => setState(() => _italic = val),
-                    activeThumbColor: cs.primary,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        Text(
-          AppLocalizations.of(context)!.alignmentOffsetsHeader,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface),
-        ),
-        const SizedBox(height: 12),
-
-        // Alignment Settings Container
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.3),
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Horizontal Offset Dual Slider
-              _PrecisionNumericSlider(
-                label: AppLocalizations.of(context)!.horizontalOffsetLabel,
-                value: _horizontalOffset,
-                min: -60.0,
-                max: 60.0,
-                step: 1.0,
-                fractionDigits: 0,
-                onChanged: (val) => setState(() => _horizontalOffset = val),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1),
-              ),
-              // Vertical Offset Dual Slider
-              _PrecisionNumericSlider(
-                label: AppLocalizations.of(context)!.verticalOffsetLabel,
-                value: _verticalOffset,
-                min: -40.0,
-                max: 40.0,
-                step: 1.0,
-                fractionDigits: 0,
-                onChanged: (val) => setState(() => _verticalOffset = val),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.lightbulb_outline, size: 14, color: cs.primary),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.livePreviewTip,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildFontFamilyCard({
-    required ThemeData theme,
-    required String title,
-    required String fontFamily,
-    required String preview,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = theme.colorScheme;
-    final previewStyle = TextStyle(
-      fontFamily: fontFamily == 'serif' ? 'Noto Serif' : 'Roboto',
-      fontSize: 20,
-      fontWeight: FontWeight.bold,
-      color:
-          isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
-    );
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colorScheme.primaryContainer
-                : colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color:
-                  isSelected ? colorScheme.primary : colorScheme.outlineVariant,
-              width: isSelected ? 1.8 : 1.0,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colorScheme.onPrimaryContainer.withValues(alpha: 0.15)
-                      : colorScheme.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(preview, style: previewStyle),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? colorScheme.onPrimaryContainer
-                        : colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Reusable Premium Dual-Control Slider with Precision Spinners ────
-class _PrecisionNumericSlider extends StatefulWidget {
-  final String label;
-  final double value;
-  final double min;
-  final double max;
-  final double step;
-  final int fractionDigits;
-  final ValueChanged<double> onChanged;
-
-  const _PrecisionNumericSlider({
-    required this.label,
-    required this.value,
-    required this.min,
-    required this.max,
-    this.step = 1.0,
-    this.fractionDigits = 0,
-    required this.onChanged,
-  });
-
-  @override
-  State<_PrecisionNumericSlider> createState() =>
-      _PrecisionNumericSliderState();
-}
-
-class _PrecisionNumericSliderState extends State<_PrecisionNumericSlider> {
-  late TextEditingController _textController;
-  late FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _textController = TextEditingController(text: _formatValue(widget.value));
-    _focusNode = FocusNode();
-    _focusNode.addListener(_onFocusChange);
-  }
-
-  @override
-  void didUpdateWidget(covariant _PrecisionNumericSlider oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && !_focusNode.hasFocus) {
-      _textController.text = _formatValue(widget.value);
-    }
-  }
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    _focusNode.removeListener(_onFocusChange);
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  String _formatValue(double val) {
-    return val.toStringAsFixed(widget.fractionDigits);
-  }
-
-  void _onFocusChange() {
-    if (!_focusNode.hasFocus) {
-      // Re-sync on focus loss
-      _textController.text = _formatValue(widget.value);
-    }
-  }
-
-  void _updateValue(double newValue) {
-    final clamped = newValue.clamp(widget.min, widget.max);
-    widget.onChanged(clamped);
-    if (_focusNode.hasFocus) {
-      final formatted = _formatValue(clamped);
-      if (_textController.text != formatted) {
-        _textController.text = formatted;
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              widget.label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            // High contrast status indicator
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '${_formatValue(widget.value)} pt',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            // Smooth Slider
-            Expanded(
-              child: SliderTheme(
-                data: SliderThemeData(
-                  trackHeight: 4,
-                  activeTrackColor: theme.colorScheme.primary,
-                  inactiveTrackColor:
-                      theme.colorScheme.outlineVariant.withValues(alpha: 0.8),
-                  thumbColor: theme.colorScheme.primary,
-                  overlayColor:
-                      theme.colorScheme.primary.withValues(alpha: 0.12),
-                  valueIndicatorColor: theme.colorScheme.primary,
-                ),
-                child: Slider(
-                  min: widget.min,
-                  max: widget.max,
-                  value: widget.value,
-                  onChanged: (val) {
-                    _updateValue(val);
-                    if (!_focusNode.hasFocus) {
-                      _textController.text = _formatValue(val);
-                    }
+                ClefLinesTab(
+                  selectedClefSymbol: _selectedClefSymbol,
+                  selectedAnchorLine: _selectedAnchorLine,
+                  selectedLines: _selectedLines,
+                  onClefSelect: (symbol, anchorLine, defaultLines) {
+                    setState(() {
+                      _selectedClefSymbol = symbol;
+                      _selectedAnchorLine = anchorLine;
+                      _selectedLines = defaultLines;
+                    });
                   },
+                  onAnchorLineChanged: (line) =>
+                      setState(() => _selectedAnchorLine = line),
+                  onLinesChanged: (lines) =>
+                      setState(() => _selectedLines = lines),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Custom Numeric Step Box
-            Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant,
-                  width: 1.2,
+                FineTuningTab(
+                  fontFamily: _fontFamily,
+                  fontSize: _fontSize,
+                  italic: _italic,
+                  horizontalOffset: _horizontalOffset,
+                  verticalOffset: _verticalOffset,
+                  onFontFamilyChanged: (family) =>
+                      setState(() => _fontFamily = family),
+                  onFontSizeChanged: (val) => setState(() => _fontSize = val),
+                  onItalicChanged: (val) => setState(() => _italic = val),
+                  onHorizontalOffsetChanged: (val) =>
+                      setState(() => _horizontalOffset = val),
+                  onVerticalOffsetChanged: (val) =>
+                      setState(() => _verticalOffset = val),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove, size: 14),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      final target = widget.value - widget.step;
-                      _updateValue(target);
-                      _textController.text =
-                          _formatValue(target.clamp(widget.min, widget.max));
-                    },
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  SizedBox(
-                    width: 38,
-                    child: TextField(
-                      controller: _textController,
-                      focusNode: _focusNode,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          signed: true, decimal: true),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 6),
-                        border: InputBorder.none,
-                      ),
-                      onChanged: (text) {
-                        if (text.isEmpty) return;
-                        final parsed = double.tryParse(text);
-                        if (parsed != null) {
-                          widget
-                              .onChanged(parsed.clamp(widget.min, widget.max));
-                        }
-                      },
-                      onSubmitted: (text) {
-                        if (text.isEmpty) {
-                          _textController.text = _formatValue(widget.value);
-                          return;
-                        }
-                        final parsed = double.tryParse(text);
-                        _updateValue(parsed ?? widget.value);
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add, size: 14),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      final target = widget.value + widget.step;
-                      _updateValue(target);
-                      _textController.text =
-                          _formatValue(target.clamp(widget.min, widget.max));
-                    },
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ],
-              ),
+              ],
             ),
-          ],
-        ),
-      ],
-    );
-  }
-}
+          ),
 
-String _getFamilyName(BuildContext context, String rawName) {
-  final l10n = AppLocalizations.of(context)!;
-  switch (rawName) {
-    case 'Woodwinds':
-      return l10n.familyWoodwinds;
-    case 'Brass':
-      return l10n.familyBrass;
-    case 'Percussion':
-      return l10n.familyPercussion;
-    case 'Strings':
-      return l10n.familyStrings;
-    case 'Keyboard & Plucked':
-      return l10n.familyKeyboardPlucked;
-    default:
-      return rawName;
+          const Divider(height: 1),
+
+          // ── Dialog Actions ─────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: widget.notifier.allStaves.length > 1
+                      ? () {
+                          widget.notifier.removeStaffByUid(widget.staff.uid);
+                          Navigator.of(context).pop();
+                        }
+                      : null,
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  color: theme.colorScheme.error,
+                  tooltip: l10n.removeStaff,
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.cancel),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _onSave,
+                  child: Text(l10n.save),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      clipBehavior: Clip.antiAlias,
+      child: content,
+    );
   }
 }
