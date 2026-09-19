@@ -5,6 +5,7 @@ import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
 import '../common/ensemble_summary_widget.dart';
 import '../dialogs/staff_config_dialog.dart';
+import '../dialogs/system_grouping_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
 class SystemHierarchyPanel extends StatelessWidget {
@@ -42,16 +43,19 @@ class SystemHierarchyPanel extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  TextButton.icon(
+                  IconButton(
+                    onPressed: () => showSystemGroupingDialog(context, notifier: notifier),
+                    icon: const Icon(Icons.account_tree, size: 16),
+                    tooltip: AppLocalizations.of(context)!.systemGrouping,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                  IconButton(
                     onPressed: () => notifier.addStaff(),
-                    icon: const Icon(Icons.add_circle_outline, size: 14),
-                    label: Text(AppLocalizations.of(context)!.addStaff,
-                        style: const TextStyle(fontSize: 12)),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                    icon: const Icon(Icons.add_circle_outline, size: 16),
+                    tooltip: AppLocalizations.of(context)!.addStaff,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: const EdgeInsets.all(4),
                   ),
                 ],
               ),
@@ -105,58 +109,167 @@ class _StaffGroupWidget extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 360;
+          final double width = constraints.maxWidth;
+          final bool isUltraNarrow = width < 260;
+          final bool isStackedHeader = width >= 260 && width < 340;
+          final bool isCompactSegmented = width < 480;
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  if (!isRoot && index != null) ...[
-                    ReorderableDragStartListener(
-                      index: index!,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.grab,
-                        child: Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 8.0),
-                          child: Icon(
-                            Icons.drag_indicator,
-                            size: 18,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+              if (isUltraNarrow) ...[
+                // Stage 3 (< 260px): Single row with 24px PopupMenuButton
+                Row(
+                  children: [
+                    if (!isRoot && index != null) ...[
+                      ReorderableDragStartListener(
+                        index: index!,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 6.0),
+                            child: Icon(
+                              Icons.drag_indicator,
+                              size: 16,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
                           ),
                         ),
                       ),
+                    ],
+                    Icon(
+                      group.connector == core.SystemConnector.brace
+                          ? Icons.code
+                          : group.connector == core.SystemConnector.bracket
+                              ? Icons.reorder
+                              : Icons.linear_scale,
+                      size: 14,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        isRoot ? l10n.mainEnsemble : l10n.subGroup,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurfaceVariant,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _ConnectorMenuButton(
+                      value: group.connector,
+                      onChanged: (v) => notifier.updateGroupConnector(v,
+                          groupHash: group.hashCode),
                     ),
                   ],
-                  Icon(
-                    group.connector == core.SystemConnector.brace
-                        ? Icons.code
-                        : group.connector == core.SystemConnector.bracket
-                            ? Icons.reorder
-                            : Icons.linear_scale,
-                    size: 14,
-                    color: cs.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      isRoot ? l10n.mainEnsemble : l10n.subGroup,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurfaceVariant,
-                        letterSpacing: 0.5,
+                ),
+              ] else if (isStackedHeader) ...[
+                // Stage 2 (260px - 340px): Stacked header (Title on Row 1, SegmentedButton on Row 2)
+                Row(
+                  children: [
+                    if (!isRoot && index != null) ...[
+                      ReorderableDragStartListener(
+                        index: index!,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 8.0),
+                            child: Icon(
+                              Icons.drag_indicator,
+                              size: 18,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
+                    ],
+                    Icon(
+                      group.connector == core.SystemConnector.brace
+                          ? Icons.code
+                          : group.connector == core.SystemConnector.bracket
+                              ? Icons.reorder
+                              : Icons.linear_scale,
+                      size: 14,
+                      color: cs.onSurfaceVariant,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  _ConnectorPicker(
-                    value: group.connector,
-                    onChanged: (v) => notifier.updateGroupConnector(v),
-                    compact: isCompact,
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isRoot ? l10n.mainEnsemble : l10n.subGroup,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurfaceVariant,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                _ConnectorPicker(
+                  value: group.connector,
+                  onChanged: (v) => notifier.updateGroupConnector(v,
+                      groupHash: group.hashCode),
+                  compact: true,
+                ),
+              ] else ...[
+                // Stage 1 (>= 340px): Single row with SegmentedButton
+                Row(
+                  children: [
+                    if (!isRoot && index != null) ...[
+                      ReorderableDragStartListener(
+                        index: index!,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 8.0),
+                            child: Icon(
+                              Icons.drag_indicator,
+                              size: 18,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    Icon(
+                      group.connector == core.SystemConnector.brace
+                          ? Icons.code
+                          : group.connector == core.SystemConnector.bracket
+                              ? Icons.reorder
+                              : Icons.linear_scale,
+                      size: 14,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isRoot ? l10n.mainEnsemble : l10n.subGroup,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurfaceVariant,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _ConnectorPicker(
+                      value: group.connector,
+                      onChanged: (v) => notifier.updateGroupConnector(v,
+                          groupHash: group.hashCode),
+                      compact: isCompactSegmented,
+                    ),
+                  ],
+                ),
+              ],
               if (group.children.length > 1)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
@@ -196,8 +309,9 @@ class _StaffGroupWidget extends StatelessWidget {
                             scale: 0.75,
                             child: Switch(
                               value: group.continuousBarlines,
-                              onChanged: (v) =>
-                                  notifier.updateGroupContinuousBarlines(v),
+                              onChanged: (v) => notifier
+                                  .updateGroupContinuousBarlines(v,
+                                      groupHash: group.hashCode),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -454,6 +568,14 @@ class _ConnectorPicker extends StatelessWidget {
           tooltip: l10n.connectorBracketTooltip,
         ),
         ButtonSegment(
+          value: core.SystemConnector.subBracket,
+          icon: const Icon(Icons.line_weight, size: 14),
+          label: compact
+              ? null
+              : Text(l10n.connectorSubBracket, style: const TextStyle(fontSize: 10)),
+          tooltip: l10n.connectorSubBracketTooltip,
+        ),
+        ButtonSegment(
           value: core.SystemConnector.brace,
           icon: const Icon(Icons.code, size: 14),
           label: compact
@@ -470,6 +592,90 @@ class _ConnectorPicker extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
+    );
+  }
+}
+
+class _ConnectorMenuButton extends StatelessWidget {
+  const _ConnectorMenuButton({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final core.SystemConnector value;
+  final ValueChanged<core.SystemConnector> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    final (IconData icon, String label) = switch (value) {
+      core.SystemConnector.none => (Icons.linear_scale, l10n.connectorNone),
+      core.SystemConnector.bracket => (Icons.reorder, l10n.connectorBracket),
+      core.SystemConnector.subBracket =>
+        (Icons.line_weight, l10n.connectorSubBracket),
+      core.SystemConnector.brace => (Icons.code, l10n.connectorBrace),
+    };
+
+    return PopupMenuButton<core.SystemConnector>(
+      initialValue: value,
+      onSelected: onChanged,
+      tooltip: label,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: cs.primaryContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+        ),
+        child: Icon(icon, size: 14, color: cs.primary),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: core.SystemConnector.none,
+          child: Row(
+            children: [
+              const Icon(Icons.linear_scale, size: 14),
+              const SizedBox(width: 8),
+              Text(l10n.connectorNone, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: core.SystemConnector.bracket,
+          child: Row(
+            children: [
+              const Icon(Icons.reorder, size: 14),
+              const SizedBox(width: 8),
+              Text(l10n.connectorBracket, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: core.SystemConnector.subBracket,
+          child: Row(
+            children: [
+              const Icon(Icons.line_weight, size: 14),
+              const SizedBox(width: 8),
+              Text(l10n.connectorSubBracket,
+                  style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: core.SystemConnector.brace,
+          child: Row(
+            children: [
+              const Icon(Icons.code, size: 14),
+              const SizedBox(width: 8),
+              Text(l10n.connectorBrace, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

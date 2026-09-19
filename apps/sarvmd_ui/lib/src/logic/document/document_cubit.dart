@@ -353,12 +353,13 @@ class DocumentCubit extends Cubit<DocumentState> {
     ));
   }
 
-  void updateGroupConnector(core.SystemConnector connector) {
-    execute(core.UpdateGroupConnectorCommand(connector));
+  void updateGroupConnector(core.SystemConnector connector, {int? groupHash}) {
+    execute(core.UpdateGroupConnectorCommand(connector, groupHash: groupHash));
   }
 
-  void updateGroupContinuousBarlines(bool value) {
-    execute(core.UpdateGroupContinuousBarlinesCommand(value));
+  void updateGroupContinuousBarlines(bool value, {int? groupHash}) {
+    execute(
+        core.UpdateGroupContinuousBarlinesCommand(value, groupHash: groupHash));
   }
 
   void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {
