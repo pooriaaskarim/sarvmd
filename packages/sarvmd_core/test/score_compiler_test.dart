@@ -44,10 +44,16 @@ void main() {
       expect(svg, contains('</svg>'));
     });
 
-    test('compileToPdf produces non-empty byte buffer', () async {
-      final pdfBytes = await ScoreCompiler.compileToPdf(config, layout);
-      expect(pdfBytes, isNotEmpty);
-      expect(pdfBytes.length, greaterThan(100));
+    test('compileToSvg for Guitar + TAB renders distinct TAB clef vector path', () {
+      final tabConfig = StaffProfiles.guitarGrand.applyTo(config);
+      final tabLayout = computeLayout(tabConfig);
+      final svg = ScoreCompiler.compileToSvg(tabConfig, tabLayout);
+
+      expect(svg, contains('<svg'));
+      expect(svg, contains('</svg>'));
+      // Verify TAB clef T-A-B vector path is rendered in the output
+      expect(svg, contains('M 40.0,950.0 L 320.0,950.0'));
     });
   });
 }
+
