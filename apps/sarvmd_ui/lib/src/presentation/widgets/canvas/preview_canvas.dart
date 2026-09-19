@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/smufl_glyphs.dart';
 import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/sample/sample_score.dart';
@@ -436,12 +437,7 @@ class _ManuscriptPainter extends CustomPainter {
       double topY, int lines, double gap, Color color,
       {double scale = 1.0}) {
     const fontScale = 4.0;
-    final String glyph = switch (clef.symbol) {
-      core.ClefSymbol.g => '\u{E050}',
-      core.ClefSymbol.c => '\u{E05C}',
-      core.ClefSymbol.f => '\u{E062}',
-      _ => '',
-    };
+    final String glyph = clef.symbol.smuflGlyph;
 
     final tp = TextPainter(
       text: TextSpan(
@@ -537,7 +533,7 @@ class _ManuscriptPainter extends CustomPainter {
 
     final tp = TextPainter(
       text: TextSpan(
-        text: '\u{E000}',
+        text: SMuFLGlyphs.brace,
         style: TextStyle(
           fontFamily: 'Bravura',
           fontSize: fontSize,

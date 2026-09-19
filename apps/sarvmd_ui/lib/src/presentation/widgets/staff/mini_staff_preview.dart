@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/layout_policy.dart';
+import '../../../core/utils/smufl_glyphs.dart';
 
 /// A lightweight, premium visual preview of a musical staff layout and clef.
 class MiniStaffPreview extends StatelessWidget {
@@ -262,7 +263,7 @@ class _MiniStaffPainter extends CustomPainter {
           final double fontSize = totalHeight * (1000.0 / 997.0);
           final tp = TextPainter(
             text: TextSpan(
-              text: '\u{E000}',
+              text: SMuFLGlyphs.brace,
               style: TextStyle(
                 fontFamily: 'Bravura',
                 fontSize: fontSize,

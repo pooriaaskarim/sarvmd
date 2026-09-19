@@ -227,19 +227,25 @@ class Engraver {
             // 1. Clef Change
             if (measure.clef != null && measure.clef != activeClefs[pIdx]) {
               activeClefs[pIdx] = measure.clef!;
-              final glyph = _smuflClef(activeClefs[pIdx]);
+              final activeClef = activeClefs[pIdx];
+              final glyph = _smuflClef(activeClef);
+              final clefY = staff.topY +
+                  activeClef.anchorOffsetInSpaces(staff.lines) * lineGap * staff.scale;
               pageElements.add(PositionedClef(
                 x: localX,
-                y: staff.topY + (staff.lines - activeClefs[pIdx].anchorLine) * lineGap * staff.scale,
+                y: clefY,
                 scale: staff.scale,
                 glyph: glyph,
               ));
             } else if (mIdx == 0) {
               // Initial staff clefs
-              final glyph = _smuflClef(activeClefs[pIdx]);
+              final activeClef = activeClefs[pIdx];
+              final glyph = _smuflClef(activeClef);
+              final clefY = staff.topY +
+                  activeClef.anchorOffsetInSpaces(staff.lines) * lineGap * staff.scale;
               pageElements.add(PositionedClef(
                 x: localX,
-                y: staff.topY + (staff.lines - activeClefs[pIdx].anchorLine) * lineGap * staff.scale,
+                y: clefY,
                 scale: staff.scale,
                 glyph: glyph,
               ));

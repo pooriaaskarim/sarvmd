@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/layout_policy.dart';
+import '../../../core/utils/smufl_glyphs.dart';
 
 /// A standard, highly reusable, and fully theme-reactive live preview for a musical staff.
 ///
@@ -78,7 +79,9 @@ class LiveStaffPreview extends StatelessWidget {
               final double width = constraints.maxWidth;
               return GestureDetector(
                 onTapUp: (details) {
-                  if (onAnchorLineChanged == null || lines <= 0) return;
+                  if (onAnchorLineChanged == null ||
+                      lines <= 0 ||
+                      !(clefSymbol?.supportsAnchorOffset ?? false)) return;
 
                   final double tappedX = details.localPosition.dx;
                   final double tappedY = details.localPosition.dy;
@@ -292,12 +295,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
       } else {
         const fontScale =
             3.8; // Scaled up clef glyph multiplier for maximum prominence
-        final String glyph = switch (clefSymbol!) {
-          core.ClefSymbol.g => '\u{E050}',
-          core.ClefSymbol.c => '\u{E05C}',
-          core.ClefSymbol.f => '\u{E062}',
-          _ => '',
-        };
+        final String glyph = clefSymbol!.smuflGlyph;
         final tp = TextPainter(
           text: TextSpan(
             text: glyph,

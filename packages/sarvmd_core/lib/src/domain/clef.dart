@@ -239,3 +239,60 @@ class TabClef extends Clef {
   @override
   String get displayName => 'TAB';
 }
+
+/// Extension providing centralized staff line anchoring math for [Clef].
+extension ClefAnchoring on Clef {
+  /// Returns the vertical distance in staff space units from the top line of a staff with [lines] count.
+  double anchorOffsetInSpaces(int lines) {
+    return switch (symbol) {
+      ClefSymbol.tab => (lines > 0 ? lines - 1 : 1).toDouble(),
+      ClefSymbol.percussion => (lines > 0 ? lines - 1 : 1) / 2.0,
+      _ => (lines - anchorLine).toDouble(),
+    };
+  }
+}
+
+/// Extension providing domain object factory methods for [ClefSymbol].
+extension ClefSymbolFactory on ClefSymbol {
+  /// Creates a concrete [Clef] domain object for this symbol and optional [anchorLine].
+  Clef createClef({int? anchorLine}) {
+    return switch (this) {
+      ClefSymbol.g => TrebleClef(anchorLine: anchorLine ?? 2),
+      ClefSymbol.f => BassClef(anchorLine: anchorLine ?? 4),
+      ClefSymbol.c => (anchorLine == 4)
+          ? const TenorClef()
+          : AltoClef(anchorLine: anchorLine ?? 3),
+      ClefSymbol.percussion => const PercussionClef(anchorLine: 3),
+      ClefSymbol.tab => const TabClef(anchorLine: 3),
+    };
+  }
+}
+
+/// Represents a standard register preset for a clef symbol (e.g. Treble Line 2, French Violin Line 1).
+class ClefRegisterPreset {
+  final String label;
+  final int anchorLine;
+  const ClefRegisterPreset(this.label, this.anchorLine);
+}
+
+/// Extension providing domain metadata for clef register presets.
+extension ClefRegisterPresets on ClefSymbol {
+  /// Standard register presets for this clef symbol.
+  List<ClefRegisterPreset> get registerPresets => switch (this) {
+        ClefSymbol.g => const [
+            ClefRegisterPreset('Treble (Line 2)', 2),
+            ClefRegisterPreset('French Violin (Line 1)', 1),
+          ],
+        ClefSymbol.f => const [
+            ClefRegisterPreset('Bass (Line 4)', 4),
+            ClefRegisterPreset('Baritone (Line 3)', 3),
+          ],
+        ClefSymbol.c => const [
+            ClefRegisterPreset('Alto (Line 3)', 3),
+            ClefRegisterPreset('Tenor (Line 4)', 4),
+            ClefRegisterPreset('Soprano (Line 1)', 1),
+            ClefRegisterPreset('Mezzo-Soprano (Line 2)', 2),
+          ],
+        _ => const [],
+      };
+}
