@@ -365,58 +365,70 @@ class _ManuscriptPainter extends CustomPainter {
         final bottomY = (staves.last.topY * scale + staves.last.height * scale)
             .roundToDouble();
 
-        // Offset connectors horizontally based on level to avoid overlap
-        // Root group (level 0) is the outermost.
+        // System barline position is ALWAYS flush with staff line start
+        final systemLeftPx = (systemLeftMm * scale).roundToDouble();
+
+        // Connector glyph position steps left for higher nest levels
         final double xOffset = group.level * (4.0 * scale);
-        final startX = (systemLeftMm * scale).roundToDouble() - xOffset;
+        final connectorX = systemLeftPx - xOffset;
 
         final connectorPaint = Paint()
           ..color = inkColor
           ..strokeWidth = thicknessPx * 1.5
           ..style = PaintingStyle.stroke;
 
-        // 1. Draw Group Barline (Continuous within group if enabled)
+        // 1. Draw Group Barline at systemLeftPx (Continuous within group if enabled)
         // MOLA: Barlines break between instrument families.
         if (group.continuousBarlines && staves.length > 1) {
           canvas.drawLine(
-            Offset(startX, topY),
-            Offset(startX, bottomY),
+            Offset(systemLeftPx, topY),
+            Offset(systemLeftPx, bottomY),
             connectorPaint
               ..strokeWidth = thicknessPx * 2.5, // Bolder for system start
           );
         } else if (!group.continuousBarlines) {
-          // For groups with broken barlines, we still need a small segment for each staff
+          // For groups with broken barlines, render a segment for each staff at systemLeftPx
           for (final staff in staves) {
             final sTop = (staff.topY * scale).roundToDouble();
             final sBottom =
                 (staff.topY * scale + staff.height * scale).roundToDouble();
             canvas.drawLine(
-              Offset(startX, sTop),
-              Offset(startX, sBottom),
+              Offset(systemLeftPx, sTop),
+              Offset(systemLeftPx, sBottom),
               connectorPaint..strokeWidth = thicknessPx * 2.5,
             );
           }
         }
 
-        // 2. Draw Connector (Bracket/Brace)
-        if (group.connector == core.SystemConnector.brace &&
-            staves.length >= 2) {
-          _paintBrace(canvas, startX, topY, bottomY, scale, inkColor);
-        } else if (group.connector == core.SystemConnector.bracket &&
-            staves.length >= 2) {
-          final bracketPaint = Paint()
-            ..color = inkColor
-            ..strokeWidth = thicknessPx * 3.0
-            ..style = PaintingStyle.stroke;
-
-          canvas.drawLine(
-              Offset(startX, topY), Offset(startX, bottomY), bracketPaint);
-
-          final tickLen = 2.0 * scale;
-          canvas.drawLine(Offset(startX, topY), Offset(startX + tickLen, topY),
-              bracketPaint);
-          canvas.drawLine(Offset(startX, bottomY),
-              Offset(startX + tickLen, bottomY), bracketPaint);
+        // 2. Draw Connector (Brace / Bracket / Sub-Bracket)
+        switch (group.connector) {
+          case core.SystemConnector.brace when staves.length >= 2:
+            _paintBrace(canvas, connectorX, topY, bottomY, scale, inkColor);
+          case core.SystemConnector.bracket when staves.length >= 2:
+            final bracketPaint = Paint()
+              ..color = inkColor
+              ..strokeWidth = thicknessPx * 3.0
+              ..style = PaintingStyle.stroke;
+            canvas.drawLine(
+                Offset(connectorX, topY), Offset(connectorX, bottomY), bracketPaint);
+            final endTickX = group.level == 0 ? connectorX + 2.0 * scale : systemLeftPx;
+            canvas.drawLine(Offset(connectorX, topY),
+                Offset(endTickX, topY), bracketPaint);
+            canvas.drawLine(Offset(connectorX, bottomY),
+                Offset(endTickX, bottomY), bracketPaint);
+          case core.SystemConnector.subBracket when staves.length >= 2:
+            // Thinner secondary bracket, no serif ticks.
+            final subBracketPaint = Paint()
+              ..color = inkColor
+              ..strokeWidth = thicknessPx * 1.8
+              ..style = PaintingStyle.stroke;
+            canvas.drawLine(
+                Offset(connectorX, topY), Offset(connectorX, bottomY), subBracketPaint);
+          case core.SystemConnector.none:
+          case core.SystemConnector.brace:
+          case core.SystemConnector.bracket:
+          case core.SystemConnector.subBracket:
+            break;
         }
       }
     }

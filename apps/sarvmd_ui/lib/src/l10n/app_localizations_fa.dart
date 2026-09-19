@@ -867,6 +867,26 @@ class AppLocalizationsFa extends AppLocalizations {
   String get connectorBraceTooltip => 'خط اتصال آکولاد';
 
   @override
+  String get connectorSubBracket => 'زیر-قلاب';
+
+  @override
+  String get connectorSubBracketTooltip =>
+      'خط اتصال زیر-قلاب (کروشه نازک داخلی)';
+
+  @override
+  String get systemGrouping => 'گروه‌بندی سیستم و اتصالات';
+
+  @override
+  String get systemGroupingDescription =>
+      'سازماندهی حامل‌ها در گروه‌های تو در تو و تنظیم خطوط اتصال و پیوستگی میزان‌ها';
+
+  @override
+  String get groupStaves => 'گروه‌بندی حامل‌های انتخابی';
+
+  @override
+  String get ungroupStaves => 'لغو گروه‌بندی';
+
+  @override
   String get undo => 'بازگردانی';
 
   @override

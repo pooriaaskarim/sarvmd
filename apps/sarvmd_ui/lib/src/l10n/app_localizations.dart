@@ -1706,6 +1706,42 @@ abstract class AppLocalizations {
   /// **'Brace Connector'**
   String get connectorBraceTooltip;
 
+  /// No description provided for @connectorSubBracket.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-Bracket'**
+  String get connectorSubBracket;
+
+  /// No description provided for @connectorSubBracketTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-Bracket Connector (thin inner bracket)'**
+  String get connectorSubBracketTooltip;
+
+  /// No description provided for @systemGrouping.
+  ///
+  /// In en, this message translates to:
+  /// **'System Grouping & Connectors'**
+  String get systemGrouping;
+
+  /// No description provided for @systemGroupingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize staves into nested groups and set custom connectors and barline continuity'**
+  String get systemGroupingDescription;
+
+  /// No description provided for @groupStaves.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Staves'**
+  String get groupStaves;
+
+  /// No description provided for @ungroupStaves.
+  ///
+  /// In en, this message translates to:
+  /// **'Ungroup Staves'**
+  String get ungroupStaves;
+
   /// No description provided for @undo.
   ///
   /// In en, this message translates to:

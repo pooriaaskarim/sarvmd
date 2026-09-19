@@ -866,6 +866,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectorBraceTooltip => 'Brace Connector';
 
   @override
+  String get connectorSubBracket => 'Sub-Bracket';
+
+  @override
+  String get connectorSubBracketTooltip =>
+      'Sub-Bracket Connector (thin inner bracket)';
+
+  @override
+  String get systemGrouping => 'System Grouping & Connectors';
+
+  @override
+  String get systemGroupingDescription =>
+      'Organize staves into nested groups and set custom connectors and barline continuity';
+
+  @override
+  String get groupStaves => 'Group Staves';
+
+  @override
+  String get ungroupStaves => 'Ungroup Staves';
+
+  @override
   String get undo => 'Undo';
 
   @override

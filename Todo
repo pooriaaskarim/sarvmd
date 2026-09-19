@@ -1,0 +1,15 @@
+1. [x] Mobile View.
+2. [x] Mobile APK.
+3. [ ] Enabling user to work on several Documents, save and load them into/out of a standard file format.
+    This would some need research on whether there is a standard file format for saving and loading music documents.
+4. [ ] Standard shorcuts with a help cheat-sheet to enable user keyboard speed entry.
+5. [x] Unified look and font and feel for SarvMD logo across the codebase (e.g. splash, about dialog, etc. )
+6. [x] Code standardization across the codebase (e.g. adding comprehensive documentation and comments, Modularizing Big Ass files, etc.)
+7. [x] CRITICAL: Exporting seems to not work properly; on mobile it rendered some irrelevant symbols when exporting Guitar + Tab. Needs mode examincation on mobile and web and linux! and probably more profiles.
+8. [ ] We need a middle sized Screens responsive UI. This might go well with some enhancements to the mobile view, or even the same view. Examinatio needed.
+9. [x] CRITICAL: The staff lines need to be unified sometimes with a special bracket like symbol (e.g. Guitar + Tab is usually represented this way). Also if a users wants to select out some of the staff lines, say Grand Staffs in an ensemble, and just connect them with a bracket, and maybe some of the other with some other type of bracket, he would have now way to achieve that, rn. This one would need some research. Maybe it's a good idea to get back to MOLA documents.
+    [x] Add SystemConnector.subBracket (thin secondary bracket, no serifs)
+    [x] Fix SVG & PDF emitters to traverse all GroupPlacements (previously only root connector was rendered)
+    [x] Add subBracket rendering to preview canvas (exhaustive switch)
+    [x] Add chamberOrchestra reference profile (bracket + subBracket nested hierarchy)
+    [x] SystemGroupingDialog UI — allow user to re-group staves, assign connector per group, toggle barline continuity
