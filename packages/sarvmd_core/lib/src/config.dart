@@ -41,7 +41,11 @@ enum SystemConnector {
   brace,
 
   /// Professional square bracket (standard for instrumental sections).
-  bracket;
+  bracket,
+
+  /// Secondary thin bracket for inner instrument-pair groupings
+  /// (e.g. Violin I + Violin II within a larger Strings bracket).
+  subBracket;
 }
 
 /// Style of barlines drawn through or between staves.
@@ -329,6 +333,126 @@ class SystemLayout {
 
   @override
   int get hashCode => rootGroup.hashCode;
+}
+
+/// Extension providing domain tree manipulation methods on [StaffNodeGroup].
+extension StaffNodeGroupTreeX on StaffNodeGroup {
+  /// Returns a new [StaffNodeGroup] with the [targetGroup] updated.
+  StaffNodeGroup updateGroup(
+    StaffNodeGroup targetGroup, {
+    SystemConnector? connector,
+    bool? continuousBarlines,
+  }) {
+    if (identical(this, targetGroup)) {
+      return copyWith(
+        connector: connector ?? this.connector,
+        continuousBarlines: continuousBarlines ?? this.continuousBarlines,
+      );
+    }
+    return copyWith(
+      children: children.map((child) {
+        if (child is StaffNodeGroup) {
+          return child.updateGroup(
+            targetGroup,
+            connector: connector,
+            continuousBarlines: continuousBarlines,
+          );
+        }
+        return child;
+      }).toList(),
+    );
+  }
+
+  /// Removes [targetGroup] by promoting its children to the parent group.
+  StaffNodeGroup ungroup(StaffNodeGroup targetGroup) {
+    final newChildren = <StaffNode>[];
+    for (final child in children) {
+      if (child is StaffNodeGroup) {
+        if (identical(child, targetGroup)) {
+          newChildren.addAll(child.children);
+        } else {
+          newChildren.add(child.ungroup(targetGroup));
+        }
+      } else {
+        newChildren.add(child);
+      }
+    }
+    return copyWith(children: newChildren);
+  }
+
+  /// Groups consecutive staves/nodes matching [selectedUids] under a new sub-group with [newConnector].
+  StaffNodeGroup groupSelected(
+    Set<String> selectedUids,
+    SystemConnector newConnector,
+  ) {
+    bool nodeContainsSelected(StaffNode node) {
+      return switch (node) {
+        StaffDefinition def => selectedUids.contains(def.uid),
+        StaffNodeGroup group => group.children.any(nodeContainsSelected),
+      };
+    }
+
+    final matchingIndices = <int>[];
+    for (var i = 0; i < children.length; i++) {
+      if (nodeContainsSelected(children[i])) {
+        matchingIndices.add(i);
+      }
+    }
+
+    if (matchingIndices.length >= 2 &&
+        matchingIndices.last - matchingIndices.first ==
+            matchingIndices.length - 1) {
+      final minIdx = matchingIndices.first;
+      final maxIdx = matchingIndices.last;
+
+      final subChildren = children.sublist(minIdx, maxIdx + 1);
+      final newGroup = StaffNodeGroup(
+        connector: newConnector,
+        continuousBarlines: true,
+        children: subChildren,
+      );
+
+      final newChildren = <StaffNode>[
+        ...children.sublist(0, minIdx),
+        newGroup,
+        ...children.sublist(maxIdx + 1),
+      ];
+      return copyWith(children: newChildren);
+    }
+
+    return copyWith(
+      children: children.map((child) {
+        if (child is StaffNodeGroup) {
+          return child.groupSelected(selectedUids, newConnector);
+        }
+        return child;
+      }).toList(),
+    );
+  }
+}
+
+/// Centralized engraving constants for system connectors and barlines.
+abstract final class GroupPlacementMetrics {
+  /// Horizontal offset in mm per nesting level for outer system connectors.
+  static const double connectorLevelSpacingMm = 4.0;
+
+  /// Length of horizontal end ticks for system brackets in mm.
+  static const double bracketTickLengthMm = 2.0;
+
+  /// System barline stroke thickness multiplier relative to staff line thickness.
+  static const double systemBarlineWidthMultiplier = 2.5;
+
+  /// Bracket stroke thickness multiplier relative to staff line thickness.
+  static const double bracketWidthMultiplier = 3.0;
+
+  /// Secondary sub-bracket stroke thickness multiplier relative to staff line thickness.
+  static const double subBracketWidthMultiplier = 1.8;
+
+  /// Default viewBox height for the SVG brace path asset.
+  static const double braceNativeHeightMm = 997.0;
+
+  /// Default horizontal offset for the SVG brace path asset scale anchor.
+  static const double braceNativeWidthOffsetMm = 82.0;
 }
 
 /// The type of clef symbol.
