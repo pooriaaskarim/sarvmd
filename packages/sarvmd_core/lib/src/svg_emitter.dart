@@ -379,54 +379,96 @@ void _drawStaffLabels(
   }
 }
 
-/// Helper method to draw system connectors (braces / connecting barlines).
+/// Helper method to draw system connectors (braces, brackets, sub-brackets,
+/// and continuous/broken barline segments) for every [GroupPlacement].
 void _drawSystemConnectors(
   StringBuffer buf,
   PageConfig config,
   List<StaffSystem> systems,
 ) {
   final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
-  final connector = config.systemLayout.rootGroup.connector;
-
-  if (connector == SystemConnector.none) return;
+  final leftMarginX = config.margins.left;
 
   for (final system in systems) {
-    final leftX = config.margins.left + system.leftIndentMm;
-    if (system.staves.length <= 1) continue;
+    if (system.staves.isEmpty) continue;
 
-    final sysTopY = system.staves.first.topY;
-    final sysBottomY = system.staves.last.topY + system.staves.last.height;
-    final bool useBrace = connector == SystemConnector.brace;
+    // Sort placements outer-first so outer decorations paint beneath inner ones.
+    final placements = List<GroupPlacement>.from(system.groupPlacements)
+      ..sort((a, b) => a.level.compareTo(b.level));
 
-    buf.writeln(
-      '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
-      ' x2="${_f(leftX)}" y2="${_f(sysBottomY)}"'
-      ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
-    );
+    for (final group in placements) {
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
 
-    if (useBrace) {
-      final double h = sysBottomY - sysTopY;
-      final double scale = h / 997.0;
-      final double tx = leftX - scale * 82.0;
-      final double ty = sysBottomY;
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
 
-      buf.writeln(
-        '    <g transform="translate(${_f(tx)}, ${_f(ty)})'
-        ' scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">'
-        '<path d="$_braceSvg"/></g>',
-      );
-    } else {
-      final tickLen = 2.0;
-      buf.writeln(
-        '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
-        ' x2="${_f(leftX + tickLen)}" y2="${_f(sysTopY)}"'
-        ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
-      );
-      buf.writeln(
-        '    <line x1="${_f(leftX)}" y1="${_f(sysBottomY)}"'
-        ' x2="${_f(leftX + tickLen)}" y2="${_f(sysBottomY)}"'
-        ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
-      );
+      final double systemLeftX = leftMarginX + system.leftIndentMm;
+      final double xOffset = group.level * 4.0;
+      final double connectorX = systemLeftX - xOffset;
+
+      // ── System barline (continuous or per-staff at systemLeftX) ────────
+      if (group.continuousBarlines && groupStaves.length > 1) {
+        buf.writeln(
+          '    <line x1="${_f(systemLeftX)}" y1="${_f(topY)}"'
+          ' x2="${_f(systemLeftX)}" y2="${_f(bottomY)}"'
+          ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+        );
+      } else if (!group.continuousBarlines) {
+        for (final staff in groupStaves) {
+          final sTop = staff.topY;
+          final sBottom = staff.topY + staff.height;
+          buf.writeln(
+            '    <line x1="${_f(systemLeftX)}" y1="${_f(sTop)}"'
+            ' x2="${_f(systemLeftX)}" y2="${_f(sBottom)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+          );
+        }
+      }
+
+      // ── Connector glyph ───────────────────────────────────────────────
+      switch (group.connector) {
+        case SystemConnector.brace when groupStaves.length >= 2:
+          final double h = bottomY - topY;
+          final double scale = h / 997.0;
+          final double tx = connectorX - scale * 82.0;
+          final double ty = bottomY;
+          buf.writeln(
+            '    <g transform="translate(${_f(tx)}, ${_f(ty)})'
+            ' scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">'
+            '<path d="$_braceSvg"/></g>',
+          );
+        case SystemConnector.bracket when groupStaves.length >= 2:
+          final double endTickX = group.level == 0 ? connectorX + 2.0 : systemLeftX;
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(topY)}"'
+            ' x2="${_f(connectorX)}" y2="${_f(bottomY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 3.0)}"/>',
+          );
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(topY)}"'
+            ' x2="${_f(endTickX)}" y2="${_f(topY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 3.0)}"/>',
+          );
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(bottomY)}"'
+            ' x2="${_f(endTickX)}" y2="${_f(bottomY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 3.0)}"/>',
+          );
+        case SystemConnector.subBracket when groupStaves.length >= 2:
+          // Thinner secondary bracket, no serif ticks.
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(topY)}"'
+            ' x2="${_f(connectorX)}" y2="${_f(bottomY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 1.8)}"/>',
+          );
+        case SystemConnector.none:
+        case SystemConnector.brace:
+        case SystemConnector.bracket:
+        case SystemConnector.subBracket:
+          break;
+      }
     }
   }
 }

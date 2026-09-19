@@ -223,6 +223,10 @@ void _drawStaffLabels(
   }
 }
 
+/// Helper method to draw system connectors (braces, brackets, sub-brackets,
+/// and continuous/broken barline segments) for every [GroupPlacement].
+///
+/// PDF coordinates: origin at bottom-left, Y grows upward.
 void _drawSystemConnectors(
   pdf.PdfGraphics canvas,
   PageConfig config,
@@ -230,46 +234,84 @@ void _drawSystemConnectors(
   double hPt,
 ) {
   final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
-  final connector = config.systemLayout.rootGroup.connector;
-
-  if (connector == SystemConnector.none) return;
+  final leftMarginX = config.margins.left;
 
   for (final system in systems) {
-    final leftX = config.margins.left + system.leftIndentMm;
-    if (system.staves.length <= 1) continue;
+    if (system.staves.isEmpty) continue;
 
-    final sysTopY = system.staves.first.topY;
-    final sysBottomY = system.staves.last.topY + system.staves.last.height;
-    final bool useBrace = connector == SystemConnector.brace;
+    // Sort placements outer-first so outer decorations paint beneath inner ones.
+    final placements = List<GroupPlacement>.from(system.groupPlacements)
+      ..sort((a, b) => a.level.compareTo(b.level));
 
-    final leftPt = leftX * _mmToPt;
-    final topYPt = hPt - (sysTopY * _mmToPt);
-    final bottomYPt = hPt - (sysBottomY * _mmToPt);
+    for (final group in placements) {
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
 
-    canvas.setStrokeColor(pdf.PdfColors.black);
-    canvas.setLineWidth(strokeMm * 2.5 * _mmToPt);
-    canvas.drawLine(leftPt, topYPt, leftPt, bottomYPt);
-    canvas.strokePath();
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
 
-    if (useBrace) {
-      final double h = sysBottomY - sysTopY;
-      final double scale = h / 997.0;
-      final double tx = leftX - scale * 82.0;
-      final double ty = sysBottomY;
+      final double systemLeftX = leftMarginX + system.leftIndentMm;
+      final double xOffset = group.level * 4.0;
+      final double connectorX = systemLeftX - xOffset;
 
-      _drawSvgPathOnPdf(
-        canvas,
-        _braceSvg,
-        txPt: tx * _mmToPt,
-        tyPt: hPt - (ty * _mmToPt),
-        scaleX: scale * _mmToPt,
-        scaleY: scale * _mmToPt,
-      );
-    } else {
-      final tickLenPt = 2.0 * _mmToPt;
-      canvas.drawLine(leftPt, topYPt, leftPt + tickLenPt, topYPt);
-      canvas.drawLine(leftPt, bottomYPt, leftPt + tickLenPt, bottomYPt);
-      canvas.strokePath();
+      final systemLeftPt = systemLeftX * _mmToPt;
+      final connectorPt = connectorX * _mmToPt;
+      final topYPt = hPt - (topY * _mmToPt);
+      final bottomYPt = hPt - (bottomY * _mmToPt);
+
+      // ── System barline (continuous or per-staff at systemLeftPt) ───────
+      if (group.continuousBarlines && groupStaves.length > 1) {
+        canvas.setStrokeColor(pdf.PdfColors.black);
+        canvas.setLineWidth(strokeMm * 2.5 * _mmToPt);
+        canvas.drawLine(systemLeftPt, topYPt, systemLeftPt, bottomYPt);
+        canvas.strokePath();
+      } else if (!group.continuousBarlines) {
+        canvas.setStrokeColor(pdf.PdfColors.black);
+        canvas.setLineWidth(strokeMm * 2.5 * _mmToPt);
+        for (final staff in groupStaves) {
+          final sTopPt = hPt - (staff.topY * _mmToPt);
+          final sBottomPt = hPt - ((staff.topY + staff.height) * _mmToPt);
+          canvas.drawLine(systemLeftPt, sTopPt, systemLeftPt, sBottomPt);
+        }
+        canvas.strokePath();
+      }
+
+      // ── Connector glyph (at connectorPt) ───────────────────────────────
+      switch (group.connector) {
+        case SystemConnector.brace when groupStaves.length >= 2:
+          final double h = bottomY - topY;
+          final double scale = h / 997.0;
+          final double tx = connectorX - scale * 82.0;
+          final double ty = bottomY;
+          _drawSvgPathOnPdf(
+            canvas,
+            _braceSvg,
+            txPt: tx * _mmToPt,
+            tyPt: hPt - (ty * _mmToPt),
+            scaleX: scale * _mmToPt,
+            scaleY: scale * _mmToPt,
+          );
+        case SystemConnector.bracket when groupStaves.length >= 2:
+          final endTickPt = group.level == 0 ? connectorPt + 2.0 * _mmToPt : systemLeftPt;
+          canvas.setStrokeColor(pdf.PdfColors.black);
+          canvas.setLineWidth(strokeMm * 3.0 * _mmToPt);
+          canvas.drawLine(connectorPt, topYPt, connectorPt, bottomYPt);
+          canvas.drawLine(connectorPt, topYPt, endTickPt, topYPt);
+          canvas.drawLine(connectorPt, bottomYPt, endTickPt, bottomYPt);
+          canvas.strokePath();
+        case SystemConnector.subBracket when groupStaves.length >= 2:
+          // Thinner secondary bracket, no serif ticks.
+          canvas.setStrokeColor(pdf.PdfColors.black);
+          canvas.setLineWidth(strokeMm * 1.8 * _mmToPt);
+          canvas.drawLine(connectorPt, topYPt, connectorPt, bottomYPt);
+          canvas.strokePath();
+        case SystemConnector.none:
+        case SystemConnector.brace:
+        case SystemConnector.bracket:
+        case SystemConnector.subBracket:
+          break;
+      }
     }
   }
 }

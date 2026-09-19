@@ -250,10 +250,12 @@ class UpdateStaffByUidCommand extends PageConfigCommand {
   }
 }
 
-/// Command to change system group connector (brace, bracket, none).
+/// Command to change system group connector (brace, bracket, subBracket, none).
 class UpdateGroupConnectorCommand extends PageConfigCommand {
   final SystemConnector connector;
-  UpdateGroupConnectorCommand(this.connector);
+  final int? groupHash;
+
+  UpdateGroupConnectorCommand(this.connector, {this.groupHash});
 
   @override
   String get label => 'Set System Connector';
@@ -261,10 +263,29 @@ class UpdateGroupConnectorCommand extends PageConfigCommand {
   @override
   PageConfig mutateConfig(PageConfig current) {
     final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(connector: connector),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(connector: connector);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
     return current.copyWith(
-      systemLayout: current.systemLayout.copyWith(
-        rootGroup: root.copyWith(connector: connector),
-      ),
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }
@@ -272,7 +293,9 @@ class UpdateGroupConnectorCommand extends PageConfigCommand {
 /// Command to toggle continuous barlines across staves in a system group.
 class UpdateGroupContinuousBarlinesCommand extends PageConfigCommand {
   final bool value;
-  UpdateGroupContinuousBarlinesCommand(this.value);
+  final int? groupHash;
+
+  UpdateGroupContinuousBarlinesCommand(this.value, {this.groupHash});
 
   @override
   String get label => 'Toggle Continuous Barlines';
@@ -280,10 +303,29 @@ class UpdateGroupContinuousBarlinesCommand extends PageConfigCommand {
   @override
   PageConfig mutateConfig(PageConfig current) {
     final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(continuousBarlines: value),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(continuousBarlines: value);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
     return current.copyWith(
-      systemLayout: current.systemLayout.copyWith(
-        rootGroup: root.copyWith(continuousBarlines: value),
-      ),
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }
@@ -325,7 +367,26 @@ class ReorderGroupChildrenCommand extends PageConfigCommand {
   }
 }
 
+/// Recursively stamps every [StaffDefinition] leaf in [node] with a unique
+/// timestamp-based UID, returning the updated [StaffNode] tree.
+///
+/// This is the single source-of-truth for UID generation when a new layout
+/// tree is materialised from a profile or other source that uses `uid = ''`.
+StaffNode _assignUids(StaffNode node, {required int Function() counter}) {
+  return switch (node) {
+    StaffDefinition def => def.copyWith(
+        uid: '${DateTime.now().microsecondsSinceEpoch}_${counter()}',
+      ),
+    StaffNodeGroup group => group.copyWith(
+        children: group.children
+            .map((c) => _assignUids(c, counter: counter))
+            .toList(),
+      ),
+  };
+}
+
 /// Command to apply an ensemble staff profile preset to the page layout.
+
 class ApplyProfileCommand extends PageConfigCommand {
   final StaffProfile profile;
   ApplyProfileCommand(this.profile);
@@ -336,22 +397,14 @@ class ApplyProfileCommand extends PageConfigCommand {
   @override
   PageConfig mutateConfig(PageConfig current) {
     final newConfig = profile.applyTo(current);
-    final root = newConfig.systemLayout.rootGroup;
-    final newChildren = root.children.asMap().entries.map((entry) {
-      final index = entry.key;
-      final c = entry.value;
-      if (c is StaffDefinition) {
-        return c.copyWith(
-          uid: '${DateTime.now().microsecondsSinceEpoch}_$index',
-        );
-      }
-      return c;
-    }).toList();
+    int counter = 0;
+    final newRoot = _assignUids(
+      newConfig.systemLayout.rootGroup,
+      counter: () => counter++,
+    ) as StaffNodeGroup;
 
     return newConfig.copyWith(
-      systemLayout: newConfig.systemLayout.copyWith(
-        rootGroup: root.copyWith(children: newChildren),
-      ),
+      systemLayout: newConfig.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }

@@ -130,7 +130,24 @@ PageLayout computeLayout(PageConfig config) {
 
     double currentTopY = systemTopY;
 
-    void traverse(StaffNodeGroup group, int level) {
+    int computeActiveChildDepth(StaffNode node) {
+      if (node is StaffDefinition) return 0;
+      if (node is StaffNodeGroup) {
+        int maxChildDepth = 0;
+        for (final child in node.children) {
+          final childDepth = computeActiveChildDepth(child);
+          if (childDepth > maxChildDepth) {
+            maxChildDepth = childDepth;
+          }
+        }
+        return (node.connector != SystemConnector.none)
+            ? 1 + maxChildDepth
+            : maxChildDepth;
+      }
+      return 0;
+    }
+
+    void traverse(StaffNodeGroup group) {
       final startIdx = staves.length;
 
       for (final child in group.children) {
@@ -146,23 +163,31 @@ PageLayout computeLayout(PageConfig config) {
             staves.add(sStaff);
             currentTopY += sStaff.height + config.staffConfig.interStaffGapMm;
           case StaffNodeGroup subGroup:
-            traverse(subGroup, level + 1);
+            traverse(subGroup);
         }
       }
 
       final endIdx = staves.length - 1;
       if (endIdx >= startIdx) {
+        int maxChildActiveDepth = 0;
+        for (final child in group.children) {
+          final depth = computeActiveChildDepth(child);
+          if (depth > maxChildActiveDepth) {
+            maxChildActiveDepth = depth;
+          }
+        }
+
         placements.add(GroupPlacement(
           startStaffIdx: startIdx,
           endStaffIdx: endIdx,
           connector: group.connector,
           continuousBarlines: group.continuousBarlines,
-          level: level,
+          level: maxChildActiveDepth,
         ));
       }
     }
 
-    traverse(config.systemLayout.rootGroup, 0);
+    traverse(config.systemLayout.rootGroup);
 
     // Implement optimal system-wide space-aware indentation calculation
     int systemMaxSplitLength = 0;

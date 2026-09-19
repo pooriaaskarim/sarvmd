@@ -243,6 +243,36 @@ abstract final class StaffProfiles {
     category: ProfileCategory.ensemble,
   );
 
+  /// Chamber Orchestra: outer bracket with inner sub-bracket for violin pair.
+  ///
+  /// Demonstrates nested grouping — a primary [SystemConnector.bracket] wraps
+  /// all strings, while a [SystemConnector.subBracket] marks the identical
+  /// violin pair within the section, following MOLA engraving conventions.
+  static const chamberOrchestra = StaffProfile(
+    id: 'chamberOrchestra',
+    label: 'Chamber Orchestra',
+    systemLayout: SystemLayout(
+      rootGroup: StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        children: [
+          // Violin I + II grouped with a sub-bracket
+          StaffNodeGroup(
+            connector: SystemConnector.subBracket,
+            children: [
+              StaffDefinition(lines: 5, clef: Clef.treble),
+              StaffDefinition(lines: 5, clef: Clef.treble),
+            ],
+          ),
+          StaffDefinition(lines: 5, clef: Clef.alto),
+          StaffDefinition(lines: 5, clef: Clef.bass),
+        ],
+      ),
+    ),
+    description:
+        'Strings section with outer bracket and violin sub-bracket — MOLA compliant.',
+    category: ProfileCategory.ensemble,
+  );
+
   /// Blank staff with no clef.
   static const blank = StaffProfile(
     id: 'blank',
@@ -269,6 +299,7 @@ abstract final class StaffProfiles {
     banjoTab,
     guitarGrand,
     stringQuartet,
+    chamberOrchestra,
     drumSet,
     percussion1,
     percussion3,
