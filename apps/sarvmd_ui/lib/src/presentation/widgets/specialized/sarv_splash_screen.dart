@@ -2,10 +2,10 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/app_version.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../logic/services/changelog_service.dart';
+import '../layout/sarv_brand_header.dart';
 
 /// A calligraphic, theme-aware landing and splash screen for SarvMD.
 ///
@@ -95,7 +95,6 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
     final paperColor = theme.extension<SarvThemeExtension>()?.paperColor ??
         (isDark ? widget.accent.paperDark : widget.accent.paperLight);
 
-    final onSurfaceColor = theme.colorScheme.onSurface;
     final mutedTextColor = theme.colorScheme.onSurfaceVariant;
 
     // Responsive scaling based on viewport size
@@ -116,41 +115,14 @@ class _SarvSplashScreenState extends State<SarvSplashScreen>
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Official calligraphic handwriting logo with Hero shared element tag
+                  // Official canonical brand header with fade transition and Hero support
                   FadeTransition(
                     opacity: _logoFadeAnimation,
-                    child: Hero(
-                      tag: 'sarv_brand_logo',
-                      child: SvgPicture.asset(
-                        'assets/handwriting/Sarv Handwriting.svg',
-                        height: logoHeight,
-                        colorFilter: ColorFilter.mode(
-                          onSurfaceColor,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Subtitle Typography with Hero shared element tag
-                  FadeTransition(
-                    opacity: _subtitleFadeAnimation,
-                    child: Hero(
-                      tag: 'sarv_brand_subtitle',
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: Text(
-                          'MANUSCRIPT DESIGNER',
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 15.0 * scaleFactor,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 4.5 * scaleFactor,
-                            color: onSurfaceColor.withValues(alpha: 0.90),
-                          ),
-                        ),
-                      ),
+                    child: SarvBrandHeader(
+                      mode: SarvBrandHeaderMode.full,
+                      logoHeight: logoHeight,
+                      scaleFactor: scaleFactor,
+                      enableHero: true,
                     ),
                   ),
                 ],
