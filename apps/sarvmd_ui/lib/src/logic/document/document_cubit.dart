@@ -366,6 +366,32 @@ class DocumentCubit extends Cubit<DocumentState> {
     execute(core.ReorderGroupChildrenCommand(groupHash, oldIndex, newIndex));
   }
 
+  core.StaffDefinition addStaffToGroup(
+      {int? groupHash, core.StaffDefinition? def, int? insertIndex}) {
+    final command = core.AddStaffToGroupCommand(
+      groupHash: groupHash,
+      def: def,
+      insertIndex: insertIndex,
+    );
+    execute(command);
+    final root = state.config.systemLayout.rootGroup;
+    return root.children.last as core.StaffDefinition;
+  }
+
+  void moveStaffNode({
+    required int sourceGroupHash,
+    required int targetGroupHash,
+    required int sourceIndex,
+    required int targetIndex,
+  }) {
+    execute(core.MoveStaffNodeCommand(
+      sourceGroupHash: sourceGroupHash,
+      targetGroupHash: targetGroupHash,
+      sourceIndex: sourceIndex,
+      targetIndex: targetIndex,
+    ));
+  }
+
   void applyProfile(core.StaffProfile profile) {
     execute(core.ApplyProfileCommand(profile));
   }

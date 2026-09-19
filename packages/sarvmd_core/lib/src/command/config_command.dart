@@ -162,6 +162,113 @@ class AddStaffCommand extends PageConfigCommand {
   }
 }
 
+/// Command to add a new [StaffDefinition] directly into a specific group in the system layout tree.
+class AddStaffToGroupCommand extends PageConfigCommand {
+  final int? groupHash;
+  final StaffDefinition? def;
+  final int? insertIndex;
+
+  AddStaffToGroupCommand({this.groupHash, this.def, this.insertIndex});
+
+  @override
+  String get label => 'Add Staff to Group';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    final newDef = (def ?? const StaffDefinition()).copyWith(
+      uid: '${DateTime.now().microsecondsSinceEpoch}',
+    );
+
+    StaffNode findAndAdd(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (groupHash == null || node.hashCode == groupHash) {
+          final children = List<StaffNode>.from(node.children);
+          final index = (insertIndex != null &&
+                  insertIndex! >= 0 &&
+                  insertIndex! <= children.length)
+              ? insertIndex!
+              : children.length;
+          children.insert(index, newDef);
+          return node.copyWith(children: children);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndAdd).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndAdd(root) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
+/// Command to move a [StaffNode] from one group to another across the layout tree.
+class MoveStaffNodeCommand extends PageConfigCommand {
+  final int sourceGroupHash;
+  final int targetGroupHash;
+  final int sourceIndex;
+  final int targetIndex;
+
+  MoveStaffNodeCommand({
+    required this.sourceGroupHash,
+    required this.targetGroupHash,
+    required this.sourceIndex,
+    required this.targetIndex,
+  });
+
+  @override
+  String get label => 'Move Staff Node';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    StaffNode? extractedNode;
+
+    StaffNode extractNode(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == sourceGroupHash) {
+          if (sourceIndex >= 0 && sourceIndex < node.children.length) {
+            final children = List<StaffNode>.from(node.children);
+            extractedNode = children.removeAt(sourceIndex);
+            return node.copyWith(children: children);
+          }
+        }
+        return node.copyWith(
+          children: node.children.map(extractNode).toList(),
+        );
+      }
+      return node;
+    }
+
+    final intermediateRoot = extractNode(root) as StaffNodeGroup;
+    if (extractedNode == null) return current;
+
+    StaffNode insertNode(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == targetGroupHash) {
+          final children = List<StaffNode>.from(node.children);
+          final clampIndex = targetIndex.clamp(0, children.length);
+          children.insert(clampIndex, extractedNode!);
+          return node.copyWith(children: children);
+        }
+        return node.copyWith(
+          children: node.children.map(insertNode).toList(),
+        );
+      }
+      return node;
+    }
+
+    final finalRoot = insertNode(intermediateRoot) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: finalRoot),
+    );
+  }
+}
+
 /// Command to remove a staff node from the root group by index.
 class RemoveStaffCommand extends PageConfigCommand {
   final int index;

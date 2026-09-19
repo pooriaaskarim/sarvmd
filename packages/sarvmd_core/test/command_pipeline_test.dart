@@ -155,5 +155,50 @@ void main() {
       coalesceHistory.undo();
       expect(coalesceHistory.config.margins.top, equals(const PageConfig().margins.top));
     });
+
+    test('AddStaffToGroupCommand and MoveStaffNodeCommand transactionally mutate tree', () {
+      const staff1 = StaffDefinition(uid: 's1', instrumentName: 'Staff 1');
+      const staff2 = StaffDefinition(uid: 's2', instrumentName: 'Staff 2');
+      const subGroup = StaffNodeGroup(
+        connector: SystemConnector.brace,
+        children: [staff1],
+      );
+
+      final layout = SystemLayout(
+        rootGroup: StaffNodeGroup(children: [subGroup, staff2]),
+      );
+      history.execute(SetSystemLayoutCommand(layout));
+
+      final targetGroupHash = subGroup.hashCode;
+      history.execute(AddStaffToGroupCommand(
+        groupHash: targetGroupHash,
+        def: const StaffDefinition(instrumentName: 'Nested Staff'),
+      ));
+
+      expect(history.lastUndoLabel, equals('Add Staff to Group'));
+      final currentRoot = history.config.systemLayout.rootGroup;
+      final currentSub = currentRoot.children.first as StaffNodeGroup;
+      expect(currentSub.children.length, equals(2));
+
+      // Move staff2 into subGroup
+      history.execute(MoveStaffNodeCommand(
+        sourceGroupHash: currentRoot.hashCode,
+        targetGroupHash: currentSub.hashCode,
+        sourceIndex: 1,
+        targetIndex: 0,
+      ));
+
+      expect(history.lastUndoLabel, equals('Move Staff Node'));
+      final movedRoot = history.config.systemLayout.rootGroup;
+      expect(movedRoot.children.length, equals(1)); // Only subGroup remains at root
+      final movedSub = movedRoot.children.first as StaffNodeGroup;
+      expect(movedSub.children.length, equals(3));
+
+      history.undo();
+      expect(history.config.systemLayout.rootGroup.children.length, equals(2));
+
+      history.undo();
+      expect((history.config.systemLayout.rootGroup.children.first as StaffNodeGroup).children.length, equals(1));
+    });
   });
 }
