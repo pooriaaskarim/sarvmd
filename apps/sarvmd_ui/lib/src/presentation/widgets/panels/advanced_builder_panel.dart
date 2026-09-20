@@ -454,7 +454,7 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
             children: [
               if (_isEditingName)
                 _QuickLabelingCard(
-                  title: 'Edit Group Label & Abbreviation',
+                  title: 'Edit Group Label',
                   initialName: widget.group.label,
                   initialAbbreviation: widget.group.abbreviation,
                   onSave: (name, abbrev) {
@@ -1030,355 +1030,356 @@ class _StaffItemState extends State<_StaffItem> {
                       ],
                     ),
                   ),
-                Row(
-                  children: [
-                    // Checkbox in selection mode or when selected
-                    if (isSelectionMode || isSelected)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 4.0),
-                        child: InkWell(
-                          onTap: () {
-                            final isShift = HardwareKeyboard.instance.isShiftPressed;
-                            scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Icon(
-                            isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                            size: 18,
-                            color: isSelected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
-
-                    // Unified Drag Handle & Order Badge
-                    Draggable<StaffDragPayload>(
-                      data: payload,
-                      feedback: Material(
-                        elevation: 6,
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.transparent,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: cs.primaryContainer,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: cs.primary, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: cs.shadow.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            displayName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: cs.onPrimaryContainer,
+                if (_isEditingName)
+                  _QuickLabelingCard(
+                    title: 'Edit Staff Label',
+                    initialName: widget.staff.instrumentName ?? '',
+                    initialAbbreviation: widget.staff.instrumentAbbreviation ?? '',
+                    onSave: (name, abbrev) {
+                      setState(() {
+                        _isEditingName = false;
+                      });
+                      widget.notifier.updateStaffConfigDetails(
+                        widget.staff.uid,
+                        name: () => name.isEmpty ? null : name,
+                        abbreviation: () => abbrev.isEmpty ? null : abbrev,
+                      );
+                    },
+                    onCancel: () {
+                      setState(() {
+                        _isEditingName = false;
+                      });
+                    },
+                  )
+                else
+                  Row(
+                    children: [
+                      // Checkbox in selection mode or when selected
+                      if (isSelectionMode || isSelected)
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 4.0),
+                          child: InkWell(
+                            onTap: () {
+                              final isShift = HardwareKeyboard.instance.isShiftPressed;
+                              scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Icon(
+                              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                              size: 18,
+                              color: isSelected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.4),
                             ),
                           ),
                         ),
-                      ),
-                      childWhenDragging: Opacity(
-                        opacity: 0.3,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: cs.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.drag_indicator, size: 15, color: cs.primary),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${widget.index + 1}',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: cs.primary),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.grab,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: cs.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: cs.primary.withValues(alpha: 0.2), width: 0.8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.drag_indicator,
-                                size: 15,
-                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${widget.index + 1}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  color: cs.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
 
-                    // Name, configuration badges, and action cluster
-                    Expanded(
-                      child: _isEditingName
-                          ? _QuickLabelingCard(
-                              title: 'Edit Staff Name & Abbreviation',
-                              initialName: widget.staff.instrumentName ?? '',
-                              initialAbbreviation: widget.staff.instrumentAbbreviation ?? '',
-                              onSave: (name, abbrev) {
-                                setState(() {
-                                  _isEditingName = false;
-                                });
-                                widget.notifier.updateStaffConfigDetails(
-                                  widget.staff.uid,
-                                  name: () => name.isEmpty ? null : name,
-                                  abbreviation: () => abbrev.isEmpty ? null : abbrev,
-                                );
-                              },
-                              onCancel: () {
-                                setState(() {
-                                  _isEditingName = false;
-                                });
-                              },
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onDoubleTap: _startEditingName,
-                                        onTap: () {
-                                          if (isSelectionMode) {
-                                            final isShift = HardwareKeyboard.instance.isShiftPressed;
-                                            scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
-                                          } else {
-                                            _openConfigDialog(context);
-                                          }
-                                        },
-                                        child: Tooltip(
-                                          message: labelText,
-                                          child: Text(
-                                            labelText,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: widget.staff.labelVisible
-                                                  ? null
-                                                  : cs.onSurfaceVariant
-                                                      .withValues(alpha: 0.5),
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    if (!isSelectionMode) ...[
-                                      IconButton(
-                                        onPressed: _startEditingName,
-                                        icon: Icon(
-                                          Icons.edit_outlined,
-                                          size: 16,
-                                          color: cs.onSurfaceVariant
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                        tooltip: 'Edit Instrument Name',
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                        padding: const EdgeInsets.all(4),
-                                        visualDensity: VisualDensity.compact,
-                                        style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                      ),
-                                      IconButton(
-                                        onPressed: () {
-                                          widget.notifier.updateStaffConfigDetails(
-                                            widget.staff.uid,
-                                            visible: !widget.staff.labelVisible,
-                                          );
-                                        },
-                                        icon: Icon(
-                                          widget.staff.labelVisible
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
-                                          size: 16,
-                                          color: widget.staff.labelVisible
-                                              ? cs.onSurfaceVariant
-                                                  .withValues(alpha: 0.7)
-                                              : cs.error,
-                                        ),
-                                        tooltip: widget.staff.labelVisible
-                                            ? l10n.hidden
-                                            : l10n.hidden,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                        padding: const EdgeInsets.all(4),
-                                        visualDensity: VisualDensity.compact,
-                                        style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                      ),
-                                    ],
-                                    IconButton(
-                                      onPressed: () => _openConfigDialog(context),
-                                      icon: Icon(
-                                        Icons.tune_outlined,
-                                        size: 16,
-                                        color: cs.primary,
-                                      ),
-                                      tooltip: l10n.configureStaff,
-                                      constraints: const BoxConstraints(
-                                          minWidth: 32, minHeight: 32),
-                                      padding: const EdgeInsets.all(4),
-                                      visualDensity: VisualDensity.compact,
-                                      style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                    ),
-                                    if (!isSelectionMode)
-                                      IconButton(
-                                        onPressed: () =>
-                                            widget.notifier.removeStaffByUid(widget.staff.uid),
-                                        icon: Icon(
-                                          Icons.remove_circle_outline,
-                                          size: 16,
-                                          color: cs.error,
-                                        ),
-                                        tooltip: l10n.removeStaff,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                        padding: const EdgeInsets.all(4),
-                                        visualDensity: VisualDensity.compact,
-                                        style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children: [
-                                    // Line Count Badge Quick-Picker
-                                    PopupMenuButton<int>(
-                                      tooltip: 'Change Line Count',
-                                      padding: EdgeInsets.zero,
-                                      onSelected: (lines) {
-                                        widget.notifier.updateStaffConfigDetails(
-                                          widget.staff.uid,
-                                          lines: lines,
-                                        );
-                                      },
-                                      itemBuilder: (context) => [
-                                        for (int i = 1; i <= 6; i++)
-                                          PopupMenuItem(
-                                            value: i,
-                                            child: Text(l10n.linesCount(i),
-                                                style: const TextStyle(fontSize: 12)),
-                                          ),
-                                      ],
-                                      child: _buildBadge(context,
-                                          l10n.linesCount(widget.staff.lines)),
-                                    ),
-
-                                    // Clef Badge Quick-Picker
-                                    PopupMenuButton<core.ClefSymbol>(
-                                      tooltip: 'Change Clef',
-                                      padding: EdgeInsets.zero,
-                                      onSelected: (symbol) {
-                                        final newClef = switch (symbol) {
-                                          core.ClefSymbol.g => core.Clef.treble,
-                                          core.ClefSymbol.c => core.Clef.alto,
-                                          core.ClefSymbol.f => core.Clef.bass,
-                                          core.ClefSymbol.tab => core.Clef.tab,
-                                          core.ClefSymbol.percussion =>
-                                            core.Clef.percussion,
-                                        };
-                                        widget.notifier.updateStaffClef(
-                                            widget.staff.uid, newClef);
-                                      },
-                                      itemBuilder: (context) => [
-                                        PopupMenuItem(
-                                          value: core.ClefSymbol.g,
-                                          child: Row(children: [
-                                            const Icon(Icons.music_note, size: 14),
-                                            const SizedBox(width: 8),
-                                            Text(l10n.trebleClef,
-                                                style: const TextStyle(fontSize: 12)),
-                                          ]),
-                                        ),
-                                        PopupMenuItem(
-                                          value: core.ClefSymbol.c,
-                                          child: Row(children: [
-                                            const Icon(Icons.music_note, size: 14),
-                                            const SizedBox(width: 8),
-                                            Text(l10n.altoClef,
-                                                style: const TextStyle(fontSize: 12)),
-                                          ]),
-                                        ),
-                                        PopupMenuItem(
-                                          value: core.ClefSymbol.f,
-                                          child: Row(children: [
-                                            const Icon(Icons.music_note, size: 14),
-                                            const SizedBox(width: 8),
-                                            Text(l10n.bassClef,
-                                                style: const TextStyle(fontSize: 12)),
-                                          ]),
-                                        ),
-                                        PopupMenuItem(
-                                          value: core.ClefSymbol.tab,
-                                          child: Row(children: [
-                                            const Icon(Icons.numbers, size: 14),
-                                            const SizedBox(width: 8),
-                                            Text(l10n.categoryTablature,
-                                                style: const TextStyle(fontSize: 12)),
-                                          ]),
-                                        ),
-                                        PopupMenuItem(
-                                          value: core.ClefSymbol.percussion,
-                                          child: Row(children: [
-                                            const Icon(Icons.adjust, size: 14),
-                                            const SizedBox(width: 8),
-                                            Text(l10n.categoryPercussion,
-                                                style: const TextStyle(fontSize: 12)),
-                                          ]),
-                                        ),
-                                      ],
-                                      child: _buildBadge(context, clefLabel),
-                                    ),
-
-                                    if (!widget.staff.labelVisible)
-                                      InkWell(
-                                        onTap: () => widget.notifier.updateStaffConfigDetails(
-                                          widget.staff.uid,
-                                          visible: true,
-                                        ),
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: _buildBadge(context, l10n.hidden,
-                                            color: cs.error),
-                                      ),
-                                  ],
+                      // Unified Drag Handle & Order Badge
+                      Draggable<StaffDragPayload>(
+                        data: payload,
+                        feedback: Material(
+                          elevation: 6,
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.transparent,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: cs.primaryContainer,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: cs.primary, width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.shadow.withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
-                    ),
-                  ],
-                ),
+                            child: Text(
+                              displayName,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: cs.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ),
+                        childWhenDragging: Opacity(
+                          opacity: 0.3,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.drag_indicator, size: 15, color: cs.primary),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${widget.index + 1}',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: cs.primary),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: cs.primary.withValues(alpha: 0.2), width: 0.8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.drag_indicator,
+                                  size: 15,
+                                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${widget.index + 1}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    color: cs.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Name, configuration badges, and action cluster
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onDoubleTap: _startEditingName,
+                                    onTap: () {
+                                      if (isSelectionMode) {
+                                        final isShift = HardwareKeyboard.instance.isShiftPressed;
+                                        scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+                                      } else {
+                                        _openConfigDialog(context);
+                                      }
+                                    },
+                                    child: Tooltip(
+                                      message: labelText,
+                                      child: Text(
+                                        labelText,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: widget.staff.labelVisible
+                                              ? null
+                                              : cs.onSurfaceVariant
+                                                  .withValues(alpha: 0.5),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                if (!isSelectionMode) ...[
+                                  IconButton(
+                                    onPressed: _startEditingName,
+                                    icon: Icon(
+                                      Icons.edit_outlined,
+                                      size: 16,
+                                      color: cs.onSurfaceVariant
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                    tooltip: 'Edit Instrument Name',
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
+                                    padding: const EdgeInsets.all(4),
+                                    visualDensity: VisualDensity.compact,
+                                    style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      widget.notifier.updateStaffConfigDetails(
+                                        widget.staff.uid,
+                                        visible: !widget.staff.labelVisible,
+                                      );
+                                    },
+                                    icon: Icon(
+                                      widget.staff.labelVisible
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                      size: 16,
+                                      color: widget.staff.labelVisible
+                                          ? cs.onSurfaceVariant
+                                              .withValues(alpha: 0.7)
+                                          : cs.error,
+                                    ),
+                                    tooltip: widget.staff.labelVisible
+                                        ? l10n.hidden
+                                        : l10n.hidden,
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
+                                    padding: const EdgeInsets.all(4),
+                                    visualDensity: VisualDensity.compact,
+                                    style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  ),
+                                ],
+                                IconButton(
+                                  onPressed: () => _openConfigDialog(context),
+                                  icon: Icon(
+                                    Icons.tune_outlined,
+                                    size: 16,
+                                    color: cs.primary,
+                                  ),
+                                  tooltip: l10n.configureStaff,
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
+                                  padding: const EdgeInsets.all(4),
+                                  visualDensity: VisualDensity.compact,
+                                  style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                ),
+                                if (!isSelectionMode)
+                                  IconButton(
+                                    onPressed: () =>
+                                        widget.notifier.removeStaffByUid(widget.staff.uid),
+                                    icon: Icon(
+                                      Icons.remove_circle_outline,
+                                      size: 16,
+                                      color: cs.error,
+                                    ),
+                                    tooltip: l10n.removeStaff,
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
+                                    padding: const EdgeInsets.all(4),
+                                    visualDensity: VisualDensity.compact,
+                                    style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: [
+                                // Line Count Badge Quick-Picker
+                                PopupMenuButton<int>(
+                                  tooltip: 'Change Line Count',
+                                  padding: EdgeInsets.zero,
+                                  onSelected: (lines) {
+                                    widget.notifier.updateStaffConfigDetails(
+                                      widget.staff.uid,
+                                      lines: lines,
+                                    );
+                                  },
+                                  itemBuilder: (context) => [
+                                    for (int i = 1; i <= 6; i++)
+                                      PopupMenuItem(
+                                        value: i,
+                                        child: Text(l10n.linesCount(i),
+                                            style: const TextStyle(fontSize: 12)),
+                                      ),
+                                  ],
+                                  child: _buildBadge(context,
+                                      l10n.linesCount(widget.staff.lines)),
+                                ),
+
+                                // Clef Badge Quick-Picker
+                                PopupMenuButton<core.ClefSymbol>(
+                                  tooltip: 'Change Clef',
+                                  padding: EdgeInsets.zero,
+                                  onSelected: (symbol) {
+                                    final newClef = switch (symbol) {
+                                      core.ClefSymbol.g => core.Clef.treble,
+                                      core.ClefSymbol.c => core.Clef.alto,
+                                      core.ClefSymbol.f => core.Clef.bass,
+                                      core.ClefSymbol.tab => core.Clef.tab,
+                                      core.ClefSymbol.percussion =>
+                                        core.Clef.percussion,
+                                    };
+                                    widget.notifier.updateStaffClef(
+                                        widget.staff.uid, newClef);
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: core.ClefSymbol.g,
+                                      child: Row(children: [
+                                        const Icon(Icons.music_note, size: 14),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.trebleClef,
+                                            style: const TextStyle(fontSize: 12)),
+                                      ]),
+                                    ),
+                                    PopupMenuItem(
+                                      value: core.ClefSymbol.c,
+                                      child: Row(children: [
+                                        const Icon(Icons.music_note, size: 14),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.altoClef,
+                                            style: const TextStyle(fontSize: 12)),
+                                      ]),
+                                    ),
+                                    PopupMenuItem(
+                                      value: core.ClefSymbol.f,
+                                      child: Row(children: [
+                                        const Icon(Icons.music_note, size: 14),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.bassClef,
+                                            style: const TextStyle(fontSize: 12)),
+                                      ]),
+                                    ),
+                                    PopupMenuItem(
+                                      value: core.ClefSymbol.tab,
+                                      child: Row(children: [
+                                        const Icon(Icons.numbers, size: 14),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.categoryTablature,
+                                            style: const TextStyle(fontSize: 12)),
+                                      ]),
+                                    ),
+                                    PopupMenuItem(
+                                      value: core.ClefSymbol.percussion,
+                                      child: Row(children: [
+                                        const Icon(Icons.adjust, size: 14),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.categoryPercussion,
+                                            style: const TextStyle(fontSize: 12)),
+                                      ]),
+                                    ),
+                                  ],
+                                  child: _buildBadge(context, clefLabel),
+                                ),
+
+                                if (!widget.staff.labelVisible)
+                                  InkWell(
+                                    onTap: () => widget.notifier.updateStaffConfigDetails(
+                                      widget.staff.uid,
+                                      visible: true,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: _buildBadge(context, l10n.hidden,
+                                        color: cs.error),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 if (isBottomZone)
                   Container(
                     height: 3,
@@ -1647,15 +1648,18 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
             children: [
               Icon(Icons.label_outlined, size: 14, color: cs.primary),
               const SizedBox(width: 6),
-              Text(
-                widget.title,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: cs.primary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close, size: 14),
                 onPressed: widget.onCancel,
@@ -1685,62 +1689,101 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
           ),
           const SizedBox(height: 8),
           // Abbreviation Field + Auto Chip
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 32,
-                  child: TextField(
-                    controller: _abbrevController,
-                    focusNode: _abbrevFocusNode,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      labelText: 'Abbreviation',
-                      labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    onSubmitted: (_) => _submit(),
-                  ),
-                ),
-              ),
-              if (_suggestedAbbrev.isNotEmpty &&
-                  _suggestedAbbrev != _abbrevController.text) ...[
-                const SizedBox(width: 6),
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      _abbrevController.text = _suggestedAbbrev;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: cs.primaryContainer,
+          LayoutBuilder(
+            builder: (context, abbrevConstraints) {
+              final isAbbrevNarrow = abbrevConstraints.maxWidth < 250;
+              final chipWidget = (_suggestedAbbrev.isNotEmpty &&
+                      _suggestedAbbrev != _abbrevController.text)
+                  ? InkWell(
+                      onTap: () {
+                        setState(() {
+                          _abbrevController.text = _suggestedAbbrev;
+                        });
+                      },
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.auto_awesome, size: 10, color: cs.onPrimaryContainer),
-                        const SizedBox(width: 3),
-                        Text(
-                          _suggestedAbbrev,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: cs.onPrimaryContainer,
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.auto_awesome, size: 10, color: cs.onPrimaryContainer),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                _suggestedAbbrev,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onPrimaryContainer,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : null;
+
+              if (isAbbrevNarrow && chipWidget != null) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 32,
+                      child: TextField(
+                        controller: _abbrevController,
+                        focusNode: _abbrevFocusNode,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          labelText: 'Abbreviation',
+                          labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onSubmitted: (_) => _submit(),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    chipWidget,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 32,
+                      child: TextField(
+                        controller: _abbrevController,
+                        focusNode: _abbrevFocusNode,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          labelText: 'Abbreviation',
+                          labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onSubmitted: (_) => _submit(),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ],
+                  if (chipWidget != null) ...[
+                    const SizedBox(width: 6),
+                    Flexible(child: chipWidget),
+                  ],
+                ],
+              );
+            },
           ),
           const SizedBox(height: 8),
           // Save / Cancel Action Bar
