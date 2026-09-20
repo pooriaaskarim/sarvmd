@@ -436,7 +436,7 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.symmetric(horizontal: widget.isRoot ? 12 : 8, vertical: 8),
           decoration: BoxDecoration(
             color: isHovered
                 ? cs.primaryContainer.withValues(alpha: 0.25)
@@ -477,6 +477,7 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                 builder: (context, constraints) {
                   final double width = constraints.maxWidth;
                   final bool showSegmentedPicker = width >= 380;
+                  final bool isCompactActions = width < 250;
 
                   final foldCaret = !widget.isRoot
                       ? IconButton(
@@ -604,8 +605,80 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                       ],
                       Expanded(child: titleWidget),
                       const SizedBox(width: 4),
-                      ...labelActionButtons,
-                      ...structureActionButtons,
+                      if (isCompactActions) ...[
+                        IconButton(
+                          onPressed: () => widget.notifier.addStaffToGroup(groupHash: widget.group.hashCode),
+                          icon: const Icon(Icons.add_circle_outline, size: 14),
+                          tooltip: l10n.addStaff,
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          padding: const EdgeInsets.all(2),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+                            tooltip: 'Group Options',
+                            padding: EdgeInsets.zero,
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _startEditingName();
+                              } else if (value == 'visibility') {
+                                widget.notifier.updateGroupDetails(
+                                  groupHash: widget.group.hashCode,
+                                  labelVisible: !widget.group.labelVisible,
+                                );
+                              } else if (value == 'ungroup') {
+                                widget.notifier.ungroupSubGroup(widget.group.hashCode);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_outlined, size: 16, color: cs.primary),
+                                    const SizedBox(width: 8),
+                                    const Text('Edit Group Label', style: TextStyle(fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'visibility',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      widget.group.labelVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                      size: 16,
+                                      color: widget.group.labelVisible ? cs.primary : cs.error,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      widget.group.labelVisible ? 'Hide Group Label' : 'Show Group Label',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (!widget.isRoot)
+                                PopupMenuItem(
+                                  value: 'ungroup',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.layers_clear_outlined, size: 16, color: cs.error),
+                                      const SizedBox(width: 8),
+                                      Text(l10n.reset, style: TextStyle(fontSize: 12, color: cs.error)),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        ...labelActionButtons,
+                        ...structureActionButtons,
+                      ],
                       if (showSegmentedPicker) ...[
                         const SizedBox(width: 6),
                         _ConnectorPicker(
