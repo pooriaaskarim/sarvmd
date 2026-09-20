@@ -556,16 +556,16 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                           ],
                         );
 
-                  final groupActionButtons = [
+                  final labelActionButtons = [
                     IconButton(
                       onPressed: _startEditingName,
                       icon: Icon(
                         Icons.edit_outlined,
-                        size: 13,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                        size: 14,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                       tooltip: 'Edit Group Label',
-                      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -580,16 +580,19 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         widget.group.labelVisible
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        size: 13,
+                        size: 14,
                         color: widget.group.labelVisible
-                            ? cs.onSurfaceVariant.withValues(alpha: 0.6)
+                            ? cs.onSurfaceVariant.withValues(alpha: 0.7)
                             : cs.error,
                       ),
                       tooltip: widget.group.labelVisible ? l10n.hidden : l10n.hidden,
-                      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
+                  ];
+
+                  final structureActionButtons = [
                     IconButton(
                       onPressed: () => widget.notifier.addStaffToGroup(groupHash: widget.group.hashCode),
                       icon: const Icon(Icons.add_circle_outline, size: 14),
@@ -609,36 +612,49 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                   ];
 
                   if (isUltraNarrow) {
-                    return Row(
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (foldCaret != null) foldCaret,
-                        if (!widget.isRoot && widget.index != null) ...[
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 6.0),
-                            child: Icon(
-                              Icons.drag_indicator,
-                              size: 16,
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                        Row(
+                          children: [
+                            if (foldCaret != null) foldCaret,
+                            if (!widget.isRoot && widget.index != null) ...[
+                              Padding(
+                                padding: const EdgeInsetsDirectional.only(end: 4.0),
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  size: 16,
+                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
+                            Icon(
+                              widget.group.connector == core.SystemConnector.brace
+                                  ? Icons.code
+                                  : widget.group.connector == core.SystemConnector.bracket
+                                      ? Icons.reorder
+                                      : Icons.linear_scale,
+                              size: 14,
+                              color: cs.onSurfaceVariant,
                             ),
-                          ),
-                        ],
-                        Icon(
-                          widget.group.connector == core.SystemConnector.brace
-                              ? Icons.code
-                              : widget.group.connector == core.SystemConnector.bracket
-                                  ? Icons.reorder
-                                  : Icons.linear_scale,
-                          size: 14,
-                          color: cs.onSurfaceVariant,
+                            const SizedBox(width: 6),
+                            Expanded(child: titleWidget),
+                            ...labelActionButtons,
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(child: titleWidget),
-                        ...groupActionButtons,
-                        const SizedBox(width: 4),
-                        _ConnectorMenuButton(
-                          value: widget.group.connector,
-                          onChanged: (v) => widget.notifier.updateGroupConnector(v,
-                              groupHash: widget.group.hashCode),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _ConnectorMenuButton(
+                                value: widget.group.connector,
+                                onChanged: (v) => widget.notifier.updateGroupConnector(v,
+                                    groupHash: widget.group.hashCode),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            ...structureActionButtons,
+                          ],
                         ),
                       ],
                     );
@@ -669,7 +685,9 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                             ),
                             const SizedBox(width: 8),
                             Expanded(child: titleWidget),
-                            ...groupActionButtons,
+                            ...labelActionButtons,
+                            const SizedBox(width: 4),
+                            ...structureActionButtons,
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -706,7 +724,9 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(child: titleWidget),
-                        ...groupActionButtons,
+                        ...labelActionButtons,
+                        const SizedBox(width: 4),
+                        ...structureActionButtons,
                         const SizedBox(width: 8),
                         _ConnectorPicker(
                           value: widget.group.connector,

@@ -353,6 +353,52 @@ class _ManuscriptPainter extends CustomPainter {
         }
       }
 
+      // ── Draw Group Labels ────────────────────────────────
+      for (final group in system.groupPlacements) {
+        if (!group.labelVisible) continue;
+        final isFirstSystem = sysIdx == 0;
+        final String label = isFirstSystem
+            ? group.label
+            : (group.abbreviation.isNotEmpty ? group.abbreviation : group.label);
+
+        if (label.trim().isNotEmpty) {
+          final staves =
+              system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+          if (staves.isEmpty) continue;
+
+          final topY = (staves.first.topY * scale).roundToDouble();
+          final bottomY = (staves.last.topY * scale + staves.last.height * scale)
+              .roundToDouble();
+          final groupMidY = (topY + bottomY) / 2;
+
+          final systemLeftPx = (systemLeftMm * scale).roundToDouble();
+          final double xOffset = group.level * (4.0 * scale);
+          final connectorX = systemLeftPx - xOffset;
+
+          final double ptScale = scale / (96 / 25.4);
+          final double fontSize = 11.0 * ptScale;
+
+          final groupNamePainter = TextPainter(
+            text: TextSpan(
+              text: label,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: inkColor.withValues(alpha: 0.9),
+                fontFamily: 'Noto Serif',
+              ),
+            ),
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.ltr,
+          )..layout();
+
+          final labelX = connectorX - (3 * scale) - groupNamePainter.width;
+          final labelY = groupMidY - (groupNamePainter.height / 2);
+
+          groupNamePainter.paint(canvas, Offset(labelX, labelY));
+        }
+      }
+
       // ── Draw Connectors & Group Barlines ─────────────────
       // We iterate through all group placements to support nested brackets
       // and MOLA-compliant broken barlines.
