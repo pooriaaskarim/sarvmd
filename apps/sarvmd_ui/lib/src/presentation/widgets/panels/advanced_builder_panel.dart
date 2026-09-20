@@ -8,6 +8,12 @@ import '../dialogs/staff_config_dialog.dart';
 import '../dialogs/system_grouping_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
+typedef StaffDragPayload = ({
+  core.StaffDefinition staff,
+  int parentGroupHash,
+  int index,
+});
+
 class SystemHierarchyPanel extends StatelessWidget {
   const SystemHierarchyPanel({super.key, required this.notifier});
 
@@ -96,180 +102,253 @@ class _StaffGroupWidget extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: isRoot ? 0.2 : 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final double width = constraints.maxWidth;
-          final bool isUltraNarrow = width < 260;
-          final bool isStackedHeader = width >= 260 && width < 340;
-          final bool isCompactSegmented = width < 480;
+    return DragTarget<StaffDragPayload>(
+      onWillAcceptWithDetails: (details) => details.data.parentGroupHash != group.hashCode,
+      onAcceptWithDetails: (details) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifier.moveStaffNode(
+            sourceGroupHash: details.data.parentGroupHash,
+            targetGroupHash: group.hashCode,
+            sourceIndex: details.data.index,
+            targetIndex: group.children.length,
+          );
+        });
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovered = candidateData.isNotEmpty;
 
-          return Column(
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isHovered
+                ? cs.primaryContainer.withValues(alpha: 0.25)
+                : cs.surfaceContainerHighest.withValues(alpha: isRoot ? 0.2 : 0.4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isHovered
+                  ? cs.primary
+                  : cs.outlineVariant.withValues(alpha: 0.5),
+              width: isHovered ? 2 : 1,
+            ),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (isUltraNarrow) ...[
-                // Stage 3 (< 260px): Single row with 24px PopupMenuButton
-                Row(
-                  children: [
-                    if (!isRoot && index != null) ...[
-                      ReorderableDragStartListener(
-                        index: index!,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.grab,
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 6.0),
-                            child: Icon(
-                              Icons.drag_indicator,
-                              size: 16,
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final double width = constraints.maxWidth;
+                  final bool isUltraNarrow = width < 260;
+                  final bool isStackedHeader = width >= 260 && width < 340;
+                  final bool isCompactSegmented = width < 480;
+
+                  if (isUltraNarrow) {
+                    // Stage 3 (< 260px): Single row with 24px PopupMenuButton
+                    return Row(
+                      children: [
+                        if (!isRoot && index != null) ...[
+                          ReorderableDragStartListener(
+                            index: index!,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.grab,
+                              child: Padding(
+                                padding: const EdgeInsetsDirectional.only(end: 6.0),
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  size: 16,
+                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                    Icon(
-                      group.connector == core.SystemConnector.brace
-                          ? Icons.code
-                          : group.connector == core.SystemConnector.bracket
-                              ? Icons.reorder
-                              : Icons.linear_scale,
-                      size: 14,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        isRoot ? l10n.mainEnsemble : l10n.subGroup,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                        ],
+                        Icon(
+                          group.connector == core.SystemConnector.brace
+                              ? Icons.code
+                              : group.connector == core.SystemConnector.bracket
+                                  ? Icons.reorder
+                                  : Icons.linear_scale,
+                          size: 14,
                           color: cs.onSurfaceVariant,
-                          letterSpacing: 0.5,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    _ConnectorMenuButton(
-                      value: group.connector,
-                      onChanged: (v) => notifier.updateGroupConnector(v,
-                          groupHash: group.hashCode),
-                    ),
-                  ],
-                ),
-              ] else if (isStackedHeader) ...[
-                // Stage 2 (260px - 340px): Stacked header (Title on Row 1, SegmentedButton on Row 2)
-                Row(
-                  children: [
-                    if (!isRoot && index != null) ...[
-                      ReorderableDragStartListener(
-                        index: index!,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.grab,
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 8.0),
-                            child: Icon(
-                              Icons.drag_indicator,
-                              size: 18,
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            isRoot ? l10n.mainEnsemble : l10n.subGroup,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: cs.onSurfaceVariant,
+                              letterSpacing: 0.5,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
-                    Icon(
-                      group.connector == core.SystemConnector.brace
-                          ? Icons.code
-                          : group.connector == core.SystemConnector.bracket
-                              ? Icons.reorder
-                              : Icons.linear_scale,
-                      size: 14,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        isRoot ? l10n.mainEnsemble : l10n.subGroup,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurfaceVariant,
-                          letterSpacing: 0.5,
+                        IconButton(
+                          onPressed: () => notifier.addStaffToGroup(groupHash: group.hashCode),
+                          icon: const Icon(Icons.add_circle_outline, size: 14),
+                          tooltip: l10n.addStaff,
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          padding: const EdgeInsets.all(2),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                _ConnectorPicker(
-                  value: group.connector,
-                  onChanged: (v) => notifier.updateGroupConnector(v,
-                      groupHash: group.hashCode),
-                  compact: true,
-                ),
-              ] else ...[
-                // Stage 1 (>= 340px): Single row with SegmentedButton
-                Row(
-                  children: [
-                    if (!isRoot && index != null) ...[
-                      ReorderableDragStartListener(
-                        index: index!,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.grab,
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 8.0),
-                            child: Icon(
-                              Icons.drag_indicator,
-                              size: 18,
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                        if (!isRoot) ...[
+                          IconButton(
+                            onPressed: () => notifier.ungroupSubGroup(group.hashCode),
+                            icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
+                            tooltip: l10n.reset,
+                            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                            padding: const EdgeInsets.all(2),
+                          ),
+                        ],
+                        const SizedBox(width: 4),
+                        _ConnectorMenuButton(
+                          value: group.connector,
+                          onChanged: (v) => notifier.updateGroupConnector(v,
+                              groupHash: group.hashCode),
+                        ),
+                      ],
+                    );
+                  } else if (isStackedHeader) {
+                    // Stage 2 (260px - 340px): Stacked header (Title on Row 1, SegmentedButton on Row 2)
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            if (!isRoot && index != null) ...[
+                              ReorderableDragStartListener(
+                                index: index!,
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.grab,
+                                  child: Padding(
+                                    padding: const EdgeInsetsDirectional.only(end: 8.0),
+                                    child: Icon(
+                                      Icons.drag_indicator,
+                                      size: 18,
+                                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            Icon(
+                              group.connector == core.SystemConnector.brace
+                                  ? Icons.code
+                                  : group.connector == core.SystemConnector.bracket
+                                      ? Icons.reorder
+                                      : Icons.linear_scale,
+                              size: 14,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isRoot ? l10n.mainEnsemble : l10n.subGroup,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: cs.onSurfaceVariant,
+                                  letterSpacing: 0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => notifier.addStaffToGroup(groupHash: group.hashCode),
+                              icon: const Icon(Icons.add_circle_outline, size: 14),
+                              tooltip: l10n.addStaff,
+                              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                              padding: const EdgeInsets.all(2),
+                            ),
+                            if (!isRoot) ...[
+                              IconButton(
+                                onPressed: () => notifier.ungroupSubGroup(group.hashCode),
+                                icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
+                                tooltip: l10n.reset,
+                                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                padding: const EdgeInsets.all(2),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        _ConnectorPicker(
+                          value: group.connector,
+                          onChanged: (v) => notifier.updateGroupConnector(v,
+                              groupHash: group.hashCode),
+                          compact: true,
+                        ),
+                      ],
+                    );
+                  } else {
+                    // Stage 1 (>= 340px): Single row with SegmentedButton
+                    return Row(
+                      children: [
+                        if (!isRoot && index != null) ...[
+                          ReorderableDragStartListener(
+                            index: index!,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.grab,
+                              child: Padding(
+                                padding: const EdgeInsetsDirectional.only(end: 8.0),
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  size: 18,
+                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                    Icon(
-                      group.connector == core.SystemConnector.brace
-                          ? Icons.code
-                          : group.connector == core.SystemConnector.bracket
-                              ? Icons.reorder
-                              : Icons.linear_scale,
-                      size: 14,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        isRoot ? l10n.mainEnsemble : l10n.subGroup,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                        ],
+                        Icon(
+                          group.connector == core.SystemConnector.brace
+                              ? Icons.code
+                              : group.connector == core.SystemConnector.bracket
+                                  ? Icons.reorder
+                                  : Icons.linear_scale,
+                          size: 14,
                           color: cs.onSurfaceVariant,
-                          letterSpacing: 0.5,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _ConnectorPicker(
-                      value: group.connector,
-                      onChanged: (v) => notifier.updateGroupConnector(v,
-                          groupHash: group.hashCode),
-                      compact: isCompactSegmented,
-                    ),
-                  ],
-                ),
-              ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            isRoot ? l10n.mainEnsemble : l10n.subGroup,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: cs.onSurfaceVariant,
+                              letterSpacing: 0.5,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => notifier.addStaffToGroup(groupHash: group.hashCode),
+                          icon: const Icon(Icons.add_circle_outline, size: 14),
+                          tooltip: l10n.addStaff,
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          padding: const EdgeInsets.all(2),
+                        ),
+                        if (!isRoot) ...[
+                          IconButton(
+                            onPressed: () => notifier.ungroupSubGroup(group.hashCode),
+                            icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
+                            tooltip: l10n.reset,
+                            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                            padding: const EdgeInsets.all(2),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        _ConnectorPicker(
+                          value: group.connector,
+                          onChanged: (v) => notifier.updateGroupConnector(v,
+                              groupHash: group.hashCode),
+                          compact: isCompactSegmented,
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
               if (group.children.length > 1)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
@@ -328,8 +407,10 @@ class _StaffGroupWidget extends StatelessWidget {
                 buildDefaultDragHandles: false,
                 itemCount: group.children.length,
                 onReorderItem: (oldIndex, newIndex) {
-                  notifier.reorderGroupChildren(
-                      group.hashCode, oldIndex, newIndex);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    notifier.reorderGroupChildren(
+                        group.hashCode, oldIndex, newIndex);
+                  });
                 },
                 itemBuilder: (context, idx) {
                   final child = group.children[idx];
@@ -338,6 +419,7 @@ class _StaffGroupWidget extends StatelessWidget {
                         key: ValueKey('staff_${def.uid}'),
                         index: idx,
                         staff: def,
+                        parentGroupHash: group.hashCode,
                         notifier: notifier,
                       ),
                     core.StaffNodeGroup subGroup => _StaffGroupWidget(
@@ -350,30 +432,88 @@ class _StaffGroupWidget extends StatelessWidget {
                 },
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
 
-class _StaffItem extends StatelessWidget {
+class _StaffItem extends StatefulWidget {
   const _StaffItem({
     super.key,
     required this.index,
     required this.staff,
+    required this.parentGroupHash,
     required this.notifier,
   });
 
   final int index;
   final core.StaffDefinition staff;
+  final int parentGroupHash;
   final DocumentCubit notifier;
+
+  @override
+  State<_StaffItem> createState() => _StaffItemState();
+}
+
+class _StaffItemState extends State<_StaffItem> {
+  bool _isEditingName = false;
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.staff.instrumentName ?? '');
+    _focusNode = FocusNode();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus && _isEditingName) {
+        _submitName();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(_StaffItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isEditingName && oldWidget.staff.instrumentName != widget.staff.instrumentName) {
+      _controller.text = widget.staff.instrumentName ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   void _openConfigDialog(BuildContext context) {
     showStaffConfigDialog(
       context,
-      staff: staff,
-      notifier: notifier,
+      staff: widget.staff,
+      notifier: widget.notifier,
+    );
+  }
+
+  void _startEditingName() {
+    setState(() {
+      _isEditingName = true;
+      _controller.text = widget.staff.instrumentName ?? '';
+    });
+    _focusNode.requestFocus();
+  }
+
+  void _submitName() {
+    if (!_isEditingName) return;
+    setState(() {
+      _isEditingName = false;
+    });
+    final trimmed = _controller.text.trim();
+    widget.notifier.updateStaffInstrumentName(
+      widget.staff.uid,
+      trimmed.isEmpty ? null : trimmed,
     );
   }
 
@@ -382,132 +522,257 @@ class _StaffItem extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
-    // Build standard instrument label
     final String displayName =
-        staff.instrumentName ?? l10n.staffNumber(index + 1);
-    final String abbrevInfo = staff.instrumentAbbreviation != null &&
-            staff.instrumentAbbreviation!.isNotEmpty
-        ? ' (${staff.instrumentAbbreviation})'
+        widget.staff.instrumentName ?? l10n.staffNumber(widget.index + 1);
+    final String abbrevInfo = widget.staff.instrumentAbbreviation != null &&
+            widget.staff.instrumentAbbreviation!.isNotEmpty
+        ? ' (${widget.staff.instrumentAbbreviation})'
         : '';
     final String labelText = '$displayName$abbrevInfo';
 
-    // Clef description
     String clefLabel = l10n.noClef;
-    if (staff.clef != null) {
-      final name = switch (staff.clef!.symbol) {
+    if (widget.staff.clef != null) {
+      final name = switch (widget.staff.clef!.symbol) {
         core.ClefSymbol.g => l10n.trebleClef,
         core.ClefSymbol.c => l10n.altoClef,
         core.ClefSymbol.f => l10n.bassClef,
         core.ClefSymbol.tab => l10n.categoryTablature,
         core.ClefSymbol.percussion => l10n.categoryPercussion,
       };
-      clefLabel = l10n.clefWithLine(name, staff.clef!.anchorLine);
+      clefLabel = l10n.clefWithLine(name, widget.staff.clef!.anchorLine);
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          // Drag Handle
-          ReorderableDragStartListener(
-            index: index,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.grab,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8.0),
-                child: Icon(
-                  Icons.drag_indicator,
-                  size: 18,
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+    final payload = (
+      staff: widget.staff,
+      parentGroupHash: widget.parentGroupHash,
+      index: widget.index,
+    );
+
+    return DragTarget<StaffDragPayload>(
+      onWillAcceptWithDetails: (details) =>
+          details.data.staff.uid != widget.staff.uid,
+      onAcceptWithDetails: (details) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.notifier.moveStaffNode(
+            sourceGroupHash: details.data.parentGroupHash,
+            targetGroupHash: widget.parentGroupHash,
+            sourceIndex: details.data.index,
+            targetIndex: widget.index,
+          );
+        });
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isDropHovered = candidateData.isNotEmpty;
+
+        final itemCard = Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDropHovered
+                ? cs.primaryContainer.withValues(alpha: 0.35)
+                : cs.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDropHovered
+                  ? cs.primary
+                  : cs.outlineVariant.withValues(alpha: 0.3),
+              width: isDropHovered ? 2.0 : 1.0,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (isDropHovered)
+                Container(
+                  height: 3,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: cs.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-            ),
-          ),
-
-          // Index Circle
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '${index + 1}',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                color: cs.primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Name and configuration badges
-          Expanded(
-            child: InkWell(
-              onTap: () => _openConfigDialog(context),
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Tooltip(
-                      message: labelText,
-                      child: Text(
-                        labelText,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  // Drag Handle
+                  ReorderableDragStartListener(
+                    index: widget.index,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.grab,
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 8.0),
+                        child: Icon(
+                          Icons.drag_indicator,
+                          size: 18,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: [
-                        _buildBadge(context, l10n.linesCount(staff.lines)),
-                        _buildBadge(context, clefLabel),
-                        if (!staff.labelVisible)
-                          _buildBadge(context, l10n.hidden, color: cs.error),
-                      ],
+                  ),
+
+                  // Index Circle
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
                     ),
-                  ],
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${widget.index + 1}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Name and configuration badges
+                  Expanded(
+                    child: _isEditingName
+                        ? SizedBox(
+                            height: 28,
+                            child: TextField(
+                              controller: _controller,
+                              focusNode: _focusNode,
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.bold),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              onSubmitted: (_) => _submitName(),
+                            ),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onDoubleTap: _startEditingName,
+                                      onTap: () => _openConfigDialog(context),
+                                      child: Tooltip(
+                                        message: labelText,
+                                        child: Text(
+                                          labelText,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: _startEditingName,
+                                    icon: Icon(
+                                      Icons.edit_outlined,
+                                      size: 12,
+                                      color: cs.onSurfaceVariant
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                    constraints: const BoxConstraints(
+                                        minWidth: 20, minHeight: 20),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              InkWell(
+                                onTap: () => _openConfigDialog(context),
+                                borderRadius: BorderRadius.circular(4),
+                                child: Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: [
+                                    _buildBadge(context,
+                                        l10n.linesCount(widget.staff.lines)),
+                                    _buildBadge(context, clefLabel),
+                                    if (!widget.staff.labelVisible)
+                                      _buildBadge(context, l10n.hidden,
+                                          color: cs.error),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+
+                  // Actions
+                  IconButton(
+                    onPressed: () => _openConfigDialog(context),
+                    icon: Icon(Icons.tune_outlined,
+                        size: 16, color: cs.primary.withValues(alpha: 0.8)),
+                    tooltip: l10n.configureStaff,
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        widget.notifier.removeStaffByUid(widget.staff.uid),
+                    icon: Icon(Icons.remove_circle_outline,
+                        size: 16, color: cs.error.withValues(alpha: 0.7)),
+                    tooltip: l10n.removeStaff,
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+
+        return LongPressDraggable<StaffDragPayload>(
+          data: payload,
+          feedback: Material(
+            elevation: 6,
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: cs.primary, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.shadow.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Text(
+                displayName,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: cs.onPrimaryContainer,
                 ),
               ),
             ),
           ),
-
-          // Actions
-          IconButton(
-            onPressed: () => _openConfigDialog(context),
-            icon: Icon(Icons.tune_outlined,
-                size: 16, color: cs.primary.withValues(alpha: 0.8)),
-            tooltip: l10n.configureStaff,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            padding: const EdgeInsets.all(4),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: itemCard,
           ),
-          IconButton(
-            onPressed: () => notifier.removeStaff(index),
-            icon: Icon(Icons.remove_circle_outline,
-                size: 16, color: cs.error.withValues(alpha: 0.7)),
-            tooltip: l10n.removeStaff,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            padding: const EdgeInsets.all(4),
-          ),
-        ],
-      ),
+          child: itemCard,
+        );
+      },
     );
   }
 

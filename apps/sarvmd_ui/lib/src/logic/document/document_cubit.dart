@@ -392,6 +392,10 @@ class DocumentCubit extends Cubit<DocumentState> {
     ));
   }
 
+  void ungroupSubGroup(int groupHash) {
+    execute(core.UngroupSubGroupCommand(groupHash));
+  }
+
   void applyProfile(core.StaffProfile profile) {
     execute(core.ApplyProfileCommand(profile));
   }

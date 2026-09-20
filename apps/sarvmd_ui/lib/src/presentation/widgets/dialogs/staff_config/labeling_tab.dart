@@ -195,108 +195,56 @@ class _LabelingTabState extends State<LabelingTab> {
               const Divider(height: 1),
               const SizedBox(height: 16),
 
-              AnimatedOpacity(
-                opacity: widget.labelVisible ? 1.0 : 0.4,
-                duration: const Duration(milliseconds: 200),
-                child: IgnorePointer(
-                  ignoring: !widget.labelVisible,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Full Name Autocomplete Input
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.instrumentNameLabel,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurface,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Autocomplete<InstrumentPreset>(
-                              initialValue:
-                                  TextEditingValue(text: widget.currentName),
-                              displayStringForOption: (option) => option.name,
-                              optionsBuilder: (textEditingValue) {
-                                if (textEditingValue.text.isEmpty) {
-                                  return const Iterable<
-                                      InstrumentPreset>.empty();
-                                }
-                                return InstrumentPresets.allPresets.where(
-                                    (preset) => preset.name
-                                        .toLowerCase()
-                                        .contains(textEditingValue.text
-                                            .toLowerCase()));
-                              },
-                              onSelected: widget.onApplyPreset,
-                              fieldViewBuilder: (context, textController,
-                                  focusNode, onFieldSubmitted) {
-                                if (_autoCompleteController != textController) {
-                                  _autoCompleteController = textController;
-                                  textController.addListener(() {
-                                    if (widget.currentName != textController.text) {
-                                      widget.onNameChanged(textController.text);
-                                    }
-                                  });
-                                }
-
-                                return TextField(
-                                  controller: textController,
-                                  focusNode: focusNode,
-                                  decoration: InputDecoration(
-                                    hintText: l10n.instrumentNameHint,
-                                    prefixIcon:
-                                        const Icon(Icons.search, size: 18),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: cs.outlineVariant, width: 1.2),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: cs.outlineVariant, width: 1.2),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: cs.primary, width: 1.8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 12),
-                                    isDense: true,
-                                  ),
-                                  style: const TextStyle(fontSize: 13),
-                                  onSubmitted: (_) => onFieldSubmitted(),
-                                );
-                              },
-                            ),
-                          ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Full Name Autocomplete Input
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.instrumentNameLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Autocomplete<InstrumentPreset>(
+                          initialValue:
+                              TextEditingValue(text: widget.currentName),
+                          displayStringForOption: (option) => option.name,
+                          optionsBuilder: (textEditingValue) {
+                            if (textEditingValue.text.isEmpty) {
+                              return const Iterable<
+                                  InstrumentPreset>.empty();
+                            }
+                            return InstrumentPresets.allPresets.where(
+                                (preset) => preset.name
+                                    .toLowerCase()
+                                    .contains(textEditingValue.text
+                                        .toLowerCase()));
+                          },
+                          onSelected: widget.onApplyPreset,
+                          fieldViewBuilder: (context, textController,
+                              focusNode, onFieldSubmitted) {
+                            if (_autoCompleteController != textController) {
+                              _autoCompleteController = textController;
+                              textController.addListener(() {
+                                if (widget.currentName != textController.text) {
+                                  widget.onNameChanged(textController.text);
+                                }
+                              });
+                            }
 
-                      const SizedBox(width: 16),
-
-                      // Abbreviation Input
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.abbreviationLabel,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurface,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: widget.abbrController,
+                            return TextField(
+                              controller: textController,
+                              focusNode: focusNode,
                               decoration: InputDecoration(
-                                hintText: l10n.abbreviationHint,
+                                hintText: l10n.instrumentNameHint,
+                                prefixIcon:
+                                    const Icon(Icons.search, size: 18),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
@@ -309,21 +257,66 @@ class _LabelingTabState extends State<LabelingTab> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: cs.primary, width: 1.8),
+                                  borderSide: BorderSide(
+                                      color: cs.primary, width: 1.8),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 12),
                                 isDense: true,
                               ),
                               style: const TextStyle(fontSize: 13),
-                            ),
-                          ],
+                              onSubmitted: (_) => onFieldSubmitted(),
+                            );
+                          },
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+
+                  const SizedBox(width: 16),
+
+                  // Abbreviation Input
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.abbreviationLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: widget.abbrController,
+                          decoration: InputDecoration(
+                            hintText: l10n.abbreviationHint,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                  color: cs.outlineVariant, width: 1.2),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                  color: cs.outlineVariant, width: 1.2),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: cs.primary, width: 1.8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            isDense: true,
+                          ),
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
