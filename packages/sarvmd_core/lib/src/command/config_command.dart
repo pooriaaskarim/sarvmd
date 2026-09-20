@@ -226,43 +226,95 @@ class MoveStaffNodeCommand extends PageConfigCommand {
   @override
   PageConfig mutateConfig(PageConfig current) {
     final root = current.systemLayout.rootGroup;
-    StaffNode? extractedNode;
 
-    StaffNode extractNode(StaffNode node) {
+    List<int>? findPathToGroup(StaffNode node, int targetHash, [List<int> currentPath = const []]) {
       if (node is StaffNodeGroup) {
-        if (node.hashCode == sourceGroupHash) {
-          if (sourceIndex >= 0 && sourceIndex < node.children.length) {
-            final children = List<StaffNode>.from(node.children);
-            extractedNode = children.removeAt(sourceIndex);
-            return node.copyWith(children: children);
+        if (node.hashCode == targetHash) return currentPath;
+        for (int i = 0; i < node.children.length; i++) {
+          final child = node.children[i];
+          if (child is StaffNodeGroup) {
+            final res = findPathToGroup(child, targetHash, [...currentPath, i]);
+            if (res != null) return res;
           }
         }
-        return node.copyWith(
-          children: node.children.map(extractNode).toList(),
-        );
       }
-      return node;
+      return null;
     }
 
-    final intermediateRoot = extractNode(root) as StaffNodeGroup;
-    if (extractedNode == null) return current;
+    final sourcePath = findPathToGroup(root, sourceGroupHash);
+    final targetPath = findPathToGroup(root, targetGroupHash);
+    if (sourcePath == null || targetPath == null) return current;
 
-    StaffNode insertNode(StaffNode node) {
-      if (node is StaffNodeGroup) {
-        if (node.hashCode == targetGroupHash) {
+    StaffNode? extractedNode;
+
+    StaffNodeGroup extractAtPath(StaffNodeGroup node, List<int> path) {
+      if (path.isEmpty) {
+        if (sourceIndex >= 0 && sourceIndex < node.children.length) {
           final children = List<StaffNode>.from(node.children);
-          final clampIndex = targetIndex.clamp(0, children.length);
-          children.insert(clampIndex, extractedNode!);
+          extractedNode = children.removeAt(sourceIndex);
           return node.copyWith(children: children);
         }
-        return node.copyWith(
-          children: node.children.map(insertNode).toList(),
-        );
+        return node;
       }
-      return node;
+      final nextIndex = path.first;
+      if (nextIndex < 0 || nextIndex >= node.children.length) return node;
+
+      final child = node.children[nextIndex];
+      if (child is! StaffNodeGroup) return node;
+
+      final updatedChild = extractAtPath(child, path.sublist(1));
+      final newChildren = List<StaffNode>.from(node.children);
+      newChildren[nextIndex] = updatedChild;
+      return node.copyWith(children: newChildren);
     }
 
-    final finalRoot = insertNode(intermediateRoot) as StaffNodeGroup;
+    final intermediateRoot = extractAtPath(root, sourcePath);
+    if (extractedNode == null) return current;
+
+    List<int> adjustedTargetPath = targetPath;
+    if (targetPath.isNotEmpty) {
+      if (sourcePath.isEmpty) {
+        if (sourceIndex < targetPath.first) {
+          adjustedTargetPath = List<int>.from(targetPath);
+          adjustedTargetPath[0] = adjustedTargetPath[0] - 1;
+        }
+      } else {
+        int commonLen = 0;
+        while (commonLen < sourcePath.length &&
+            commonLen < targetPath.length &&
+            sourcePath[commonLen] == targetPath[commonLen]) {
+          commonLen++;
+        }
+        if (commonLen < sourcePath.length && commonLen < targetPath.length) {
+          if (sourcePath[commonLen] < targetPath[commonLen]) {
+            adjustedTargetPath = List<int>.from(targetPath);
+            adjustedTargetPath[commonLen] = adjustedTargetPath[commonLen] - 1;
+          }
+        }
+      }
+    }
+
+    StaffNodeGroup insertAtPath(StaffNodeGroup node, List<int> path) {
+      if (path.isEmpty) {
+        final children = List<StaffNode>.from(node.children);
+        final clampIndex = targetIndex.clamp(0, children.length);
+        children.insert(clampIndex, extractedNode!);
+        return node.copyWith(children: children);
+      }
+
+      final nextIndex = path.first;
+      if (nextIndex < 0 || nextIndex >= node.children.length) return node;
+
+      final child = node.children[nextIndex];
+      if (child is! StaffNodeGroup) return node;
+
+      final updatedChild = insertAtPath(child, path.sublist(1));
+      final newChildren = List<StaffNode>.from(node.children);
+      newChildren[nextIndex] = updatedChild;
+      return node.copyWith(children: newChildren);
+    }
+
+    final finalRoot = insertAtPath(intermediateRoot, adjustedTargetPath);
     return current.copyWith(
       systemLayout: current.systemLayout.copyWith(rootGroup: finalRoot),
     );
@@ -302,22 +354,63 @@ class RemoveStaffByUidCommand extends PageConfigCommand {
 
   @override
   PageConfig mutateConfig(PageConfig current) {
+    if (current.staffCount <= 1) return current;
+
     final root = current.systemLayout.rootGroup;
-    if (root.children.length <= 1) return current;
 
-    final newChildren = root.children.where((child) {
-      if (child is StaffDefinition) {
-        return child.uid != uid;
+    StaffNode removeByUid(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        final newChildren = <StaffNode>[];
+        for (final child in node.children) {
+          if (child is StaffDefinition) {
+            if (child.uid != uid) newChildren.add(child);
+          } else if (child is StaffNodeGroup) {
+            newChildren.add(removeByUid(child));
+          }
+        }
+        return node.copyWith(children: newChildren);
       }
-      return true;
-    }).toList();
+      return node;
+    }
 
-    if (newChildren.length == root.children.length) return current;
-
+    final updatedRoot = removeByUid(root) as StaffNodeGroup;
     return current.copyWith(
-      systemLayout: current.systemLayout.copyWith(
-        rootGroup: root.copyWith(children: newChildren),
-      ),
+      systemLayout: current.systemLayout.copyWith(rootGroup: updatedRoot),
+    );
+  }
+}
+
+/// Command to dissolve a sub-group by groupHash, promoting its children to the parent group.
+class UngroupSubGroupCommand extends PageConfigCommand {
+  final int groupHash;
+
+  UngroupSubGroupCommand(this.groupHash);
+
+  @override
+  String get label => 'Ungroup Sub-Group';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    if (root.hashCode == groupHash) return current;
+
+    StaffNodeGroup? findGroup(StaffNodeGroup group) {
+      if (group.hashCode == groupHash) return group;
+      for (final child in group.children) {
+        if (child is StaffNodeGroup) {
+          final found = findGroup(child);
+          if (found != null) return found;
+        }
+      }
+      return null;
+    }
+
+    final target = findGroup(root);
+    if (target == null) return current;
+
+    final newRoot = root.ungroup(target);
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }

@@ -368,7 +368,7 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     final newChildren = <StaffNode>[];
     for (final child in children) {
       if (child is StaffNodeGroup) {
-        if (identical(child, targetGroup)) {
+        if (identical(child, targetGroup) || child.hashCode == targetGroup.hashCode) {
           newChildren.addAll(child.children);
         } else {
           newChildren.add(child.ungroup(targetGroup));
