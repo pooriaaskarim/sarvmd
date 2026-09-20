@@ -37,9 +37,10 @@ class FineTuningTab extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final isMobile = MediaQuery.of(context).size.width < 500;
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
       children: [
         const SizedBox(height: 16),
         Text(
@@ -50,26 +51,44 @@ class FineTuningTab extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Font Family Visual Previews Row
-        Row(
-          children: [
-            _buildFontFamilyCard(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 320;
+            final serifCard = _buildFontFamilyCard(
               theme: theme,
               title: l10n.fontSerifTitle,
               familyKey: 'serif',
               preview: 'Aa',
               isSelected: fontFamily == 'serif',
               onTap: () => onFontFamilyChanged('serif'),
-            ),
-            const SizedBox(width: 12),
-            _buildFontFamilyCard(
+            );
+            final sansCard = _buildFontFamilyCard(
               theme: theme,
               title: l10n.fontSansTitle,
               familyKey: 'sans',
               preview: 'Aa',
               isSelected: fontFamily == 'sans',
               onTap: () => onFontFamilyChanged('sans'),
-            ),
-          ],
+            );
+
+            if (isNarrow) {
+              return Column(
+                children: [
+                  serifCard,
+                  const SizedBox(height: 8),
+                  sansCard,
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: serifCard),
+                const SizedBox(width: 12),
+                Expanded(child: sansCard),
+              ],
+            );
+          },
         ),
 
         const SizedBox(height: 16),
@@ -205,53 +224,51 @@ class FineTuningTab extends StatelessWidget {
   }) {
     final cs = theme.colorScheme;
 
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? cs.primaryContainer.withValues(alpha: 0.35)
+                : cs.surfaceContainerHigh.withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
               color: isSelected
-                  ? cs.primaryContainer.withValues(alpha: 0.35)
-                  : cs.surfaceContainerHigh.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? cs.primary
-                    : cs.outlineVariant.withValues(alpha: 0.4),
-                width: isSelected ? 2.0 : 1.0,
-              ),
+                  ? cs.primary
+                  : cs.outlineVariant.withValues(alpha: 0.4),
+              width: isSelected ? 2.0 : 1.0,
             ),
-            child: Row(
-              children: [
-                Text(
-                  preview,
-                  style: TextStyle(
-                    fontFamily: familyKey == 'serif' ? 'serif' : 'sans-serif',
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+          ),
+          child: Row(
+            children: [
+              Text(
+                preview,
+                style: TextStyle(
+                  fontFamily: familyKey == 'serif' ? 'serif' : 'sans-serif',
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? cs.primary : cs.onSurface,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.w600,
                     color: isSelected ? cs.primary : cs.onSurface,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isSelected ? cs.primary : cs.onSurface,
-                    ),
-                  ),
-                ),
-                if (isSelected)
-                  Icon(Icons.check_circle, size: 18, color: cs.primary),
-              ],
-            ),
+              ),
+              if (isSelected)
+                Icon(Icons.check_circle, size: 18, color: cs.primary),
+            ],
           ),
         ),
       ),

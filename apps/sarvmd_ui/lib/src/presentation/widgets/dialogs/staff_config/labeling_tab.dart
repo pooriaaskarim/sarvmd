@@ -53,10 +53,11 @@ class _LabelingTabState extends State<LabelingTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isMobile = MediaQuery.of(context).size.width < 500;
     final l10n = AppLocalizations.of(context)!;
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
       children: [
         const SizedBox(height: 16),
 
@@ -195,128 +196,141 @@ class _LabelingTabState extends State<LabelingTab> {
               const Divider(height: 1),
               const SizedBox(height: 16),
 
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Full Name Autocomplete Input
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.instrumentNameLabel,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurface,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Autocomplete<InstrumentPreset>(
-                          initialValue:
-                              TextEditingValue(text: widget.currentName),
-                          displayStringForOption: (option) => option.name,
-                          optionsBuilder: (textEditingValue) {
-                            if (textEditingValue.text.isEmpty) {
-                              return const Iterable<
-                                  InstrumentPreset>.empty();
-                            }
-                            return InstrumentPresets.allPresets.where(
-                                (preset) => preset.name
-                                    .toLowerCase()
-                                    .contains(textEditingValue.text
-                                        .toLowerCase()));
-                          },
-                          onSelected: widget.onApplyPreset,
-                          fieldViewBuilder: (context, textController,
-                              focusNode, onFieldSubmitted) {
-                            if (_autoCompleteController != textController) {
-                              _autoCompleteController = textController;
-                              textController.addListener(() {
-                                if (widget.currentName != textController.text) {
-                                  widget.onNameChanged(textController.text);
-                                }
-                              });
-                            }
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 360;
 
-                            return TextField(
-                              controller: textController,
-                              focusNode: focusNode,
-                              decoration: InputDecoration(
-                                hintText: l10n.instrumentNameHint,
-                                prefixIcon:
-                                    const Icon(Icons.search, size: 18),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                      color: cs.outlineVariant, width: 1.2),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                      color: cs.outlineVariant, width: 1.2),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                      color: cs.primary, width: 1.8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 12),
-                                isDense: true,
+                  final fullNameColumn = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.instrumentNameLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Autocomplete<InstrumentPreset>(
+                        initialValue:
+                            TextEditingValue(text: widget.currentName),
+                        displayStringForOption: (option) => option.name,
+                        optionsBuilder: (textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<
+                                InstrumentPreset>.empty();
+                          }
+                          return InstrumentPresets.allPresets.where(
+                              (preset) => preset.name
+                                  .toLowerCase()
+                                  .contains(textEditingValue.text
+                                      .toLowerCase()));
+                        },
+                        onSelected: widget.onApplyPreset,
+                        fieldViewBuilder: (context, textController,
+                            focusNode, onFieldSubmitted) {
+                          if (_autoCompleteController != textController) {
+                            _autoCompleteController = textController;
+                            textController.addListener(() {
+                              if (widget.currentName != textController.text) {
+                                widget.onNameChanged(textController.text);
+                              }
+                            });
+                          }
+
+                          return TextField(
+                            controller: textController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              hintText: l10n.instrumentNameHint,
+                              prefixIcon:
+                                  const Icon(Icons.search, size: 18),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: cs.outlineVariant, width: 1.2),
                               ),
-                              style: const TextStyle(fontSize: 13),
-                              onSubmitted: (_) => onFieldSubmitted(),
-                            );
-                          },
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: cs.outlineVariant, width: 1.2),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                    color: cs.primary, width: 1.8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                              isDense: true,
+                            ),
+                            style: const TextStyle(fontSize: 13),
+                            onSubmitted: (_) => onFieldSubmitted(),
+                          );
+                        },
+                      ),
+                    ],
+                  );
+
+                  final abbrColumn = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.abbreviationLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurface,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: widget.abbrController,
+                        decoration: InputDecoration(
+                          hintText: l10n.abbreviationHint,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: cs.outlineVariant, width: 1.2),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: cs.outlineVariant, width: 1.2),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                BorderSide(color: cs.primary, width: 1.8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 12),
+                          isDense: true,
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ],
+                  );
 
-                  const SizedBox(width: 16),
-
-                  // Abbreviation Input
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          l10n.abbreviationLabel,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurface,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: widget.abbrController,
-                          decoration: InputDecoration(
-                            hintText: l10n.abbreviationHint,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                  color: cs.outlineVariant, width: 1.2),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                  color: cs.outlineVariant, width: 1.2),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  BorderSide(color: cs.primary, width: 1.8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 12),
-                            isDense: true,
-                          ),
-                          style: const TextStyle(fontSize: 13),
-                        ),
+                        fullNameColumn,
+                        const SizedBox(height: 12),
+                        abbrColumn,
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: fullNameColumn),
+                      const SizedBox(width: 16),
+                      Expanded(child: abbrColumn),
+                    ],
+                  );
+                },
               ),
             ],
           ),

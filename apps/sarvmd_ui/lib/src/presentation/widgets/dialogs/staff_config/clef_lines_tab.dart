@@ -31,10 +31,11 @@ class ClefLinesTab extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final isMobile = MediaQuery.of(context).size.width < 500;
     final isFixedLines = selectedClefSymbol?.requiresFixedLines ?? false;
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
       children: [
         const SizedBox(height: 16),
         Text(
@@ -180,7 +181,11 @@ class ClefLinesTab extends StatelessWidget {
             }).toList(),
           ),
           const SizedBox(height: 14),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
             children: [
               Text(
                 'Custom Line Count:',
@@ -189,30 +194,34 @@ class ClefLinesTab extends StatelessWidget {
                   color: cs.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 12),
-              IconButton.outlined(
-                icon: const Icon(Icons.remove, size: 16),
-                visualDensity: VisualDensity.compact,
-                onPressed: selectedLines > 1
-                    ? () => onLinesChanged(selectedLines - 1)
-                    : null,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: Text(
-                  '$selectedLines',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.primary,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton.outlined(
+                    icon: const Icon(Icons.remove, size: 16),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: selectedLines > 1
+                        ? () => onLinesChanged(selectedLines - 1)
+                        : null,
                   ),
-                ),
-              ),
-              IconButton.outlined(
-                icon: const Icon(Icons.add, size: 16),
-                visualDensity: VisualDensity.compact,
-                onPressed: selectedLines < 10
-                    ? () => onLinesChanged(selectedLines + 1)
-                    : null,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Text(
+                      '$selectedLines',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ),
+                  IconButton.outlined(
+                    icon: const Icon(Icons.add, size: 16),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: selectedLines < 10
+                        ? () => onLinesChanged(selectedLines + 1)
+                        : null,
+                  ),
+                ],
               ),
             ],
           ),

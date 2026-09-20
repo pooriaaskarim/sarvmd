@@ -53,9 +53,9 @@ class LiveStaffPreview extends StatelessWidget {
     return CanvasStrictScope(
       child: Center(
         child: Container(
-        width: 380,
-        height: 140,
-        decoration: BoxDecoration(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 380, maxHeight: 140),
+          decoration: BoxDecoration(
           color: paperColor,
           borderRadius:
               BorderRadius.circular(16), // Premium rounded paper edges

@@ -166,6 +166,8 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
           // ── Tab Bar ───────────────────────────────────────────
           TabBar(
             controller: _tabController,
+            isScrollable: isMobile,
+            tabAlignment: isMobile ? TabAlignment.center : TabAlignment.fill,
             labelColor: theme.colorScheme.primary,
             unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
             indicatorColor: theme.colorScheme.primary,

@@ -87,13 +87,18 @@ class _PrecisionNumericSliderState extends State<PrecisionNumericSlider> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              widget.label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+            Expanded(
+              child: Text(
+                widget.label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -111,35 +116,35 @@ class _PrecisionNumericSliderState extends State<PrecisionNumericSlider> {
           ],
         ),
         const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              child: SliderTheme(
-                data: SliderThemeData(
-                  trackHeight: 4,
-                  activeTrackColor: theme.colorScheme.primary,
-                  inactiveTrackColor:
-                      theme.colorScheme.outlineVariant.withValues(alpha: 0.8),
-                  thumbColor: theme.colorScheme.primary,
-                  overlayColor:
-                      theme.colorScheme.primary.withValues(alpha: 0.12),
-                  valueIndicatorColor: theme.colorScheme.primary,
-                ),
-                child: Slider(
-                  min: widget.min,
-                  max: widget.max,
-                  value: widget.value,
-                  onChanged: (val) {
-                    _updateValue(val);
-                    if (!_focusNode.hasFocus) {
-                      _textController.text = _formatValue(val);
-                    }
-                  },
-                ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 340;
+
+            final sliderWidget = SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 4,
+                activeTrackColor: theme.colorScheme.primary,
+                inactiveTrackColor:
+                    theme.colorScheme.outlineVariant.withValues(alpha: 0.8),
+                thumbColor: theme.colorScheme.primary,
+                overlayColor:
+                    theme.colorScheme.primary.withValues(alpha: 0.12),
+                valueIndicatorColor: theme.colorScheme.primary,
               ),
-            ),
-            const SizedBox(width: 12),
-            Container(
+              child: Slider(
+                min: widget.min,
+                max: widget.max,
+                value: widget.value,
+                onChanged: (val) {
+                  _updateValue(val);
+                  if (!_focusNode.hasFocus) {
+                    _textController.text = _formatValue(val);
+                  }
+                },
+              ),
+            );
+
+            final spinnerWidget = Container(
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(10),
@@ -210,8 +215,30 @@ class _PrecisionNumericSliderState extends State<PrecisionNumericSlider> {
                   ),
                 ],
               ),
-            ),
-          ],
+            );
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  sliderWidget,
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: spinnerWidget,
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: sliderWidget),
+                const SizedBox(width: 12),
+                spinnerWidget,
+              ],
+            );
+          },
         ),
       ],
     );
