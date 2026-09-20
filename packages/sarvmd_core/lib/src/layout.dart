@@ -40,6 +40,9 @@ class GroupPlacement {
     required this.connector,
     this.continuousBarlines = true,
     this.level = 0,
+    this.label = '',
+    this.abbreviation = '',
+    this.labelVisible = true,
   });
 
   /// Index of the first staff in this group (within the system's flat list).
@@ -56,6 +59,15 @@ class GroupPlacement {
 
   /// The nesting level (0 = root).
   final int level;
+
+  /// Group display label (e.g., "Strings", "Woodwinds").
+  final String label;
+
+  /// Short abbreviation for subsequent systems.
+  final String abbreviation;
+
+  /// Whether the group label should be rendered.
+  final bool labelVisible;
 }
 
 /// A system is one group of staves on the page.
@@ -183,6 +195,9 @@ PageLayout computeLayout(PageConfig config) {
           connector: group.connector,
           continuousBarlines: group.continuousBarlines,
           level: maxChildActiveDepth,
+          label: group.label,
+          abbreviation: group.abbreviation,
+          labelVisible: group.labelVisible,
         ));
       }
     }
@@ -206,6 +221,26 @@ PageLayout computeLayout(PageConfig config) {
           }
           if (maxWordLength > systemMaxSplitLength) {
             systemMaxSplitLength = maxWordLength;
+          }
+        }
+      }
+    }
+
+    for (final group in placements) {
+      if (group.labelVisible) {
+        final String gLabel = i == 0
+            ? group.label
+            : (group.abbreviation.isNotEmpty ? group.abbreviation : group.label);
+        if (gLabel.trim().isNotEmpty) {
+          int maxWordLength = 0;
+          for (final word in gLabel.trim().split(' ')) {
+            if (word.length > maxWordLength) {
+              maxWordLength = word.length;
+            }
+          }
+          final int effectiveLength = maxWordLength + (group.level * 2);
+          if (effectiveLength > systemMaxSplitLength) {
+            systemMaxSplitLength = effectiveLength;
           }
         }
       }

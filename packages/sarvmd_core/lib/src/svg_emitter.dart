@@ -350,6 +350,37 @@ void _drawStaffLabels(
     final system = systems[sysIdx];
     final leftX = baseLeftX + system.leftIndentMm;
 
+    for (final group in system.groupPlacements) {
+      if (!group.labelVisible) continue;
+      final String label = sysIdx == 0
+          ? group.label
+          : (group.abbreviation.isNotEmpty ? group.abbreviation : group.label);
+      if (label.trim().isEmpty) continue;
+
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
+
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
+      final midY = (topY + bottomY) / 2.0;
+
+      final double xOffset = group.level * 4.0;
+      final double connectorX = leftX - xOffset;
+      final labelX = connectorX - 3.0;
+
+      const fontFamily = 'serif';
+      final fontSizeMm = 11.0 * (25.4 / 72.0);
+
+      buf.writeln(
+        '    <text x="${_f(labelX)}" y="${_f(midY)}"'
+        ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}" font-weight="bold"'
+        ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">'
+        '${_escapeXml(label)}'
+        '</text>',
+      );
+    }
+
     for (final staff in system.staves) {
       final def = staff.definition;
       if (def != null && def.labelVisible) {

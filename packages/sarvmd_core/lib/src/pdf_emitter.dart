@@ -191,6 +191,41 @@ void _drawStaffLabels(
     final system = systems[sysIdx];
     final leftX = baseLeftX + system.leftIndentMm;
 
+    for (final group in system.groupPlacements) {
+      if (!group.labelVisible) continue;
+      final String label = sysIdx == 0
+          ? group.label
+          : (group.abbreviation.isNotEmpty ? group.abbreviation : group.label);
+      if (label.trim().isEmpty) continue;
+
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
+
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
+      final midY = (topY + bottomY) / 2.0;
+
+      final double xOffset = group.level * 4.0;
+      final double connectorX = leftX - xOffset;
+      final labelX = connectorX - 3.0;
+
+      final labelXPt = labelX * _mmToPt;
+      final labelYPt = hPt - (midY * _mmToPt);
+      const fontPt = 11.0;
+
+      canvas.saveContext();
+      final font = pdf.PdfFont.helveticaBold(doc);
+      canvas.setFillColor(pdf.PdfColors.black);
+
+      final textMetrics = font.stringMetrics(label);
+      final textWidthPt = textMetrics.width * fontPt;
+      final drawXPt = labelXPt - textWidthPt;
+
+      canvas.drawString(font, fontPt, label, drawXPt, labelYPt - (fontPt * 0.3));
+      canvas.restoreContext();
+    }
+
     for (final staff in system.staves) {
       final def = staff.definition;
       if (def != null && def.labelVisible) {
