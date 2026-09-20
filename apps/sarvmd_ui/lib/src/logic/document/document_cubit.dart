@@ -362,6 +362,20 @@ class DocumentCubit extends Cubit<DocumentState> {
         core.UpdateGroupContinuousBarlinesCommand(value, groupHash: groupHash));
   }
 
+  void updateGroupDetails({
+    int? groupHash,
+    String? label,
+    String? abbreviation,
+    bool? labelVisible,
+  }) {
+    execute(core.UpdateGroupDetailsCommand(
+      groupHash: groupHash,
+      labelText: label,
+      abbreviation: abbreviation,
+      labelVisible: labelVisible,
+    ));
+  }
+
   void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {
     execute(core.ReorderGroupChildrenCommand(groupHash, oldIndex, newIndex));
   }

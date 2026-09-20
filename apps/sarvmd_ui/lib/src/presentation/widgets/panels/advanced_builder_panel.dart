@@ -359,7 +359,7 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
   }
 }
 
-class _StaffGroupWidget extends StatelessWidget {
+class _StaffGroupWidget extends StatefulWidget {
   const _StaffGroupWidget({
     super.key,
     required this.group,
@@ -374,21 +374,96 @@ class _StaffGroupWidget extends StatelessWidget {
   final DocumentCubit notifier;
 
   @override
+  State<_StaffGroupWidget> createState() => _StaffGroupWidgetState();
+}
+
+class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
+  bool _isEditingName = false;
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.group.label);
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StaffGroupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.group.label != widget.group.label && !_isEditingName) {
+      _controller.text = widget.group.label;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _startEditingName() {
+    setState(() {
+      _isEditingName = true;
+      _controller.text = widget.group.label;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
+
+  void _submitName() {
+    setState(() {
+      _isEditingName = false;
+    });
+    widget.notifier.updateGroupDetails(
+      groupHash: widget.group.hashCode,
+      label: _controller.text.trim(),
+    );
+  }
+
+  Widget _buildBadge(BuildContext context, String text, {Color? color}) {
+    final cs = Theme.of(context).colorScheme;
+    final badgeColor = color ?? cs.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: badgeColor,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final scope = _HierarchySelectionScope.of(context);
-    final isCollapsed = scope?.collapsedGroupHashes.contains(group.hashCode) ?? false;
+    final isCollapsed = scope?.collapsedGroupHashes.contains(widget.group.hashCode) ?? false;
+    final groupTitleText = widget.group.label.isNotEmpty
+        ? widget.group.label
+        : (widget.isRoot ? l10n.mainEnsemble : l10n.subGroup);
 
     return DragTarget<StaffDragPayload>(
-      onWillAcceptWithDetails: (details) => details.data.parentGroupHash != group.hashCode,
+      onWillAcceptWithDetails: (details) => details.data.parentGroupHash != widget.group.hashCode,
       onAcceptWithDetails: (details) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifier.moveStaffNode(
+          widget.notifier.moveStaffNode(
             sourceGroupHash: details.data.parentGroupHash,
-            targetGroupHash: group.hashCode,
+            targetGroupHash: widget.group.hashCode,
             sourceIndex: details.data.index,
-            targetIndex: group.children.length,
+            targetIndex: widget.group.children.length,
           );
         });
       },
@@ -401,7 +476,7 @@ class _StaffGroupWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: isHovered
                 ? cs.primaryContainer.withValues(alpha: 0.25)
-                : cs.surfaceContainerHighest.withValues(alpha: isRoot ? 0.2 : 0.4),
+                : cs.surfaceContainerHighest.withValues(alpha: widget.isRoot ? 0.2 : 0.4),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isHovered
@@ -420,9 +495,9 @@ class _StaffGroupWidget extends StatelessWidget {
                   final bool isStackedHeader = width >= 260 && width < 340;
                   final bool isCompactSegmented = width < 480;
 
-                  final foldCaret = !isRoot
+                  final foldCaret = !widget.isRoot
                       ? IconButton(
-                          onPressed: () => scope?.onToggleCollapseGroup(group.hashCode),
+                          onPressed: () => scope?.onToggleCollapseGroup(widget.group.hashCode),
                           icon: Icon(
                             isCollapsed
                                 ? Icons.keyboard_arrow_right
@@ -436,11 +511,108 @@ class _StaffGroupWidget extends StatelessWidget {
                         )
                       : null;
 
+                  Widget titleWidget = _isEditingName
+                      ? SizedBox(
+                          height: 28,
+                          child: TextField(
+                            controller: _controller,
+                            focusNode: _focusNode,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Group Label',
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            onSubmitted: (_) => _submitName(),
+                          ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: GestureDetector(
+                                onDoubleTap: _startEditingName,
+                                child: Text(
+                                  groupTitleText,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: widget.group.labelVisible
+                                        ? cs.onSurfaceVariant
+                                        : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                    letterSpacing: 0.5,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            if (!widget.group.labelVisible) ...[
+                              const SizedBox(width: 4),
+                              _buildBadge(context, l10n.hidden, color: cs.error),
+                            ],
+                          ],
+                        );
+
+                  final groupActionButtons = [
+                    IconButton(
+                      onPressed: _startEditingName,
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 13,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                      tooltip: 'Edit Group Label',
+                      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        widget.notifier.updateGroupDetails(
+                          groupHash: widget.group.hashCode,
+                          labelVisible: !widget.group.labelVisible,
+                        );
+                      },
+                      icon: Icon(
+                        widget.group.labelVisible
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        size: 13,
+                        color: widget.group.labelVisible
+                            ? cs.onSurfaceVariant.withValues(alpha: 0.6)
+                            : cs.error,
+                      ),
+                      tooltip: widget.group.labelVisible ? l10n.hidden : l10n.hidden,
+                      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      onPressed: () => widget.notifier.addStaffToGroup(groupHash: widget.group.hashCode),
+                      icon: const Icon(Icons.add_circle_outline, size: 14),
+                      tooltip: l10n.addStaff,
+                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      padding: const EdgeInsets.all(2),
+                    ),
+                    if (!widget.isRoot) ...[
+                      IconButton(
+                        onPressed: () => widget.notifier.ungroupSubGroup(widget.group.hashCode),
+                        icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
+                        tooltip: l10n.reset,
+                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        padding: const EdgeInsets.all(2),
+                      ),
+                    ],
+                  ];
+
                   if (isUltraNarrow) {
                     return Row(
                       children: [
                         if (foldCaret != null) foldCaret,
-                        if (!isRoot && index != null) ...[
+                        if (!widget.isRoot && widget.index != null) ...[
                           Padding(
                             padding: const EdgeInsetsDirectional.only(end: 6.0),
                             child: Icon(
@@ -451,48 +623,22 @@ class _StaffGroupWidget extends StatelessWidget {
                           ),
                         ],
                         Icon(
-                          group.connector == core.SystemConnector.brace
+                          widget.group.connector == core.SystemConnector.brace
                               ? Icons.code
-                              : group.connector == core.SystemConnector.bracket
+                              : widget.group.connector == core.SystemConnector.bracket
                                   ? Icons.reorder
                                   : Icons.linear_scale,
                           size: 14,
                           color: cs.onSurfaceVariant,
                         ),
                         const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            isRoot ? l10n.mainEnsemble : l10n.subGroup,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurfaceVariant,
-                              letterSpacing: 0.5,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => notifier.addStaffToGroup(groupHash: group.hashCode),
-                          icon: const Icon(Icons.add_circle_outline, size: 14),
-                          tooltip: l10n.addStaff,
-                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                          padding: const EdgeInsets.all(2),
-                        ),
-                        if (!isRoot) ...[
-                          IconButton(
-                            onPressed: () => notifier.ungroupSubGroup(group.hashCode),
-                            icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
-                            tooltip: l10n.reset,
-                            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                            padding: const EdgeInsets.all(2),
-                          ),
-                        ],
+                        Expanded(child: titleWidget),
+                        ...groupActionButtons,
                         const SizedBox(width: 4),
                         _ConnectorMenuButton(
-                          value: group.connector,
-                          onChanged: (v) => notifier.updateGroupConnector(v,
-                              groupHash: group.hashCode),
+                          value: widget.group.connector,
+                          onChanged: (v) => widget.notifier.updateGroupConnector(v,
+                              groupHash: widget.group.hashCode),
                         ),
                       ],
                     );
@@ -502,7 +648,7 @@ class _StaffGroupWidget extends StatelessWidget {
                         Row(
                           children: [
                             if (foldCaret != null) foldCaret,
-                            if (!isRoot && index != null) ...[
+                            if (!widget.isRoot && widget.index != null) ...[
                               Padding(
                                 padding: const EdgeInsetsDirectional.only(end: 8.0),
                                 child: Icon(
@@ -513,50 +659,24 @@ class _StaffGroupWidget extends StatelessWidget {
                               ),
                             ],
                             Icon(
-                              group.connector == core.SystemConnector.brace
+                              widget.group.connector == core.SystemConnector.brace
                                   ? Icons.code
-                                  : group.connector == core.SystemConnector.bracket
+                                  : widget.group.connector == core.SystemConnector.bracket
                                       ? Icons.reorder
                                       : Icons.linear_scale,
                               size: 14,
                               color: cs.onSurfaceVariant,
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                isRoot ? l10n.mainEnsemble : l10n.subGroup,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: cs.onSurfaceVariant,
-                                  letterSpacing: 0.5,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => notifier.addStaffToGroup(groupHash: group.hashCode),
-                              icon: const Icon(Icons.add_circle_outline, size: 14),
-                              tooltip: l10n.addStaff,
-                              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                              padding: const EdgeInsets.all(2),
-                            ),
-                            if (!isRoot) ...[
-                              IconButton(
-                                onPressed: () => notifier.ungroupSubGroup(group.hashCode),
-                                icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
-                                tooltip: l10n.reset,
-                                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                padding: const EdgeInsets.all(2),
-                              ),
-                            ],
+                            Expanded(child: titleWidget),
+                            ...groupActionButtons,
                           ],
                         ),
                         const SizedBox(height: 6),
                         _ConnectorPicker(
-                          value: group.connector,
-                          onChanged: (v) => notifier.updateGroupConnector(v,
-                              groupHash: group.hashCode),
+                          value: widget.group.connector,
+                          onChanged: (v) => widget.notifier.updateGroupConnector(v,
+                              groupHash: widget.group.hashCode),
                           compact: true,
                         ),
                       ],
@@ -565,7 +685,7 @@ class _StaffGroupWidget extends StatelessWidget {
                     return Row(
                       children: [
                         if (foldCaret != null) foldCaret,
-                        if (!isRoot && index != null) ...[
+                        if (!widget.isRoot && widget.index != null) ...[
                           Padding(
                             padding: const EdgeInsetsDirectional.only(end: 8.0),
                             child: Icon(
@@ -576,48 +696,22 @@ class _StaffGroupWidget extends StatelessWidget {
                           ),
                         ],
                         Icon(
-                          group.connector == core.SystemConnector.brace
+                          widget.group.connector == core.SystemConnector.brace
                               ? Icons.code
-                              : group.connector == core.SystemConnector.bracket
+                              : widget.group.connector == core.SystemConnector.bracket
                                   ? Icons.reorder
                                   : Icons.linear_scale,
                           size: 14,
                           color: cs.onSurfaceVariant,
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            isRoot ? l10n.mainEnsemble : l10n.subGroup,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurfaceVariant,
-                              letterSpacing: 0.5,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => notifier.addStaffToGroup(groupHash: group.hashCode),
-                          icon: const Icon(Icons.add_circle_outline, size: 14),
-                          tooltip: l10n.addStaff,
-                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                          padding: const EdgeInsets.all(2),
-                        ),
-                        if (!isRoot) ...[
-                          IconButton(
-                            onPressed: () => notifier.ungroupSubGroup(group.hashCode),
-                            icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
-                            tooltip: l10n.reset,
-                            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                            padding: const EdgeInsets.all(2),
-                          ),
-                        ],
+                        Expanded(child: titleWidget),
+                        ...groupActionButtons,
                         const SizedBox(width: 8),
                         _ConnectorPicker(
-                          value: group.connector,
-                          onChanged: (v) => notifier.updateGroupConnector(v,
-                              groupHash: group.hashCode),
+                          value: widget.group.connector,
+                          onChanged: (v) => widget.notifier.updateGroupConnector(v,
+                              groupHash: widget.group.hashCode),
                           compact: isCompactSegmented,
                         ),
                       ],
@@ -625,7 +719,7 @@ class _StaffGroupWidget extends StatelessWidget {
                   }
                 },
               ),
-              if (group.children.length > 1)
+              if (widget.group.children.length > 1)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Container(
@@ -663,10 +757,10 @@ class _StaffGroupWidget extends StatelessWidget {
                           child: Transform.scale(
                             scale: 0.75,
                             child: Switch(
-                              value: group.continuousBarlines,
-                              onChanged: (v) => notifier
+                              value: widget.group.continuousBarlines,
+                              onChanged: (v) => widget.notifier
                                   .updateGroupContinuousBarlines(v,
-                                      groupHash: group.hashCode),
+                                      groupHash: widget.group.hashCode),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -679,7 +773,7 @@ class _StaffGroupWidget extends StatelessWidget {
               const SizedBox(height: 12),
               if (isCollapsed)
                 InkWell(
-                  onTap: () => scope?.onToggleCollapseGroup(group.hashCode),
+                  onTap: () => scope?.onToggleCollapseGroup(widget.group.hashCode),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -696,7 +790,7 @@ class _StaffGroupWidget extends StatelessWidget {
                         Icon(Icons.compress, size: 14, color: cs.primary),
                         const SizedBox(width: 8),
                         Text(
-                          '${group.children.length} staves collapsed',
+                          '${widget.group.children.length} staves collapsed',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -714,20 +808,20 @@ class _StaffGroupWidget extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (int idx = 0; idx < group.children.length; idx++)
-                      switch (group.children[idx]) {
+                    for (int idx = 0; idx < widget.group.children.length; idx++)
+                      switch (widget.group.children[idx]) {
                         core.StaffDefinition def => _StaffItem(
                             key: ValueKey('staff_${def.uid}'),
                             index: idx,
                             staff: def,
-                            parentGroupHash: group.hashCode,
-                            notifier: notifier,
+                            parentGroupHash: widget.group.hashCode,
+                            notifier: widget.notifier,
                           ),
                         core.StaffNodeGroup subGroup => _StaffGroupWidget(
                             key: ValueKey('group_${subGroup.hashCode}_$idx'),
                             group: subGroup,
                             index: idx,
-                            notifier: notifier,
+                            notifier: widget.notifier,
                           ),
                       }
                   ],

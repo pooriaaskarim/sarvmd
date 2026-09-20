@@ -90,11 +90,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the edit icon on the first staff
-      final editIcons = find.byIcon(Icons.edit_outlined);
-      expect(editIcons, findsAtLeastNWidgets(1));
+      final editIcon = find.byTooltip('Edit Instrument Name');
+      expect(editIcon, findsAtLeastNWidgets(1));
 
-      await tester.ensureVisible(editIcons.first);
-      await tester.tap(editIcons.first);
+      await tester.ensureVisible(editIcon.first);
+      await tester.tap(editIcon.first);
       await tester.pumpAndSettle();
 
       // Should show a TextField for inline name editing
