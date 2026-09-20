@@ -379,49 +379,11 @@ class _StaffGroupWidget extends StatefulWidget {
 
 class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
   bool _isEditingName = false;
-  late TextEditingController _controller;
-  late FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.group.label);
-    _focusNode = FocusNode();
-  }
-
-  @override
-  void didUpdateWidget(covariant _StaffGroupWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.group.label != widget.group.label && !_isEditingName) {
-      _controller.text = widget.group.label;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
 
   void _startEditingName() {
     setState(() {
       _isEditingName = true;
-      _controller.text = widget.group.label;
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _focusNode.requestFocus();
-    });
-  }
-
-  void _submitName() {
-    setState(() {
-      _isEditingName = false;
-    });
-    widget.notifier.updateGroupDetails(
-      groupHash: widget.group.hashCode,
-      label: _controller.text.trim(),
-    );
   }
 
   Widget _buildBadge(BuildContext context, String text, {Color? color}) {
@@ -451,8 +413,10 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
     final l10n = AppLocalizations.of(context)!;
     final scope = _HierarchySelectionScope.of(context);
     final isCollapsed = scope?.collapsedGroupHashes.contains(widget.group.hashCode) ?? false;
-    final groupTitleText = widget.group.label.isNotEmpty
-        ? widget.group.label
+    final labelDisplay = widget.group.label.isNotEmpty
+        ? (widget.group.abbreviation.isNotEmpty
+            ? '${widget.group.label} (${widget.group.abbreviation})'
+            : widget.group.label)
         : (widget.isRoot ? l10n.mainEnsemble : l10n.subGroup);
 
     return DragTarget<StaffDragPayload>(
@@ -488,6 +452,27 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (_isEditingName)
+                _QuickLabelingCard(
+                  title: 'Edit Group Label & Abbreviation',
+                  initialName: widget.group.label,
+                  initialAbbreviation: widget.group.abbreviation,
+                  onSave: (name, abbrev) {
+                    setState(() {
+                      _isEditingName = false;
+                    });
+                    widget.notifier.updateGroupDetails(
+                      groupHash: widget.group.hashCode,
+                      label: name,
+                      abbreviation: abbrev,
+                    );
+                  },
+                  onCancel: () {
+                    setState(() {
+                      _isEditingName = false;
+                    });
+                  },
+                ),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final double width = constraints.maxWidth;
@@ -511,50 +496,32 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         )
                       : null;
 
-                  Widget titleWidget = _isEditingName
-                      ? SizedBox(
-                          height: 28,
-                          child: TextField(
-                            controller: _controller,
-                            focusNode: _focusNode,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: 'Group Label',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
+                  Widget titleWidget = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: GestureDetector(
+                          onDoubleTap: _startEditingName,
+                          child: Text(
+                            labelDisplay,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: widget.group.labelVisible
+                                  ? cs.onSurfaceVariant
+                                  : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                              letterSpacing: 0.5,
                             ),
-                            onSubmitted: (_) => _submitName(),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: GestureDetector(
-                                onDoubleTap: _startEditingName,
-                                child: Text(
-                                  groupTitleText,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: widget.group.labelVisible
-                                        ? cs.onSurfaceVariant
-                                        : cs.onSurfaceVariant.withValues(alpha: 0.5),
-                                    letterSpacing: 0.5,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            if (!widget.group.labelVisible) ...[
-                              const SizedBox(width: 4),
-                              _buildBadge(context, l10n.hidden, color: cs.error),
-                            ],
-                          ],
-                        );
+                        ),
+                      ),
+                      if (!widget.group.labelVisible) ...[
+                        const SizedBox(width: 4),
+                        _buildBadge(context, l10n.hidden, color: cs.error),
+                      ],
+                    ],
+                  );
 
                   final labelActionButtons = [
                     IconButton(
@@ -875,36 +842,6 @@ class _StaffItem extends StatefulWidget {
 class _StaffItemState extends State<_StaffItem> {
   bool _isEditingName = false;
   double? _hoverRatioY;
-  late TextEditingController _controller;
-  late FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.staff.instrumentName ?? '');
-    _focusNode = FocusNode();
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus && _isEditingName) {
-        _submitName();
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(_StaffItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_isEditingName && oldWidget.staff.instrumentName != widget.staff.instrumentName) {
-      _controller.text = widget.staff.instrumentName ?? '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
   void _openConfigDialog(BuildContext context) {
     showStaffConfigDialog(
       context,
@@ -916,21 +853,7 @@ class _StaffItemState extends State<_StaffItem> {
   void _startEditingName() {
     setState(() {
       _isEditingName = true;
-      _controller.text = widget.staff.instrumentName ?? '';
     });
-    _focusNode.requestFocus();
-  }
-
-  void _submitName() {
-    if (!_isEditingName) return;
-    setState(() {
-      _isEditingName = false;
-    });
-    final trimmed = _controller.text.trim();
-    widget.notifier.updateStaffInstrumentName(
-      widget.staff.uid,
-      trimmed.isEmpty ? null : trimmed,
-    );
   }
 
   @override
@@ -1216,23 +1139,25 @@ class _StaffItemState extends State<_StaffItem> {
                     // Name, configuration badges, and action cluster
                     Expanded(
                       child: _isEditingName
-                          ? SizedBox(
-                              height: 28,
-                              child: TextField(
-                                controller: _controller,
-                                focusNode: _focusNode,
-                                style: const TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.bold),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                ),
-                                onSubmitted: (_) => _submitName(),
-                              ),
+                          ? _QuickLabelingCard(
+                              title: 'Edit Staff Name & Abbreviation',
+                              initialName: widget.staff.instrumentName ?? '',
+                              initialAbbreviation: widget.staff.instrumentAbbreviation ?? '',
+                              onSave: (name, abbrev) {
+                                setState(() {
+                                  _isEditingName = false;
+                                });
+                                widget.notifier.updateStaffConfigDetails(
+                                  widget.staff.uid,
+                                  name: () => name.isEmpty ? null : name,
+                                  abbreviation: () => abbrev.isEmpty ? null : abbrev,
+                                );
+                              },
+                              onCancel: () {
+                                setState(() {
+                                  _isEditingName = false;
+                                });
+                              },
                             )
                           : Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1581,6 +1506,269 @@ class _ConnectorMenuButton extends StatelessWidget {
           child: Text(l10n.connectorBrace, style: const TextStyle(fontSize: 12)),
         ),
       ],
+    );
+  }
+}
+
+String _generateAutoAbbreviation(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) return '';
+
+  final lower = trimmed.toLowerCase();
+  if (lower.contains('woodwind')) return 'Ww.';
+  if (lower.contains('brass')) return 'Br.';
+  if (lower.contains('string')) return 'Str.';
+  if (lower.contains('percussion')) return 'Perc.';
+  if (lower.contains('choir') || lower.contains('vocal')) return 'Voc.';
+  if (lower.contains('violin 1') || lower.contains('violin i')) return 'Vln. I';
+  if (lower.contains('violin 2') || lower.contains('violin ii')) return 'Vln. II';
+  if (lower.contains('violin')) return 'Vln.';
+  if (lower.contains('viola')) return 'Vla.';
+  if (lower.contains('violoncello') || lower.contains('cello')) return 'Vc.';
+  if (lower.contains('double bass') || lower.contains('contrabass')) return 'Cb.';
+  if (lower.contains('flute')) return 'Fl.';
+  if (lower.contains('oboe')) return 'Ob.';
+  if (lower.contains('clarinet')) return 'Cl.';
+  if (lower.contains('bassoon')) return 'Bsn.';
+  if (lower.contains('horn')) return 'Hn.';
+  if (lower.contains('trumpet')) return 'Tpt.';
+  if (lower.contains('trombone')) return 'Tbn.';
+  if (lower.contains('tuba')) return 'Tba.';
+  if (lower.contains('piano')) return 'Pno.';
+
+  final words = trimmed.split(RegExp(r'\s+'));
+  if (words.length == 1) {
+    return words.first.length > 4 ? '${words.first.substring(0, 3)}.' : words.first;
+  } else {
+    return words.map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}.' : '').join('');
+  }
+}
+
+class _QuickLabelingCard extends StatefulWidget {
+  const _QuickLabelingCard({
+    required this.title,
+    required this.initialName,
+    required this.initialAbbreviation,
+    required this.onSave,
+    required this.onCancel,
+  });
+
+  final String title;
+  final String initialName;
+  final String initialAbbreviation;
+  final void Function(String name, String abbreviation) onSave;
+  final VoidCallback onCancel;
+
+  @override
+  State<_QuickLabelingCard> createState() => _QuickLabelingCardState();
+}
+
+class _QuickLabelingCardState extends State<_QuickLabelingCard> {
+  late TextEditingController _nameController;
+  late TextEditingController _abbrevController;
+  late FocusNode _nameFocusNode;
+  late FocusNode _abbrevFocusNode;
+  String _suggestedAbbrev = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _abbrevController = TextEditingController(text: widget.initialAbbreviation);
+    _nameFocusNode = FocusNode();
+    _abbrevFocusNode = FocusNode();
+
+    _updateSuggestion(_nameController.text);
+
+    _nameController.addListener(() {
+      _updateSuggestion(_nameController.text);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _nameFocusNode.requestFocus();
+        Scrollable.ensureVisible(
+          context,
+          alignment: 0.2,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _updateSuggestion(String name) {
+    final auto = _generateAutoAbbreviation(name);
+    if (auto != _suggestedAbbrev) {
+      setState(() {
+        _suggestedAbbrev = auto;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _abbrevController.dispose();
+    _nameFocusNode.dispose();
+    _abbrevFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    widget.onSave(_nameController.text.trim(), _abbrevController.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.5), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.label_outlined, size: 14, color: cs.primary),
+              const SizedBox(width: 6),
+              Text(
+                widget.title,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, size: 14),
+                onPressed: widget.onCancel,
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                padding: EdgeInsets.zero,
+                tooltip: l10n.reset,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Full Name Field
+          SizedBox(
+            height: 32,
+            child: TextField(
+              controller: _nameController,
+              focusNode: _nameFocusNode,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              decoration: InputDecoration(
+                isDense: true,
+                labelText: 'Full Name / Label',
+                labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              onSubmitted: (_) => _abbrevFocusNode.requestFocus(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Abbreviation Field + Auto Chip
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 32,
+                  child: TextField(
+                    controller: _abbrevController,
+                    focusNode: _abbrevFocusNode,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      labelText: 'Abbreviation',
+                      labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    onSubmitted: (_) => _submit(),
+                  ),
+                ),
+              ),
+              if (_suggestedAbbrev.isNotEmpty &&
+                  _suggestedAbbrev != _abbrevController.text) ...[
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _abbrevController.text = _suggestedAbbrev;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome, size: 10, color: cs.onPrimaryContainer),
+                        const SizedBox(width: 3),
+                        Text(
+                          _suggestedAbbrev,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: cs.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Save / Cancel Action Bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: widget.onCancel,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                ),
+                child: Text('Cancel', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              ),
+              const SizedBox(width: 6),
+              FilledButton.icon(
+                onPressed: _submit,
+                icon: const Icon(Icons.check, size: 14),
+                label: const Text('Save', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

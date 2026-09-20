@@ -97,12 +97,12 @@ void main() {
       await tester.tap(editIcon.first);
       await tester.pumpAndSettle();
 
-      // Should show a TextField for inline name editing
-      expect(find.byType(TextField), findsOneWidget);
+      // Should show TextFields for inline name & abbreviation editing
+      expect(find.byType(TextField), findsAtLeastNWidgets(1));
 
-      // Enter new name and submit
-      await tester.enterText(find.byType(TextField), 'Solo Violin');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      // Enter new name and submit via Save button
+      await tester.enterText(find.byType(TextField).first, 'Solo Violin');
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 500));
 
