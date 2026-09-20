@@ -530,6 +530,61 @@ class UpdateGroupContinuousBarlinesCommand extends PageConfigCommand {
   }
 }
 
+/// Command to update system group details (label, abbreviation, labelVisible).
+class UpdateGroupDetailsCommand extends PageConfigCommand {
+  final int? groupHash;
+  final String? labelText;
+  final String? abbreviation;
+  final bool? labelVisible;
+
+  UpdateGroupDetailsCommand({
+    this.groupHash,
+    this.labelText,
+    this.abbreviation,
+    this.labelVisible,
+  });
+
+  @override
+  String get label => 'Update Group Details';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(
+            label: labelText ?? root.label,
+            abbreviation: abbreviation ?? root.abbreviation,
+            labelVisible: labelVisible ?? root.labelVisible,
+          ),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(
+            label: labelText ?? node.label,
+            abbreviation: abbreviation ?? node.abbreviation,
+            labelVisible: labelVisible ?? node.labelVisible,
+          );
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
 /// Command to reorder children inside a staff group matching a target hash code.
 class ReorderGroupChildrenCommand extends PageConfigCommand {
   final int groupHash;

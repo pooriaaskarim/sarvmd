@@ -226,6 +226,9 @@ class StaffNodeGroup extends StaffNode {
     this.connector = SystemConnector.none,
     this.children = const [],
     this.continuousBarlines = true,
+    this.label = '',
+    this.abbreviation = '',
+    this.labelVisible = true,
   });
 
   final SystemConnector connector;
@@ -233,16 +236,25 @@ class StaffNodeGroup extends StaffNode {
   /// Strongly-typed list of child [StaffNode] elements (staves or sub-groups).
   final List<StaffNode> children;
   final bool continuousBarlines;
+  final String label;
+  final String abbreviation;
+  final bool labelVisible;
 
   StaffNodeGroup copyWith({
     SystemConnector? connector,
     List<StaffNode>? children,
     bool? continuousBarlines,
+    String? label,
+    String? abbreviation,
+    bool? labelVisible,
   }) =>
       StaffNodeGroup(
         connector: connector ?? this.connector,
         children: children ?? this.children,
         continuousBarlines: continuousBarlines ?? this.continuousBarlines,
+        label: label ?? this.label,
+        abbreviation: abbreviation ?? this.abbreviation,
+        labelVisible: labelVisible ?? this.labelVisible,
       );
 
   @override
@@ -258,6 +270,9 @@ class StaffNodeGroup extends StaffNode {
           return c.toJson();
         }).toList(),
         'continuousBarlines': continuousBarlines,
+        'label': label,
+        'abbreviation': abbreviation,
+        'labelVisible': labelVisible,
       };
 
   factory StaffNodeGroup.fromJson(Map<String, dynamic> json) {
@@ -271,6 +286,9 @@ class StaffNodeGroup extends StaffNode {
         return StaffNode.fromJson(c as Map<String, dynamic>);
       }).toList(),
       continuousBarlines: data['continuousBarlines'] as bool? ?? true,
+      label: data['label'] as String? ?? '',
+      abbreviation: data['abbreviation'] as String? ?? '',
+      labelVisible: data['labelVisible'] as bool? ?? true,
     );
   }
 
@@ -281,6 +299,9 @@ class StaffNodeGroup extends StaffNode {
         runtimeType != other.runtimeType ||
         connector != other.connector ||
         continuousBarlines != other.continuousBarlines ||
+        label != other.label ||
+        abbreviation != other.abbreviation ||
+        labelVisible != other.labelVisible ||
         children.length != other.children.length) {
       return false;
     }
@@ -291,8 +312,14 @@ class StaffNodeGroup extends StaffNode {
   }
 
   @override
-  int get hashCode =>
-      connector.hashCode ^ Object.hashAll(children) ^ continuousBarlines.hashCode;
+  int get hashCode => Object.hash(
+        connector,
+        Object.hashAll(children),
+        continuousBarlines,
+        label,
+        abbreviation,
+        labelVisible,
+      );
 }
 
 /// Legacy alias for [StaffNodeGroup].
@@ -342,11 +369,17 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     StaffNodeGroup targetGroup, {
     SystemConnector? connector,
     bool? continuousBarlines,
+    String? label,
+    String? abbreviation,
+    bool? labelVisible,
   }) {
-    if (identical(this, targetGroup)) {
+    if (identical(this, targetGroup) || hashCode == targetGroup.hashCode) {
       return copyWith(
         connector: connector ?? this.connector,
         continuousBarlines: continuousBarlines ?? this.continuousBarlines,
+        label: label ?? this.label,
+        abbreviation: abbreviation ?? this.abbreviation,
+        labelVisible: labelVisible ?? this.labelVisible,
       );
     }
     return copyWith(
@@ -356,6 +389,9 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
             targetGroup,
             connector: connector,
             continuousBarlines: continuousBarlines,
+            label: label,
+            abbreviation: abbreviation,
+            labelVisible: labelVisible,
           );
         }
         return child;
