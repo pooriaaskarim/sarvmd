@@ -47,6 +47,38 @@ enum SarvAccent {
         SarvAccent.sky => const Color(0xFF001D35),
       };
 
+  /// A vivid, high-contrast tone derived from each seed for dark mode (Tone 80).
+  Color get primaryDark => switch (this) {
+        SarvAccent.lavender => const Color(0xFFD0BCFF),
+        SarvAccent.lemon => const Color(0xFFE5E478),
+        SarvAccent.sage => const Color(0xFFA3E0AC),
+        SarvAccent.sky => const Color(0xFFA0CFFF),
+      };
+
+  /// High-contrast text/icon color when placed on top of `primaryDark`.
+  Color get onPrimaryDark => switch (this) {
+        SarvAccent.lavender => const Color(0xFF381E72),
+        SarvAccent.lemon => const Color(0xFF343200),
+        SarvAccent.sage => const Color(0xFF003914),
+        SarvAccent.sky => const Color(0xFF003353),
+      };
+
+  /// Deep, rich container color for `primaryContainer` in dark mode.
+  Color get primaryContainerDark => switch (this) {
+        SarvAccent.lavender => const Color(0xFF38295E),
+        SarvAccent.lemon => const Color(0xFF302E00),
+        SarvAccent.sage => const Color(0xFF163820),
+        SarvAccent.sky => const Color(0xFF003554),
+      };
+
+  /// High-contrast text/icon color when placed on top of `primaryContainerDark`.
+  Color get onPrimaryContainerDark => switch (this) {
+        SarvAccent.lavender => const Color(0xFFEADDFF),
+        SarvAccent.lemon => const Color(0xFFF5F2C6),
+        SarvAccent.sage => const Color(0xFFC2E8C7),
+        SarvAccent.sky => const Color(0xFFCBE6FF),
+      };
+
   /// A very faint, warm "paper" tint for the canvas background in light mode.
   Color get paperLight => switch (this) {
         SarvAccent.lavender => const Color(0xFFFBF9FF),
@@ -152,6 +184,10 @@ abstract final class AppTheme {
       onPrimaryContainer: a.onPastelContainer,
       secondary: a.seed,
       onSecondary: a.onPastelContainer,
+      error: const Color(0xFFBA1A1A),
+      onError: Colors.white,
+      errorContainer: const Color(0xFFFFDAD6),
+      onErrorContainer: const Color(0xFF410002),
       // Sidebar / panel backgrounds
       surface: _lightSurface(a),
       surfaceContainer: _lightContainer(a),
@@ -184,15 +220,20 @@ abstract final class AppTheme {
 
   static ColorScheme _dark(SarvAccent a) {
     return ColorScheme.dark(
-      primary: a.primary,
-      onPrimary: Colors.white,
-      primaryContainer: a.seed.withValues(alpha: 0.2),
-      onPrimaryContainer: Colors.white,
+      primary: a.primaryDark,
+      onPrimary: a.onPrimaryDark,
+      primaryContainer: a.primaryContainerDark,
+      onPrimaryContainer: a.onPrimaryContainerDark,
       secondary: a.seed.withValues(alpha: 0.5),
+      onSecondary: Colors.white,
+      error: const Color(0xFFFFB4AB),
+      onError: const Color(0xFF690005),
+      errorContainer: const Color(0xFF93000A),
+      onErrorContainer: const Color(0xFFFFDAD6),
       surface: _darkSurface(a),
       surfaceContainer: _darkContainer(a),
       onSurface: Colors.white,
-      onSurfaceVariant: Colors.white70,
+      onSurfaceVariant: const Color(0xFFD4D0C8),
       outline: const Color(0x3DFFFFFF), // white 24 %
       outlineVariant: const Color(0x1FFFFFFF), // white 12 %
     );
