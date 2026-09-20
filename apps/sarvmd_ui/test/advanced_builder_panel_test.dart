@@ -109,5 +109,20 @@ void main() {
       // Check cubit updated staff name
       expect(cubit.allStaves.first.instrumentName, equals('Solo Violin'));
     });
+
+    testWidgets('groupTwoStavesTogether combines two staves into a StaffNodeGroup',
+        (tester) async {
+      final sourceUid = cubit.allStaves[0].uid;
+      final targetUid = cubit.allStaves[1].uid;
+
+      cubit.groupTwoStavesTogether(sourceUid, targetUid);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final rootGroup = cubit.config.systemLayout.rootGroup;
+      expect(rootGroup.children.first, isA<core.StaffNodeGroup>());
+      final nodeGroup = rootGroup.children.first as core.StaffNodeGroup;
+      expect(nodeGroup.children.length, equals(2));
+    });
   });
 }
+

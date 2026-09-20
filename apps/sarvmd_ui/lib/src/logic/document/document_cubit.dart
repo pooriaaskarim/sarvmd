@@ -407,6 +407,18 @@ class DocumentCubit extends Cubit<DocumentState> {
     ));
   }
 
+  void groupTwoStavesTogether(String sourceUid, String targetUid,
+      [core.SystemConnector connector = core.SystemConnector.bracket]) {
+    if (sourceUid == targetUid) return;
+    final currentRoot = state.config.systemLayout.rootGroup;
+    final updatedRoot =
+        currentRoot.groupSelected({sourceUid, targetUid}, connector);
+    execute(core.SetSystemLayoutCommand(
+      core.SystemLayout(rootGroup: updatedRoot),
+      'Group Staves',
+    ));
+  }
+
   void batchDeleteStaves(Set<String> uids) {
     if (uids.isEmpty) return;
     for (final uid in uids) {
