@@ -594,17 +594,57 @@ class _StaffItemState extends State<_StaffItem> {
                 ),
               Row(
                 children: [
-                  // Drag Handle
-                  ReorderableDragStartListener(
-                    index: widget.index,
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.grab,
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 8.0),
-                        child: Icon(
-                          Icons.drag_indicator,
-                          size: 18,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                  // Drag Handle with Draggable
+                  Draggable<StaffDragPayload>(
+                    data: payload,
+                    feedback: Material(
+                      elevation: 6,
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.transparent,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: cs.primary, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: cs.shadow.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          displayName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: cs.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ),
+                    childWhenDragging: Opacity(
+                      opacity: 0.3,
+                      child: Icon(
+                        Icons.drag_indicator,
+                        size: 18,
+                        color: cs.primary,
+                      ),
+                    ),
+                    child: ReorderableDragStartListener(
+                      index: widget.index,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8.0),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            size: 18,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
                         ),
                       ),
                     ),
@@ -735,43 +775,7 @@ class _StaffItemState extends State<_StaffItem> {
           ),
         );
 
-        return LongPressDraggable<StaffDragPayload>(
-          data: payload,
-          feedback: Material(
-            elevation: 6,
-            borderRadius: BorderRadius.circular(10),
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: cs.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: cs.primary, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: cs.shadow.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Text(
-                displayName,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onPrimaryContainer,
-                ),
-              ),
-            ),
-          ),
-          childWhenDragging: Opacity(
-            opacity: 0.3,
-            child: itemCard,
-          ),
-          child: itemCard,
-        );
+        return itemCard;
       },
     );
   }
