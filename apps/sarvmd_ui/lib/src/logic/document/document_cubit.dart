@@ -396,6 +396,48 @@ class DocumentCubit extends Cubit<DocumentState> {
     execute(core.UngroupSubGroupCommand(groupHash));
   }
 
+  void groupSelectedStaves(Set<String> uids,
+      [core.SystemConnector connector = core.SystemConnector.bracket]) {
+    if (uids.length < 2) return;
+    final currentRoot = state.config.systemLayout.rootGroup;
+    final updatedRoot = currentRoot.groupSelected(uids, connector);
+    execute(core.SetSystemLayoutCommand(
+      core.SystemLayout(rootGroup: updatedRoot),
+      'Group Selected Staves',
+    ));
+  }
+
+  void batchDeleteStaves(Set<String> uids) {
+    if (uids.isEmpty) return;
+    for (final uid in uids) {
+      execute(core.RemoveStaffByUidCommand(uid));
+    }
+  }
+
+  void batchToggleVisibility(Set<String> uids, bool visible) {
+    if (uids.isEmpty) return;
+    for (final uid in uids) {
+      updateStaffConfigDetails(uid, visible: visible);
+    }
+  }
+
+  void batchDuplicateStaves(Set<String> uids) {
+    if (uids.isEmpty) return;
+    final staves = allStaves;
+    for (final uid in uids) {
+      final match = staves.where((s) => s.uid == uid).firstOrNull;
+      if (match != null) {
+        final clone = match.copyWith(
+          uid: 'staff_${DateTime.now().microsecondsSinceEpoch}_${match.uid}',
+          instrumentName: () => match.instrumentName != null
+              ? '${match.instrumentName}'
+              : null,
+        );
+        execute(core.AddStaffToGroupCommand(def: clone));
+      }
+    }
+  }
+
   void applyProfile(core.StaffProfile profile) {
     execute(core.ApplyProfileCommand(profile));
   }

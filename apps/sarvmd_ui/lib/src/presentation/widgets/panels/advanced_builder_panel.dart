@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../logic/document/document_cubit.dart';
@@ -14,10 +16,106 @@ typedef StaffDragPayload = ({
   int index,
 });
 
-class SystemHierarchyPanel extends StatelessWidget {
+class _HierarchySelectionScope extends InheritedWidget {
+  const _HierarchySelectionScope({
+    required this.selectedUids,
+    required this.lastSelectedUid,
+    required this.collapsedGroupHashes,
+    required this.allUidsInOrder,
+    required this.onToggleSelection,
+    required this.onSelectAll,
+    required this.onClearSelection,
+    required this.onToggleCollapseGroup,
+    required super.child,
+  });
+
+  final Set<String> selectedUids;
+  final String? lastSelectedUid;
+  final Set<int> collapsedGroupHashes;
+  final List<String> allUidsInOrder;
+  final void Function(String uid, {bool isShift}) onToggleSelection;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClearSelection;
+  final void Function(int groupHash) onToggleCollapseGroup;
+
+  static _HierarchySelectionScope? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_HierarchySelectionScope>();
+  }
+
+  @override
+  bool updateShouldNotify(_HierarchySelectionScope oldWidget) {
+    return selectedUids != oldWidget.selectedUids ||
+        collapsedGroupHashes != oldWidget.collapsedGroupHashes ||
+        lastSelectedUid != oldWidget.lastSelectedUid ||
+        allUidsInOrder != oldWidget.allUidsInOrder;
+  }
+}
+
+class SystemHierarchyPanel extends StatefulWidget {
   const SystemHierarchyPanel({super.key, required this.notifier});
 
   final DocumentCubit notifier;
+
+  @override
+  State<SystemHierarchyPanel> createState() => _SystemHierarchyPanelState();
+}
+
+class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
+  final Set<String> _selectedUids = {};
+  String? _lastSelectedUid;
+  final Set<int> _collapsedGroupHashes = {};
+
+  void _toggleSelection(String uid, {bool isShift = false, List<String>? allUidsInOrder}) {
+    setState(() {
+      if (isShift && _lastSelectedUid != null && allUidsInOrder != null) {
+        final startIdx = allUidsInOrder.indexOf(_lastSelectedUid!);
+        final endIdx = allUidsInOrder.indexOf(uid);
+        if (startIdx != -1 && endIdx != -1) {
+          final low = math.min(startIdx, endIdx);
+          final high = math.max(startIdx, endIdx);
+          for (int i = low; i <= high; i++) {
+            _selectedUids.add(allUidsInOrder[i]);
+          }
+        } else {
+          _selectedUids.add(uid);
+        }
+      } else {
+        if (_selectedUids.contains(uid)) {
+          _selectedUids.remove(uid);
+        } else {
+          _selectedUids.add(uid);
+        }
+      }
+      _lastSelectedUid = uid;
+    });
+  }
+
+  void _selectAll(List<String> allUids) {
+    setState(() {
+      if (_selectedUids.length == allUids.length) {
+        _selectedUids.clear();
+      } else {
+        _selectedUids.addAll(allUids);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selectedUids.clear();
+      _lastSelectedUid = null;
+    });
+  }
+
+  void _toggleCollapseGroup(int groupHash) {
+    setState(() {
+      if (_collapsedGroupHashes.contains(groupHash)) {
+        _collapsedGroupHashes.remove(groupHash);
+      } else {
+        _collapsedGroupHashes.add(groupHash);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,57 +123,199 @@ class SystemHierarchyPanel extends StatelessWidget {
       builder: (context, docState) {
         final cs = Theme.of(context).colorScheme;
         final layout = docState.config.systemLayout;
+        final l10n = AppLocalizations.of(context)!;
         final isPersian = Localizations.localeOf(context).languageCode == 'fa';
         final textDirection = isPersian ? TextDirection.rtl : TextDirection.ltr;
+        final allStaves = widget.notifier.allStaves;
+        final allUidsInOrder = allStaves.map((s) => s.uid).toList();
+
+        // Prune selected UIDs if staves were deleted externally
+        _selectedUids.removeWhere((uid) => !allUidsInOrder.contains(uid));
 
         return Directionality(
           textDirection: textDirection,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.systemSettings,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: cs.onSurface,
-                        letterSpacing: 0.5,
+          child: _HierarchySelectionScope(
+            selectedUids: _selectedUids,
+            lastSelectedUid: _lastSelectedUid,
+            collapsedGroupHashes: _collapsedGroupHashes,
+            allUidsInOrder: allUidsInOrder,
+            onToggleSelection: (uid, {isShift = false}) =>
+                _toggleSelection(uid, isShift: isShift, allUidsInOrder: allUidsInOrder),
+            onSelectAll: () => _selectAll(allUidsInOrder),
+            onClearSelection: _clearSelection,
+            onToggleCollapseGroup: _toggleCollapseGroup,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_selectedUids.isEmpty)
+                  Row(
+                    children: [
+                      Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l10n.systemSettings,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: cs.onSurface,
+                            letterSpacing: 0.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      IconButton(
+                        onPressed: () => setState(() {
+                          _selectAll(allUidsInOrder);
+                        }),
+                        icon: const Icon(Icons.checklist, size: 16),
+                        tooltip: 'Multi-Select Mode',
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        padding: const EdgeInsets.all(4),
+                      ),
+                      IconButton(
+                        onPressed: () => showSystemGroupingDialog(context, notifier: widget.notifier),
+                        icon: const Icon(Icons.account_tree, size: 16),
+                        tooltip: l10n.systemGrouping,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        padding: const EdgeInsets.all(4),
+                      ),
+                      IconButton(
+                        onPressed: () => widget.notifier.addStaff(),
+                        icon: const Icon(Icons.add_circle_outline, size: 16),
+                        tooltip: l10n.addStaff,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        padding: const EdgeInsets.all(4),
+                      ),
+                    ],
+                  )
+                else
+                  // Top-Docked Contextual Batch Action Bar (CAB)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: cs.primary.withValues(alpha: 0.5), width: 1.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: cs.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${_selectedUids.length}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        IconButton(
+                          onPressed: () => _selectAll(allUidsInOrder),
+                          icon: Icon(
+                            _selectedUids.length == allUidsInOrder.length
+                                ? Icons.deselect
+                                : Icons.select_all,
+                            size: 16,
+                            color: cs.primary,
+                          ),
+                          tooltip: _selectedUids.length == allUidsInOrder.length
+                              ? 'Deselect All'
+                              : 'Select All',
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                        ),
+                        PopupMenuButton<core.SystemConnector>(
+                          icon: Icon(Icons.layers, size: 16, color: cs.primary),
+                          tooltip: 'Group Selected Staves',
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                          onSelected: (connector) {
+                            widget.notifier.groupSelectedStaves(_selectedUids, connector);
+                            _clearSelection();
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: core.SystemConnector.bracket,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.reorder, size: 14, color: cs.primary),
+                                  const SizedBox(width: 8),
+                                  const Text('Group with Bracket [', style: TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: core.SystemConnector.brace,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.code, size: 14, color: cs.primary),
+                                  const SizedBox(width: 8),
+                                  const Text('Group with Brace {', style: TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            widget.notifier.batchToggleVisibility(_selectedUids, false);
+                            _clearSelection();
+                          },
+                          icon: Icon(Icons.visibility_off_outlined, size: 16, color: cs.primary),
+                          tooltip: 'Batch Hide Labels',
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            widget.notifier.batchDuplicateStaves(_selectedUids);
+                            _clearSelection();
+                          },
+                          icon: Icon(Icons.content_copy_outlined, size: 16, color: cs.primary),
+                          tooltip: 'Batch Duplicate',
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            widget.notifier.batchDeleteStaves(_selectedUids);
+                            _clearSelection();
+                          },
+                          icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
+                          tooltip: 'Batch Delete',
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: _clearSelection,
+                          icon: Icon(Icons.close, size: 16, color: cs.onSurfaceVariant),
+                          tooltip: 'Cancel Selection',
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => showSystemGroupingDialog(context, notifier: notifier),
-                    icon: const Icon(Icons.account_tree, size: 16),
-                    tooltip: AppLocalizations.of(context)!.systemGrouping,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    padding: const EdgeInsets.all(4),
-                  ),
-                  IconButton(
-                    onPressed: () => notifier.addStaff(),
-                    icon: const Icon(Icons.add_circle_outline, size: 16),
-                    tooltip: AppLocalizations.of(context)!.addStaff,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    padding: const EdgeInsets.all(4),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _StaffGroupWidget(
-                group: layout.rootGroup,
-                isRoot: true,
-                notifier: notifier,
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 16),
-              const EnsembleSummaryWidget(),
-            ],
+                const SizedBox(height: 12),
+                _StaffGroupWidget(
+                  group: layout.rootGroup,
+                  isRoot: true,
+                  notifier: widget.notifier,
+                ),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+                const EnsembleSummaryWidget(),
+              ],
+            ),
           ),
         );
       },
@@ -101,6 +341,8 @@ class _StaffGroupWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final scope = _HierarchySelectionScope.of(context);
+    final isCollapsed = scope?.collapsedGroupHashes.contains(group.hashCode) ?? false;
 
     return DragTarget<StaffDragPayload>(
       onWillAcceptWithDetails: (details) => details.data.parentGroupHash != group.hashCode,
@@ -142,10 +384,26 @@ class _StaffGroupWidget extends StatelessWidget {
                   final bool isStackedHeader = width >= 260 && width < 340;
                   final bool isCompactSegmented = width < 480;
 
+                  final foldCaret = !isRoot
+                      ? IconButton(
+                          onPressed: () => scope?.onToggleCollapseGroup(group.hashCode),
+                          icon: Icon(
+                            isCollapsed
+                                ? Icons.keyboard_arrow_right
+                                : Icons.keyboard_arrow_down,
+                            size: 16,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          tooltip: isCollapsed ? 'Expand Group' : 'Collapse Group',
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          padding: EdgeInsets.zero,
+                        )
+                      : null;
+
                   if (isUltraNarrow) {
-                    // Stage 3 (< 260px): Single row with 24px PopupMenuButton
                     return Row(
                       children: [
+                        if (foldCaret != null) foldCaret,
                         if (!isRoot && index != null) ...[
                           Padding(
                             padding: const EdgeInsetsDirectional.only(end: 6.0),
@@ -203,11 +461,11 @@ class _StaffGroupWidget extends StatelessWidget {
                       ],
                     );
                   } else if (isStackedHeader) {
-                    // Stage 2 (260px - 340px): Stacked header (Title on Row 1, SegmentedButton on Row 2)
                     return Column(
                       children: [
                         Row(
                           children: [
+                            if (foldCaret != null) foldCaret,
                             if (!isRoot && index != null) ...[
                               Padding(
                                 padding: const EdgeInsetsDirectional.only(end: 8.0),
@@ -268,9 +526,9 @@ class _StaffGroupWidget extends StatelessWidget {
                       ],
                     );
                   } else {
-                    // Stage 1 (>= 340px): Single row with SegmentedButton
                     return Row(
                       children: [
+                        if (foldCaret != null) foldCaret,
                         if (!isRoot && index != null) ...[
                           Padding(
                             padding: const EdgeInsetsDirectional.only(end: 8.0),
@@ -383,28 +641,61 @@ class _StaffGroupWidget extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 12),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (int idx = 0; idx < group.children.length; idx++)
-                    switch (group.children[idx]) {
-                      core.StaffDefinition def => _StaffItem(
-                          key: ValueKey('staff_${def.uid}'),
-                          index: idx,
-                          staff: def,
-                          parentGroupHash: group.hashCode,
-                          notifier: notifier,
+              if (isCollapsed)
+                InkWell(
+                  onTap: () => scope?.onToggleCollapseGroup(group.hashCode),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.3),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.compress, size: 14, color: cs.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${group.children.length} staves collapsed',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: cs.primary,
+                          ),
                         ),
-                      core.StaffNodeGroup subGroup => _StaffGroupWidget(
-                          key: ValueKey('group_${subGroup.hashCode}_$idx'),
-                          group: subGroup,
-                          index: idx,
-                          notifier: notifier,
-                        ),
-                    }
-                ],
-              ),
+                        const Spacer(),
+                        Icon(Icons.unfold_more, size: 14, color: cs.onSurfaceVariant),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (int idx = 0; idx < group.children.length; idx++)
+                      switch (group.children[idx]) {
+                        core.StaffDefinition def => _StaffItem(
+                            key: ValueKey('staff_${def.uid}'),
+                            index: idx,
+                            staff: def,
+                            parentGroupHash: group.hashCode,
+                            notifier: notifier,
+                          ),
+                        core.StaffNodeGroup subGroup => _StaffGroupWidget(
+                            key: ValueKey('group_${subGroup.hashCode}_$idx'),
+                            group: subGroup,
+                            index: idx,
+                            notifier: notifier,
+                          ),
+                      }
+                  ],
+                ),
             ],
           ),
         );
@@ -495,6 +786,9 @@ class _StaffItemState extends State<_StaffItem> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final scope = _HierarchySelectionScope.of(context);
+    final isSelected = scope?.selectedUids.contains(widget.staff.uid) ?? false;
+    final isSelectionMode = scope?.selectedUids.isNotEmpty ?? false;
 
     final String displayName =
         widget.staff.instrumentName ?? l10n.staffNumber(widget.index + 1);
@@ -538,211 +832,351 @@ class _StaffItemState extends State<_StaffItem> {
       builder: (context, candidateData, rejectedData) {
         final isDropHovered = candidateData.isNotEmpty;
 
-        final itemCard = Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isDropHovered
-                ? cs.primaryContainer.withValues(alpha: 0.35)
-                : cs.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isDropHovered
-                  ? cs.primary
-                  : cs.outlineVariant.withValues(alpha: 0.3),
-              width: isDropHovered ? 2.0 : 1.0,
+        final itemCard = GestureDetector(
+          onLongPress: () {
+            scope?.onToggleSelection(widget.staff.uid);
+          },
+          onTap: () {
+            if (isSelectionMode) {
+              final isShift = HardwareKeyboard.instance.isShiftPressed;
+              scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+            } else {
+              _openConfigDialog(context);
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? cs.primaryContainer.withValues(alpha: 0.4)
+                  : (isDropHovered
+                      ? cs.primaryContainer.withValues(alpha: 0.35)
+                      : cs.surface),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected
+                    ? cs.primary
+                    : (isDropHovered
+                        ? cs.primary
+                        : cs.outlineVariant.withValues(alpha: 0.3)),
+                width: isSelected || isDropHovered ? 2.0 : 1.0,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: cs.primary.withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (isDropHovered)
-                Container(
-                  height: 3,
-                  margin: const EdgeInsets.only(bottom: 6),
-                  decoration: BoxDecoration(
-                    color: cs.primary,
-                    borderRadius: BorderRadius.circular(2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isDropHovered)
+                  Container(
+                    height: 3,
+                    margin: const EdgeInsets.only(bottom: 6),
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-              Row(
-                children: [
-                  // Drag Handle with Draggable
-                  Draggable<StaffDragPayload>(
-                    data: payload,
-                    feedback: Material(
-                      elevation: 6,
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.transparent,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: cs.primaryContainer,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: cs.primary, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: cs.shadow.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          displayName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: cs.onPrimaryContainer,
+                Row(
+                  children: [
+                    // Checkbox in selection mode or when selected
+                    if (isSelectionMode || isSelected)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 8.0),
+                        child: InkWell(
+                          onTap: () {
+                            final isShift = HardwareKeyboard.instance.isShiftPressed;
+                            scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Icon(
+                            isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                            size: 18,
+                            color: isSelected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
-                    ),
-                    childWhenDragging: Opacity(
-                      opacity: 0.3,
-                      child: Icon(
-                        Icons.drag_indicator,
-                        size: 18,
-                        color: cs.primary,
-                      ),
-                    ),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.grab,
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 8.0),
-                        child: Icon(
-                          Icons.drag_indicator,
-                          size: 18,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
-                  ),
 
-                  // Index Circle
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${widget.index + 1}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        color: cs.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Name and configuration badges
-                  Expanded(
-                    child: _isEditingName
-                        ? SizedBox(
-                            height: 28,
-                            child: TextField(
-                              controller: _controller,
-                              focusNode: _focusNode,
-                              style: const TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.bold),
-                              decoration: InputDecoration(
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                              onSubmitted: (_) => _submitName(),
-                            ),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onDoubleTap: _startEditingName,
-                                      onTap: () => _openConfigDialog(context),
-                                      child: Tooltip(
-                                        message: labelText,
-                                        child: Text(
-                                          labelText,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: _startEditingName,
-                                    icon: Icon(
-                                      Icons.edit_outlined,
-                                      size: 12,
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.5),
-                                    ),
-                                    constraints: const BoxConstraints(
-                                        minWidth: 20, minHeight: 20),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              InkWell(
-                                onTap: () => _openConfigDialog(context),
-                                borderRadius: BorderRadius.circular(4),
-                                child: Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children: [
-                                    _buildBadge(context,
-                                        l10n.linesCount(widget.staff.lines)),
-                                    _buildBadge(context, clefLabel),
-                                    if (!widget.staff.labelVisible)
-                                      _buildBadge(context, l10n.hidden,
-                                          color: cs.error),
-                                  ],
-                                ),
+                    // Drag Handle with Draggable
+                    Draggable<StaffDragPayload>(
+                      data: payload,
+                      feedback: Material(
+                        elevation: 6,
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.transparent,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: cs.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: cs.primary, width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: cs.shadow.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                  ),
+                          child: Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: cs.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.3,
+                        child: Icon(
+                          Icons.drag_indicator,
+                          size: 18,
+                          color: cs.primary,
+                        ),
+                      ),
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8.0),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            size: 18,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                    ),
 
-                  // Actions
-                  IconButton(
-                    onPressed: () => _openConfigDialog(context),
-                    icon: Icon(Icons.tune_outlined,
-                        size: 16, color: cs.primary.withValues(alpha: 0.8)),
-                    tooltip: l10n.configureStaff,
-                    constraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                    padding: const EdgeInsets.all(4),
-                  ),
-                  IconButton(
-                    onPressed: () =>
-                        widget.notifier.removeStaffByUid(widget.staff.uid),
-                    icon: Icon(Icons.remove_circle_outline,
-                        size: 16, color: cs.error.withValues(alpha: 0.7)),
-                    tooltip: l10n.removeStaff,
-                    constraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                    padding: const EdgeInsets.all(4),
-                  ),
-                ],
-              ),
-            ],
+                    // Index Circle
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${widget.index + 1}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: cs.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Name and configuration badges
+                    Expanded(
+                      child: _isEditingName
+                          ? SizedBox(
+                              height: 28,
+                              child: TextField(
+                                controller: _controller,
+                                focusNode: _focusNode,
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                                onSubmitted: (_) => _submitName(),
+                              ),
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onDoubleTap: _startEditingName,
+                                        onTap: () {
+                                          if (isSelectionMode) {
+                                            final isShift = HardwareKeyboard.instance.isShiftPressed;
+                                            scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+                                          } else {
+                                            _openConfigDialog(context);
+                                          }
+                                        },
+                                        child: Tooltip(
+                                          message: labelText,
+                                          child: Text(
+                                            labelText,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: _startEditingName,
+                                      icon: Icon(
+                                        Icons.edit_outlined,
+                                        size: 12,
+                                        color: cs.onSurfaceVariant
+                                            .withValues(alpha: 0.5),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 20, minHeight: 20),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: [
+                                    // Line Count Badge Quick-Picker
+                                    PopupMenuButton<int>(
+                                      tooltip: 'Change Line Count',
+                                      padding: EdgeInsets.zero,
+                                      onSelected: (lines) {
+                                        widget.notifier.updateStaffConfigDetails(
+                                          widget.staff.uid,
+                                          lines: lines,
+                                        );
+                                      },
+                                      itemBuilder: (context) => [
+                                        for (int i = 1; i <= 6; i++)
+                                          PopupMenuItem(
+                                            value: i,
+                                            child: Text(l10n.linesCount(i),
+                                                style: const TextStyle(fontSize: 12)),
+                                          ),
+                                      ],
+                                      child: _buildBadge(context,
+                                          l10n.linesCount(widget.staff.lines)),
+                                    ),
+
+                                    // Clef Badge Quick-Picker
+                                    PopupMenuButton<core.ClefSymbol>(
+                                      tooltip: 'Change Clef',
+                                      padding: EdgeInsets.zero,
+                                      onSelected: (symbol) {
+                                        final newClef = switch (symbol) {
+                                          core.ClefSymbol.g => core.Clef.treble,
+                                          core.ClefSymbol.c => core.Clef.alto,
+                                          core.ClefSymbol.f => core.Clef.bass,
+                                          core.ClefSymbol.tab => core.Clef.tab,
+                                          core.ClefSymbol.percussion =>
+                                            core.Clef.percussion,
+                                        };
+                                        widget.notifier.updateStaffClef(
+                                            widget.staff.uid, newClef);
+                                      },
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem(
+                                          value: core.ClefSymbol.g,
+                                          child: Row(children: [
+                                            const Icon(Icons.music_note, size: 14),
+                                            const SizedBox(width: 8),
+                                            Text(l10n.trebleClef,
+                                                style: const TextStyle(fontSize: 12)),
+                                          ]),
+                                        ),
+                                        PopupMenuItem(
+                                          value: core.ClefSymbol.c,
+                                          child: Row(children: [
+                                            const Icon(Icons.music_note, size: 14),
+                                            const SizedBox(width: 8),
+                                            Text(l10n.altoClef,
+                                                style: const TextStyle(fontSize: 12)),
+                                          ]),
+                                        ),
+                                        PopupMenuItem(
+                                          value: core.ClefSymbol.f,
+                                          child: Row(children: [
+                                            const Icon(Icons.music_note, size: 14),
+                                            const SizedBox(width: 8),
+                                            Text(l10n.bassClef,
+                                                style: const TextStyle(fontSize: 12)),
+                                          ]),
+                                        ),
+                                        PopupMenuItem(
+                                          value: core.ClefSymbol.tab,
+                                          child: Row(children: [
+                                            const Icon(Icons.numbers, size: 14),
+                                            const SizedBox(width: 8),
+                                            Text(l10n.categoryTablature,
+                                                style: const TextStyle(fontSize: 12)),
+                                          ]),
+                                        ),
+                                        PopupMenuItem(
+                                          value: core.ClefSymbol.percussion,
+                                          child: Row(children: [
+                                            const Icon(Icons.adjust, size: 14),
+                                            const SizedBox(width: 8),
+                                            Text(l10n.categoryPercussion,
+                                                style: const TextStyle(fontSize: 12)),
+                                          ]),
+                                        ),
+                                      ],
+                                      child: _buildBadge(context, clefLabel),
+                                    ),
+
+                                    if (!widget.staff.labelVisible)
+                                      InkWell(
+                                        onTap: () => widget.notifier.updateStaffConfigDetails(
+                                          widget.staff.uid,
+                                          visible: true,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: _buildBadge(context, l10n.hidden,
+                                            color: cs.error),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                    ),
+
+                    // Actions
+                    IconButton(
+                      onPressed: () => _openConfigDialog(context),
+                      icon: Icon(Icons.tune_outlined,
+                          size: 16, color: cs.primary.withValues(alpha: 0.8)),
+                      tooltip: l10n.configureStaff,
+                      constraints:
+                          const BoxConstraints(minWidth: 28, minHeight: 28),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                    IconButton(
+                      onPressed: () =>
+                          widget.notifier.removeStaffByUid(widget.staff.uid),
+                      icon: Icon(Icons.remove_circle_outline,
+                          size: 16, color: cs.error.withValues(alpha: 0.7)),
+                      tooltip: l10n.removeStaff,
+                      constraints:
+                          const BoxConstraints(minWidth: 28, minHeight: 28),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
 
@@ -779,7 +1213,7 @@ class _ConnectorPicker extends StatelessWidget {
   const _ConnectorPicker({
     required this.value,
     required this.onChanged,
-    required this.compact,
+    this.compact = false,
   });
 
   final core.SystemConnector value;
@@ -790,46 +1224,36 @@ class _ConnectorPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return SegmentedButton<core.SystemConnector>(
+      showSelectedIcon: false,
       segments: [
-        ButtonSegment(
+        ButtonSegment<core.SystemConnector>(
           value: core.SystemConnector.none,
-          icon: const Icon(Icons.linear_scale, size: 14),
-          label: compact
-              ? null
-              : Text(l10n.connectorNone, style: const TextStyle(fontSize: 10)),
-          tooltip: l10n.connectorNoneTooltip,
+          label: Text(
+            l10n.connectorNone,
+            style: TextStyle(fontSize: compact ? 9 : 10),
+          ),
         ),
-        ButtonSegment(
+        ButtonSegment<core.SystemConnector>(
           value: core.SystemConnector.bracket,
-          icon: const Icon(Icons.reorder, size: 14),
-          label: compact
-              ? null
-              : Text(l10n.connectorBracket, style: const TextStyle(fontSize: 10)),
-          tooltip: l10n.connectorBracketTooltip,
+          label: Text(
+            l10n.connectorBracket,
+            style: TextStyle(fontSize: compact ? 9 : 10),
+          ),
         ),
-        ButtonSegment(
-          value: core.SystemConnector.subBracket,
-          icon: const Icon(Icons.line_weight, size: 14),
-          label: compact
-              ? null
-              : Text(l10n.connectorSubBracket, style: const TextStyle(fontSize: 10)),
-          tooltip: l10n.connectorSubBracketTooltip,
-        ),
-        ButtonSegment(
+        ButtonSegment<core.SystemConnector>(
           value: core.SystemConnector.brace,
-          icon: const Icon(Icons.code, size: 14),
-          label: compact
-              ? null
-              : Text(l10n.connectorBrace, style: const TextStyle(fontSize: 10)),
-          tooltip: l10n.connectorBraceTooltip,
+          label: Text(
+            l10n.connectorBrace,
+            style: TextStyle(fontSize: compact ? 9 : 10),
+          ),
         ),
       ],
       selected: {value},
       onSelectionChanged: (set) => onChanged(set.first),
-      showSelectedIcon: false,
       style: SegmentedButton.styleFrom(
-        visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        visualDensity: compact
+            ? VisualDensity.compact
+            : const VisualDensity(horizontal: -2, vertical: -2),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
@@ -847,73 +1271,26 @@ class _ConnectorMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
-
-    final (IconData icon, String label) = switch (value) {
-      core.SystemConnector.none => (Icons.linear_scale, l10n.connectorNone),
-      core.SystemConnector.bracket => (Icons.reorder, l10n.connectorBracket),
-      core.SystemConnector.subBracket =>
-        (Icons.line_weight, l10n.connectorSubBracket),
-      core.SystemConnector.brace => (Icons.code, l10n.connectorBrace),
-    };
-
     return PopupMenuButton<core.SystemConnector>(
       initialValue: value,
       onSelected: onChanged,
-      tooltip: label,
+      icon: const Icon(Icons.tune, size: 14),
+      tooltip: l10n.systemGrouping,
+      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: cs.primaryContainer.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
-        ),
-        child: Icon(icon, size: 14, color: cs.primary),
-      ),
       itemBuilder: (context) => [
         PopupMenuItem(
           value: core.SystemConnector.none,
-          child: Row(
-            children: [
-              const Icon(Icons.linear_scale, size: 14),
-              const SizedBox(width: 8),
-              Text(l10n.connectorNone, style: const TextStyle(fontSize: 12)),
-            ],
-          ),
+          child: Text(l10n.connectorNone, style: const TextStyle(fontSize: 12)),
         ),
         PopupMenuItem(
           value: core.SystemConnector.bracket,
-          child: Row(
-            children: [
-              const Icon(Icons.reorder, size: 14),
-              const SizedBox(width: 8),
-              Text(l10n.connectorBracket, style: const TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: core.SystemConnector.subBracket,
-          child: Row(
-            children: [
-              const Icon(Icons.line_weight, size: 14),
-              const SizedBox(width: 8),
-              Text(l10n.connectorSubBracket,
-                  style: const TextStyle(fontSize: 12)),
-            ],
-          ),
+          child: Text(l10n.connectorBracket, style: const TextStyle(fontSize: 12)),
         ),
         PopupMenuItem(
           value: core.SystemConnector.brace,
-          child: Row(
-            children: [
-              const Icon(Icons.code, size: 14),
-              const SizedBox(width: 8),
-              Text(l10n.connectorBrace, style: const TextStyle(fontSize: 12)),
-            ],
-          ),
+          child: Text(l10n.connectorBrace, style: const TextStyle(fontSize: 12)),
         ),
       ],
     );
