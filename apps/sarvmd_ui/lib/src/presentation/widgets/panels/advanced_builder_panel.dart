@@ -147,18 +147,12 @@ class _StaffGroupWidget extends StatelessWidget {
                     return Row(
                       children: [
                         if (!isRoot && index != null) ...[
-                          ReorderableDragStartListener(
-                            index: index!,
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.grab,
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.only(end: 6.0),
-                                child: Icon(
-                                  Icons.drag_indicator,
-                                  size: 16,
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                                ),
-                              ),
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 6.0),
+                            child: Icon(
+                              Icons.drag_indicator,
+                              size: 16,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -215,18 +209,12 @@ class _StaffGroupWidget extends StatelessWidget {
                         Row(
                           children: [
                             if (!isRoot && index != null) ...[
-                              ReorderableDragStartListener(
-                                index: index!,
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.grab,
-                                  child: Padding(
-                                    padding: const EdgeInsetsDirectional.only(end: 8.0),
-                                    child: Icon(
-                                      Icons.drag_indicator,
-                                      size: 18,
-                                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                                    ),
-                                  ),
+                              Padding(
+                                padding: const EdgeInsetsDirectional.only(end: 8.0),
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  size: 18,
+                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                                 ),
                               ),
                             ],
@@ -284,18 +272,12 @@ class _StaffGroupWidget extends StatelessWidget {
                     return Row(
                       children: [
                         if (!isRoot && index != null) ...[
-                          ReorderableDragStartListener(
-                            index: index!,
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.grab,
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.only(end: 8.0),
-                                child: Icon(
-                                  Icons.drag_indicator,
-                                  size: 18,
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                                ),
-                              ),
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 8.0),
+                            child: Icon(
+                              Icons.drag_indicator,
+                              size: 18,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -401,35 +383,27 @@ class _StaffGroupWidget extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 12),
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                buildDefaultDragHandles: false,
-                itemCount: group.children.length,
-                onReorderItem: (oldIndex, newIndex) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    notifier.reorderGroupChildren(
-                        group.hashCode, oldIndex, newIndex);
-                  });
-                },
-                itemBuilder: (context, idx) {
-                  final child = group.children[idx];
-                  return switch (child) {
-                    core.StaffDefinition def => _StaffItem(
-                        key: ValueKey('staff_${def.uid}'),
-                        index: idx,
-                        staff: def,
-                        parentGroupHash: group.hashCode,
-                        notifier: notifier,
-                      ),
-                    core.StaffNodeGroup subGroup => _StaffGroupWidget(
-                        key: ValueKey('group_${subGroup.hashCode}_$idx'),
-                        group: subGroup,
-                        index: idx,
-                        notifier: notifier,
-                      ),
-                  };
-                },
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (int idx = 0; idx < group.children.length; idx++)
+                    switch (group.children[idx]) {
+                      core.StaffDefinition def => _StaffItem(
+                          key: ValueKey('staff_${def.uid}'),
+                          index: idx,
+                          staff: def,
+                          parentGroupHash: group.hashCode,
+                          notifier: notifier,
+                        ),
+                      core.StaffNodeGroup subGroup => _StaffGroupWidget(
+                          key: ValueKey('group_${subGroup.hashCode}_$idx'),
+                          group: subGroup,
+                          index: idx,
+                          notifier: notifier,
+                        ),
+                    }
+                ],
               ),
             ],
           ),
@@ -634,17 +608,14 @@ class _StaffItemState extends State<_StaffItem> {
                         color: cs.primary,
                       ),
                     ),
-                    child: ReorderableDragStartListener(
-                      index: widget.index,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.grab,
-                        child: Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 8.0),
-                          child: Icon(
-                            Icons.drag_indicator,
-                            size: 18,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                          ),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.grab,
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 8.0),
+                        child: Icon(
+                          Icons.drag_indicator,
+                          size: 18,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
                       ),
                     ),
