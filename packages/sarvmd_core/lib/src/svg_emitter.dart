@@ -349,12 +349,16 @@ void _drawStaffLabels(
   for (var sysIdx = 0; sysIdx < systems.length; sysIdx++) {
     final system = systems[sysIdx];
     final leftX = baseLeftX + system.leftIndentMm;
+    final bool isFirstSystem = sysIdx == 0;
 
+    // 1. Group labels (Outer tier)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
-      final String label = sysIdx == 0
+      final String label = isFirstSystem
           ? group.label
-          : (group.abbreviation.isNotEmpty ? group.abbreviation : group.label);
+          : (group.abbreviation.trim().isNotEmpty
+              ? group.abbreviation
+              : group.label);
       if (label.trim().isEmpty) continue;
 
       final groupStaves =
@@ -365,48 +369,137 @@ void _drawStaffLabels(
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
       final midY = (topY + bottomY) / 2.0;
 
-      final double xOffset = group.level * 4.0;
-      final double connectorX = leftX - xOffset;
-      final labelX = connectorX - 3.0;
+      final double connectorX = leftX - group.connectorOffsetMm;
+      final labelX = connectorX - GroupPlacementMetrics.groupLabelClearanceMm;
 
       const fontFamily = 'serif';
       final fontSizeMm = 11.0 * (25.4 / 72.0);
 
-      buf.writeln(
-        '    <text x="${_f(labelX)}" y="${_f(midY)}"'
-        ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}" font-weight="bold"'
-        ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">'
-        '${_escapeXml(label)}'
-        '</text>',
+      _writeRightAlignedText(
+        buf: buf,
+        text: label,
+        rightAnchorXMm: labelX,
+        centerYMm: midY,
+        fontSizeMm: fontSizeMm,
+        fontFamily: fontFamily,
+        isBold: true,
       );
     }
 
-    for (final staff in system.staves) {
+    // 2. Identify which staves belong to an actively labeled group or connected group
+    final Set<int> innerStaffIndices = {};
+    for (final group in system.groupPlacements) {
+      final String gLabel = isFirstSystem
+          ? group.label
+          : (group.abbreviation.trim().isNotEmpty
+              ? group.abbreviation
+              : group.label);
+      final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
+      final bool hasConnector = group.connector != SystemConnector.none;
+      if (hasGroupLabel || hasConnector) {
+        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
+          innerStaffIndices.add(s);
+        }
+      }
+    }
+
+    // 3. Staff labels (Inner tier when grouped; outer tier when standalone)
+    for (int sIdx = 0; sIdx < system.staves.length; sIdx++) {
+      final staff = system.staves[sIdx];
       final def = staff.definition;
       if (def != null && def.labelVisible) {
-        final String? label = sysIdx == 0
+        final String? label = isFirstSystem
             ? def.instrumentName
-            : (def.instrumentAbbreviation ?? def.instrumentName);
+            : ((def.instrumentAbbreviation != null &&
+                    def.instrumentAbbreviation!.trim().isNotEmpty)
+                ? def.instrumentAbbreviation
+                : def.instrumentName);
 
         if (label != null && label.trim().isNotEmpty) {
-          final labelX = leftX - 3.0 + def.labelHorizontalOffset;
-          final staffMidY = staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
-          final italicAttr = def.labelItalic ? ' font-style="italic"' : '';
-          final fontFamily = def.labelFontFamily.isNotEmpty ? def.labelFontFamily : 'serif';
+          final double labelX;
+          if (innerStaffIndices.contains(sIdx)) {
+            // Inner staff label: sits right-aligned between connector and starting barline
+            labelX = leftX -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                def.labelHorizontalOffset;
+          } else {
+            // Standalone staff: sits to the left of its connector
+            double maxConnectorOffset = 0.0;
+            for (final g in system.groupPlacements) {
+              if (sIdx >= g.startStaffIdx &&
+                  sIdx <= g.endStaffIdx &&
+                  g.connectorOffsetMm > maxConnectorOffset) {
+                maxConnectorOffset = g.connectorOffsetMm;
+              }
+            }
+            labelX = leftX -
+                maxConnectorOffset -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                def.labelHorizontalOffset;
+          }
+
+          final staffMidY =
+              staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
+          final fontFamily =
+              def.labelFontFamily.isNotEmpty ? def.labelFontFamily : 'serif';
           // Convert labelFontSize in points (pt) to unitless viewBox mm (1 pt = 25.4 / 72 mm).
           // Must remain UNITLESS so SVG viewBox scaling matrix does not double-scale physical units!
           final fontSizeMm = def.labelFontSize * (25.4 / 72.0);
 
-          buf.writeln(
-            '    <text x="${_f(labelX)}" y="${_f(staffMidY)}"'
-            ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$italicAttr'
-            ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">'
-            '${_escapeXml(label)}'
-            '</text>',
+          _writeRightAlignedText(
+            buf: buf,
+            text: label,
+            rightAnchorXMm: labelX,
+            centerYMm: staffMidY,
+            fontSizeMm: fontSizeMm,
+            fontFamily: fontFamily,
+            isItalic: def.labelItalic,
           );
         }
       }
     }
+  }
+}
+
+/// Helper method to write single or multi-line right-aligned text in SVG.
+void _writeRightAlignedText({
+  required StringBuffer buf,
+  required String text,
+  required double rightAnchorXMm,
+  required double centerYMm,
+  required double fontSizeMm,
+  required String fontFamily,
+  bool isBold = false,
+  bool isItalic = false,
+}) {
+  final boldAttr = isBold ? ' font-weight="bold"' : '';
+  final italicAttr = isItalic ? ' font-style="italic"' : '';
+  final lines = text.split('\n');
+
+  if (lines.length == 1) {
+    buf.writeln(
+      '    <text x="${_f(rightAnchorXMm)}" y="${_f(centerYMm)}"'
+      ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$boldAttr$italicAttr'
+      ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">'
+      '${_escapeXml(lines.first)}'
+      '</text>',
+    );
+  } else {
+    final lineHeightMm = fontSizeMm * 1.2;
+    final totalHeightMm = (lines.length - 1) * lineHeightMm;
+    final startYMm = centerYMm - (totalHeightMm / 2.0);
+    buf.writeln(
+      '    <text x="${_f(rightAnchorXMm)}" y="${_f(startYMm)}"'
+      ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$boldAttr$italicAttr'
+      ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">',
+    );
+    for (var i = 0; i < lines.length; i++) {
+      final dy = i == 0 ? '0' : _f(lineHeightMm);
+      buf.writeln(
+        '      <tspan x="${_f(rightAnchorXMm)}" dy="$dy">${_escapeXml(lines[i])}</tspan>',
+      );
+    }
+    buf.writeln('    </text>');
   }
 }
 
@@ -436,8 +529,7 @@ void _drawSystemConnectors(
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
 
       final double systemLeftX = leftMarginX + system.leftIndentMm;
-      final double xOffset = group.level * 4.0;
-      final double connectorX = systemLeftX - xOffset;
+      final double connectorX = systemLeftX - group.connectorOffsetMm;
 
       // ── System barline (continuous or per-staff at systemLeftX) ────────
       if (group.continuousBarlines && groupStaves.length > 1) {
@@ -471,7 +563,8 @@ void _drawSystemConnectors(
             '<path d="$_braceSvg"/></g>',
           );
         case SystemConnector.bracket when groupStaves.length >= 2:
-          final double endTickX = group.level == 0 ? connectorX + 2.0 : systemLeftX;
+          final double endTickX =
+              connectorX + GroupPlacementMetrics.bracketTickLengthMm;
           buf.writeln(
             '    <line x1="${_f(connectorX)}" y1="${_f(topY)}"'
             ' x2="${_f(connectorX)}" y2="${_f(bottomY)}"'

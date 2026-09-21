@@ -189,24 +189,21 @@ class _ManuscriptPainter extends CustomPainter {
       final system = layout.systems[sysIdx];
       final systemLeftMm = leftMm + system.leftIndentMm;
 
-      // Pre-calculate the system's optimal maximum split word length
-      int systemMaxSplitLength = 0;
-      for (final staff in system.staves) {
-        final def = staff.definition;
-        if (def != null && def.labelVisible) {
-          final String label = sysIdx == 0
-              ? (def.instrumentName ?? '')
-              : (def.instrumentAbbreviation ?? def.instrumentName ?? '');
-          if (label.isNotEmpty) {
-            int maxWordLength = 0;
-            for (final word in label.split(' ')) {
-              if (word.length > maxWordLength) {
-                maxWordLength = word.length;
-              }
-            }
-            if (maxWordLength > systemMaxSplitLength) {
-              systemMaxSplitLength = maxWordLength;
-            }
+      final bool isFirstSystem = sysIdx == 0;
+
+      // Identify which staves belong to an actively labeled group or connected group
+      final Set<int> innerStaffIndices = {};
+      for (final group in system.groupPlacements) {
+        final String gLabel = isFirstSystem
+            ? group.label
+            : (group.abbreviation.trim().isNotEmpty
+                ? group.abbreviation
+                : group.label);
+        final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
+        final bool hasConnector = group.connector != core.SystemConnector.none;
+        if (hasGroupLabel || hasConnector) {
+          for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
+            innerStaffIndices.add(s);
           }
         }
       }
@@ -237,6 +234,7 @@ class _ManuscriptPainter extends CustomPainter {
           );
         }
 
+
         // ── Draw Clef ─────────────────────────────────────────
         final clef = staff.definition?.clef;
 
@@ -263,14 +261,12 @@ class _ManuscriptPainter extends CustomPainter {
           final isFirstSystem = sysIdx == 0;
           final String? name = isFirstSystem
               ? staff.definition?.instrumentName
-              : (staff.definition?.instrumentAbbreviation ??
-                  staff.definition?.instrumentName);
+              : ((staff.definition?.instrumentAbbreviation != null &&
+                      staff.definition!.instrumentAbbreviation!.trim().isNotEmpty)
+                  ? staff.definition!.instrumentAbbreviation
+                  : staff.definition?.instrumentName);
 
           if (name != null && name.isNotEmpty) {
-            // Only wrap if name length is longer than the systemMaxSplitLength (which represents the optimal split indent)
-            final formattedName = name.length > systemMaxSplitLength
-                ? name.replaceAll(' ', '\n')
-                : name;
             final double ptScale =
                 scale / (96 / 25.4); // Points conversion scale
             final double fontSize =
@@ -283,7 +279,7 @@ class _ManuscriptPainter extends CustomPainter {
 
             final namePainter = TextPainter(
               text: TextSpan(
-                text: formattedName,
+                text: name,
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.w600,
@@ -298,45 +294,31 @@ class _ManuscriptPainter extends CustomPainter {
 
             final staffMidY = topSnappedY + (staff.height * scale) / 2;
 
-            // Place label in the left margin area, dynamically computing leftmost layout boundary
-            final double marginSpace = 4 * scale;
+            // Two-tier Gouldian label placement
+            final double marginSpace =
+                core.GroupPlacementMetrics.staffLabelClearanceMm * scale;
             final double minEdgePadding = 2 * scale;
+            final double systemLeftPx = (systemLeftMm * scale).roundToDouble();
 
-            double leftmostLayoutX = systemLeftMm * scale;
-            for (final group in system.groupPlacements) {
-              if (sIdx >= group.startStaffIdx && sIdx <= group.endStaffIdx) {
-                final double xOffset = group.level * (4.0 * scale);
-                final double startX =
-                    (systemLeftMm * scale).roundToDouble() - xOffset;
-
-                double boundary = startX;
-                if (group.connector == core.SystemConnector.brace &&
-                    (group.endStaffIdx - group.startStaffIdx + 1) >= 2) {
-                  final groupStaves = system.staves
-                      .sublist(group.startStaffIdx, group.endStaffIdx + 1);
-                  final double gTopY =
-                      (groupStaves.first.topY * scale).roundToDouble();
-                  final double gBottomY = (groupStaves.last.topY * scale +
-                          groupStaves.last.height * scale)
-                      .roundToDouble();
-                  final double h = gBottomY - gTopY;
-                  final double w = (h * 0.12).clamp(6.0 * scale, 30.0 * scale);
-                  boundary -= w;
+            final double rightAnchorX;
+            if (innerStaffIndices.contains(sIdx)) {
+              // Inner staff descriptor: sits right-aligned between connector and starting barline
+              rightAnchorX = systemLeftPx - marginSpace;
+            } else {
+              // Standalone staff: sits to the left of its connector
+              double maxConnectorOffsetMm = 0.0;
+              for (final g in system.groupPlacements) {
+                if (sIdx >= g.startStaffIdx &&
+                    sIdx <= g.endStaffIdx &&
+                    g.connectorOffsetMm > maxConnectorOffsetMm) {
+                  maxConnectorOffsetMm = g.connectorOffsetMm;
                 }
-                leftmostLayoutX = math.min(leftmostLayoutX, boundary);
               }
+              final double connectorOffset = maxConnectorOffsetMm * scale;
+              rightAnchorX = systemLeftPx - connectorOffset - marginSpace;
             }
 
-            final double availableWidth =
-                leftmostLayoutX - marginSpace - minEdgePadding;
-
-            if (namePainter.width > availableWidth) {
-              final double finalMaxWidth = math.max(availableWidth, 10.0);
-              namePainter.textAlign = TextAlign.right;
-              namePainter.layout(maxWidth: finalMaxWidth);
-            }
-
-            double nameX = leftmostLayoutX - namePainter.width - marginSpace;
+            double nameX = rightAnchorX - namePainter.width;
             if (nameX < minEdgePadding) {
               nameX = minEdgePadding;
             }
@@ -356,10 +338,11 @@ class _ManuscriptPainter extends CustomPainter {
       // ── Draw Group Labels ────────────────────────────────
       for (final group in system.groupPlacements) {
         if (!group.labelVisible) continue;
-        final isFirstSystem = sysIdx == 0;
         final String label = isFirstSystem
             ? group.label
-            : (group.abbreviation.isNotEmpty ? group.abbreviation : group.label);
+            : (group.abbreviation.trim().isNotEmpty
+                ? group.abbreviation
+                : group.label);
 
         if (label.trim().isNotEmpty) {
           final staves =
@@ -372,8 +355,8 @@ class _ManuscriptPainter extends CustomPainter {
           final groupMidY = (topY + bottomY) / 2;
 
           final systemLeftPx = (systemLeftMm * scale).roundToDouble();
-          final double xOffset = group.level * (4.0 * scale);
-          final connectorX = systemLeftPx - xOffset;
+          final connectorX =
+              systemLeftPx - (group.connectorOffsetMm * scale);
 
           final double ptScale = scale / (96 / 25.4);
           final double fontSize = 11.0 * ptScale;
@@ -392,7 +375,9 @@ class _ManuscriptPainter extends CustomPainter {
             textDirection: TextDirection.ltr,
           )..layout();
 
-          final labelX = connectorX - (3 * scale) - groupNamePainter.width;
+          final double labelClearance =
+              core.GroupPlacementMetrics.groupLabelClearanceMm * scale;
+          final labelX = connectorX - labelClearance - groupNamePainter.width;
           final labelY = groupMidY - (groupNamePainter.height / 2);
 
           groupNamePainter.paint(canvas, Offset(labelX, labelY));
@@ -414,9 +399,9 @@ class _ManuscriptPainter extends CustomPainter {
         // System barline position is ALWAYS flush with staff line start
         final systemLeftPx = (systemLeftMm * scale).roundToDouble();
 
-        // Connector glyph position steps left for higher nest levels
-        final double xOffset = group.level * (4.0 * scale);
-        final connectorX = systemLeftPx - xOffset;
+        // Connector glyph position steps left for higher nest levels and inner labels
+        final connectorX =
+            systemLeftPx - (group.connectorOffsetMm * scale);
 
         final connectorPaint = Paint()
           ..color = inkColor
@@ -457,7 +442,8 @@ class _ManuscriptPainter extends CustomPainter {
               ..style = PaintingStyle.stroke;
             canvas.drawLine(
                 Offset(connectorX, topY), Offset(connectorX, bottomY), bracketPaint);
-            final endTickX = group.level == 0 ? connectorX + 2.0 * scale : systemLeftPx;
+            final endTickX = connectorX +
+                (core.GroupPlacementMetrics.bracketTickLengthMm * scale);
             canvas.drawLine(Offset(connectorX, topY),
                 Offset(endTickX, topY), bracketPaint);
             canvas.drawLine(Offset(connectorX, bottomY),

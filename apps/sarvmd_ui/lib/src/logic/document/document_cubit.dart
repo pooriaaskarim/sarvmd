@@ -322,6 +322,14 @@ class DocumentCubit extends Cubit<DocumentState> {
     updateStaffConfigDetails(uid, name: () => name);
   }
 
+  /// Sequentially renumbers the staves in [uids] ('1', '2', ...) following Gould's non-redundancy principle.
+  void batchRenumberStaves(List<String> uids) {
+    if (uids.isEmpty) return;
+    for (int i = 0; i < uids.length; i++) {
+      updateStaffInstrumentName(uids[i], '${i + 1}');
+    }
+  }
+
   void updateStaffConfigDetails(
     String uid, {
     String? Function()? name,

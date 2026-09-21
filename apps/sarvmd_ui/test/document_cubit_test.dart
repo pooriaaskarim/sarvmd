@@ -160,5 +160,16 @@ void main() {
       expect(cubit.state.score.title, equals(''));
       expect(cubit.state.undoStack.length, equals(1));
     });
+
+    test('batchRenumberStaves renumbers staves sequentially per Gould non-redundancy', () {
+      cubit.execute(core.ApplyProfileCommand(core.StaffProfiles.stringQuartet));
+      final uids = cubit.allStaves.take(3).map((s) => s.uid).toList();
+      cubit.batchRenumberStaves(uids);
+
+      final updatedStaves = cubit.allStaves;
+      expect(updatedStaves[0].instrumentName, equals('1'));
+      expect(updatedStaves[1].instrumentName, equals('2'));
+      expect(updatedStaves[2].instrumentName, equals('3'));
+    });
   });
 }

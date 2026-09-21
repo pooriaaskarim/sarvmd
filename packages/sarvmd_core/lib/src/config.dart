@@ -465,10 +465,69 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
       }).toList(),
     );
   }
+
+  /// Returns the maximum depth of nested sub-groups in this subtree (0 if no child groups).
+  int get maxSubGroupDepth {
+    int maxChild = 0;
+    bool hasGroup = false;
+    for (final child in children) {
+      if (child is StaffNodeGroup) {
+        hasGroup = true;
+        final d = child.maxSubGroupDepth;
+        if (d > maxChild) maxChild = d;
+      }
+    }
+    return hasGroup ? 1 + maxChild : 0;
+  }
+
+  /// Finds the nesting depth of the group with [targetHash], where this root is at [currentDepth].
+  int? findGroupDepth(int targetHash, [int currentDepth = 0]) {
+    if (hashCode == targetHash) return currentDepth;
+    for (final child in children) {
+      if (child is StaffNodeGroup) {
+        final res = child.findGroupDepth(targetHash, currentDepth + 1);
+        if (res != null) return res;
+      }
+    }
+    return null;
+  }
+
+  /// Finds the nesting depth of the direct parent group containing [staffUid], where this root is at [currentDepth].
+  int? findStaffParentDepth(String staffUid, [int currentDepth = 0]) {
+    for (final child in children) {
+      if (child is StaffDefinition && child.uid == staffUid) {
+        return currentDepth;
+      } else if (child is StaffNodeGroup) {
+        final res = child.findStaffParentDepth(staffUid, currentDepth + 1);
+        if (res != null) return res;
+      }
+    }
+    return null;
+  }
+
+  /// All descendant child staves flattened across this group and any sub-groups.
+  List<StaffDefinition> get allStaves {
+    final result = <StaffDefinition>[];
+    for (final child in children) {
+      if (child is StaffDefinition) {
+        result.add(child);
+      } else if (child is StaffNodeGroup) {
+        result.addAll(child.allStaves);
+      }
+    }
+    return result;
+  }
 }
 
 /// Centralized engraving constants for system connectors and barlines.
 abstract final class GroupPlacementMetrics {
+  /// Gould and MOLA standard maximum nesting depth for system connectors.
+  static const int standardMaxNestingDepth = 2;
+
+  /// Gould and MOLA absolute emergency ceiling for nesting depth (multi-choirs/stage bands).
+  /// Nesting beyond this depth (4+) is strictly prohibited by engraving standards.
+  static const int emergencyMaxNestingDepth = 3;
+
   /// Horizontal offset in mm per nesting level for outer system connectors.
   static const double connectorLevelSpacingMm = 4.0;
 
@@ -489,6 +548,15 @@ abstract final class GroupPlacementMetrics {
 
   /// Default horizontal offset for the SVG brace path asset scale anchor.
   static const double braceNativeWidthOffsetMm = 82.0;
+
+  /// Horizontal clearance between staff label and starting barline in mm.
+  static const double staffLabelClearanceMm = 3.0;
+
+  /// Horizontal clearance between the tip of a bracket tick (or connector) and inner staff labels in mm.
+  static const double staffLabelConnectorClearanceMm = 2.0;
+
+  /// Horizontal clearance between group label and connector in mm.
+  static const double groupLabelClearanceMm = 3.0;
 }
 
 /// The type of clef symbol.

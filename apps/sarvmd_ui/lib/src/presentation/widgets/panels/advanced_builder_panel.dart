@@ -369,46 +369,70 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: PopupMenuButton<core.SystemConnector>(
-                                    icon: Icon(Icons.layers,
-                                        size: 18, color: cs.primary),
-                                    tooltip: 'Group Selected Staves',
-                                    padding: EdgeInsets.zero,
-                                    onSelected: (connector) {
-                                      widget.notifier.groupSelectedStaves(
-                                          _selectedUids, connector);
-                                      _clearSelection();
-                                    },
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem(
-                                        value: core.SystemConnector.bracket,
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.reorder,
-                                                size: 16, color: cs.primary),
-                                            const SizedBox(width: 8),
-                                            const Text('Group with Bracket [',
-                                                style: TextStyle(fontSize: 12)),
-                                          ],
+                                Builder(
+                                  builder: (context) {
+                                    final int? firstParentDepth = _selectedUids.isNotEmpty
+                                        ? layout.rootGroup.findStaffParentDepth(_selectedUids.first)
+                                        : null;
+                                    final int targetDepth =
+                                        firstParentDepth != null ? firstParentDepth + 1 : 0;
+                                    final bool exceedsLimit = targetDepth >
+                                        core.GroupPlacementMetrics.emergencyMaxNestingDepth;
+                                    final bool isLevel3 = targetDepth ==
+                                        core.GroupPlacementMetrics.emergencyMaxNestingDepth;
+
+                                    return SizedBox(
+                                      width: 32,
+                                      height: 32,
+                                      child: PopupMenuButton<core.SystemConnector>(
+                                        enabled: !exceedsLimit,
+                                        icon: Icon(
+                                          exceedsLimit ? Icons.layers_clear_outlined : Icons.layers,
+                                          size: 18,
+                                          color: exceedsLimit
+                                              ? cs.outlineVariant
+                                              : (isLevel3 ? cs.error : cs.primary),
                                         ),
+                                        tooltip: exceedsLimit
+                                            ? 'Cannot group: Exceeds Gould & MOLA nesting ceiling (3 levels max)'
+                                            : (isLevel3
+                                                ? 'Group Selected Staves (Level 3 - standard recommends max 2)'
+                                                : 'Group Selected Staves'),
+                                        padding: EdgeInsets.zero,
+                                        onSelected: (connector) {
+                                          widget.notifier.groupSelectedStaves(
+                                              _selectedUids, connector);
+                                          _clearSelection();
+                                        },
+                                        itemBuilder: (context) => [
+                                          PopupMenuItem(
+                                            value: core.SystemConnector.bracket,
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.reorder,
+                                                    size: 16, color: cs.primary),
+                                                const SizedBox(width: 8),
+                                                const Text('Group with Bracket [',
+                                                    style: TextStyle(fontSize: 12)),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem(
+                                            value: core.SystemConnector.brace,
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.code,
+                                                    size: 16, color: cs.primary),
+                                                const SizedBox(width: 8),
+                                                const Text('Group with Brace {',
+                                                    style: TextStyle(fontSize: 12)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      PopupMenuItem(
-                                        value: core.SystemConnector.brace,
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.code,
-                                                size: 16, color: cs.primary),
-                                            const SizedBox(width: 8),
-                                            const Text('Group with Brace {',
-                                                style: TextStyle(fontSize: 12)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
@@ -509,6 +533,7 @@ class _StaffGroupWidget extends StatefulWidget {
     super.key,
     required this.group,
     this.isRoot = false,
+    this.depth = 0,
     this.index,
     this.parentGroupHash,
     required this.notifier,
@@ -516,6 +541,7 @@ class _StaffGroupWidget extends StatefulWidget {
 
   final core.StaffNodeGroup group;
   final bool isRoot;
+  final int depth;
   final int? index;
   final int? parentGroupHash;
   final DocumentCubit notifier;
@@ -813,6 +839,12 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                     title: 'Edit Group Label',
                     initialName: widget.group.label,
                     initialAbbreviation: widget.group.abbreviation,
+                    childStaves: widget.group.allStaves,
+                    onAutoNumberChildStaves: () {
+                      final childUids =
+                          widget.group.allStaves.map((s) => s.uid).toList();
+                      widget.notifier.batchRenumberStaves(childUids);
+                    },
                     onSave: (name, abbrev) {
                       setState(() {
                         _isEditingName = false;
@@ -879,6 +911,23 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         if (!widget.group.labelVisible) ...[
                           const SizedBox(width: 4),
                           _buildBadge(context, l10n.hidden, color: cs.error),
+                        ],
+                        if (!widget.isRoot && widget.depth == 2) ...[
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message:
+                                'Gould & MOLA standard limit: 2 nesting levels recommended',
+                            child: _buildBadge(context, 'Level 2',
+                                color: cs.primary),
+                          ),
+                        ] else if (!widget.isRoot && widget.depth >= 3) ...[
+                          const SizedBox(width: 4),
+                          Tooltip(
+                            message:
+                                'Gould & MOLA emergency ceiling: 3 levels maximum reached',
+                            child: _buildBadge(context, 'Level 3 (Max)',
+                                color: cs.error),
+                          ),
                         ],
                       ],
                     );
@@ -1228,6 +1277,7 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                           core.StaffNodeGroup subGroup => _StaffGroupWidget(
                               key: ValueKey('group_${subGroup.hashCode}_$idx'),
                               group: subGroup,
+                              depth: widget.depth + 1,
                               index: idx,
                               parentGroupHash: widget.group.hashCode,
                               notifier: widget.notifier,
@@ -1619,10 +1669,27 @@ class _StaffItemState extends State<_StaffItem> {
                 targetIndex: targetIdx,
               );
             } else {
-              widget.notifier.groupTwoStavesTogether(
-                data.staff.uid,
-                widget.staff.uid,
-              );
+              final rootGroup =
+                  widget.notifier.state.config.systemLayout.rootGroup;
+              final parentDepth =
+                  rootGroup.findGroupDepth(widget.parentGroupHash) ?? 0;
+              if (parentDepth >=
+                  core.GroupPlacementMetrics.emergencyMaxNestingDepth) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Cannot group staves: Gould & MOLA limit is 3 nesting levels maximum.',
+                    ),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } else {
+                widget.notifier.groupTwoStavesTogether(
+                  data.staff.uid,
+                  widget.staff.uid,
+                );
+              }
             }
           });
         } else if (data is GroupDragPayload) {
@@ -2469,6 +2536,8 @@ class _QuickLabelingCard extends StatefulWidget {
     required this.initialAbbreviation,
     required this.onSave,
     required this.onCancel,
+    this.childStaves,
+    this.onAutoNumberChildStaves,
   });
 
   final String title;
@@ -2476,6 +2545,8 @@ class _QuickLabelingCard extends StatefulWidget {
   final String initialAbbreviation;
   final void Function(String name, String abbreviation) onSave;
   final VoidCallback onCancel;
+  final List<core.StaffDefinition>? childStaves;
+  final VoidCallback? onAutoNumberChildStaves;
 
   @override
   State<_QuickLabelingCard> createState() => _QuickLabelingCardState();
@@ -2488,6 +2559,7 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
   late FocusNode _abbrevFocusNode;
   String _suggestedAbbrev = '';
   bool _submitted = false;
+  bool _hasAutoNumbered = false;
 
   @override
   void initState() {
@@ -2831,6 +2903,72 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                     );
                   },
                 ),
+                if (widget.childStaves != null &&
+                    widget.childStaves!.length >= 2) ...[
+                  const SizedBox(height: 10),
+                  InkWell(
+                    onTap: () {
+                      widget.onAutoNumberChildStaves?.call();
+                      setState(() {
+                        _hasAutoNumbered = true;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Applied Gould non-redundancy: Renumbered ${widget.childStaves!.length} staves (1..${widget.childStaves!.length})',
+                          ),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _hasAutoNumbered
+                            ? cs.primaryContainer.withValues(alpha: 0.45)
+                            : cs.secondaryContainer.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _hasAutoNumbered
+                              ? cs.primary.withValues(alpha: 0.4)
+                              : cs.secondary.withValues(alpha: 0.35),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _hasAutoNumbered
+                                ? Icons.check_circle_outline
+                                : Icons.auto_awesome,
+                            size: 14,
+                            color: _hasAutoNumbered
+                                ? cs.primary
+                                : cs.secondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _hasAutoNumbered
+                                  ? 'Gould non-redundancy applied: Staves (1..${widget.childStaves!.length})'
+                                  : 'Apply Gould non-redundancy: Renumber staves (1, 2${widget.childStaves!.length > 2 ? ', ...' : ''})',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: _hasAutoNumbered
+                                    ? cs.onPrimaryContainer
+                                    : cs.onSecondaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
 
                 // Agile shortcut hint footer

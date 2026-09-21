@@ -190,12 +190,16 @@ void _drawStaffLabels(
   for (var sysIdx = 0; sysIdx < systems.length; sysIdx++) {
     final system = systems[sysIdx];
     final leftX = baseLeftX + system.leftIndentMm;
+    final bool isFirstSystem = sysIdx == 0;
 
+    // 1. Group labels (Outer tier)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
-      final String label = sysIdx == 0
+      final String label = isFirstSystem
           ? group.label
-          : (group.abbreviation.isNotEmpty ? group.abbreviation : group.label);
+          : (group.abbreviation.trim().isNotEmpty
+              ? group.abbreviation
+              : group.label);
       if (label.trim().isEmpty) continue;
 
       final groupStaves =
@@ -206,9 +210,8 @@ void _drawStaffLabels(
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
       final midY = (topY + bottomY) / 2.0;
 
-      final double xOffset = group.level * 4.0;
-      final double connectorX = leftX - xOffset;
-      final labelX = connectorX - 3.0;
+      final double connectorX = leftX - group.connectorOffsetMm;
+      final labelX = connectorX - GroupPlacementMetrics.groupLabelClearanceMm;
 
       final labelXPt = labelX * _mmToPt;
       final labelYPt = hPt - (midY * _mmToPt);
@@ -218,24 +221,71 @@ void _drawStaffLabels(
       final font = pdf.PdfFont.helveticaBold(doc);
       canvas.setFillColor(pdf.PdfColors.black);
 
-      final textMetrics = font.stringMetrics(label);
-      final textWidthPt = textMetrics.width * fontPt;
-      final drawXPt = labelXPt - textWidthPt;
-
-      canvas.drawString(font, fontPt, label, drawXPt, labelYPt - (fontPt * 0.3));
+      _drawRightAlignedText(
+        canvas: canvas,
+        font: font,
+        fontPt: fontPt,
+        text: label,
+        rightAnchorXPt: labelXPt,
+        centerYPt: labelYPt,
+      );
       canvas.restoreContext();
     }
 
-    for (final staff in system.staves) {
+    // 2. Identify which staves belong to an actively labeled group or connected group
+    final Set<int> innerStaffIndices = {};
+    for (final group in system.groupPlacements) {
+      final String gLabel = isFirstSystem
+          ? group.label
+          : (group.abbreviation.trim().isNotEmpty
+              ? group.abbreviation
+              : group.label);
+      final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
+      final bool hasConnector = group.connector != SystemConnector.none;
+      if (hasGroupLabel || hasConnector) {
+        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
+          innerStaffIndices.add(s);
+        }
+      }
+    }
+
+    // 3. Staff labels (Inner tier when grouped; outer tier when standalone)
+    for (int sIdx = 0; sIdx < system.staves.length; sIdx++) {
+      final staff = system.staves[sIdx];
       final def = staff.definition;
       if (def != null && def.labelVisible) {
-        final String? label = sysIdx == 0
+        final String? label = isFirstSystem
             ? def.instrumentName
-            : (def.instrumentAbbreviation ?? def.instrumentName);
+            : ((def.instrumentAbbreviation != null &&
+                    def.instrumentAbbreviation!.trim().isNotEmpty)
+                ? def.instrumentAbbreviation
+                : def.instrumentName);
 
         if (label != null && label.trim().isNotEmpty) {
-          final labelX = leftX - 3.0 + def.labelHorizontalOffset;
-          final labelY = staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
+          final double labelX;
+          if (innerStaffIndices.contains(sIdx)) {
+            // Inner staff label: sits right-aligned between connector and starting barline
+            labelX = leftX -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                def.labelHorizontalOffset;
+          } else {
+            // Standalone staff: sits to the left of its connector
+            double maxConnectorOffset = 0.0;
+            for (final g in system.groupPlacements) {
+              if (sIdx >= g.startStaffIdx &&
+                  sIdx <= g.endStaffIdx &&
+                  g.connectorOffsetMm > maxConnectorOffset) {
+                maxConnectorOffset = g.connectorOffsetMm;
+              }
+            }
+            labelX = leftX -
+                maxConnectorOffset -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                def.labelHorizontalOffset;
+          }
+
+          final labelY =
+              staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
           final labelXPt = labelX * _mmToPt;
           final labelYPt = hPt - (labelY * _mmToPt);
           final fontPt = def.labelFontSize;
@@ -246,15 +296,43 @@ void _drawStaffLabels(
               : pdf.PdfFont.helvetica(doc);
           canvas.setFillColor(pdf.PdfColors.black);
 
-          final textMetrics = font.stringMetrics(label);
-          final textWidthPt = textMetrics.width * fontPt;
-          final drawXPt = labelXPt - textWidthPt;
-
-          canvas.drawString(font, fontPt, label, drawXPt, labelYPt - (fontPt * 0.3));
+          _drawRightAlignedText(
+            canvas: canvas,
+            font: font,
+            fontPt: fontPt,
+            text: label,
+            rightAnchorXPt: labelXPt,
+            centerYPt: labelYPt,
+          );
           canvas.restoreContext();
         }
       }
     }
+  }
+}
+
+/// Helper method to draw right-aligned single or multi-line text blocks on PDF.
+void _drawRightAlignedText({
+  required pdf.PdfGraphics canvas,
+  required pdf.PdfFont font,
+  required double fontPt,
+  required String text,
+  required double rightAnchorXPt,
+  required double centerYPt,
+}) {
+  final lines = text.split('\n');
+  final lineHeightPt = fontPt * 1.2;
+  final totalBlockHeightPt = (lines.length - 1) * lineHeightPt;
+  final startBaselineYPt =
+      centerYPt + (totalBlockHeightPt / 2.0) - (fontPt * 0.3);
+
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final textMetrics = font.stringMetrics(line);
+    final textWidthPt = textMetrics.width * fontPt;
+    final drawXPt = rightAnchorXPt - textWidthPt;
+    final drawYPt = startBaselineYPt - (i * lineHeightPt);
+    canvas.drawString(font, fontPt, line, drawXPt, drawYPt);
   }
 }
 
@@ -287,8 +365,7 @@ void _drawSystemConnectors(
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
 
       final double systemLeftX = leftMarginX + system.leftIndentMm;
-      final double xOffset = group.level * 4.0;
-      final double connectorX = systemLeftX - xOffset;
+      final double connectorX = systemLeftX - group.connectorOffsetMm;
 
       final systemLeftPt = systemLeftX * _mmToPt;
       final connectorPt = connectorX * _mmToPt;
@@ -328,7 +405,8 @@ void _drawSystemConnectors(
             scaleY: scale * _mmToPt,
           );
         case SystemConnector.bracket when groupStaves.length >= 2:
-          final endTickPt = group.level == 0 ? connectorPt + 2.0 * _mmToPt : systemLeftPt;
+          final endTickPt = connectorPt +
+              (GroupPlacementMetrics.bracketTickLengthMm * _mmToPt);
           canvas.setStrokeColor(pdf.PdfColors.black);
           canvas.setLineWidth(strokeMm * 3.0 * _mmToPt);
           canvas.drawLine(connectorPt, topYPt, connectorPt, bottomYPt);

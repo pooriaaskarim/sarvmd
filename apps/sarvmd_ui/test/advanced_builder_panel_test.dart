@@ -662,5 +662,100 @@ void main() {
           contains('Viola'));
       expect(rootAfter.children[1], isA<core.StaffNodeGroup>());
     });
+
+    testWidgets(
+        'editing group label displays Gould non-redundancy chip and renumbers staves',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      // Group Violin I and Violin II
+      cubit.groupTwoStavesTogether(
+          cubit.allStaves[0].uid, cubit.allStaves[1].uid);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open group label editor
+      final editGroupButtons = find.byTooltip('Edit Group Label');
+      expect(editGroupButtons, findsAtLeastNWidgets(1));
+      await tester.tap(editGroupButtons.first);
+      await tester.pumpAndSettle();
+
+      // Gould suggestion chip should appear for the 2 grouped staves
+      final gouldChip = find.textContaining('Apply Gould non-redundancy');
+      expect(gouldChip, findsOneWidget);
+
+      // Tap the Gould chip to auto-number
+      await tester.tap(gouldChip);
+      await tester.pumpAndSettle();
+
+      // Verify staves are renumbered to 1 and 2
+      final staves = cubit.allStaves;
+      expect(staves[0].instrumentName, equals('1'));
+      expect(staves[1].instrumentName, equals('2'));
+
+      // Check applied state text
+      expect(find.textContaining('Gould non-redundancy applied'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets('renders Level 2 badge on sub-groups per Gould standards',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      // Nesting: root (0) -> Family Group (1) -> Sub Group (2)
+      cubit.groupSelectedStaves(
+        {cubit.allStaves[0].uid, cubit.allStaves[1].uid, cubit.allStaves[2].uid, cubit.allStaves[3].uid},
+        core.SystemConnector.bracket,
+      );
+      // Sub-group inside family group
+      cubit.groupTwoStavesTogether(
+        cubit.allStaves[0].uid,
+        cubit.allStaves[1].uid,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should find the Level 2 badge
+      expect(find.text('Level 2'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 600));
+    });
   });
 }

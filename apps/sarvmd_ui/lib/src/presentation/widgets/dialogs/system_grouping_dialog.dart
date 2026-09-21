@@ -210,19 +210,43 @@ class _SystemGroupingDialogState extends State<SystemGroupingDialog> {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed:
-                    _selectedStaffUids.length >= 2 ? _groupSelected : null,
-                icon: const Icon(Icons.account_tree_outlined, size: 16),
-                label: Text(
-                  l10n.groupStaves,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primaryContainer,
-                  foregroundColor: cs.onPrimaryContainer,
-                  visualDensity: VisualDensity.compact,
-                ),
+              Builder(
+                builder: (context) {
+                  final firstStaffParentDepth = _selectedStaffUids.isNotEmpty
+                      ? _rootGroup.findStaffParentDepth(_selectedStaffUids.first)
+                      : null;
+                  final targetDepth =
+                      firstStaffParentDepth != null ? firstStaffParentDepth + 1 : 0;
+                  final exceedsLimit = targetDepth >
+                      core.GroupPlacementMetrics.emergencyMaxNestingDepth;
+                  final isLevel3 = targetDepth ==
+                      core.GroupPlacementMetrics.emergencyMaxNestingDepth;
+
+                  final tooltipMessage = exceedsLimit
+                      ? 'Cannot group: Exceeds Gould & MOLA nesting ceiling (3 levels max)'
+                      : (isLevel3
+                          ? 'Group Staves (Level 3 - standard recommends max 2)'
+                          : l10n.groupStaves);
+
+                  return Tooltip(
+                    message: tooltipMessage,
+                    child: ElevatedButton.icon(
+                      onPressed: (_selectedStaffUids.length >= 2 && !exceedsLimit)
+                          ? _groupSelected
+                          : null,
+                      icon: const Icon(Icons.account_tree_outlined, size: 16),
+                      label: Text(
+                        l10n.groupStaves,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cs.primaryContainer,
+                        foregroundColor: cs.onPrimaryContainer,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  );
+                },
               ),
               if (_selectedStaffUids.isNotEmpty)
                 TextButton(
