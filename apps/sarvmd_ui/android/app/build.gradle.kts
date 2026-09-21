@@ -29,7 +29,22 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val vName = variant.versionName ?: defaultConfig.versionName ?: "0.0.0"
+            val buildType = variant.buildType.name
+            output?.outputFileName = if (buildType == "release") {
+                "sarvmd-v$vName.apk"
+            } else {
+                "sarvmd-v$vName-$buildType.apk"
+            }
+        }
+    }
 }
+
 
 kotlin {
     compilerOptions {

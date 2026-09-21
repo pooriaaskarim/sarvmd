@@ -1,0 +1,96 @@
+name: Release Android App
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-android
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    name: Build & Release Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: apps/sarvmd_ui
+
+      - name: Extract App Version
+        id: get_version
+        run: |
+          VERSION=$(grep '^version:' apps/sarvmd_ui/pubspec.yaml | sed -E 's/version:\s*([0-9]+\.[0-9]+\.[0-9]+).*/\1/' | tr -d '\r')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "TAG_NAME=v${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag_name=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Extract Release Notes from CHANGELOG
+        id: release_notes
+        run: |
+          python3 -c "
+          with open('apps/sarvmd_ui/CHANGELOG.md', 'r') as f:
+              lines = f.readlines()
+          version = '${{ env.VERSION }}'
+          collecting = False
+          notes = []
+          for line in lines:
+              if line.startswith(f'## [{version}]'):
+                  collecting = True
+                  continue
+              elif collecting and line.startswith('## ['):
+                  break
+              elif collecting:
+                  notes.append(line)
+          content = ''.join(notes).strip()
+          if not content:
+              content = f'Release v{version} of SarvMD.'
+          with open('RELEASE_NOTES.md', 'w') as f:
+              f.write(content + '\n')
+          "
+
+      - name: Build Android APK
+        run: flutter build apk --release
+        working-directory: apps/sarvmd_ui
+
+      - name: Prepare Release Artifacts
+        run: |
+          mkdir -p release_artifacts
+          cp apps/sarvmd_ui/build/app/outputs/apk/release/sarvmd-v*.apk release_artifacts/
+          cd release_artifacts
+          sha256sum sarvmd-v*.apk > sha256sums.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: SarvMD ${{ env.TAG_NAME }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          files: |
+            release_artifacts/sarvmd-v*.apk
+            release_artifacts/sha256sums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
