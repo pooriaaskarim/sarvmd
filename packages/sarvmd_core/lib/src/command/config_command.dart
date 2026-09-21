@@ -162,6 +162,165 @@ class AddStaffCommand extends PageConfigCommand {
   }
 }
 
+/// Command to add a new [StaffDefinition] directly into a specific group in the system layout tree.
+class AddStaffToGroupCommand extends PageConfigCommand {
+  final int? groupHash;
+  final StaffDefinition? def;
+  final int? insertIndex;
+
+  AddStaffToGroupCommand({this.groupHash, this.def, this.insertIndex});
+
+  @override
+  String get label => 'Add Staff to Group';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    final newDef = (def ?? const StaffDefinition()).copyWith(
+      uid: '${DateTime.now().microsecondsSinceEpoch}',
+    );
+
+    StaffNode findAndAdd(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (groupHash == null || node.hashCode == groupHash) {
+          final children = List<StaffNode>.from(node.children);
+          final index = (insertIndex != null &&
+                  insertIndex! >= 0 &&
+                  insertIndex! <= children.length)
+              ? insertIndex!
+              : children.length;
+          children.insert(index, newDef);
+          return node.copyWith(children: children);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndAdd).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndAdd(root) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
+/// Command to move a [StaffNode] from one group to another across the layout tree.
+class MoveStaffNodeCommand extends PageConfigCommand {
+  final int sourceGroupHash;
+  final int targetGroupHash;
+  final int sourceIndex;
+  final int targetIndex;
+
+  MoveStaffNodeCommand({
+    required this.sourceGroupHash,
+    required this.targetGroupHash,
+    required this.sourceIndex,
+    required this.targetIndex,
+  });
+
+  @override
+  String get label => 'Move Staff Node';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+
+    List<int>? findPathToGroup(StaffNode node, int targetHash, [List<int> currentPath = const []]) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == targetHash) return currentPath;
+        for (int i = 0; i < node.children.length; i++) {
+          final child = node.children[i];
+          if (child is StaffNodeGroup) {
+            final res = findPathToGroup(child, targetHash, [...currentPath, i]);
+            if (res != null) return res;
+          }
+        }
+      }
+      return null;
+    }
+
+    final sourcePath = findPathToGroup(root, sourceGroupHash);
+    final targetPath = findPathToGroup(root, targetGroupHash);
+    if (sourcePath == null || targetPath == null) return current;
+
+    StaffNode? extractedNode;
+
+    StaffNodeGroup extractAtPath(StaffNodeGroup node, List<int> path) {
+      if (path.isEmpty) {
+        if (sourceIndex >= 0 && sourceIndex < node.children.length) {
+          final children = List<StaffNode>.from(node.children);
+          extractedNode = children.removeAt(sourceIndex);
+          return node.copyWith(children: children);
+        }
+        return node;
+      }
+      final nextIndex = path.first;
+      if (nextIndex < 0 || nextIndex >= node.children.length) return node;
+
+      final child = node.children[nextIndex];
+      if (child is! StaffNodeGroup) return node;
+
+      final updatedChild = extractAtPath(child, path.sublist(1));
+      final newChildren = List<StaffNode>.from(node.children);
+      newChildren[nextIndex] = updatedChild;
+      return node.copyWith(children: newChildren);
+    }
+
+    final intermediateRoot = extractAtPath(root, sourcePath);
+    if (extractedNode == null) return current;
+
+    List<int> adjustedTargetPath = targetPath;
+    if (targetPath.isNotEmpty) {
+      if (sourcePath.isEmpty) {
+        if (sourceIndex < targetPath.first) {
+          adjustedTargetPath = List<int>.from(targetPath);
+          adjustedTargetPath[0] = adjustedTargetPath[0] - 1;
+        }
+      } else {
+        int commonLen = 0;
+        while (commonLen < sourcePath.length &&
+            commonLen < targetPath.length &&
+            sourcePath[commonLen] == targetPath[commonLen]) {
+          commonLen++;
+        }
+        if (commonLen < sourcePath.length && commonLen < targetPath.length) {
+          if (sourcePath[commonLen] < targetPath[commonLen]) {
+            adjustedTargetPath = List<int>.from(targetPath);
+            adjustedTargetPath[commonLen] = adjustedTargetPath[commonLen] - 1;
+          }
+        }
+      }
+    }
+
+    StaffNodeGroup insertAtPath(StaffNodeGroup node, List<int> path) {
+      if (path.isEmpty) {
+        final children = List<StaffNode>.from(node.children);
+        final clampIndex = targetIndex.clamp(0, children.length);
+        children.insert(clampIndex, extractedNode!);
+        return node.copyWith(children: children);
+      }
+
+      final nextIndex = path.first;
+      if (nextIndex < 0 || nextIndex >= node.children.length) return node;
+
+      final child = node.children[nextIndex];
+      if (child is! StaffNodeGroup) return node;
+
+      final updatedChild = insertAtPath(child, path.sublist(1));
+      final newChildren = List<StaffNode>.from(node.children);
+      newChildren[nextIndex] = updatedChild;
+      return node.copyWith(children: newChildren);
+    }
+
+    final finalRoot = insertAtPath(intermediateRoot, adjustedTargetPath);
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: finalRoot),
+    );
+  }
+}
+
 /// Command to remove a staff node from the root group by index.
 class RemoveStaffCommand extends PageConfigCommand {
   final int index;
@@ -195,22 +354,63 @@ class RemoveStaffByUidCommand extends PageConfigCommand {
 
   @override
   PageConfig mutateConfig(PageConfig current) {
+    if (current.staffCount <= 1) return current;
+
     final root = current.systemLayout.rootGroup;
-    if (root.children.length <= 1) return current;
 
-    final newChildren = root.children.where((child) {
-      if (child is StaffDefinition) {
-        return child.uid != uid;
+    StaffNode removeByUid(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        final newChildren = <StaffNode>[];
+        for (final child in node.children) {
+          if (child is StaffDefinition) {
+            if (child.uid != uid) newChildren.add(child);
+          } else if (child is StaffNodeGroup) {
+            newChildren.add(removeByUid(child));
+          }
+        }
+        return node.copyWith(children: newChildren);
       }
-      return true;
-    }).toList();
+      return node;
+    }
 
-    if (newChildren.length == root.children.length) return current;
-
+    final updatedRoot = removeByUid(root) as StaffNodeGroup;
     return current.copyWith(
-      systemLayout: current.systemLayout.copyWith(
-        rootGroup: root.copyWith(children: newChildren),
-      ),
+      systemLayout: current.systemLayout.copyWith(rootGroup: updatedRoot),
+    );
+  }
+}
+
+/// Command to dissolve a sub-group by groupHash, promoting its children to the parent group.
+class UngroupSubGroupCommand extends PageConfigCommand {
+  final int groupHash;
+
+  UngroupSubGroupCommand(this.groupHash);
+
+  @override
+  String get label => 'Ungroup Sub-Group';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    if (root.hashCode == groupHash) return current;
+
+    StaffNodeGroup? findGroup(StaffNodeGroup group) {
+      if (group.hashCode == groupHash) return group;
+      for (final child in group.children) {
+        if (child is StaffNodeGroup) {
+          final found = findGroup(child);
+          if (found != null) return found;
+        }
+      }
+      return null;
+    }
+
+    final target = findGroup(root);
+    if (target == null) return current;
+
+    final newRoot = root.ungroup(target);
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }
@@ -250,10 +450,12 @@ class UpdateStaffByUidCommand extends PageConfigCommand {
   }
 }
 
-/// Command to change system group connector (brace, bracket, none).
+/// Command to change system group connector (brace, bracket, subBracket, none).
 class UpdateGroupConnectorCommand extends PageConfigCommand {
   final SystemConnector connector;
-  UpdateGroupConnectorCommand(this.connector);
+  final int? groupHash;
+
+  UpdateGroupConnectorCommand(this.connector, {this.groupHash});
 
   @override
   String get label => 'Set System Connector';
@@ -261,10 +463,29 @@ class UpdateGroupConnectorCommand extends PageConfigCommand {
   @override
   PageConfig mutateConfig(PageConfig current) {
     final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(connector: connector),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(connector: connector);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
     return current.copyWith(
-      systemLayout: current.systemLayout.copyWith(
-        rootGroup: root.copyWith(connector: connector),
-      ),
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }
@@ -272,7 +493,9 @@ class UpdateGroupConnectorCommand extends PageConfigCommand {
 /// Command to toggle continuous barlines across staves in a system group.
 class UpdateGroupContinuousBarlinesCommand extends PageConfigCommand {
   final bool value;
-  UpdateGroupContinuousBarlinesCommand(this.value);
+  final int? groupHash;
+
+  UpdateGroupContinuousBarlinesCommand(this.value, {this.groupHash});
 
   @override
   String get label => 'Toggle Continuous Barlines';
@@ -280,10 +503,124 @@ class UpdateGroupContinuousBarlinesCommand extends PageConfigCommand {
   @override
   PageConfig mutateConfig(PageConfig current) {
     final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(continuousBarlines: value),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(continuousBarlines: value);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
     return current.copyWith(
-      systemLayout: current.systemLayout.copyWith(
-        rootGroup: root.copyWith(continuousBarlines: value),
-      ),
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
+/// Command to toggle whether a system group has an initial vertical barline on the left.
+class UpdateGroupInitialBarlineCommand extends PageConfigCommand {
+  final bool value;
+  final int? groupHash;
+
+  UpdateGroupInitialBarlineCommand(this.value, {this.groupHash});
+
+  @override
+  String get label => 'Toggle Initial Barline';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(initialBarline: value),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(initialBarline: value);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
+/// Command to update system group details (label, abbreviation, labelVisible).
+class UpdateGroupDetailsCommand extends PageConfigCommand {
+  final int? groupHash;
+  final String? labelText;
+  final String? abbreviation;
+  final bool? labelVisible;
+
+  UpdateGroupDetailsCommand({
+    this.groupHash,
+    this.labelText,
+    this.abbreviation,
+    this.labelVisible,
+  });
+
+  @override
+  String get label => 'Update Group Details';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(
+            label: labelText ?? root.label,
+            abbreviation: abbreviation ?? root.abbreviation,
+            labelVisible: labelVisible ?? root.labelVisible,
+          ),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(
+            label: labelText ?? node.label,
+            abbreviation: abbreviation ?? node.abbreviation,
+            labelVisible: labelVisible ?? node.labelVisible,
+          );
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }
@@ -325,7 +662,26 @@ class ReorderGroupChildrenCommand extends PageConfigCommand {
   }
 }
 
+/// Recursively stamps every [StaffDefinition] leaf in [node] with a unique
+/// timestamp-based UID, returning the updated [StaffNode] tree.
+///
+/// This is the single source-of-truth for UID generation when a new layout
+/// tree is materialised from a profile or other source that uses `uid = ''`.
+StaffNode _assignUids(StaffNode node, {required int Function() counter}) {
+  return switch (node) {
+    StaffDefinition def => def.copyWith(
+        uid: '${DateTime.now().microsecondsSinceEpoch}_${counter()}',
+      ),
+    StaffNodeGroup group => group.copyWith(
+        children: group.children
+            .map((c) => _assignUids(c, counter: counter))
+            .toList(),
+      ),
+  };
+}
+
 /// Command to apply an ensemble staff profile preset to the page layout.
+
 class ApplyProfileCommand extends PageConfigCommand {
   final StaffProfile profile;
   ApplyProfileCommand(this.profile);
@@ -336,22 +692,14 @@ class ApplyProfileCommand extends PageConfigCommand {
   @override
   PageConfig mutateConfig(PageConfig current) {
     final newConfig = profile.applyTo(current);
-    final root = newConfig.systemLayout.rootGroup;
-    final newChildren = root.children.asMap().entries.map((entry) {
-      final index = entry.key;
-      final c = entry.value;
-      if (c is StaffDefinition) {
-        return c.copyWith(
-          uid: '${DateTime.now().microsecondsSinceEpoch}_$index',
-        );
-      }
-      return c;
-    }).toList();
+    int counter = 0;
+    final newRoot = _assignUids(
+      newConfig.systemLayout.rootGroup,
+      counter: () => counter++,
+    ) as StaffNodeGroup;
 
     return newConfig.copyWith(
-      systemLayout: newConfig.systemLayout.copyWith(
-        rootGroup: root.copyWith(children: newChildren),
-      ),
+      systemLayout: newConfig.systemLayout.copyWith(rootGroup: newRoot),
     );
   }
 }

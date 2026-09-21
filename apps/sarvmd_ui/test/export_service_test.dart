@@ -68,5 +68,91 @@ void main() {
         await tempDir.delete(recursive: true);
       }
     });
+
+    test('exportPdf creates valid PDF output with %PDF header and correct metadata', () async {
+      final config = const core.PageConfig();
+      final layout = core.computeLayout(config);
+      final tempDir = await Directory.systemTemp.createTemp('sarvmd_pdf_test');
+
+      try {
+        final result = await ExportService.exportPdf(
+          config,
+          layout,
+          fileName: 'PdfTest',
+          pageCount: 2,
+          outputDir: tempDir.path,
+        );
+
+        expect(result.fileName, equals('PdfTest.pdf'));
+        expect(File(result.filePath).existsSync(), isTrue);
+        expect(result.fileSizeBytes, greaterThan(100));
+
+        final bytes = await File(result.filePath).readAsBytes();
+        final header = String.fromCharCodes(bytes.take(4));
+        expect(header, equals('%PDF'));
+      } finally {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    test('exportPdf and exportSvg validate two-tier hierarchical presets and labels', () async {
+      const f1 = core.StaffDefinition(uid: 'f1', instrumentName: '1');
+      const f2 = core.StaffDefinition(uid: 'f2', instrumentName: '2');
+      const flutes = core.StaffNodeGroup(
+        connector: core.SystemConnector.bracket,
+        label: 'Flutes',
+        children: [f1, f2],
+      );
+
+      const config = core.PageConfig(
+        systemLayout: core.SystemLayout(rootGroup: flutes),
+      );
+      final layout = core.computeLayout(config);
+      final tempDir = await Directory.systemTemp.createTemp('sarvmd_hierarchical_export_test');
+
+      try {
+        // PDF Export
+        final pdfResult = await ExportService.exportPdf(
+          config,
+          layout,
+          fileName: 'FlutesTest',
+          outputDir: tempDir.path,
+        );
+        expect(pdfResult.fileName, equals('FlutesTest.pdf'));
+        expect(File(pdfResult.filePath).existsSync(), isTrue);
+        final pdfBytes = await File(pdfResult.filePath).readAsBytes();
+        expect(String.fromCharCodes(pdfBytes.take(4)), equals('%PDF'));
+
+        // SVG Export across all layering modes
+        for (final mode in core.SvgLayeringMode.values) {
+          final svgResult = await ExportService.exportSvg(
+            config,
+            layout,
+            fileName: 'FlutesTest_${mode.name}',
+            outputDir: tempDir.path,
+            layeringMode: mode,
+          );
+          expect(svgResult.fileName, equals('FlutesTest_${mode.name}.svg'));
+          final svgContent = await File(svgResult.filePath).readAsString();
+          expect(svgContent, contains('Flutes'));
+          expect(svgContent, contains('>1<'));
+          expect(svgContent, contains('>2<'));
+        }
+      } finally {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    test('ExportResult formattedSize computes byte/KB/MB string representations correctly', () {
+      const bRes = ExportResult(filePath: '/tmp/f.pdf', fileName: 'f.pdf', fileSizeBytes: 512, elapsedMs: 10);
+      expect(bRes.formattedSize, equals('512 B'));
+
+      const kbRes = ExportResult(filePath: '/tmp/f.pdf', fileName: 'f.pdf', fileSizeBytes: 2048, elapsedMs: 10);
+      expect(kbRes.formattedSize, equals('2.0 KB'));
+
+      const mbRes = ExportResult(filePath: '/tmp/f.pdf', fileName: 'f.pdf', fileSizeBytes: 3 * 1024 * 1024, elapsedMs: 10);
+      expect(mbRes.formattedSize, equals('3.0 MB'));
+    });
   });
 }
+

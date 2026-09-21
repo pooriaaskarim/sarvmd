@@ -106,12 +106,70 @@ void main() {
       expect(cubit.state.config.pageSize, equals(core.PageSize.letter));
     });
 
+    test('removeStaffByUid removes targeted staff from nested group hierarchy', () {
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      final staves = cubit.allStaves;
+      expect(staves.length, equals(4));
+
+      final targetUid = staves[1].uid;
+      cubit.removeStaffByUid(targetUid);
+
+      final remaining = cubit.allStaves;
+      expect(remaining.length, equals(3));
+      expect(remaining.any((s) => s.uid == targetUid), isFalse);
+    });
+
+    test('ungroupSubGroup dissolves sub-group and promotes staves to parent', () {
+      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+      final root = cubit.state.config.systemLayout.rootGroup;
+      expect(root.children.first, isA<core.StaffNodeGroup>());
+      final subGroup = root.children.first as core.StaffNodeGroup;
+
+      cubit.ungroupSubGroup(subGroup.hashCode);
+
+      final newRoot = cubit.state.config.systemLayout.rootGroup;
+      expect(newRoot.children.every((c) => c is core.StaffDefinition), isTrue);
+    });
+
+    test('moveStaffNode moves staff out of sub-group into root group without removing it', () {
+      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+      final initialStaves = cubit.allStaves;
+      final initialCount = initialStaves.length;
+
+      final root = cubit.state.config.systemLayout.rootGroup;
+      final subGroup = root.children.first as core.StaffNodeGroup;
+
+      cubit.moveStaffNode(
+        sourceGroupHash: subGroup.hashCode,
+        targetGroupHash: root.hashCode,
+        sourceIndex: 0,
+        targetIndex: root.children.length,
+      );
+
+      final newStaves = cubit.allStaves;
+      expect(newStaves.length, equals(initialCount));
+
+      final newRoot = cubit.state.config.systemLayout.rootGroup;
+      expect(newRoot.children.last, isA<core.StaffDefinition>());
+    });
+
     test('NoOpCommand leaves document untouched', () {
       const noop = core.NoOpCommand();
       cubit.execute(noop);
 
       expect(cubit.state.score.title, equals(''));
       expect(cubit.state.undoStack.length, equals(1));
+    });
+
+    test('batchRenumberStaves renumbers staves sequentially per Gould non-redundancy', () {
+      cubit.execute(core.ApplyProfileCommand(core.StaffProfiles.stringQuartet));
+      final uids = cubit.allStaves.take(3).map((s) => s.uid).toList();
+      cubit.batchRenumberStaves(uids);
+
+      final updatedStaves = cubit.allStaves;
+      expect(updatedStaves[0].instrumentName, equals('1'));
+      expect(updatedStaves[1].instrumentName, equals('2'));
+      expect(updatedStaves[2].instrumentName, equals('3'));
     });
   });
 }

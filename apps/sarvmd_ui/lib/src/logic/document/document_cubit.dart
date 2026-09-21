@@ -322,6 +322,14 @@ class DocumentCubit extends Cubit<DocumentState> {
     updateStaffConfigDetails(uid, name: () => name);
   }
 
+  /// Sequentially renumbers the staves in [uids] ('1', '2', ...) following Gould's non-redundancy principle.
+  void batchRenumberStaves(List<String> uids) {
+    if (uids.isEmpty) return;
+    for (int i = 0; i < uids.length; i++) {
+      updateStaffInstrumentName(uids[i], '${i + 1}');
+    }
+  }
+
   void updateStaffConfigDetails(
     String uid, {
     String? Function()? name,
@@ -353,16 +361,119 @@ class DocumentCubit extends Cubit<DocumentState> {
     ));
   }
 
-  void updateGroupConnector(core.SystemConnector connector) {
-    execute(core.UpdateGroupConnectorCommand(connector));
+  void updateGroupConnector(core.SystemConnector connector, {int? groupHash}) {
+    execute(core.UpdateGroupConnectorCommand(connector, groupHash: groupHash));
   }
 
-  void updateGroupContinuousBarlines(bool value) {
-    execute(core.UpdateGroupContinuousBarlinesCommand(value));
+  void updateGroupContinuousBarlines(bool value, {int? groupHash}) {
+    execute(
+        core.UpdateGroupContinuousBarlinesCommand(value, groupHash: groupHash));
+  }
+
+  void updateGroupInitialBarline(bool value, {int? groupHash}) {
+    execute(core.UpdateGroupInitialBarlineCommand(value, groupHash: groupHash));
+  }
+
+  void updateGroupDetails({
+    int? groupHash,
+    String? label,
+    String? abbreviation,
+    bool? labelVisible,
+  }) {
+    execute(core.UpdateGroupDetailsCommand(
+      groupHash: groupHash,
+      labelText: label,
+      abbreviation: abbreviation,
+      labelVisible: labelVisible,
+    ));
   }
 
   void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {
     execute(core.ReorderGroupChildrenCommand(groupHash, oldIndex, newIndex));
+  }
+
+  core.StaffDefinition addStaffToGroup(
+      {int? groupHash, core.StaffDefinition? def, int? insertIndex}) {
+    final command = core.AddStaffToGroupCommand(
+      groupHash: groupHash,
+      def: def,
+      insertIndex: insertIndex,
+    );
+    execute(command);
+    final root = state.config.systemLayout.rootGroup;
+    return root.children.last as core.StaffDefinition;
+  }
+
+  void moveStaffNode({
+    required int sourceGroupHash,
+    required int targetGroupHash,
+    required int sourceIndex,
+    required int targetIndex,
+  }) {
+    execute(core.MoveStaffNodeCommand(
+      sourceGroupHash: sourceGroupHash,
+      targetGroupHash: targetGroupHash,
+      sourceIndex: sourceIndex,
+      targetIndex: targetIndex,
+    ));
+  }
+
+  void ungroupSubGroup(int groupHash) {
+    execute(core.UngroupSubGroupCommand(groupHash));
+  }
+
+  void groupSelectedStaves(Set<String> uids,
+      [core.SystemConnector connector = core.SystemConnector.bracket]) {
+    if (uids.length < 2) return;
+    final currentRoot = state.config.systemLayout.rootGroup;
+    final updatedRoot = currentRoot.groupSelected(uids, connector);
+    execute(core.SetSystemLayoutCommand(
+      core.SystemLayout(rootGroup: updatedRoot),
+      'Group Selected Staves',
+    ));
+  }
+
+  void groupTwoStavesTogether(String sourceUid, String targetUid,
+      [core.SystemConnector connector = core.SystemConnector.bracket]) {
+    if (sourceUid == targetUid) return;
+    final currentRoot = state.config.systemLayout.rootGroup;
+    final updatedRoot =
+        currentRoot.groupSelected({sourceUid, targetUid}, connector);
+    execute(core.SetSystemLayoutCommand(
+      core.SystemLayout(rootGroup: updatedRoot),
+      'Group Staves',
+    ));
+  }
+
+  void batchDeleteStaves(Set<String> uids) {
+    if (uids.isEmpty) return;
+    for (final uid in uids) {
+      execute(core.RemoveStaffByUidCommand(uid));
+    }
+  }
+
+  void batchToggleVisibility(Set<String> uids, bool visible) {
+    if (uids.isEmpty) return;
+    for (final uid in uids) {
+      updateStaffConfigDetails(uid, visible: visible);
+    }
+  }
+
+  void batchDuplicateStaves(Set<String> uids) {
+    if (uids.isEmpty) return;
+    final staves = allStaves;
+    for (final uid in uids) {
+      final match = staves.where((s) => s.uid == uid).firstOrNull;
+      if (match != null) {
+        final clone = match.copyWith(
+          uid: 'staff_${DateTime.now().microsecondsSinceEpoch}_${match.uid}',
+          instrumentName: () => match.instrumentName != null
+              ? '${match.instrumentName}'
+              : null,
+        );
+        execute(core.AddStaffToGroupCommand(def: clone));
+      }
+    }
   }
 
   void applyProfile(core.StaffProfile profile) {

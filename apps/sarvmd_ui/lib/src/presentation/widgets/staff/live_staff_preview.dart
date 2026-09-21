@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/layout_policy.dart';
+import '../../../core/utils/smufl_glyphs.dart';
+import '../../../core/utils/tab_clef_painter.dart';
 
 /// A standard, highly reusable, and fully theme-reactive live preview for a musical staff.
 ///
@@ -52,9 +54,9 @@ class LiveStaffPreview extends StatelessWidget {
     return CanvasStrictScope(
       child: Center(
         child: Container(
-        width: 380,
-        height: 140,
-        decoration: BoxDecoration(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 380, maxHeight: 140),
+          decoration: BoxDecoration(
           color: paperColor,
           borderRadius:
               BorderRadius.circular(16), // Premium rounded paper edges
@@ -78,7 +80,9 @@ class LiveStaffPreview extends StatelessWidget {
               final double width = constraints.maxWidth;
               return GestureDetector(
                 onTapUp: (details) {
-                  if (onAnchorLineChanged == null || lines <= 0) return;
+                  if (onAnchorLineChanged == null ||
+                      lines <= 0 ||
+                      !(clefSymbol?.supportsAnchorOffset ?? false)) return;
 
                   final double tappedX = details.localPosition.dx;
                   final double tappedY = details.localPosition.dy;
@@ -243,29 +247,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
     // Draw Clef in preview
     if (clefSymbol != null && lines > 0) {
       if (clefSymbol == core.ClefSymbol.tab) {
-        final double tabCenterY = startY + staffHeight / 2;
-        final tabSize = gap * 1.5;
-
-        // Standard visual padding matching standard clefs
-        final startX = clefX;
-
-        final lettersStyle = TextStyle(
-          fontFamily: 'Noto Serif',
-          fontSize: tabSize,
-          fontWeight: FontWeight.bold,
-          color: inkColor,
-          height: 0.8,
-        );
-        final letters = ['T', 'A', 'B'];
-        double currY = tabCenterY - (tabSize * 1.5 * 0.8);
-        for (final char in letters) {
-          final tp = TextPainter(
-            text: TextSpan(text: char, style: lettersStyle),
-            textDirection: TextDirection.ltr,
-          )..layout();
-          tp.paint(canvas, Offset(startX, currY));
-          currY += tabSize * 0.8;
-        }
+        paintTabClef(canvas, clefX, startY, lines, gap, inkColor);
       } else if (clefSymbol == core.ClefSymbol.percussion) {
         final pPaint = Paint()
           ..color = inkColor
@@ -292,12 +274,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
       } else {
         const fontScale =
             3.8; // Scaled up clef glyph multiplier for maximum prominence
-        final String glyph = switch (clefSymbol!) {
-          core.ClefSymbol.g => '\u{E050}',
-          core.ClefSymbol.c => '\u{E05C}',
-          core.ClefSymbol.f => '\u{E062}',
-          _ => '',
-        };
+        final String glyph = clefSymbol!.smuflGlyph;
         final tp = TextPainter(
           text: TextSpan(
             text: glyph,

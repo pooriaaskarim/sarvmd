@@ -11,6 +11,7 @@
 /// stream using absolute page coordinates.
 
 import 'config.dart';
+import 'domain/clef.dart';
 import 'engraving_config.dart';
 import 'layout.dart';
 import 'domain/smufl.dart';
@@ -65,19 +66,37 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
     }
 
     // Draw system barline if layout specifies it.
-    final connector = config.systemLayout.rootGroup.connector;
+    final rootGroup = config.systemLayout.rootGroup;
+    if (rootGroup.initialBarline) {
+      draw.writeln('${_f(lineW * 2.5)} w');
+      if (rootGroup.continuousBarlines && system.staves.length > 1) {
+        final sysTopPdfY = pageHBp - _mmToBp(system.staves.first.topY);
+        final sysBottomPdfY = pageHBp -
+            _mmToBp(system.staves.last.topY + system.staves.last.height);
+        draw.writeln(
+          '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
+          '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} l S',
+        );
+      } else {
+        for (final staff in system.staves) {
+          final sTopPdfY = pageHBp - _mmToBp(staff.topY);
+          final sBottomPdfY = pageHBp - _mmToBp(staff.topY + staff.height);
+          draw.writeln(
+            '${_f(staffLeftBp)} ${_f(sTopPdfY)} m '
+            '${_f(staffLeftBp)} ${_f(sBottomPdfY)} l S',
+          );
+        }
+      }
+      draw.writeln('$lineW w');
+    }
+
+    final connector = rootGroup.connector;
     if (connector != SystemConnector.none && system.staves.length > 1) {
       final sysTopPdfY = pageHBp - _mmToBp(system.staves.first.topY);
       final sysBottomPdfY = pageHBp -
           _mmToBp(system.staves.last.topY + system.staves.last.height);
 
       final bool useBrace = connector == SystemConnector.brace;
-
-      draw.writeln('${_f(lineW * 2.5)} w');
-      draw.writeln(
-        '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
-        '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} l S',
-      );
 
       if (useBrace) {
         // Render the standard piano brace using the Bravura path (U+E000).
@@ -95,6 +114,7 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
         draw.writeln('$_bracePdf Q');
       } else {
         // Draw bracket "ticks"
+        draw.writeln('${_f(lineW * 2.5)} w');
         final tickLenBp = _mmToBp(2.0);
         draw.writeln(
           '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
@@ -104,9 +124,8 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
           '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} m '
           '${_f(staffLeftBp + tickLenBp)} ${_f(sysBottomPdfY)} l S',
         );
+        draw.writeln('$lineW w');
       }
-      // Reset width for clefs/lines
-      draw.writeln('$lineW w');
     }
 
     // Clefs.
@@ -116,36 +135,23 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
 
       if (clef != null) {
         final topLinePdfY = pageHBp - _mmToBp(staff.topY);
-        final anchorPdfY = topLinePdfY -
-            (staff.lines - clef.anchorLine) * lineGapBp * staff.scale;
+        final baselinePdfY = topLinePdfY -
+            clef.anchorOffsetInSpaces(staff.lines) * lineGapBp * staff.scale;
 
-        final anchorSp = (clef.symbol == ClefSymbol.percussion && staff.lines > 1)
-            ? 1.0
-            : 0.0;
-
-        // For TAB, we want it to span the full staff height
-        final displayGaps = (clef.symbol == ClefSymbol.tab)
-            ? (staff.lines > 0 ? staff.lines - 1 : 1).toDouble() * staff.scale
-            : 4.0 * staff.scale;
-
-        // If TAB, force anchor to bottom line for simplicity in scaling
-        final effectiveAnchorPdfY = (clef.symbol == ClefSymbol.tab)
-            ? (topLinePdfY - (staff.lines - 1) * lineGapBp)
-            : anchorPdfY;
-
-        final baselinePdfY =
-            effectiveAnchorPdfY - anchorSp * lineGapBp * staff.scale;
-        final cx = staffLeftBp + lineGapBp * config.engraving.initialClefClearanceSp;
-
-        final (String path, double upem) = switch (clef.symbol) {
-          ClefSymbol.g => (_gClefPdf, 1000.0),
-          ClefSymbol.c => (_cClefPdf, 1000.0),
-          ClefSymbol.f => (_fClefPdf, 1000.0),
-          ClefSymbol.tab => (_tabClefPdf, 1000.0),
-          ClefSymbol.percussion => (_percClefPdf, 1000.0),
+        final (String path, double glyphHeight, double displayGaps) = switch (clef.symbol) {
+          ClefSymbol.g => (_gClefPdf, 1000.0, 4.0 * staff.scale),
+          ClefSymbol.c => (_cClefPdf, 1000.0, 4.0 * staff.scale),
+          ClefSymbol.f => (_fClefPdf, 1000.0, 4.0 * staff.scale),
+          ClefSymbol.tab => (
+              staff.lines <= 4 ? _tabClef4Pdf : _tabClef6Pdf,
+              staff.lines <= 4 ? 1012.0 : 1512.0,
+              (staff.lines > 1 ? staff.lines - 1 : 1) * 0.90 * staff.scale,
+            ),
+          ClefSymbol.percussion => (_percClefPdf, 1000.0, 4.0 * staff.scale),
         };
 
-        final scale = (lineGapBp * displayGaps) / upem;
+        final scale = (lineGapBp * displayGaps) / glyphHeight;
+        final cx = staffLeftBp + lineGapBp * config.engraving.initialClefClearanceSp;
         draw.writeln(
             'q ${_f(scale)} 0 0 ${_f(scale)} ${_f(cx)} ${_f(baselinePdfY)} cm');
         draw.writeln('0 g');
@@ -339,17 +345,17 @@ String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp, Eng
     final xBp = _mmToBp(elem.x);
     final yBp = pageHBp - _mmToBp(elem.y);
 
-    final (String path, double upem) = switch (elem.glyph) {
-      SmuflGlyph.gClef => (_gClefPdf, 1000.0),
-      SmuflGlyph.cClef => (_cClefPdf, 1000.0),
-      SmuflGlyph.fClef => (_fClefPdf, 1000.0),
-      SmuflGlyph.tabClef => (_tabClefPdf, 1000.0),
-      SmuflGlyph.percussionClef => (_percClefPdf, 1000.0),
-      _ => (_gClefPdf, 1000.0),
+    final (String path, double glyphHeight, double displayGaps) = switch (elem.glyph) {
+      SmuflGlyph.gClef => (_gClefPdf, 1000.0, 4.0),
+      SmuflGlyph.cClef => (_cClefPdf, 1000.0, 4.0),
+      SmuflGlyph.fClef => (_fClefPdf, 1000.0, 4.0),
+      SmuflGlyph.tabClef => (_tabClef6Pdf, 1512.0, 4.5),
+      SmuflGlyph.tabClefFour => (_tabClef4Pdf, 1012.0, 2.7),
+      SmuflGlyph.percussionClef => (_percClefPdf, 1000.0, 4.0),
+      _ => (_gClefPdf, 1000.0, 4.0),
     };
 
-    final displayGaps = (elem.glyph == SmuflGlyph.tabClef) ? 3.0 : 4.0;
-    final scaleFactor = (gapBp * displayGaps * scale) / upem;
+    final scaleFactor = (gapBp * displayGaps * scale) / glyphHeight;
     final anchorSp = switch (elem.glyph) {
       SmuflGlyph.gClef => 0.876,
       SmuflGlyph.cClef => 2.0,
@@ -494,8 +500,11 @@ const String _fClefPdf =
 const String _percClefPdf =
     '160.0 -235.0 m 160.0 235.0 l 160.0 243.0 154.0 250.0 146.0 250.0 c 14.0 250.0 l 6.0 250.0 0.0 243.0 0.0 235.0 c 0.0 -235.0 l 0.0 -243.0 6.0 -250.0 14.0 -250.0 c 146.0 -250.0 l 154.0 -250.0 160.0 -243.0 160.0 -235.0 c h 382.0 235.0 m 382.0 243.0 376.0 250.0 368.0 250.0 c 236.0 250.0 l 228.0 250.0 222.0 243.0 222.0 235.0 c 222.0 -235.0 l 222.0 -243.0 228.0 -250.0 236.0 -250.0 c 368.0 -250.0 l 376.0 -250.0 382.0 -243.0 382.0 -235.0 c h f';
 
-const String _tabClefPdf =
-    '230.0 482.0 m 230.0 496.0 223.0 503.0 209.0 503.0 c 208.0 503.0 l 194.0 503.0 187.0 496.0 187.0 482.0 c 187.0 -482.0 l 187.0 -496.0 194.0 -503.0 208.0 -503.0 c 209.0 -503.0 l 223.0 -503.0 230.0 -496.0 230.0 -482.0 c 230.0 -44.0 l 230.0 -36.0 235.0 -37.0 239.0 -38.0 c 265.0 -45.0 307.0 -71.0 328.0 -184.0 c 331.0 -200.0 337.0 -209.0 347.0 -209.0 c 358.0 -209.0 363.0 -199.0 368.0 -182.0 c 381.0 -138.0 404.0 -89.0 475.0 -89.0 c 540.0 -89.0 558.0 -153.0 558.0 -284.0 c 558.0 -415.0 535.0 -474.0 452.0 -474.0 c 438.0 -474.0 367.0 -468.0 367.0 -447.0 c 367.0 -442.0 383.0 -436.0 394.0 -432.0 c 414.0 -425.0 434.0 -405.0 434.0 -367.0 c 434.0 -323.0 405.0 -298.0 366.0 -298.0 c 323.0 -298.0 289.0 -327.0 289.0 -380.0 c 289.0 -443.0 344.0 -506.0 463.0 -506.0 c 627.0 -506.0 699.0 -391.0 699.0 -287.0 c 699.0 -149.0 623.0 -53.0 490.0 -53.0 c 461.0 -53.0 442.0 -58.0 429.0 -62.0 c 419.0 -65.0 409.0 -67.0 400.0 -61.0 c 386.0 -52.0 364.0 -20.0 364.0 0.0 c 364.0 20.0 386.0 52.0 400.0 61.0 c 409.0 67.0 419.0 65.0 429.0 62.0 c 442.0 58.0 461.0 53.0 490.0 53.0 c 623.0 53.0 699.0 149.0 699.0 287.0 c 699.0 391.0 627.0 506.0 463.0 506.0 c 344.0 506.0 289.0 443.0 289.0 380.0 c 289.0 327.0 323.0 298.0 366.0 298.0 c 405.0 298.0 434.0 323.0 434.0 367.0 c 434.0 405.0 414.0 425.0 394.0 432.0 c 383.0 436.0 367.0 442.0 367.0 447.0 c 367.0 468.0 438.0 474.0 452.0 474.0 c 535.0 474.0 558.0 415.0 558.0 284.0 c 558.0 153.0 540.0 89.0 475.0 89.0 c 404.0 89.0 381.0 138.0 368.0 182.0 c 363.0 199.0 358.0 209.0 347.0 209.0 c 337.0 209.0 331.0 200.0 328.0 184.0 c 307.0 71.0 265.0 45.0 239.0 38.0 c 235.0 37.0 230.0 36.0 230.0 44.0 c h 91.0 -580.0 m 84.0 -580.0 82.0 -578.0 82.0 -571.0 c 82.0 -514.0 l 82.0 -505.0 84.0 -503.0 93.0 -503.0 c 107.0 -503.0 l 121.0 -503.0 128.0 -496.0 128.0 -482.0 c 128.0 482.0 l 128.0 496.0 121.0 503.0 107.0 503.0 c 21.0 503.0 l 7.0 503.0 0.0 496.0 0.0 482.0 c 0.0 -482.0 l 0.0 -496.0 7.0 -503.0 21.0 -503.0 c 35.0 -503.0 l 44.0 -503.0 46.0 -505.0 46.0 -514.0 c 46.0 -571.0 l 46.0 -578.0 44.0 -580.0 37.0 -580.0 c -24.0 -580.0 l -30.0 -580.0 -33.0 -581.0 -33.0 -587.0 c -33.0 -588.0 -33.0 -590.0 -32.0 -594.0 c 58.0 -904.0 l 59.0 -908.0 60.0 -911.0 64.0 -911.0 c 68.0 -911.0 69.0 -908.0 70.0 -904.0 c 160.0 -594.0 l 161.0 -590.0 161.0 -588.0 161.0 -587.0 c 161.0 -581.0 158.0 -580.0 152.0 -580.0 c h f';
+const String _tabClef6Pdf =
+    '387.0 711.0 m 387.0 764.0 l 18.0 764.0 l 18.0 711.0 l 173.0 711.0 l 173.0 293.0 l 233.0 293.0 l 233.0 711.0 l h 408.0 -228.0 m 243.0 242.0 l 165.0 242.0 l -3.0 -228.0 l 61.0 -228.0 l 111.0 -87.0 l 292.0 -87.0 l 341.0 -228.0 l h 276.0 -36.0 m 126.0 -36.0 l 203.0 178.0 l h 378.0 -613.0 m 378.0 -557.0 352.0 -522.0 292.0 -499.0 c 335.0 -479.0 357.0 -444.0 357.0 -397.0 c 357.0 -328.0 307.0 -277.0 218.0 -277.0 c 27.0 -277.0 l 27.0 -748.0 l 239.0 -748.0 l 324.0 -748.0 378.0 -691.0 378.0 -613.0 c h 297.0 -405.0 m 297.0 -453.0 270.0 -480.0 203.0 -480.0 c 87.0 -480.0 l 87.0 -330.0 l 203.0 -330.0 l 270.0 -330.0 297.0 -357.0 297.0 -405.0 c h 318.0 -614.0 m 318.0 -659.0 290.0 -695.0 234.0 -695.0 c 87.0 -695.0 l 87.0 -533.0 l 234.0 -533.0 l 290.0 -533.0 318.0 -568.0 318.0 -614.0 c h f';
+
+const String _tabClef4Pdf =
+    '258.0 469.0 m 258.0 504.0 l 11.0 504.0 l 11.0 469.0 l 115.0 469.0 l 115.0 189.0 l 155.0 189.0 l 155.0 469.0 l h 272.0 -160.0 m 162.0 155.0 l 110.0 155.0 l -3.0 -160.0 l 40.0 -160.0 l 73.0 -65.0 l 195.0 -65.0 l 227.0 -160.0 l h 184.0 -32.0 m 83.0 -32.0 l 135.0 112.0 l h 252.0 -418.0 m 252.0 -380.0 235.0 -357.0 195.0 -342.0 c 223.0 -328.0 238.0 -305.0 238.0 -273.0 c 238.0 -227.0 205.0 -193.0 145.0 -193.0 c 17.0 -193.0 l 17.0 -508.0 l 159.0 -508.0 l 216.0 -508.0 252.0 -470.0 252.0 -418.0 c h 198.0 -279.0 m 198.0 -311.0 180.0 -329.0 135.0 -329.0 c 57.0 -329.0 l 57.0 -228.0 l 135.0 -228.0 l 180.0 -228.0 198.0 -247.0 198.0 -279.0 c h 212.0 -418.0 m 212.0 -449.0 194.0 -472.0 156.0 -472.0 c 57.0 -472.0 l 57.0 -364.0 l 156.0 -364.0 l 194.0 -364.0 212.0 -388.0 212.0 -418.0 c h f';
 
 const String _quarterRestPdf =
     "100 -250 m 120 -180 150 -120 180 -70 c 190 -40 180 -10 160 20 c 130 50 80 100 40 150 c 20 180 10 210 20 240 c 30 270 60 300 90 320 c 15 320 l -10 280 -20 230 -10 180 c 10 110 50 60 c 80 20 110 -30 130 -80 c 130 -80 l f";

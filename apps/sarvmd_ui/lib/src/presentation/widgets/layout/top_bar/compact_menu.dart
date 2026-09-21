@@ -3,13 +3,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../logic/document/document_cubit.dart';
 import '../../../../logic/document/document_state.dart';
+import '../sarv_brand_header.dart';
 
 /// Builds the flat [PopupMenuEntry] list used by the compact (< 960 px) app-menu.
 ///
@@ -43,26 +43,8 @@ List<PopupMenuEntry<String>> buildCompactMenuItems(
           color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8.0),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset(
-              'assets/handwriting/Sarv Handwriting.svg',
-              height: 28.0,
-              colorFilter: ColorFilter.mode(cs.onSurface, BlendMode.srcIn),
-            ),
-            const SizedBox(height: 4.0),
-            Text(
-              l10n.appSubtitle,
-              style: themeExt?.brandSubtitleStyle ??
-                  TextStyle(
-                    fontSize: 13.5,
-                    fontFamily: 'IranNastaliq',
-                    fontWeight: FontWeight.bold,
-                    color: cs.primary,
-                  ),
-            ),
-          ],
+        child: const SarvBrandHeader(
+          mode: SarvBrandHeaderMode.compactMenu,
         ),
       ),
     ),

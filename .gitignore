@@ -45,3 +45,12 @@ app.*.map.json
 
 # Output folder for generated PDFs
 output/
+
+# Personal / Local task lists
+/Todo
+/TODO*
+!.agents/Todo
+!.agents/TODO*
+
+# Ephemeral agent plans
+.agents/plans/

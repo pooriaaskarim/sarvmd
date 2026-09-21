@@ -108,4 +108,61 @@ void main() {
       expect(invalidVoice.isValidFor(sig), isFalse);
     });
   });
+
+  group('StaffNodeGroupTreeX Tests', () {
+    test('updateGroup modifies connector and continuous barlines for target', () {
+      const staff1 = StaffDefinition(uid: 's1');
+      const staff2 = StaffDefinition(uid: 's2');
+      const targetGroup = StaffNodeGroup(
+        connector: SystemConnector.none,
+        children: [staff1, staff2],
+      );
+      final root = StaffNodeGroup(
+        children: [targetGroup],
+      );
+
+      final updated = root.updateGroup(
+        targetGroup,
+        connector: SystemConnector.brace,
+        continuousBarlines: false,
+      );
+
+      final sub = updated.children.first as StaffNodeGroup;
+      expect(sub.connector, equals(SystemConnector.brace));
+      expect(sub.continuousBarlines, isFalse);
+    });
+
+    test('ungroup promotes child nodes to parent group', () {
+      const staff1 = StaffDefinition(uid: 's1');
+      const staff2 = StaffDefinition(uid: 's2');
+      const targetGroup = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        children: [staff1, staff2],
+      );
+      final root = StaffNodeGroup(
+        children: [targetGroup],
+      );
+
+      final ungrouped = root.ungroup(targetGroup);
+      expect(ungrouped.children.length, equals(2));
+      expect(ungrouped.children[0], equals(staff1));
+      expect(ungrouped.children[1], equals(staff2));
+    });
+
+    test('groupSelected bundles selected staves into a new sub-group', () {
+      const staff1 = StaffDefinition(uid: 's1');
+      const staff2 = StaffDefinition(uid: 's2');
+      const staff3 = StaffDefinition(uid: 's3');
+      final root = StaffNodeGroup(
+        children: [staff1, staff2, staff3],
+      );
+
+      final grouped = root.groupSelected({'s1', 's2'}, SystemConnector.bracket);
+      expect(grouped.children.length, equals(2));
+      final sub = grouped.children.first as StaffNodeGroup;
+      expect(sub.connector, equals(SystemConnector.bracket));
+      expect(sub.children.length, equals(2));
+      expect(grouped.children.last, equals(staff3));
+    });
+  });
 }

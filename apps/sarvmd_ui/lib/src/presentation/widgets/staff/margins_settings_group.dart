@@ -228,7 +228,8 @@ class _ScrubbableField extends StatefulWidget {
 class _ScrubbableFieldState extends State<_ScrubbableField> {
   late final TextEditingController _controller;
   double _dragStartValue = 0.0;
-  double _cumulativeDelta = 0.0;
+  Offset? _dragStartPos;
+  bool _isDragging = false;
   bool _isHovering = false;
 
   @override
@@ -262,6 +263,47 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
     } else {
       _controller.text = widget.value.toStringAsFixed(1);
     }
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    _dragStartPos = event.position;
+    _dragStartValue = widget.value;
+    _isDragging = false;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (_dragStartPos == null) return;
+    final totalDelta = event.position.dx - _dragStartPos!.dx;
+    if (!_isDragging && totalDelta.abs() > 3.0) {
+      _isDragging = true;
+      FocusManager.instance.primaryFocus?.unfocus();
+      widget.onScrubStart();
+    }
+    if (_isDragging) {
+      final effectiveDelta = totalDelta - (totalDelta.sign * 3.0);
+      final double newValue = (_dragStartValue + effectiveDelta * 0.1)
+          .clamp(widget.min, widget.max);
+      final rounded = double.parse(newValue.toStringAsFixed(1));
+      if (rounded != widget.value) {
+        widget.onChanged(rounded);
+      }
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    if (_isDragging) {
+      _isDragging = false;
+      widget.onScrubEnd();
+    }
+    _dragStartPos = null;
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    if (_isDragging) {
+      _isDragging = false;
+      widget.onScrubEnd();
+    }
+    _dragStartPos = null;
   }
 
   @override
@@ -324,20 +366,11 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
           const SizedBox(width: 4),
           // Scrubbable textfield input box
           Expanded(
-            child: GestureDetector(
-              onHorizontalDragStart: (details) {
-                _dragStartValue = widget.value;
-                _cumulativeDelta = 0.0;
-                widget.onScrubStart();
-              },
-              onHorizontalDragUpdate: (details) {
-                _cumulativeDelta += details.delta.dx;
-                final double newValue = (_dragStartValue + _cumulativeDelta * 0.1)
-                    .clamp(widget.min, widget.max);
-                widget.onChanged(double.parse(newValue.toStringAsFixed(1)));
-              },
-              onHorizontalDragEnd: (details) => widget.onScrubEnd(),
-              onHorizontalDragCancel: () => widget.onScrubEnd(),
+            child: Listener(
+              onPointerDown: _onPointerDown,
+              onPointerMove: _onPointerMove,
+              onPointerUp: _onPointerUp,
+              onPointerCancel: _onPointerCancel,
               child: MouseRegion(
                 cursor: SystemMouseCursors.resizeLeftRight,
                 onEnter: (_) => setState(() => _isHovering = true),
@@ -346,6 +379,7 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
                   message: '${widget.label}: drag left/right to scrub',
                   child: TextField(
                     controller: _controller,
+                    enableInteractiveSelection: false,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     textAlign: TextAlign.center,
@@ -359,6 +393,12 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
                       contentPadding: EdgeInsets.zero,
                       border: InputBorder.none,
                     ),
+                    onTap: () {
+                      _controller.selection = TextSelection(
+                        baseOffset: 0,
+                        extentOffset: _controller.text.length,
+                      );
+                    },
                     onSubmitted: _submit,
                     onTapOutside: (_) {
                       _submit(_controller.text);

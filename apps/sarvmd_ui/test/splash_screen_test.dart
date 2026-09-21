@@ -38,7 +38,7 @@ void main() {
 
       expect(find.byType(SarvSplashScreen), findsOneWidget);
       expect(find.byType(SvgPicture), findsOneWidget);
-      expect(find.text('MANUSCRIPT DESIGNER'), findsOneWidget);
+      expect(find.text('Manuscript Designer'), findsOneWidget);
     });
 
     testWidgets('SplashScreen displays Persian brand subtitle when locale is fa', (tester) async {
@@ -57,7 +57,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(SarvSplashScreen), findsOneWidget);
-      expect(find.text('MANUSCRIPT DESIGNER'), findsOneWidget);
+      expect(find.text('Manuscript Designer'), findsOneWidget);
     });
 
     testWidgets('LaunchCoordinator transitions from SplashScreen to EditorScreen after minimum duration', (tester) async {

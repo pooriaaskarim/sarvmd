@@ -271,8 +271,9 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
               ),
 
               // Layer 2: Aesthetic Top Glassmorphic Coordinate HUD
+              // Positioned cleanly below top ruler (25.0 dp ruler height + 11.0 dp clearance)
               Positioned(
-                top: 12.0,
+                top: 36.0,
                 left: 16.0,
                 right: 16.0,
                 child: AnimatedSwitcher(
@@ -282,7 +283,7 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
                   transitionBuilder: (child, animation) {
                     return SlideTransition(
                       position: Tween<Offset>(
-                        begin: const Offset(0.0, -0.4),
+                        begin: const Offset(0.0, -0.3),
                         end: Offset.zero,
                       ).animate(animation),
                       child: FadeTransition(

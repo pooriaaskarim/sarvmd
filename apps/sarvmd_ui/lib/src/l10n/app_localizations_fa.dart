@@ -342,6 +342,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get continuousBarlines => 'خطوط میزان پیوسته';
 
   @override
+  String get initialBarline => 'خط شروع میزان';
+
+  @override
   String get profilePianoTitle => 'پیانو';
 
   @override
@@ -822,6 +825,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get continuousBarlinesTooltip => 'اتصال پیوسته خطوط میزان بین حامل‌ها';
 
   @override
+  String get initialBarlineTooltip => 'بستن سمت چپ حامل‌ها با خط میزان ابتدایی';
+
+  @override
   String staffNumber(int number) {
     return 'حامل $number';
   }
@@ -865,6 +871,26 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get connectorBraceTooltip => 'خط اتصال آکولاد';
+
+  @override
+  String get connectorSubBracket => 'زیر-قلاب';
+
+  @override
+  String get connectorSubBracketTooltip =>
+      'خط اتصال زیر-قلاب (کروشه نازک داخلی)';
+
+  @override
+  String get systemGrouping => 'گروه‌بندی سیستم و اتصالات';
+
+  @override
+  String get systemGroupingDescription =>
+      'سازماندهی حامل‌ها در گروه‌های تو در تو و تنظیم خطوط اتصال و پیوستگی میزان‌ها';
+
+  @override
+  String get groupStaves => 'گروه‌بندی حامل‌های انتخابی';
+
+  @override
+  String get ungroupStaves => 'لغو گروه‌بندی';
 
   @override
   String get undo => 'بازگردانی';

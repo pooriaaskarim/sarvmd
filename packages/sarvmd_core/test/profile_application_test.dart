@@ -7,9 +7,9 @@ import 'package:sarvmd_core/sarvmd_core.dart';
 void main() {
   group('StaffProfile Presets & Application Tests', () {
     test('All built-in profiles are correctly registered in StaffProfiles.all', () {
-      expect(StaffProfiles.all.length, equals(13));
+      expect(StaffProfiles.all.length, equals(14));
       final uniqueIds = StaffProfiles.all.map((p) => p.id).toSet();
-      expect(uniqueIds.length, equals(13), reason: 'Every profile must have a unique ID');
+      expect(uniqueIds.length, equals(14), reason: 'Every profile must have a unique ID');
     });
 
     test('StaffProfile.applyTo applies profile layout while preserving margins & page config', () {

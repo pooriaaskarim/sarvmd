@@ -486,7 +486,8 @@ class _AnnotatedSlider extends StatefulWidget {
 class _AnnotatedSliderState extends State<_AnnotatedSlider> {
   late final TextEditingController _controller;
   double _dragStartValue = 0.0;
-  double _cumulativeDelta = 0.0;
+  Offset? _dragStartPos;
+  bool _isDragging = false;
   bool _isScrubbing = false;
   bool _isLabelHovered = false;
 
@@ -522,30 +523,49 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
     }
   }
 
-  void _onDragStart(DragStartDetails details) {
+  void _onPointerDown(PointerDownEvent event) {
     if (!widget.enabled) return;
+    _dragStartPos = event.position;
     _dragStartValue = widget.value;
-    _cumulativeDelta = 0.0;
-    setState(() => _isScrubbing = true);
+    _isDragging = false;
   }
 
-  void _onDragUpdate(DragUpdateDetails details) {
-    if (!widget.enabled) return;
-    _cumulativeDelta += details.delta.dx;
-    final range = widget.max - widget.min;
-    final sensitivity = (range / 250.0).clamp(0.01, 0.2);
-    final double newValue = (_dragStartValue + _cumulativeDelta * sensitivity)
-        .clamp(widget.min, widget.max);
-    final rounded = double.parse(newValue.toStringAsFixed(2));
-    if (rounded != widget.value) {
-      widget.onChanged(rounded);
-      _controller.text = rounded.toStringAsFixed(2);
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!widget.enabled || _dragStartPos == null) return;
+    final totalDelta = event.position.dx - _dragStartPos!.dx;
+    if (!_isDragging && totalDelta.abs() > 3.0) {
+      _isDragging = true;
+      FocusManager.instance.primaryFocus?.unfocus();
+      setState(() => _isScrubbing = true);
+    }
+    if (_isDragging) {
+      final range = widget.max - widget.min;
+      final sensitivity = (range / 250.0).clamp(0.01, 0.2);
+      final effectiveDelta = totalDelta - (totalDelta.sign * 3.0);
+      final double newValue = (_dragStartValue + effectiveDelta * sensitivity)
+          .clamp(widget.min, widget.max);
+      final rounded = double.parse(newValue.toStringAsFixed(2));
+      if (rounded != widget.value) {
+        widget.onChanged(rounded);
+        _controller.text = rounded.toStringAsFixed(2);
+      }
     }
   }
 
-  void _onDragEnd() {
-    if (!widget.enabled) return;
-    setState(() => _isScrubbing = false);
+  void _onPointerUp(PointerUpEvent event) {
+    if (_isDragging) {
+      _isDragging = false;
+      setState(() => _isScrubbing = false);
+    }
+    _dragStartPos = null;
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    if (_isDragging) {
+      _isDragging = false;
+      setState(() => _isScrubbing = false);
+    }
+    _dragStartPos = null;
   }
 
   @override
@@ -553,11 +573,11 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
     final cs = Theme.of(context).colorScheme;
     final enabledAlpha = widget.enabled ? 1.0 : AppOpacities.disabled;
 
-    final valueInput = GestureDetector(
-      onHorizontalDragStart: _onDragStart,
-      onHorizontalDragUpdate: _onDragUpdate,
-      onHorizontalDragEnd: (_) => _onDragEnd(),
-      onHorizontalDragCancel: _onDragEnd,
+    final valueInput = Listener(
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
       child: MouseRegion(
         cursor: widget.enabled ? SystemMouseCursors.resizeLeftRight : SystemMouseCursors.basic,
         onEnter: (_) => setState(() => _isLabelHovered = true),
@@ -587,6 +607,7 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
                   child: TextField(
                     controller: _controller,
                     enabled: widget.enabled,
+                    enableInteractiveSelection: false,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -600,6 +621,12 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
                       contentPadding: EdgeInsets.zero,
                       border: InputBorder.none,
                     ),
+                    onTap: () {
+                      _controller.selection = TextSelection(
+                        baseOffset: 0,
+                        extentOffset: _controller.text.length,
+                      );
+                    },
                     onSubmitted: _submit,
                     onTapOutside: (_) {
                       _submit(_controller.text);
