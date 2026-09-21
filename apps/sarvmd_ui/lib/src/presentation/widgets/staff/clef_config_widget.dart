@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/utils/smufl_glyphs.dart';
+import '../../../core/utils/tab_clef_painter.dart';
 import '../common/property_row.dart';
 
 class ClefConfigWidget extends StatelessWidget {
@@ -319,34 +320,7 @@ class MiniStaffClefPainter extends CustomPainter {
 
   void _paintTabClef(Canvas canvas, double x, double topY, int lines,
       double gap, Color color) {
-    final staffHeight = (lines - 1) * gap;
-    final centerY = topY + staffHeight / 2;
-
-    // Standard visual padding matching standard clefs
-    final startX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
-
-    // Use a high-fidelity Serif font for authentic engraving
-    final fontSize = gap * 1.5;
-    final textStyle = TextStyle(
-      fontFamily: 'Noto Serif',
-      fontWeight: FontWeight.bold,
-      fontSize: fontSize,
-      color: color,
-      height: 0.8,
-    );
-
-    final List<String> letters = ['T', 'A', 'B'];
-    double currentY = centerY - (fontSize * 1.5 * 0.8);
-
-    for (final char in letters) {
-      final tp = TextPainter(
-        text: TextSpan(text: char, style: textStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      tp.paint(canvas, Offset(startX, currentY));
-      currentY += fontSize * 0.8;
-    }
+    paintTabClef(canvas, x, topY, lines, gap, color);
   }
 
   void _paintPercussionClef(Canvas canvas, double x, double topY, int lines,

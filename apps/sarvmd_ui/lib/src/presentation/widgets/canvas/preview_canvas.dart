@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/utils/smufl_glyphs.dart';
+import '../../../core/utils/tab_clef_painter.dart';
 import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/sample/sample_score.dart';
@@ -508,34 +509,8 @@ class _ManuscriptPainter extends CustomPainter {
   void _paintTabClef(
       Canvas canvas, double x, double topY, int lines, double gap, Color color,
       {double scale = 1.0}) {
-    final staffHeight = (lines - 1) * gap;
-    final centerY = topY + staffHeight / 2;
-
-    // Standard visual padding matching standard clefs
-    final startX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
-
-    // Use a high-fidelity Serif font for authentic engraving
-    final fontSize = gap * 1.5;
-    final textStyle = TextStyle(
-      fontFamily: 'Noto Serif',
-      fontWeight: FontWeight.bold,
-      fontSize: fontSize,
-      color: color,
-      height: 0.8,
-    );
-
-    final List<String> letters = ['T', 'A', 'B'];
-    double currentY = centerY - (fontSize * 1.5 * 0.8);
-
-    for (final char in letters) {
-      final tp = TextPainter(
-        text: TextSpan(text: char, style: textStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      tp.paint(canvas, Offset(startX, currentY));
-      currentY += fontSize * 0.8;
-    }
+    final glyphX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
+    paintTabClef(canvas, glyphX, topY, lines, gap, color, scale: scale);
   }
 
   void _paintPercussionClef(
@@ -753,12 +728,17 @@ class _ManuscriptPainter extends CustomPainter {
           ..style = PaintingStyle.stroke,
       );
     } else if (elem is core.PositionedClef) {
+      final double fontSize = switch (elem.glyph) {
+        core.SmuflGlyph.tabClef => gap * (elem.scale * 4.5 * (1000.0 / 1512.0)),
+        core.SmuflGlyph.tabClefFour => gap * (elem.scale * 2.7 * (1000.0 / 1012.0)),
+        _ => gap * 4.0 * elem.scale,
+      };
       final tp = TextPainter(
         text: TextSpan(
           text: elem.glyph.codepoint,
           style: TextStyle(
             fontFamily: 'Bravura',
-            fontSize: gap * 4.0 * elem.scale,
+            fontSize: fontSize,
             color: color,
           ),
         ),

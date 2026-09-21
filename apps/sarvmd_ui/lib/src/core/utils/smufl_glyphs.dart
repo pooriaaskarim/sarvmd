@@ -7,12 +7,12 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 /// Extension providing SMuFL (Standard Music Font Layout) glyph mappings for UI rendering.
 extension ClefSymbolSMuFLExtension on core.ClefSymbol {
   /// The SMuFL Unicode character for this clef symbol.
-  /// Returns empty string for unpitched/text clefs like TAB and Percussion.
   String get smuflGlyph => switch (this) {
-        core.ClefSymbol.g => '\u{E050}',
-        core.ClefSymbol.c => '\u{E05C}',
-        core.ClefSymbol.f => '\u{E062}',
-        _ => '',
+        core.ClefSymbol.g => SMuFLGlyphs.gClef,
+        core.ClefSymbol.c => SMuFLGlyphs.cClef,
+        core.ClefSymbol.f => SMuFLGlyphs.fClef,
+        core.ClefSymbol.tab => SMuFLGlyphs.tabClef6,
+        core.ClefSymbol.percussion => SMuFLGlyphs.percussionClef,
       };
 }
 
@@ -29,4 +29,13 @@ abstract final class SMuFLGlyphs {
 
   /// F-clef (Bass clef) glyph.
   static const String fClef = '\u{E062}';
+
+  /// 6-string TAB clef glyph. SMuFL: `6stringTabClef` (U+E06D).
+  static const String tabClef6 = '\u{E06D}';
+
+  /// 4-string TAB clef glyph. SMuFL: `4stringTabClef` (U+E06E).
+  static const String tabClef4 = '\u{E06E}';
+
+  /// Semipitched percussion clef 1. SMuFL: `semipitchedPercussionClef1` (U+E069).
+  static const String percussionClef = '\u{E069}';
 }
