@@ -47,8 +47,10 @@ app.*.map.json
 output/
 
 # Personal / Local task lists
-Todo
-TODO*
+/Todo
+/TODO*
+!.agents/Todo
+!.agents/TODO*
 
 # Ephemeral agent plans
 .agents/plans/

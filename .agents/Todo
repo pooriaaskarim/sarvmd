@@ -1,0 +1,33 @@
+1. [x] Mobile View.
+2. [x] Mobile APK.
+3. [ ] Enabling user to work on several Documents, save and load them into/out of a standard file format.
+    This would some need research on whether there is a standard file format for saving and loading music documents.
+4. [ ] Standard shorcuts with a help cheat-sheet to enable user keyboard speed entry.
+5. [x] Unified look and font and feel for SarvMD logo across the codebase (e.g. splash, about dialog, etc. )
+6. [x] Code standardization across the codebase (e.g. adding comprehensive documentation and comments, Modularizing Big Ass files, etc.)
+7. [x] CRITICAL: Exporting seems to not work properly; on mobile it rendered some irrelevant symbols when exporting Guitar + Tab. Needs mode examincation on mobile and web and linux! and probably more profiles.
+    [x] Verified vector symbol and TAB clef rendering parity across PDF, SVG, and LaTeX emitters
+    [x] Standardized TAB clef looks & sizing based on authentic SMuFL Bravura music font (U+E06D 6-string TAB clef, U+E06E 4-string TAB clef) scaled dynamically to 90% of staff height inside outer staff lines, with exact vertical midline centering across PDF emitter, SVG emitter, LaTeX emitter, and Flutter UI previews (PreviewCanvas, LiveStaffPreview, ClefConfigWidget)
+    [x] Created automated 32-scenario QA Visual Validation Gallery (all 14 presets, page geometries, layering modes, and hierarchical labeling)
+8. [ ] We need a middle sized Screens responsive UI. This might go well with some enhancements to the mobile view, or even the same view. Examinatio needed.
+9. [x] CRITICAL: The staff lines need to be unified sometimes with a special bracket like symbol (e.g. Guitar + Tab is usually represented this way). Also if a users wants to select out some of the staff lines, say Grand Staffs in an ensemble, and just connect them with a bracket, and maybe some of the other with some other type of bracket, he would have now way to achieve that, rn. This one would need some research. Maybe it's a good idea to get back to MOLA documents.
+    [x] Add SystemConnector.subBracket (thin secondary bracket, no serifs)
+    [x] Fix SVG & PDF emitters to traverse all GroupPlacements (previously only root connector was rendered)
+    [x] Add subBracket rendering to preview canvas (exhaustive switch)
+    [x] Add chamberOrchestra reference profile (bracket + subBracket nested hierarchy)
+    [x] Unified Hierarchy UI — consolidated all grouping, connector assignment, and continuous barlines directly into AdvancedBuilderPanel (purged redundant modal SystemGroupingDialog)
+    [x] Drag-and-drop hierarchical reordering for staff node groups in AdvancedBuilderPanel (spatial drop zones for insert before/after and nest-into-group with cycle prevention)
+    [x] Context-sensitive clef and anchor/line quick-pickers on staff cards with automatic line count normalization
+    [x] Agile inline labeling with outside-tap auto-save, Esc cancel, and enhanced label readability
+    [x] Gould & MOLA two-tier hierarchical labeling (space-aware dynamic indentation for group labels vs inner staff descriptors)
+    [x] Character-weighted typographic font advance width estimation (`estimateLabelWidthMm`) replacing single-word splitting
+    [x] Multi-line centered text rendering (`\n`) for group labels across PDF, SVG, and Preview Canvas
+    [x] Eliminate connector collisions with longer labels and sub-group abbreviations (cumulative level spacing + 2.0 mm bracket tick clearance buffer)
+    [x] Gouldian non-redundancy label assistant, auto-renumbering command, and 2-level nesting depth limits in AdvancedBuilderPanel and SystemGroupingDialog
+    [x] System Start Line / Initial Barline (closed left edge for standalone TAB and ensembles, open left edge for solo classical staves per Gould p. 230, reactive UI toggle in AdvancedBuilderPanel, and SVG/PDF/LaTeX emitter parity)
+10. [x] In mobile view, the touch coordinates that appear on long-press drag on canvas, cover the ruler a little, which prevents user from reading the ruler when he probably needs it. Also on mobile view, the bottom coordinates are also show, which is redundant and unnecessary.
+11. [ ] labeling, specially when groups and subgroup labels are available, deos not use canvas space efficiently. This needs research on what the standard are and how they suggest these labels are shown alongside connectors and all that.
+12. [x] Text inputs that support darg to set value ( like margins and staff spacing stuff ), cannot defer from draging to set value and selecting text. I'd suggest text selection be removed entirely since it not really needed anymore.
+13. [ ] right panel should maintain its state, like scroll position or open section ( in mobile view), when interactions cause it to colapse, or when screen is resized from narrow width to wide width view.
+14. [ ] there is a problem with removing grouped staff lines from the top bar, I tried it once and it caused the entire group to be deleted.
+15. [ ] CRITICAL: when resizing from Wide width to narrow width, or vice versa, responsiveness mechanism of modal to dialog or vice versa causes all sorts of problems, renders the app unusable. This needs to be addressed later on when mid-sized screens are covered.
