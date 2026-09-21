@@ -83,6 +83,7 @@ class _PrecisionSliderState extends State<PrecisionSlider> {
             ),
             child: TextField(
               controller: _controller,
+              enableInteractiveSelection: false,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
@@ -95,6 +96,12 @@ class _PrecisionSliderState extends State<PrecisionSlider> {
                 contentPadding: EdgeInsets.zero,
                 border: InputBorder.none,
               ),
+              onTap: () {
+                _controller.selection = TextSelection(
+                  baseOffset: 0,
+                  extentOffset: _controller.text.length,
+                );
+              },
               onSubmitted: _submit,
               onTapOutside: (_) {
                 _submit(_controller.text);
