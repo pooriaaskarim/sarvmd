@@ -11,6 +11,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2026-09-22
+
+### Highlights
+- **Professional Two-Tier Hierarchical Labeling**: Create orchestral and ensemble scores with publication-ready section labels (*Flutes*, *Violins*) and inner staff identifiers (*1, 2*, *I, II*) that automatically calculate dynamic margins to prevent connector collisions.
+- **Unified Drag-and-Drop System Builder**: Structure complex ensemble layouts directly from the sidebar with drag-and-drop grouping, multi-staff selection, and instant inline label editing.
+- **Authentic Engraving Standards (Gould & MOLA)**: Enhanced initial system barlines, secondary sub-brackets, and SMuFL Bravura tablature clefs for exact print and export parity.
+
+### Added
+- **Hierarchical System Labeling & Smart Clearance**:
+  - **Two-Tier Section & Staff Names**: Assign overarching group names (e.g., *Woodwinds*, *Brass*) alongside individual instrument descriptors.
+  - **Dynamic Page Indentation**: The first system automatically indents to accommodate multi-line and long instrument names without clipping or manual margin guessing.
+  - **Collision-Free Brackets**: Outer section brackets and inner sub-brackets automatically maintain a clean safety buffer around instrument labels and abbreviations.
+- **Streamlined System Hierarchy Workspace**:
+  - **Direct Drag-and-Drop Reordering**: Move staves, reorder sections, or nest instruments into sub-groups directly on the canvas sidebar.
+  - **Batch Selection Bar**: Check multiple staves simultaneously to group them or adjust their properties together in a single click.
+  - **Agile Inline Renaming**: Click directly on any staff or section label to edit it in place, with automatic save when clicking away or pressing Enter.
+  - **Context-Sensitive Quick Pickers**: Change clefs, line counts, and bracket connectors right from each staff card without navigating deep setting menus.
+- **Authentic Engraving & Export Fidelity**:
+  - **Initial System Barlines**: Multi-staff ensembles and standalone TAB systems now cleanly close at the left edge, while solo classical staves remain authentically open per Elaine Gould's *Behind Bars* engraving guidelines.
+  - **Bravura Tablature Clefs**: Authentic SMuFL vector glyphs for 4-string and 6-string TAB staves, perfectly proportioned and centered across PDF, SVG, and live display.
+  - **Standardized Multi-Format Export Dialog**: Redesigned tabbed export center for PDF, SVG, and LaTeX with customizable page count and real-time dimension readouts.
+
+### Changed
+- **Frictionless Numeric Scrubbing**:
+  - Dragging to adjust margins or staff spacing now feels completely fluid and uninterrupted, removing text selection highlights and handles.
+  - Clicking any numeric input selects the whole value so you can type a new number in a single keystroke.
+- **Refined Mobile Coordinate HUD**:
+  - Positioned inspection coordinates clear of ruler markings for effortless reading on touchscreen devices.
+  - Cleaned up redundant bottom readouts during long-press canvas inspection.
+- **Enhanced Dark Mode Contrast**:
+  - Improved color contrast across cards, badges, and headers for fatigue-free manuscript editing in low-light environments.
+- **Modular Staff Settings**:
+  - Reorganized staff configuration into dedicated tabs (Clef & Lines, Typography, Fine-Tuning) for a cleaner, less cluttered interface.
+
+### Fixed
+- **Connector Alignment on Live Preview**: Fixed alignment gaps between system brackets and measure barlines during real-time layout resizing.
+- **Header Overflow Protection**: Eliminated badge and text overflows on narrow phone displays and compact sidebars.
+
+---
+
 ## [0.8.0] - 2026-09-17
 
 ### Added
