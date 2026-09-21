@@ -226,6 +226,7 @@ class StaffNodeGroup extends StaffNode {
     this.connector = SystemConnector.none,
     this.children = const [],
     this.continuousBarlines = true,
+    this.initialBarline = true,
     this.label = '',
     this.abbreviation = '',
     this.labelVisible = true,
@@ -236,6 +237,7 @@ class StaffNodeGroup extends StaffNode {
   /// Strongly-typed list of child [StaffNode] elements (staves or sub-groups).
   final List<StaffNode> children;
   final bool continuousBarlines;
+  final bool initialBarline;
   final String label;
   final String abbreviation;
   final bool labelVisible;
@@ -244,6 +246,7 @@ class StaffNodeGroup extends StaffNode {
     SystemConnector? connector,
     List<StaffNode>? children,
     bool? continuousBarlines,
+    bool? initialBarline,
     String? label,
     String? abbreviation,
     bool? labelVisible,
@@ -252,6 +255,7 @@ class StaffNodeGroup extends StaffNode {
         connector: connector ?? this.connector,
         children: children ?? this.children,
         continuousBarlines: continuousBarlines ?? this.continuousBarlines,
+        initialBarline: initialBarline ?? this.initialBarline,
         label: label ?? this.label,
         abbreviation: abbreviation ?? this.abbreviation,
         labelVisible: labelVisible ?? this.labelVisible,
@@ -270,6 +274,7 @@ class StaffNodeGroup extends StaffNode {
           return c.toJson();
         }).toList(),
         'continuousBarlines': continuousBarlines,
+        'initialBarline': initialBarline,
         'label': label,
         'abbreviation': abbreviation,
         'labelVisible': labelVisible,
@@ -286,6 +291,7 @@ class StaffNodeGroup extends StaffNode {
         return StaffNode.fromJson(c as Map<String, dynamic>);
       }).toList(),
       continuousBarlines: data['continuousBarlines'] as bool? ?? true,
+      initialBarline: data['initialBarline'] as bool? ?? true,
       label: data['label'] as String? ?? '',
       abbreviation: data['abbreviation'] as String? ?? '',
       labelVisible: data['labelVisible'] as bool? ?? true,
@@ -299,6 +305,7 @@ class StaffNodeGroup extends StaffNode {
         runtimeType != other.runtimeType ||
         connector != other.connector ||
         continuousBarlines != other.continuousBarlines ||
+        initialBarline != other.initialBarline ||
         label != other.label ||
         abbreviation != other.abbreviation ||
         labelVisible != other.labelVisible ||
@@ -316,6 +323,7 @@ class StaffNodeGroup extends StaffNode {
         connector,
         Object.hashAll(children),
         continuousBarlines,
+        initialBarline,
         label,
         abbreviation,
         labelVisible,

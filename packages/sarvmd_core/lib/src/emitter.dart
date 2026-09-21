@@ -66,19 +66,37 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
     }
 
     // Draw system barline if layout specifies it.
-    final connector = config.systemLayout.rootGroup.connector;
+    final rootGroup = config.systemLayout.rootGroup;
+    if (rootGroup.initialBarline) {
+      draw.writeln('${_f(lineW * 2.5)} w');
+      if (rootGroup.continuousBarlines && system.staves.length > 1) {
+        final sysTopPdfY = pageHBp - _mmToBp(system.staves.first.topY);
+        final sysBottomPdfY = pageHBp -
+            _mmToBp(system.staves.last.topY + system.staves.last.height);
+        draw.writeln(
+          '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
+          '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} l S',
+        );
+      } else {
+        for (final staff in system.staves) {
+          final sTopPdfY = pageHBp - _mmToBp(staff.topY);
+          final sBottomPdfY = pageHBp - _mmToBp(staff.topY + staff.height);
+          draw.writeln(
+            '${_f(staffLeftBp)} ${_f(sTopPdfY)} m '
+            '${_f(staffLeftBp)} ${_f(sBottomPdfY)} l S',
+          );
+        }
+      }
+      draw.writeln('$lineW w');
+    }
+
+    final connector = rootGroup.connector;
     if (connector != SystemConnector.none && system.staves.length > 1) {
       final sysTopPdfY = pageHBp - _mmToBp(system.staves.first.topY);
       final sysBottomPdfY = pageHBp -
           _mmToBp(system.staves.last.topY + system.staves.last.height);
 
       final bool useBrace = connector == SystemConnector.brace;
-
-      draw.writeln('${_f(lineW * 2.5)} w');
-      draw.writeln(
-        '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
-        '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} l S',
-      );
 
       if (useBrace) {
         // Render the standard piano brace using the Bravura path (U+E000).
@@ -96,6 +114,7 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
         draw.writeln('$_bracePdf Q');
       } else {
         // Draw bracket "ticks"
+        draw.writeln('${_f(lineW * 2.5)} w');
         final tickLenBp = _mmToBp(2.0);
         draw.writeln(
           '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
@@ -105,9 +124,8 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
           '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} m '
           '${_f(staffLeftBp + tickLenBp)} ${_f(sysBottomPdfY)} l S',
         );
+        draw.writeln('$lineW w');
       }
-      // Reset width for clefs/lines
-      draw.writeln('$lineW w');
     }
 
     // Clefs.

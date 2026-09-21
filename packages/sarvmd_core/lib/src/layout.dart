@@ -39,6 +39,7 @@ class GroupPlacement {
     required this.endStaffIdx,
     required this.connector,
     this.continuousBarlines = true,
+    this.initialBarline = true,
     this.level = 0,
     this.label = '',
     this.abbreviation = '',
@@ -59,6 +60,9 @@ class GroupPlacement {
 
   /// Whether barlines should be continuous across all staves in this group.
   final bool continuousBarlines;
+
+  /// Whether this group has a vertical starting barline at the system left.
+  final bool initialBarline;
 
   /// The nesting level (0 = root).
   final int level;
@@ -87,6 +91,7 @@ class GroupPlacement {
     int? endStaffIdx,
     SystemConnector? connector,
     bool? continuousBarlines,
+    bool? initialBarline,
     int? level,
     String? label,
     String? abbreviation,
@@ -100,6 +105,7 @@ class GroupPlacement {
       endStaffIdx: endStaffIdx ?? this.endStaffIdx,
       connector: connector ?? this.connector,
       continuousBarlines: continuousBarlines ?? this.continuousBarlines,
+      initialBarline: initialBarline ?? this.initialBarline,
       level: level ?? this.level,
       label: label ?? this.label,
       abbreviation: abbreviation ?? this.abbreviation,
@@ -240,6 +246,7 @@ PageLayout computeLayout(PageConfig config) {
           endStaffIdx: endIdx,
           connector: group.connector,
           continuousBarlines: group.continuousBarlines,
+          initialBarline: group.initialBarline,
           level: maxChildActiveDepth,
           label: group.label,
           abbreviation: group.abbreviation,

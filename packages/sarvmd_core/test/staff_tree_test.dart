@@ -78,7 +78,7 @@ void main() {
       expect(config.usableHeight, equals(257.0));
     });
 
-    test('StaffGroup copyWith supports mutating connector and children', () {
+    test('StaffGroup copyWith supports mutating connector, children, and initialBarline', () {
       const original = StaffGroup(
         connector: SystemConnector.none,
         children: [StaffDefinition(lines: 5)],
@@ -86,6 +86,7 @@ void main() {
 
       final updated = original.copyWith(
         connector: SystemConnector.brace,
+        initialBarline: false,
         children: [
           const StaffDefinition(lines: 5),
           const StaffDefinition(lines: 5),
@@ -93,7 +94,36 @@ void main() {
       );
 
       expect(updated.connector, equals(SystemConnector.brace));
+      expect(updated.initialBarline, isFalse);
       expect(updated.children.length, equals(2));
+    });
+
+    test('Initial barline profile presets and SVG emission', () {
+      // Tab presets should have initialBarline: true
+      expect(StaffProfiles.guitarTab.systemLayout.rootGroup.initialBarline, isTrue);
+      expect(StaffProfiles.piano.systemLayout.rootGroup.initialBarline, isTrue);
+
+      // Solo classical/blank presets should have initialBarline: false
+      expect(StaffProfiles.treble.systemLayout.rootGroup.initialBarline, isFalse);
+      expect(StaffProfiles.bass.systemLayout.rootGroup.initialBarline, isFalse);
+      expect(StaffProfiles.blank.systemLayout.rootGroup.initialBarline, isFalse);
+
+      // Verify SVG rendering behavior:
+      // 1. Guitar TAB (initialBarline: true, single staff) -> draws closing start barline
+      final tabConfig = StaffProfiles.guitarTab.applyTo(const PageConfig());
+      final tabLayout = computeLayout(tabConfig);
+      final tabSvg = emitSvg(tabConfig, tabLayout);
+      final strokeMm = tabConfig.staffConfig.lineThicknessPt * 25.4 / 72.0;
+      final strokeWStr = (strokeMm * 2.5).toStringAsFixed(3);
+      expect(tabSvg, contains('stroke-width="$strokeWStr"'),
+          reason: 'Single staff TAB with initialBarline=true must draw closing barline');
+
+      // 2. Treble (initialBarline: false) -> does NOT draw system barline
+      final trebleConfig = StaffProfiles.treble.applyTo(const PageConfig());
+      final trebleLayout = computeLayout(trebleConfig);
+      final trebleSvg = emitSvg(trebleConfig, trebleLayout);
+      expect(trebleSvg, isNot(contains('stroke-width="$strokeWStr"')),
+          reason: 'Treble solo staff with initialBarline=false must not draw start barline');
     });
   });
 }

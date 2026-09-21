@@ -531,21 +531,23 @@ void _drawSystemConnectors(
       final double connectorX = systemLeftX - group.connectorOffsetMm;
 
       // ── System barline (continuous or per-staff at systemLeftX) ────────
-      if (group.continuousBarlines && groupStaves.length > 1) {
-        buf.writeln(
-          '    <line x1="${_f(systemLeftX)}" y1="${_f(topY)}"'
-          ' x2="${_f(systemLeftX)}" y2="${_f(bottomY)}"'
-          ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
-        );
-      } else if (!group.continuousBarlines) {
-        for (final staff in groupStaves) {
-          final sTop = staff.topY;
-          final sBottom = staff.topY + staff.height;
+      if (group.initialBarline) {
+        if (group.continuousBarlines && groupStaves.length > 1) {
           buf.writeln(
-            '    <line x1="${_f(systemLeftX)}" y1="${_f(sTop)}"'
-            ' x2="${_f(systemLeftX)}" y2="${_f(sBottom)}"'
+            '    <line x1="${_f(systemLeftX)}" y1="${_f(topY)}"'
+            ' x2="${_f(systemLeftX)}" y2="${_f(bottomY)}"'
             ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
           );
+        } else {
+          for (final staff in groupStaves) {
+            final sTop = staff.topY;
+            final sBottom = staff.topY + staff.height;
+            buf.writeln(
+              '    <line x1="${_f(systemLeftX)}" y1="${_f(sTop)}"'
+              ' x2="${_f(systemLeftX)}" y2="${_f(sBottom)}"'
+              ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+            );
+          }
         }
       }
 

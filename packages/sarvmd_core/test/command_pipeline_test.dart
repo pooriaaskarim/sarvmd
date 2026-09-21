@@ -200,5 +200,22 @@ void main() {
       history.undo();
       expect((history.config.systemLayout.rootGroup.children.first as StaffNodeGroup).children.length, equals(1));
     });
+
+    test('UpdateGroupInitialBarlineCommand modifies initialBarline and undoes cleanly', () {
+      final configHistory = CommandHistory(
+        initialScore: const Score(title: 'Base', parts: []),
+      );
+      expect(configHistory.config.systemLayout.rootGroup.initialBarline, isTrue);
+
+      configHistory.execute(UpdateGroupInitialBarlineCommand(false));
+      expect(configHistory.config.systemLayout.rootGroup.initialBarline, isFalse);
+      expect(configHistory.lastUndoLabel, equals('Toggle Initial Barline'));
+
+      configHistory.undo();
+      expect(configHistory.config.systemLayout.rootGroup.initialBarline, isTrue);
+
+      configHistory.redo();
+      expect(configHistory.config.systemLayout.rootGroup.initialBarline, isFalse);
+    });
   });
 }

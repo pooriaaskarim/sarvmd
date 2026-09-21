@@ -69,6 +69,7 @@ abstract final class StaffProfiles {
     label: 'Treble',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
+        initialBarline: false,
         children: [
           StaffDefinition(lines: 5, clef: Clef.treble),
         ],
@@ -83,6 +84,7 @@ abstract final class StaffProfiles {
     label: 'Bass',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
+        initialBarline: false,
         children: [
           StaffDefinition(lines: 5, clef: Clef.bass),
         ],
@@ -97,6 +99,7 @@ abstract final class StaffProfiles {
     label: 'Alto',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
+        initialBarline: false,
         children: [
           StaffDefinition(lines: 5, clef: Clef.alto),
         ],
@@ -185,6 +188,7 @@ abstract final class StaffProfiles {
     label: 'Drum Set',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
+        initialBarline: false,
         children: [
           StaffDefinition(lines: 5, clef: Clef.percussion),
         ],
@@ -200,6 +204,7 @@ abstract final class StaffProfiles {
     label: 'Percussion (1-line)',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
+        initialBarline: false,
         children: [
           StaffDefinition(lines: 1, clef: Clef.percussion),
         ],
@@ -215,6 +220,7 @@ abstract final class StaffProfiles {
     label: 'Percussion (3-line)',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
+        initialBarline: false,
         children: [
           StaffDefinition(lines: 3, clef: Clef.percussion),
         ],
@@ -279,6 +285,7 @@ abstract final class StaffProfiles {
     label: 'Blank',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
+        initialBarline: false,
         children: [
           StaffDefinition(lines: 5),
         ],

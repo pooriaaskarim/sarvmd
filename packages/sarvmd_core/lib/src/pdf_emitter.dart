@@ -374,20 +374,20 @@ void _drawSystemConnectors(
       final bottomYPt = hPt - (bottomY * _mmToPt);
 
       // ── System barline (continuous or per-staff at systemLeftPt) ───────
-      if (group.continuousBarlines && groupStaves.length > 1) {
+      if (group.initialBarline) {
         canvas.setStrokeColor(pdf.PdfColors.black);
         canvas.setLineWidth(strokeMm * 2.5 * _mmToPt);
-        canvas.drawLine(systemLeftPt, topYPt, systemLeftPt, bottomYPt);
-        canvas.strokePath();
-      } else if (!group.continuousBarlines) {
-        canvas.setStrokeColor(pdf.PdfColors.black);
-        canvas.setLineWidth(strokeMm * 2.5 * _mmToPt);
-        for (final staff in groupStaves) {
-          final sTopPt = hPt - (staff.topY * _mmToPt);
-          final sBottomPt = hPt - ((staff.topY + staff.height) * _mmToPt);
-          canvas.drawLine(systemLeftPt, sTopPt, systemLeftPt, sBottomPt);
+        if (group.continuousBarlines && groupStaves.length > 1) {
+          canvas.drawLine(systemLeftPt, topYPt, systemLeftPt, bottomYPt);
+          canvas.strokePath();
+        } else {
+          for (final staff in groupStaves) {
+            final sTopPt = hPt - (staff.topY * _mmToPt);
+            final sBottomPt = hPt - ((staff.topY + staff.height) * _mmToPt);
+            canvas.drawLine(systemLeftPt, sTopPt, systemLeftPt, sBottomPt);
+          }
+          canvas.strokePath();
         }
-        canvas.strokePath();
       }
 
       // ── Connector glyph (at connectorPt) ───────────────────────────────

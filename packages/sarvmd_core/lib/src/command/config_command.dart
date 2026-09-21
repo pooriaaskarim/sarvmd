@@ -530,6 +530,46 @@ class UpdateGroupContinuousBarlinesCommand extends PageConfigCommand {
   }
 }
 
+/// Command to toggle whether a system group has an initial vertical barline on the left.
+class UpdateGroupInitialBarlineCommand extends PageConfigCommand {
+  final bool value;
+  final int? groupHash;
+
+  UpdateGroupInitialBarlineCommand(this.value, {this.groupHash});
+
+  @override
+  String get label => 'Toggle Initial Barline';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    final root = current.systemLayout.rootGroup;
+    if (groupHash == null || root.hashCode == groupHash) {
+      return current.copyWith(
+        systemLayout: current.systemLayout.copyWith(
+          rootGroup: root.copyWith(initialBarline: value),
+        ),
+      );
+    }
+
+    StaffNode findAndUpdate(StaffNode node) {
+      if (node is StaffNodeGroup) {
+        if (node.hashCode == groupHash) {
+          return node.copyWith(initialBarline: value);
+        }
+        return node.copyWith(
+          children: node.children.map(findAndUpdate).toList(),
+        );
+      }
+      return node;
+    }
+
+    final newRoot = findAndUpdate(root) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
 /// Command to update system group details (label, abbreviation, labelVisible).
 class UpdateGroupDetailsCommand extends PageConfigCommand {
   final int? groupHash;
