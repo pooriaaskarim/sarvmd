@@ -51,8 +51,8 @@ void main() {
 
       expect(svg, contains('<svg'));
       expect(svg, contains('</svg>'));
-      // Verify TAB clef T-A-B vector path is rendered in the output
-      expect(svg, contains('M 40.0,950.0 L 320.0,950.0'));
+      // Verify authentic Bravura TAB clef vector path is rendered in the output
+      expect(svg, contains('M 387.0,711.0 L 387.0,764.0'));
     });
   });
 }

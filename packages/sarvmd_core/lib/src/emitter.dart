@@ -120,22 +120,20 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
         final baselinePdfY = topLinePdfY -
             clef.anchorOffsetInSpaces(staff.lines) * lineGapBp * staff.scale;
 
-        // For TAB, we want it to span the full staff height
-        final displayGaps = (clef.symbol == ClefSymbol.tab)
-            ? (staff.lines > 0 ? staff.lines - 1 : 1).toDouble() * staff.scale
-            : 4.0 * staff.scale;
-
-        final cx = staffLeftBp + lineGapBp * config.engraving.initialClefClearanceSp;
-
-        final (String path, double upem) = switch (clef.symbol) {
-          ClefSymbol.g => (_gClefPdf, 1000.0),
-          ClefSymbol.c => (_cClefPdf, 1000.0),
-          ClefSymbol.f => (_fClefPdf, 1000.0),
-          ClefSymbol.tab => (_tabClefPdf, 1000.0),
-          ClefSymbol.percussion => (_percClefPdf, 1000.0),
+        final (String path, double glyphHeight, double displayGaps) = switch (clef.symbol) {
+          ClefSymbol.g => (_gClefPdf, 1000.0, 4.0 * staff.scale),
+          ClefSymbol.c => (_cClefPdf, 1000.0, 4.0 * staff.scale),
+          ClefSymbol.f => (_fClefPdf, 1000.0, 4.0 * staff.scale),
+          ClefSymbol.tab => (
+              staff.lines <= 4 ? _tabClef4Pdf : _tabClef6Pdf,
+              staff.lines <= 4 ? 1012.0 : 1512.0,
+              (staff.lines > 1 ? staff.lines - 1 : 1) * 0.90 * staff.scale,
+            ),
+          ClefSymbol.percussion => (_percClefPdf, 1000.0, 4.0 * staff.scale),
         };
 
-        final scale = (lineGapBp * displayGaps) / upem;
+        final scale = (lineGapBp * displayGaps) / glyphHeight;
+        final cx = staffLeftBp + lineGapBp * config.engraving.initialClefClearanceSp;
         draw.writeln(
             'q ${_f(scale)} 0 0 ${_f(scale)} ${_f(cx)} ${_f(baselinePdfY)} cm');
         draw.writeln('0 g');
@@ -329,17 +327,17 @@ String _drawElementPdf(PositionedElement elem, double pageHBp, double gapBp, Eng
     final xBp = _mmToBp(elem.x);
     final yBp = pageHBp - _mmToBp(elem.y);
 
-    final (String path, double upem) = switch (elem.glyph) {
-      SmuflGlyph.gClef => (_gClefPdf, 1000.0),
-      SmuflGlyph.cClef => (_cClefPdf, 1000.0),
-      SmuflGlyph.fClef => (_fClefPdf, 1000.0),
-      SmuflGlyph.tabClef => (_tabClefPdf, 1000.0),
-      SmuflGlyph.percussionClef => (_percClefPdf, 1000.0),
-      _ => (_gClefPdf, 1000.0),
+    final (String path, double glyphHeight, double displayGaps) = switch (elem.glyph) {
+      SmuflGlyph.gClef => (_gClefPdf, 1000.0, 4.0),
+      SmuflGlyph.cClef => (_cClefPdf, 1000.0, 4.0),
+      SmuflGlyph.fClef => (_fClefPdf, 1000.0, 4.0),
+      SmuflGlyph.tabClef => (_tabClef6Pdf, 1512.0, 4.5),
+      SmuflGlyph.tabClefFour => (_tabClef4Pdf, 1012.0, 2.7),
+      SmuflGlyph.percussionClef => (_percClefPdf, 1000.0, 4.0),
+      _ => (_gClefPdf, 1000.0, 4.0),
     };
 
-    final displayGaps = (elem.glyph == SmuflGlyph.tabClef) ? 3.0 : 4.0;
-    final scaleFactor = (gapBp * displayGaps * scale) / upem;
+    final scaleFactor = (gapBp * displayGaps * scale) / glyphHeight;
     final anchorSp = switch (elem.glyph) {
       SmuflGlyph.gClef => 0.876,
       SmuflGlyph.cClef => 2.0,
@@ -484,8 +482,11 @@ const String _fClefPdf =
 const String _percClefPdf =
     '160.0 -235.0 m 160.0 235.0 l 160.0 243.0 154.0 250.0 146.0 250.0 c 14.0 250.0 l 6.0 250.0 0.0 243.0 0.0 235.0 c 0.0 -235.0 l 0.0 -243.0 6.0 -250.0 14.0 -250.0 c 146.0 -250.0 l 154.0 -250.0 160.0 -243.0 160.0 -235.0 c h 382.0 235.0 m 382.0 243.0 376.0 250.0 368.0 250.0 c 236.0 250.0 l 228.0 250.0 222.0 243.0 222.0 235.0 c 222.0 -235.0 l 222.0 -243.0 228.0 -250.0 236.0 -250.0 c 368.0 -250.0 l 376.0 -250.0 382.0 -243.0 382.0 -235.0 c h f';
 
-const String _tabClefPdf =
-    '40.0 950.0 m 320.0 950.0 l 320.0 900.0 l 210.0 900.0 l 210.0 650.0 l 150.0 650.0 l 150.0 900.0 l 40.0 900.0 l h 180.0 620.0 m 300.0 350.0 l 245.0 350.0 l 220.0 410.0 l 140.0 410.0 l 115.0 350.0 l 60.0 350.0 l h 155.0 450.0 m 205.0 450.0 l 180.0 520.0 l h 80.0 50.0 m 80.0 320.0 l 210.0 320.0 l 255.0 320.0 280.0 300.0 280.0 265.0 c 280.0 240.0 260.0 225.0 235.0 218.0 c 265.0 210.0 290.0 190.0 290.0 150.0 c 290.0 100.0 255.0 50.0 195.0 50.0 c h 130.0 200.0 m 195.0 200.0 l 220.0 200.0 235.0 210.0 235.0 225.0 c 235.0 240.0 220.0 250.0 195.0 250.0 c 130.0 250.0 l h 130.0 95.0 m 185.0 95.0 l 215.0 95.0 235.0 110.0 235.0 130.0 c 235.0 150.0 215.0 160.0 185.0 160.0 c 130.0 160.0 l h f';
+const String _tabClef6Pdf =
+    '387.0 711.0 m 387.0 764.0 l 18.0 764.0 l 18.0 711.0 l 173.0 711.0 l 173.0 293.0 l 233.0 293.0 l 233.0 711.0 l h 408.0 -228.0 m 243.0 242.0 l 165.0 242.0 l -3.0 -228.0 l 61.0 -228.0 l 111.0 -87.0 l 292.0 -87.0 l 341.0 -228.0 l h 276.0 -36.0 m 126.0 -36.0 l 203.0 178.0 l h 378.0 -613.0 m 378.0 -557.0 352.0 -522.0 292.0 -499.0 c 335.0 -479.0 357.0 -444.0 357.0 -397.0 c 357.0 -328.0 307.0 -277.0 218.0 -277.0 c 27.0 -277.0 l 27.0 -748.0 l 239.0 -748.0 l 324.0 -748.0 378.0 -691.0 378.0 -613.0 c h 297.0 -405.0 m 297.0 -453.0 270.0 -480.0 203.0 -480.0 c 87.0 -480.0 l 87.0 -330.0 l 203.0 -330.0 l 270.0 -330.0 297.0 -357.0 297.0 -405.0 c h 318.0 -614.0 m 318.0 -659.0 290.0 -695.0 234.0 -695.0 c 87.0 -695.0 l 87.0 -533.0 l 234.0 -533.0 l 290.0 -533.0 318.0 -568.0 318.0 -614.0 c h f';
+
+const String _tabClef4Pdf =
+    '258.0 469.0 m 258.0 504.0 l 11.0 504.0 l 11.0 469.0 l 115.0 469.0 l 115.0 189.0 l 155.0 189.0 l 155.0 469.0 l h 272.0 -160.0 m 162.0 155.0 l 110.0 155.0 l -3.0 -160.0 l 40.0 -160.0 l 73.0 -65.0 l 195.0 -65.0 l 227.0 -160.0 l h 184.0 -32.0 m 83.0 -32.0 l 135.0 112.0 l h 252.0 -418.0 m 252.0 -380.0 235.0 -357.0 195.0 -342.0 c 223.0 -328.0 238.0 -305.0 238.0 -273.0 c 238.0 -227.0 205.0 -193.0 145.0 -193.0 c 17.0 -193.0 l 17.0 -508.0 l 159.0 -508.0 l 216.0 -508.0 252.0 -470.0 252.0 -418.0 c h 198.0 -279.0 m 198.0 -311.0 180.0 -329.0 135.0 -329.0 c 57.0 -329.0 l 57.0 -228.0 l 135.0 -228.0 l 180.0 -228.0 198.0 -247.0 198.0 -279.0 c h 212.0 -418.0 m 212.0 -449.0 194.0 -472.0 156.0 -472.0 c 57.0 -472.0 l 57.0 -364.0 l 156.0 -364.0 l 194.0 -364.0 212.0 -388.0 212.0 -418.0 c h f';
 
 const String _quarterRestPdf =
     "100 -250 m 120 -180 150 -120 180 -70 c 190 -40 180 -10 160 20 c 130 50 80 100 40 150 c 20 180 10 210 20 240 c 30 270 60 300 90 320 c 15 320 l -10 280 -20 230 -10 180 c 10 110 50 60 c 80 20 110 -30 130 -80 c 130 -80 l f";

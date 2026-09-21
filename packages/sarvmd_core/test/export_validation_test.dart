@@ -20,10 +20,13 @@ void main() {
 
         // Check TAB specific export requirements
         if (profile.id.toLowerCase().contains('tab')) {
+          final hasTabGlyph = svgString.contains('M 387.0,711.0') ||
+              svgString.contains('M 258.0,469.0');
           expect(
-            svgString,
-            contains('M 40.0,950.0 L 320.0,950.0'),
-            reason: 'TAB Profile ${profile.id} must export clean T-A-B vector path, not C-clef or random glyphs',
+            hasTabGlyph,
+            isTrue,
+            reason:
+                'TAB Profile ${profile.id} must export authentic SMuFL Bravura TAB clef vector path',
           );
         }
 

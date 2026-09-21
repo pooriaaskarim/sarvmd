@@ -245,7 +245,7 @@ extension ClefAnchoring on Clef {
   /// Returns the vertical distance in staff space units from the top line of a staff with [lines] count.
   double anchorOffsetInSpaces(int lines) {
     return switch (symbol) {
-      ClefSymbol.tab => (lines > 0 ? lines - 1 : 1).toDouble(),
+      ClefSymbol.tab => (lines > 0 ? lines - 1 : 1) / 2.0,
       ClefSymbol.percussion => (lines > 0 ? lines - 1 : 1) / 2.0,
       _ => (lines - anchorLine).toDouble(),
     };

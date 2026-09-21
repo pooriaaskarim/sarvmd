@@ -314,22 +314,21 @@ void _drawClefs(
 
       final baselineY =
           staff.topY + clef.anchorOffsetInSpaces(staff.lines) * gap * staff.scale;
-
-      final displayGaps = (clef.symbol == ClefSymbol.tab)
-          ? (staff.lines > 0 ? staff.lines - 1 : 1).toDouble() * staff.scale
-          : 4.0 * staff.scale;
-
       final glyphX = leftX + gap * engraving.initialClefClearanceSp;
 
-      final (String path, double upem) = switch (clef.symbol) {
-        ClefSymbol.g => (_gClefSvg, 1000.0),
-        ClefSymbol.c => (_cClefSvg, 1000.0),
-        ClefSymbol.f => (_fClefSvg, 1000.0),
-        ClefSymbol.tab => (_tabClefSvg, 1000.0),
-        ClefSymbol.percussion => (_percClefSvg, 1000.0),
+      final (String path, double glyphHeight, double displayGaps) = switch (clef.symbol) {
+        ClefSymbol.g => (_gClefSvg, 1000.0, 4.0 * staff.scale),
+        ClefSymbol.c => (_cClefSvg, 1000.0, 4.0 * staff.scale),
+        ClefSymbol.f => (_fClefSvg, 1000.0, 4.0 * staff.scale),
+        ClefSymbol.tab => (
+            staff.lines <= 4 ? _tabClef4Svg : _tabClef6Svg,
+            staff.lines <= 4 ? 1012.0 : 1512.0,
+            (staff.lines > 1 ? staff.lines - 1 : 1) * 0.90 * staff.scale,
+          ),
+        ClefSymbol.percussion => (_percClefSvg, 1000.0, 4.0 * staff.scale),
       };
 
-      final scale = (gap * displayGaps) / upem;
+      final scale = (gap * displayGaps) / glyphHeight;
 
       buf.writeln(
         '    <g transform="translate(${_f(glyphX)}, ${_f(baselineY)}) '
@@ -709,17 +708,17 @@ String _drawElement(PositionedElement elem, double gap, EngravingConfig config) 
     final x = elem.x;
     final y = elem.y;
 
-    final (String path, double upem) = switch (elem.glyph) {
-      SmuflGlyph.gClef => (_gClefSvg, 1000.0),
-      SmuflGlyph.cClef => (_cClefSvg, 1000.0),
-      SmuflGlyph.fClef => (_fClefSvg, 1000.0),
-      SmuflGlyph.tabClef => (_tabClefSvg, 1000.0),
-      SmuflGlyph.percussionClef => (_percClefSvg, 1000.0),
-      _ => (_gClefSvg, 1000.0),
+    final (String path, double glyphHeight, double displayGaps) = switch (elem.glyph) {
+      SmuflGlyph.gClef => (_gClefSvg, 1000.0, 4.0),
+      SmuflGlyph.cClef => (_cClefSvg, 1000.0, 4.0),
+      SmuflGlyph.fClef => (_fClefSvg, 1000.0, 4.0),
+      SmuflGlyph.tabClef => (_tabClef6Svg, 1512.0, 4.5),
+      SmuflGlyph.tabClefFour => (_tabClef4Svg, 1012.0, 2.7),
+      SmuflGlyph.percussionClef => (_percClefSvg, 1000.0, 4.0),
+      _ => (_gClefSvg, 1000.0, 4.0),
     };
 
-    final displayGaps = (elem.glyph == SmuflGlyph.tabClef) ? 3.0 : 4.0;
-    final svgScale = (gap * displayGaps * scale) / upem;
+    final svgScale = (gap * displayGaps * scale) / glyphHeight;
     final anchorSp = switch (elem.glyph) {
       SmuflGlyph.gClef => 0.876,
       SmuflGlyph.cClef => 2.0,
@@ -776,8 +775,11 @@ const String _fClefSvg =
     'M 252.0,262.0 C 78.0,262.0 0.0,135.0 0.0,39.0 C 0.0,-41.0 42.0,-110.0 123.0,-110.0 C 186.0,-110.0 229.0,-66.0 229.0,-4.0 C 229.0,60.0 182.0,100.0 133.0,100.0 C 106.0,100.0 96.0,93.0 83.0,93.0 C 70.0,93.0 67.0,101.0 67.0,111.0 C 67.0,151.0 127.0,224.0 229.0,224.0 C 335.0,224.0 381.0,120.0 381.0,-37.0 C 381.0,-316.0 243.0,-472.0 10.0,-605.0 C 1.0,-610.0 -5.0,-615.0 -5.0,-623.0 C -5.0,-629.0 -1.0,-635.0 8.0,-635.0 C 13.0,-635.0 19.0,-633.0 25.0,-630.0 C 271.0,-510.0 531.0,-332.0 531.0,-28.0 C 531.0,146.0 425.0,262.0 252.0,262.0 Z M 629.0,180.0 C 598.0,180.0 574.0,156.0 574.0,125.0 C 574.0,94.0 598.0,70.0 629.0,70.0 C 660.0,70.0 684.0,94.0 684.0,125.0 C 684.0,156.0 660.0,180.0 629.0,180.0 Z M 630.0,-71.0 C 599.0,-71.0 576.0,-94.0 576.0,-125.0 C 576.0,-156.0 599.0,-179.0 630.0,-179.0 C 661.0,-179.0 684.0,-156.0 684.0,-125.0 C 684.0,-94.0 661.0,-71.0 630.0,-71.0 Z';
 const String _percClefSvg =
     'M 160.0,-235.0 L 160.0,235.0 C 160.0,243.0 154.0,250.0 146.0,250.0 L 14.0,250.0 C 6.0,250.0 0.0,243.0 0.0,235.0 L 0.0,-235.0 C 0.0,-243.0 6.0,-250.0 14.0,-250.0 L 146.0,-250.0 C 154.0,-250.0 160.0,-243.0 160.0,-235.0 Z M 382.0,235.0 C 382.0,243.0 376.0,250.0 368.0,250.0 L 236.0,250.0 C 228.0,250.0 222.0,243.0 222.0,235.0 L 222.0,-235.0 C 222.0,-243.0 228.0,-250.0 236.0,-250.0 L 368.0,-250.0 C 376.0,-250.0 382.0,-243.0 382.0,-235.0 Z';
-const String _tabClefSvg =
-    'M 40.0,950.0 L 320.0,950.0 L 320.0,900.0 L 210.0,900.0 L 210.0,650.0 L 150.0,650.0 L 150.0,900.0 L 40.0,900.0 Z M 180.0,620.0 L 300.0,350.0 L 245.0,350.0 L 220.0,410.0 L 140.0,410.0 L 115.0,350.0 L 60.0,350.0 Z M 155.0,450.0 L 205.0,450.0 L 180.0,520.0 Z M 80.0,50.0 L 80.0,320.0 L 210.0,320.0 C 255.0,320.0 280.0,300.0 280.0,265.0 C 280.0,240.0 260.0,225.0 235.0,218.0 C 265.0,210.0 290.0,190.0 290.0,150.0 C 290.0,100.0 255.0,50.0 195.0,50.0 Z M 130.0,200.0 L 195.0,200.0 C 220.0,200.0 235.0,210.0 235.0,225.0 C 235.0,240.0 220.0,250.0 195.0,250.0 Z M 130.0,95.0 L 185.0,95.0 C 215.0,95.0 235.0,110.0 235.0,130.0 C 235.0,150.0 215.0,160.0 185.0,160.0 Z';
+const String _tabClef6Svg =
+    'M 387.0,711.0 L 387.0,764.0 L 18.0,764.0 L 18.0,711.0 L 173.0,711.0 L 173.0,293.0 L 233.0,293.0 L 233.0,711.0 Z M 408.0,-228.0 L 243.0,242.0 L 165.0,242.0 L -3.0,-228.0 L 61.0,-228.0 L 111.0,-87.0 L 292.0,-87.0 L 341.0,-228.0 Z M 276.0,-36.0 L 126.0,-36.0 L 203.0,178.0 Z M 378.0,-613.0 C 378.0,-557.0 352.0,-522.0 292.0,-499.0 C 335.0,-479.0 357.0,-444.0 357.0,-397.0 C 357.0,-328.0 307.0,-277.0 218.0,-277.0 L 27.0,-277.0 L 27.0,-748.0 L 239.0,-748.0 C 324.0,-748.0 378.0,-691.0 378.0,-613.0 Z M 297.0,-405.0 C 297.0,-453.0 270.0,-480.0 203.0,-480.0 L 87.0,-480.0 L 87.0,-330.0 L 203.0,-330.0 C 270.0,-330.0 297.0,-357.0 297.0,-405.0 Z M 318.0,-614.0 C 318.0,-659.0 290.0,-695.0 234.0,-695.0 L 87.0,-695.0 L 87.0,-533.0 L 234.0,-533.0 C 290.0,-533.0 318.0,-568.0 318.0,-614.0 Z';
+
+const String _tabClef4Svg =
+    'M 258.0,469.0 L 258.0,504.0 L 11.0,504.0 L 11.0,469.0 L 115.0,469.0 L 115.0,189.0 L 155.0,189.0 L 155.0,469.0 Z M 272.0,-160.0 L 162.0,155.0 L 110.0,155.0 L -3.0,-160.0 L 40.0,-160.0 L 73.0,-65.0 L 195.0,-65.0 L 227.0,-160.0 Z M 184.0,-32.0 L 83.0,-32.0 L 135.0,112.0 Z M 252.0,-418.0 C 252.0,-380.0 235.0,-357.0 195.0,-342.0 C 223.0,-328.0 238.0,-305.0 238.0,-273.0 C 238.0,-227.0 205.0,-193.0 145.0,-193.0 L 17.0,-193.0 L 17.0,-508.0 L 159.0,-508.0 C 216.0,-508.0 252.0,-470.0 252.0,-418.0 Z M 198.0,-279.0 C 198.0,-311.0 180.0,-329.0 135.0,-329.0 L 57.0,-329.0 L 57.0,-228.0 L 135.0,-228.0 C 180.0,-228.0 198.0,-247.0 198.0,-279.0 Z M 212.0,-418.0 C 212.0,-449.0 194.0,-472.0 156.0,-472.0 L 57.0,-472.0 L 57.0,-364.0 L 156.0,-364.0 C 194.0,-364.0 212.0,-388.0 212.0,-418.0 Z';
 
 const String _quarterRestSvg =
     "M100 -250 C120 -180 150 -120 180 -70 C190 -40 180 -10 160 20 C130 50 80 100 40 150 C20 180 10 210 20 240 C30 270 60 300 90 320 L15 320 C-10 280 -20 230 -10 180 Q10 110 50 60 C80 20 110 -30 130 -80 Z";
