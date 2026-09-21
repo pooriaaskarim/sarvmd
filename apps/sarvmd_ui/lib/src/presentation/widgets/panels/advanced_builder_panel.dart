@@ -7,7 +7,6 @@ import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
 import '../common/ensemble_summary_widget.dart';
 import '../dialogs/staff_config_dialog.dart';
-import '../dialogs/system_grouping_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 
 typedef StaffDragPayload = ({
@@ -280,15 +279,6 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                         }),
                         icon: const Icon(Icons.checklist, size: 16),
                         tooltip: 'Multi-Select Mode',
-                        constraints:
-                            const BoxConstraints(minWidth: 28, minHeight: 28),
-                        padding: const EdgeInsets.all(4),
-                      ),
-                      IconButton(
-                        onPressed: () => showSystemGroupingDialog(context,
-                            notifier: widget.notifier),
-                        icon: const Icon(Icons.account_tree, size: 16),
-                        tooltip: l10n.systemGrouping,
                         constraints:
                             const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: const EdgeInsets.all(4),
