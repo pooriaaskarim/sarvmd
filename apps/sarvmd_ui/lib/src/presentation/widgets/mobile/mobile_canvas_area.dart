@@ -135,6 +135,7 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
               transformationController: widget.transformationController,
               viewState: viewState,
               cursorNotifier: widget.cursorNotifier,
+              showCoordinateHud: false,
               paperSizeMm: Size(
                 configState.effectiveWidth,
                 configState.effectiveHeight,

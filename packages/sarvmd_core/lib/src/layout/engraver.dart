@@ -227,19 +227,25 @@ class Engraver {
             // 1. Clef Change
             if (measure.clef != null && measure.clef != activeClefs[pIdx]) {
               activeClefs[pIdx] = measure.clef!;
-              final glyph = _smuflClef(activeClefs[pIdx]);
+              final activeClef = activeClefs[pIdx];
+              final glyph = _smuflClef(activeClef, staff.lines);
+              final clefY = staff.topY +
+                  activeClef.anchorOffsetInSpaces(staff.lines) * lineGap * staff.scale;
               pageElements.add(PositionedClef(
                 x: localX,
-                y: staff.topY + (staff.lines - activeClefs[pIdx].anchorLine) * lineGap * staff.scale,
+                y: clefY,
                 scale: staff.scale,
                 glyph: glyph,
               ));
             } else if (mIdx == 0) {
               // Initial staff clefs
-              final glyph = _smuflClef(activeClefs[pIdx]);
+              final activeClef = activeClefs[pIdx];
+              final glyph = _smuflClef(activeClef, staff.lines);
+              final clefY = staff.topY +
+                  activeClef.anchorOffsetInSpaces(staff.lines) * lineGap * staff.scale;
               pageElements.add(PositionedClef(
                 x: localX,
-                y: staff.topY + (staff.lines - activeClefs[pIdx].anchorLine) * lineGap * staff.scale,
+                y: clefY,
                 scale: staff.scale,
                 glyph: glyph,
               ));
@@ -458,12 +464,12 @@ class Engraver {
 
   // --- Helpers to resolve domain configurations to SMuFL vectors ---
 
-  static SmuflGlyph _smuflClef(Clef clef) {
+  static SmuflGlyph _smuflClef(Clef clef, [int lines = 5]) {
     if (clef is TrebleClef) return SmuflGlyph.gClef;
     if (clef is BassClef) return SmuflGlyph.fClef;
     if (clef is AltoClef || clef is TenorClef) return SmuflGlyph.cClef;
     if (clef is PercussionClef) return SmuflGlyph.percussionClef;
-    if (clef is TabClef) return SmuflGlyph.tabClef;
+    if (clef is TabClef) return lines <= 4 ? SmuflGlyph.tabClefFour : SmuflGlyph.tabClef;
     return SmuflGlyph.gClef;
   }
 

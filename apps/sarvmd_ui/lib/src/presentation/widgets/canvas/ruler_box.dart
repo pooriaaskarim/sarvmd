@@ -12,6 +12,7 @@ class RulerBox extends StatefulWidget {
     required this.viewState,
     required this.cursorNotifier,
     this.rulerSize = 25.0,
+    this.showCoordinateHud = true,
   });
 
   final Widget child;
@@ -24,6 +25,11 @@ class RulerBox extends StatefulWidget {
   /// the rulers, NOT the whole widget tree.
   final ValueNotifier<Offset?> cursorNotifier;
   final double rulerSize;
+
+  /// Whether to display the bottom-right real-time coordinate HUD overlay.
+  /// Defaults to true (desktop). Set to false on mobile canvas views where a
+  /// dedicated top HUD is used during touch interactions.
+  final bool showCoordinateHud;
 
   @override
   State<RulerBox> createState() => _RulerBoxState();
@@ -173,17 +179,18 @@ class _RulerBoxState extends State<RulerBox> {
                 child: Stack(
                   children: [
                     Positioned.fill(child: widget.child),
-                    // Dynamic WX Real-time Coordinate HUD Overlay
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: _CoordinateHUD(
-                        transformationController: widget.transformationController,
-                        cursorNotifier: widget.cursorNotifier,
-                        paperSizeMm: widget.paperSizeMm,
-                        centerOrigin: _centerOrigin,
+                    // Dynamic WX Real-time Coordinate HUD Overlay (desktop / wide screen)
+                    if (widget.showCoordinateHud)
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: _CoordinateHUD(
+                          transformationController: widget.transformationController,
+                          cursorNotifier: widget.cursorNotifier,
+                          paperSizeMm: widget.paperSizeMm,
+                          centerOrigin: _centerOrigin,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

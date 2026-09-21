@@ -33,6 +33,13 @@ void main() {
 
   // 3. Capture Flutter framework errors (layout overflows, widget errors, etc.).
   FlutterError.onError = (final details) {
+    final errorStr = details.exception.toString();
+    if (errorStr.contains('_handledContextLostEvent')) {
+      AppLogger.get('sarvmd.web').warning(
+        'WebGL context lost event handled during engine restart',
+      );
+      return;
+    }
     AppLogger.crash.error(
       'Flutter framework error',
       error: details.exception,
@@ -43,6 +50,13 @@ void main() {
   // 4. Capture errors on the platform message channel (Dart ↔ native layer).
   //    These are NOT caught by FlutterError.onError or runZonedGuarded.
   PlatformDispatcher.instance.onError = (error, stack) {
+    final errorStr = error.toString();
+    if (errorStr.contains('_handledContextLostEvent')) {
+      AppLogger.get('sarvmd.web').warning(
+        'WebGL context lost event handled during engine restart',
+      );
+      return true;
+    }
     AppLogger.crash.error(
       'Platform dispatcher error',
       error: error,
@@ -64,6 +78,13 @@ void main() {
       ),
     ),
     (error, stack) {
+      final errorStr = error.toString();
+      if (errorStr.contains('_handledContextLostEvent')) {
+        AppLogger.get('sarvmd.web').warning(
+          'WebGL context lost event handled during engine restart',
+        );
+        return;
+      }
       AppLogger.crash.error(
         'Uncaught async error',
         error: error,

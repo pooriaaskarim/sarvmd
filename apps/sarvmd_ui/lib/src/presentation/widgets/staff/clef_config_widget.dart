@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/smufl_glyphs.dart';
+import '../../../core/utils/tab_clef_painter.dart';
 import '../common/property_row.dart';
 
 class ClefConfigWidget extends StatelessWidget {
@@ -63,7 +65,7 @@ class ClefConfigWidget extends StatelessWidget {
               int defaultLine = 3;
               if (sym == core.ClefSymbol.g) defaultLine = 2; // Treble
               if (sym == core.ClefSymbol.f) defaultLine = 4; // Bass
-              if (sym == core.ClefSymbol.percussion) defaultLine = 2;
+              if (sym == core.ClefSymbol.percussion) defaultLine = 3;
               onChanged(core.ClefConfig(symbol: sym, anchorLine: defaultLine));
             },
             child: AnimatedContainer(
@@ -113,11 +115,11 @@ class ClefConfigWidget extends StatelessWidget {
         if (canChangeSymbol) ...[
           Row(
             children: [
-              buildHorizontalTab(core.ClefSymbol.g, '\u{E050}'),
+              buildHorizontalTab(core.ClefSymbol.g, core.ClefSymbol.g.smuflGlyph),
               const SizedBox(width: 8),
-              buildHorizontalTab(core.ClefSymbol.c, '\u{E05C}'),
+              buildHorizontalTab(core.ClefSymbol.c, core.ClefSymbol.c.smuflGlyph),
               const SizedBox(width: 8),
-              buildHorizontalTab(core.ClefSymbol.f, '\u{E062}'),
+              buildHorizontalTab(core.ClefSymbol.f, core.ClefSymbol.f.smuflGlyph),
               const SizedBox(width: 8),
               buildHorizontalTab(core.ClefSymbol.tab, '', 'TAB'),
               const SizedBox(width: 8),
@@ -149,7 +151,8 @@ class ClefConfigWidget extends StatelessWidget {
             child: Stack(
               children: [
                 IgnorePointer(
-                  ignoring: !canChangeLine,
+                  ignoring: !canChangeLine ||
+                      !activeValue.symbol.supportsAnchorOffset,
                   child: GestureDetector(
                     onTapUp: (details) {
                       final tappedY = details.localPosition.dy;
@@ -188,7 +191,9 @@ class ClefConfigWidget extends StatelessWidget {
                                 .withValues(alpha: 0.3)),
                       ),
                       child: Text(
-                        'Line ${activeValue.anchorLine} / $lines',
+                        activeValue.symbol.supportsAnchorOffset
+                            ? 'Line ${activeValue.anchorLine} / $lines'
+                            : '$lines Lines (Centered)',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -204,32 +209,18 @@ class ClefConfigWidget extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Presets specific to this symbol
-        if (canChangeLine)
+        if (canChangeLine && selectedSym.supportsAnchorOffset)
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              if (selectedSym == core.ClefSymbol.g) ...[
-                _buildPresetChip(context, 'Treble', core.ClefSymbol.g, 2),
-              ],
-              if (selectedSym == core.ClefSymbol.c) ...[
-                _buildPresetChip(context, 'Alto', core.ClefSymbol.c, 3),
-                _buildPresetChip(context, 'Tenor', core.ClefSymbol.c, 4),
-                _buildPresetChip(context, 'Soprano', core.ClefSymbol.c, 1),
-                _buildPresetChip(context, 'Mezzo', core.ClefSymbol.c, 2),
-              ],
-              if (selectedSym == core.ClefSymbol.f) ...[
-                _buildPresetChip(context, 'Bass', core.ClefSymbol.f, 4),
-                _buildPresetChip(context, 'Baritone', core.ClefSymbol.f, 3),
-              ],
-              if (selectedSym == core.ClefSymbol.tab) ...[
-                _buildPresetChip(context, 'Guitar TAB', core.ClefSymbol.tab, 3),
-              ],
-              if (selectedSym == core.ClefSymbol.percussion) ...[
-                _buildPresetChip(
-                    context, 'Percussion', core.ClefSymbol.percussion, 2),
-              ],
-            ],
+            children: selectedSym.registerPresets.map((preset) {
+              return _buildPresetChip(
+                context,
+                preset.label.split(' (').first, // Clean label name (e.g. 'Treble')
+                selectedSym,
+                preset.anchorLine,
+              );
+            }).toList(),
           ),
       ],
     );
@@ -310,12 +301,7 @@ class MiniStaffClefPainter extends CustomPainter {
   }
 
   void _paintStandardClef(Canvas canvas, double staffTop, Color color) {
-    final String glyph = switch (clef.symbol) {
-      core.ClefSymbol.g => '\u{E050}',
-      core.ClefSymbol.c => '\u{E05C}',
-      core.ClefSymbol.f => '\u{E062}',
-      _ => '',
-    };
+    final String glyph = clef.symbol.smuflGlyph;
 
     final tp = TextPainter(
       text: TextSpan(
@@ -334,34 +320,7 @@ class MiniStaffClefPainter extends CustomPainter {
 
   void _paintTabClef(Canvas canvas, double x, double topY, int lines,
       double gap, Color color) {
-    final staffHeight = (lines - 1) * gap;
-    final centerY = topY + staffHeight / 2;
-
-    // Standard visual padding matching standard clefs
-    final startX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
-
-    // Use a high-fidelity Serif font for authentic engraving
-    final fontSize = gap * 1.5;
-    final textStyle = TextStyle(
-      fontFamily: 'Noto Serif',
-      fontWeight: FontWeight.bold,
-      fontSize: fontSize,
-      color: color,
-      height: 0.8,
-    );
-
-    final List<String> letters = ['T', 'A', 'B'];
-    double currentY = centerY - (fontSize * 1.5 * 0.8);
-
-    for (final char in letters) {
-      final tp = TextPainter(
-        text: TextSpan(text: char, style: textStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      tp.paint(canvas, Offset(startX, currentY));
-      currentY += fontSize * 0.8;
-    }
+    paintTabClef(canvas, x, topY, lines, gap, color);
   }
 
   void _paintPercussionClef(Canvas canvas, double x, double topY, int lines,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/smufl_glyphs.dart';
+import '../../../core/utils/tab_clef_painter.dart';
 import '../../../core/utils/unit_formatter.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/sample/sample_score.dart';
@@ -188,24 +190,21 @@ class _ManuscriptPainter extends CustomPainter {
       final system = layout.systems[sysIdx];
       final systemLeftMm = leftMm + system.leftIndentMm;
 
-      // Pre-calculate the system's optimal maximum split word length
-      int systemMaxSplitLength = 0;
-      for (final staff in system.staves) {
-        final def = staff.definition;
-        if (def != null && def.labelVisible) {
-          final String label = sysIdx == 0
-              ? (def.instrumentName ?? '')
-              : (def.instrumentAbbreviation ?? def.instrumentName ?? '');
-          if (label.isNotEmpty) {
-            int maxWordLength = 0;
-            for (final word in label.split(' ')) {
-              if (word.length > maxWordLength) {
-                maxWordLength = word.length;
-              }
-            }
-            if (maxWordLength > systemMaxSplitLength) {
-              systemMaxSplitLength = maxWordLength;
-            }
+      final bool isFirstSystem = sysIdx == 0;
+
+      // Identify which staves belong to an actively labeled group or connected group
+      final Set<int> innerStaffIndices = {};
+      for (final group in system.groupPlacements) {
+        final String gLabel = isFirstSystem
+            ? group.label
+            : (group.abbreviation.trim().isNotEmpty
+                ? group.abbreviation
+                : group.label);
+        final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
+        final bool hasConnector = group.connector != core.SystemConnector.none;
+        if (hasGroupLabel || hasConnector) {
+          for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
+            innerStaffIndices.add(s);
           }
         }
       }
@@ -236,6 +235,7 @@ class _ManuscriptPainter extends CustomPainter {
           );
         }
 
+
         // ── Draw Clef ─────────────────────────────────────────
         final clef = staff.definition?.clef;
 
@@ -262,14 +262,12 @@ class _ManuscriptPainter extends CustomPainter {
           final isFirstSystem = sysIdx == 0;
           final String? name = isFirstSystem
               ? staff.definition?.instrumentName
-              : (staff.definition?.instrumentAbbreviation ??
-                  staff.definition?.instrumentName);
+              : ((staff.definition?.instrumentAbbreviation != null &&
+                      staff.definition!.instrumentAbbreviation!.trim().isNotEmpty)
+                  ? staff.definition!.instrumentAbbreviation
+                  : staff.definition?.instrumentName);
 
           if (name != null && name.isNotEmpty) {
-            // Only wrap if name length is longer than the systemMaxSplitLength (which represents the optimal split indent)
-            final formattedName = name.length > systemMaxSplitLength
-                ? name.replaceAll(' ', '\n')
-                : name;
             final double ptScale =
                 scale / (96 / 25.4); // Points conversion scale
             final double fontSize =
@@ -282,7 +280,7 @@ class _ManuscriptPainter extends CustomPainter {
 
             final namePainter = TextPainter(
               text: TextSpan(
-                text: formattedName,
+                text: name,
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.w600,
@@ -297,45 +295,31 @@ class _ManuscriptPainter extends CustomPainter {
 
             final staffMidY = topSnappedY + (staff.height * scale) / 2;
 
-            // Place label in the left margin area, dynamically computing leftmost layout boundary
-            final double marginSpace = 4 * scale;
+            // Two-tier Gouldian label placement
+            final double marginSpace =
+                core.GroupPlacementMetrics.staffLabelClearanceMm * scale;
             final double minEdgePadding = 2 * scale;
+            final double systemLeftPx = (systemLeftMm * scale).roundToDouble();
 
-            double leftmostLayoutX = systemLeftMm * scale;
-            for (final group in system.groupPlacements) {
-              if (sIdx >= group.startStaffIdx && sIdx <= group.endStaffIdx) {
-                final double xOffset = group.level * (4.0 * scale);
-                final double startX =
-                    (systemLeftMm * scale).roundToDouble() - xOffset;
-
-                double boundary = startX;
-                if (group.connector == core.SystemConnector.brace &&
-                    (group.endStaffIdx - group.startStaffIdx + 1) >= 2) {
-                  final groupStaves = system.staves
-                      .sublist(group.startStaffIdx, group.endStaffIdx + 1);
-                  final double gTopY =
-                      (groupStaves.first.topY * scale).roundToDouble();
-                  final double gBottomY = (groupStaves.last.topY * scale +
-                          groupStaves.last.height * scale)
-                      .roundToDouble();
-                  final double h = gBottomY - gTopY;
-                  final double w = (h * 0.12).clamp(6.0 * scale, 30.0 * scale);
-                  boundary -= w;
+            final double rightAnchorX;
+            if (innerStaffIndices.contains(sIdx)) {
+              // Inner staff descriptor: sits right-aligned between connector and starting barline
+              rightAnchorX = systemLeftPx - marginSpace;
+            } else {
+              // Standalone staff: sits to the left of its connector
+              double maxConnectorOffsetMm = 0.0;
+              for (final g in system.groupPlacements) {
+                if (sIdx >= g.startStaffIdx &&
+                    sIdx <= g.endStaffIdx &&
+                    g.connectorOffsetMm > maxConnectorOffsetMm) {
+                  maxConnectorOffsetMm = g.connectorOffsetMm;
                 }
-                leftmostLayoutX = math.min(leftmostLayoutX, boundary);
               }
+              final double connectorOffset = maxConnectorOffsetMm * scale;
+              rightAnchorX = systemLeftPx - connectorOffset - marginSpace;
             }
 
-            final double availableWidth =
-                leftmostLayoutX - marginSpace - minEdgePadding;
-
-            if (namePainter.width > availableWidth) {
-              final double finalMaxWidth = math.max(availableWidth, 10.0);
-              namePainter.textAlign = TextAlign.right;
-              namePainter.layout(maxWidth: finalMaxWidth);
-            }
-
-            double nameX = leftmostLayoutX - namePainter.width - marginSpace;
+            double nameX = rightAnchorX - namePainter.width;
             if (nameX < minEdgePadding) {
               nameX = minEdgePadding;
             }
@@ -352,6 +336,55 @@ class _ManuscriptPainter extends CustomPainter {
         }
       }
 
+      // ── Draw Group Labels ────────────────────────────────
+      for (final group in system.groupPlacements) {
+        if (!group.labelVisible) continue;
+        final String label = isFirstSystem
+            ? group.label
+            : (group.abbreviation.trim().isNotEmpty
+                ? group.abbreviation
+                : group.label);
+
+        if (label.trim().isNotEmpty) {
+          final staves =
+              system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+          if (staves.isEmpty) continue;
+
+          final topY = (staves.first.topY * scale).roundToDouble();
+          final bottomY = (staves.last.topY * scale + staves.last.height * scale)
+              .roundToDouble();
+          final groupMidY = (topY + bottomY) / 2;
+
+          final systemLeftPx = (systemLeftMm * scale).roundToDouble();
+          final connectorX =
+              systemLeftPx - (group.connectorOffsetMm * scale);
+
+          final double ptScale = scale / (96 / 25.4);
+          final double fontSize = 11.0 * ptScale;
+
+          final groupNamePainter = TextPainter(
+            text: TextSpan(
+              text: label,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: inkColor.withValues(alpha: 0.9),
+                fontFamily: 'Noto Serif',
+              ),
+            ),
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.ltr,
+          )..layout();
+
+          final double labelClearance =
+              core.GroupPlacementMetrics.groupLabelClearanceMm * scale;
+          final labelX = connectorX - labelClearance - groupNamePainter.width;
+          final labelY = groupMidY - (groupNamePainter.height / 2);
+
+          groupNamePainter.paint(canvas, Offset(labelX, labelY));
+        }
+      }
+
       // ── Draw Connectors & Group Barlines ─────────────────
       // We iterate through all group placements to support nested brackets
       // and MOLA-compliant broken barlines.
@@ -364,58 +397,73 @@ class _ManuscriptPainter extends CustomPainter {
         final bottomY = (staves.last.topY * scale + staves.last.height * scale)
             .roundToDouble();
 
-        // Offset connectors horizontally based on level to avoid overlap
-        // Root group (level 0) is the outermost.
-        final double xOffset = group.level * (4.0 * scale);
-        final startX = (systemLeftMm * scale).roundToDouble() - xOffset;
+        // System barline position is ALWAYS flush with staff line start
+        final systemLeftPx = (systemLeftMm * scale).roundToDouble();
+
+        // Connector glyph position steps left for higher nest levels and inner labels
+        final connectorX =
+            systemLeftPx - (group.connectorOffsetMm * scale);
 
         final connectorPaint = Paint()
           ..color = inkColor
           ..strokeWidth = thicknessPx * 1.5
           ..style = PaintingStyle.stroke;
 
-        // 1. Draw Group Barline (Continuous within group if enabled)
+        // 1. Draw Group Barline at systemLeftPx (Continuous within group if enabled)
         // MOLA: Barlines break between instrument families.
-        if (group.continuousBarlines && staves.length > 1) {
-          canvas.drawLine(
-            Offset(startX, topY),
-            Offset(startX, bottomY),
-            connectorPaint
-              ..strokeWidth = thicknessPx * 2.5, // Bolder for system start
-          );
-        } else if (!group.continuousBarlines) {
-          // For groups with broken barlines, we still need a small segment for each staff
-          for (final staff in staves) {
-            final sTop = (staff.topY * scale).roundToDouble();
-            final sBottom =
-                (staff.topY * scale + staff.height * scale).roundToDouble();
+        if (group.initialBarline) {
+          if (group.continuousBarlines && staves.length > 1) {
             canvas.drawLine(
-              Offset(startX, sTop),
-              Offset(startX, sBottom),
-              connectorPaint..strokeWidth = thicknessPx * 2.5,
+              Offset(systemLeftPx, topY),
+              Offset(systemLeftPx, bottomY),
+              connectorPaint
+                ..strokeWidth = thicknessPx * 2.5, // Bolder for system start
             );
+          } else {
+            // For single staves or groups with broken barlines, render a segment for each staff at systemLeftPx
+            for (final staff in staves) {
+              final sTop = (staff.topY * scale).roundToDouble();
+              final sBottom =
+                  (staff.topY * scale + staff.height * scale).roundToDouble();
+              canvas.drawLine(
+                Offset(systemLeftPx, sTop),
+                Offset(systemLeftPx, sBottom),
+                connectorPaint..strokeWidth = thicknessPx * 2.5,
+              );
+            }
           }
         }
 
-        // 2. Draw Connector (Bracket/Brace)
-        if (group.connector == core.SystemConnector.brace &&
-            staves.length >= 2) {
-          _paintBrace(canvas, startX, topY, bottomY, scale, inkColor);
-        } else if (group.connector == core.SystemConnector.bracket &&
-            staves.length >= 2) {
-          final bracketPaint = Paint()
-            ..color = inkColor
-            ..strokeWidth = thicknessPx * 3.0
-            ..style = PaintingStyle.stroke;
-
-          canvas.drawLine(
-              Offset(startX, topY), Offset(startX, bottomY), bracketPaint);
-
-          final tickLen = 2.0 * scale;
-          canvas.drawLine(Offset(startX, topY), Offset(startX + tickLen, topY),
-              bracketPaint);
-          canvas.drawLine(Offset(startX, bottomY),
-              Offset(startX + tickLen, bottomY), bracketPaint);
+        // 2. Draw Connector (Brace / Bracket / Sub-Bracket)
+        switch (group.connector) {
+          case core.SystemConnector.brace when staves.length >= 2:
+            _paintBrace(canvas, connectorX, topY, bottomY, scale, inkColor);
+          case core.SystemConnector.bracket when staves.length >= 2:
+            final bracketPaint = Paint()
+              ..color = inkColor
+              ..strokeWidth = thicknessPx * 3.0
+              ..style = PaintingStyle.stroke;
+            canvas.drawLine(
+                Offset(connectorX, topY), Offset(connectorX, bottomY), bracketPaint);
+            final endTickX = connectorX +
+                (core.GroupPlacementMetrics.bracketTickLengthMm * scale);
+            canvas.drawLine(Offset(connectorX, topY),
+                Offset(endTickX, topY), bracketPaint);
+            canvas.drawLine(Offset(connectorX, bottomY),
+                Offset(endTickX, bottomY), bracketPaint);
+          case core.SystemConnector.subBracket when staves.length >= 2:
+            // Thinner secondary bracket, no serif ticks.
+            final subBracketPaint = Paint()
+              ..color = inkColor
+              ..strokeWidth = thicknessPx * 1.8
+              ..style = PaintingStyle.stroke;
+            canvas.drawLine(
+                Offset(connectorX, topY), Offset(connectorX, bottomY), subBracketPaint);
+          case core.SystemConnector.none:
+          case core.SystemConnector.brace:
+          case core.SystemConnector.bracket:
+          case core.SystemConnector.subBracket:
+            break;
         }
       }
     }
@@ -436,12 +484,7 @@ class _ManuscriptPainter extends CustomPainter {
       double topY, int lines, double gap, Color color,
       {double scale = 1.0}) {
     const fontScale = 4.0;
-    final String glyph = switch (clef.symbol) {
-      core.ClefSymbol.g => '\u{E050}',
-      core.ClefSymbol.c => '\u{E05C}',
-      core.ClefSymbol.f => '\u{E062}',
-      _ => '',
-    };
+    final String glyph = clef.symbol.smuflGlyph;
 
     final tp = TextPainter(
       text: TextSpan(
@@ -468,34 +511,8 @@ class _ManuscriptPainter extends CustomPainter {
   void _paintTabClef(
       Canvas canvas, double x, double topY, int lines, double gap, Color color,
       {double scale = 1.0}) {
-    final staffHeight = (lines - 1) * gap;
-    final centerY = topY + staffHeight / 2;
-
-    // Standard visual padding matching standard clefs
-    final startX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
-
-    // Use a high-fidelity Serif font for authentic engraving
-    final fontSize = gap * 1.5;
-    final textStyle = TextStyle(
-      fontFamily: 'Noto Serif',
-      fontWeight: FontWeight.bold,
-      fontSize: fontSize,
-      color: color,
-      height: 0.8,
-    );
-
-    final List<String> letters = ['T', 'A', 'B'];
-    double currentY = centerY - (fontSize * 1.5 * 0.8);
-
-    for (final char in letters) {
-      final tp = TextPainter(
-        text: TextSpan(text: char, style: textStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      tp.paint(canvas, Offset(startX, currentY));
-      currentY += fontSize * 0.8;
-    }
+    final glyphX = x + gap * core.EngravingConfig.standard.initialClefClearanceSp;
+    paintTabClef(canvas, glyphX, topY, lines, gap, color, scale: scale);
   }
 
   void _paintPercussionClef(
@@ -537,7 +554,7 @@ class _ManuscriptPainter extends CustomPainter {
 
     final tp = TextPainter(
       text: TextSpan(
-        text: '\u{E000}',
+        text: SMuFLGlyphs.brace,
         style: TextStyle(
           fontFamily: 'Bravura',
           fontSize: fontSize,
@@ -713,12 +730,17 @@ class _ManuscriptPainter extends CustomPainter {
           ..style = PaintingStyle.stroke,
       );
     } else if (elem is core.PositionedClef) {
+      final double fontSize = switch (elem.glyph) {
+        core.SmuflGlyph.tabClef => gap * (elem.scale * 4.5 * (1000.0 / 1512.0)),
+        core.SmuflGlyph.tabClefFour => gap * (elem.scale * 2.7 * (1000.0 / 1012.0)),
+        _ => gap * 4.0 * elem.scale,
+      };
       final tp = TextPainter(
         text: TextSpan(
           text: elem.glyph.codepoint,
           style: TextStyle(
             fontFamily: 'Bravura',
-            fontSize: gap * 4.0 * elem.scale,
+            fontSize: fontSize,
             color: color,
           ),
         ),

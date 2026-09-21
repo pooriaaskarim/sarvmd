@@ -41,7 +41,11 @@ enum SystemConnector {
   brace,
 
   /// Professional square bracket (standard for instrumental sections).
-  bracket;
+  bracket,
+
+  /// Secondary thin bracket for inner instrument-pair groupings
+  /// (e.g. Violin I + Violin II within a larger Strings bracket).
+  subBracket;
 }
 
 /// Style of barlines drawn through or between staves.
@@ -222,6 +226,10 @@ class StaffNodeGroup extends StaffNode {
     this.connector = SystemConnector.none,
     this.children = const [],
     this.continuousBarlines = true,
+    this.initialBarline = true,
+    this.label = '',
+    this.abbreviation = '',
+    this.labelVisible = true,
   });
 
   final SystemConnector connector;
@@ -229,16 +237,28 @@ class StaffNodeGroup extends StaffNode {
   /// Strongly-typed list of child [StaffNode] elements (staves or sub-groups).
   final List<StaffNode> children;
   final bool continuousBarlines;
+  final bool initialBarline;
+  final String label;
+  final String abbreviation;
+  final bool labelVisible;
 
   StaffNodeGroup copyWith({
     SystemConnector? connector,
     List<StaffNode>? children,
     bool? continuousBarlines,
+    bool? initialBarline,
+    String? label,
+    String? abbreviation,
+    bool? labelVisible,
   }) =>
       StaffNodeGroup(
         connector: connector ?? this.connector,
         children: children ?? this.children,
         continuousBarlines: continuousBarlines ?? this.continuousBarlines,
+        initialBarline: initialBarline ?? this.initialBarline,
+        label: label ?? this.label,
+        abbreviation: abbreviation ?? this.abbreviation,
+        labelVisible: labelVisible ?? this.labelVisible,
       );
 
   @override
@@ -254,6 +274,10 @@ class StaffNodeGroup extends StaffNode {
           return c.toJson();
         }).toList(),
         'continuousBarlines': continuousBarlines,
+        'initialBarline': initialBarline,
+        'label': label,
+        'abbreviation': abbreviation,
+        'labelVisible': labelVisible,
       };
 
   factory StaffNodeGroup.fromJson(Map<String, dynamic> json) {
@@ -267,6 +291,10 @@ class StaffNodeGroup extends StaffNode {
         return StaffNode.fromJson(c as Map<String, dynamic>);
       }).toList(),
       continuousBarlines: data['continuousBarlines'] as bool? ?? true,
+      initialBarline: data['initialBarline'] as bool? ?? true,
+      label: data['label'] as String? ?? '',
+      abbreviation: data['abbreviation'] as String? ?? '',
+      labelVisible: data['labelVisible'] as bool? ?? true,
     );
   }
 
@@ -277,6 +305,10 @@ class StaffNodeGroup extends StaffNode {
         runtimeType != other.runtimeType ||
         connector != other.connector ||
         continuousBarlines != other.continuousBarlines ||
+        initialBarline != other.initialBarline ||
+        label != other.label ||
+        abbreviation != other.abbreviation ||
+        labelVisible != other.labelVisible ||
         children.length != other.children.length) {
       return false;
     }
@@ -287,8 +319,15 @@ class StaffNodeGroup extends StaffNode {
   }
 
   @override
-  int get hashCode =>
-      connector.hashCode ^ Object.hashAll(children) ^ continuousBarlines.hashCode;
+  int get hashCode => Object.hash(
+        connector,
+        Object.hashAll(children),
+        continuousBarlines,
+        initialBarline,
+        label,
+        abbreviation,
+        labelVisible,
+      );
 }
 
 /// Legacy alias for [StaffNodeGroup].
@@ -329,6 +368,203 @@ class SystemLayout {
 
   @override
   int get hashCode => rootGroup.hashCode;
+}
+
+/// Extension providing domain tree manipulation methods on [StaffNodeGroup].
+extension StaffNodeGroupTreeX on StaffNodeGroup {
+  /// Returns a new [StaffNodeGroup] with the [targetGroup] updated.
+  StaffNodeGroup updateGroup(
+    StaffNodeGroup targetGroup, {
+    SystemConnector? connector,
+    bool? continuousBarlines,
+    String? label,
+    String? abbreviation,
+    bool? labelVisible,
+  }) {
+    if (identical(this, targetGroup) || hashCode == targetGroup.hashCode) {
+      return copyWith(
+        connector: connector ?? this.connector,
+        continuousBarlines: continuousBarlines ?? this.continuousBarlines,
+        label: label ?? this.label,
+        abbreviation: abbreviation ?? this.abbreviation,
+        labelVisible: labelVisible ?? this.labelVisible,
+      );
+    }
+    return copyWith(
+      children: children.map((child) {
+        if (child is StaffNodeGroup) {
+          return child.updateGroup(
+            targetGroup,
+            connector: connector,
+            continuousBarlines: continuousBarlines,
+            label: label,
+            abbreviation: abbreviation,
+            labelVisible: labelVisible,
+          );
+        }
+        return child;
+      }).toList(),
+    );
+  }
+
+  /// Removes [targetGroup] by promoting its children to the parent group.
+  StaffNodeGroup ungroup(StaffNodeGroup targetGroup) {
+    final newChildren = <StaffNode>[];
+    for (final child in children) {
+      if (child is StaffNodeGroup) {
+        if (identical(child, targetGroup) || child.hashCode == targetGroup.hashCode) {
+          newChildren.addAll(child.children);
+        } else {
+          newChildren.add(child.ungroup(targetGroup));
+        }
+      } else {
+        newChildren.add(child);
+      }
+    }
+    return copyWith(children: newChildren);
+  }
+
+  /// Groups consecutive staves/nodes matching [selectedUids] under a new sub-group with [newConnector].
+  StaffNodeGroup groupSelected(
+    Set<String> selectedUids,
+    SystemConnector newConnector,
+  ) {
+    bool nodeContainsSelected(StaffNode node) {
+      return switch (node) {
+        StaffDefinition def => selectedUids.contains(def.uid),
+        StaffNodeGroup group => group.children.any(nodeContainsSelected),
+      };
+    }
+
+    final matchingIndices = <int>[];
+    for (var i = 0; i < children.length; i++) {
+      if (nodeContainsSelected(children[i])) {
+        matchingIndices.add(i);
+      }
+    }
+
+    if (matchingIndices.length >= 2 &&
+        matchingIndices.last - matchingIndices.first ==
+            matchingIndices.length - 1) {
+      final minIdx = matchingIndices.first;
+      final maxIdx = matchingIndices.last;
+
+      final subChildren = children.sublist(minIdx, maxIdx + 1);
+      final newGroup = StaffNodeGroup(
+        connector: newConnector,
+        continuousBarlines: true,
+        children: subChildren,
+      );
+
+      final newChildren = <StaffNode>[
+        ...children.sublist(0, minIdx),
+        newGroup,
+        ...children.sublist(maxIdx + 1),
+      ];
+      return copyWith(children: newChildren);
+    }
+
+    return copyWith(
+      children: children.map((child) {
+        if (child is StaffNodeGroup) {
+          return child.groupSelected(selectedUids, newConnector);
+        }
+        return child;
+      }).toList(),
+    );
+  }
+
+  /// Returns the maximum depth of nested sub-groups in this subtree (0 if no child groups).
+  int get maxSubGroupDepth {
+    int maxChild = 0;
+    bool hasGroup = false;
+    for (final child in children) {
+      if (child is StaffNodeGroup) {
+        hasGroup = true;
+        final d = child.maxSubGroupDepth;
+        if (d > maxChild) maxChild = d;
+      }
+    }
+    return hasGroup ? 1 + maxChild : 0;
+  }
+
+  /// Finds the nesting depth of the group with [targetHash], where this root is at [currentDepth].
+  int? findGroupDepth(int targetHash, [int currentDepth = 0]) {
+    if (hashCode == targetHash) return currentDepth;
+    for (final child in children) {
+      if (child is StaffNodeGroup) {
+        final res = child.findGroupDepth(targetHash, currentDepth + 1);
+        if (res != null) return res;
+      }
+    }
+    return null;
+  }
+
+  /// Finds the nesting depth of the direct parent group containing [staffUid], where this root is at [currentDepth].
+  int? findStaffParentDepth(String staffUid, [int currentDepth = 0]) {
+    for (final child in children) {
+      if (child is StaffDefinition && child.uid == staffUid) {
+        return currentDepth;
+      } else if (child is StaffNodeGroup) {
+        final res = child.findStaffParentDepth(staffUid, currentDepth + 1);
+        if (res != null) return res;
+      }
+    }
+    return null;
+  }
+
+  /// All descendant child staves flattened across this group and any sub-groups.
+  List<StaffDefinition> get allStaves {
+    final result = <StaffDefinition>[];
+    for (final child in children) {
+      if (child is StaffDefinition) {
+        result.add(child);
+      } else if (child is StaffNodeGroup) {
+        result.addAll(child.allStaves);
+      }
+    }
+    return result;
+  }
+}
+
+/// Centralized engraving constants for system connectors and barlines.
+abstract final class GroupPlacementMetrics {
+  /// Gould and MOLA standard maximum nesting depth for system connectors.
+  static const int standardMaxNestingDepth = 2;
+
+  /// Gould and MOLA absolute emergency ceiling for nesting depth (multi-choirs/stage bands).
+  /// Nesting beyond this depth (4+) is strictly prohibited by engraving standards.
+  static const int emergencyMaxNestingDepth = 3;
+
+  /// Horizontal offset in mm per nesting level for outer system connectors.
+  static const double connectorLevelSpacingMm = 4.0;
+
+  /// Length of horizontal end ticks for system brackets in mm.
+  static const double bracketTickLengthMm = 2.0;
+
+  /// System barline stroke thickness multiplier relative to staff line thickness.
+  static const double systemBarlineWidthMultiplier = 2.5;
+
+  /// Bracket stroke thickness multiplier relative to staff line thickness.
+  static const double bracketWidthMultiplier = 3.0;
+
+  /// Secondary sub-bracket stroke thickness multiplier relative to staff line thickness.
+  static const double subBracketWidthMultiplier = 1.8;
+
+  /// Default viewBox height for the SVG brace path asset.
+  static const double braceNativeHeightMm = 997.0;
+
+  /// Default horizontal offset for the SVG brace path asset scale anchor.
+  static const double braceNativeWidthOffsetMm = 82.0;
+
+  /// Horizontal clearance between staff label and starting barline in mm.
+  static const double staffLabelClearanceMm = 3.0;
+
+  /// Horizontal clearance between the tip of a bracket tick (or connector) and inner staff labels in mm.
+  static const double staffLabelConnectorClearanceMm = 2.0;
+
+  /// Horizontal clearance between group label and connector in mm.
+  static const double groupLabelClearanceMm = 3.0;
 }
 
 /// The type of clef symbol.

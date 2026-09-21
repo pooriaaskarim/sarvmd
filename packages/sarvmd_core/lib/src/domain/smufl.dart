@@ -68,11 +68,18 @@ enum SmuflGlyph {
     widthSp: 1.5,
   ),
 
-  /// The Guitar Tablature Clef. SMuFL: `6stringTabClef` (U+E05F).
+  /// The Guitar Tablature Clef (6-string). SMuFL: `6stringTabClef` (U+E06D).
   tabClef(
     smuflName: '6stringTabClef',
-    codepoint: '\uE05F',
+    codepoint: '\uE06D',
     widthSp: 2.5,
+  ),
+
+  /// The 4-String Tablature Clef. SMuFL: `4stringTabClef` (U+E06E).
+  tabClefFour(
+    smuflName: '4stringTabClef',
+    codepoint: '\uE06E',
+    widthSp: 2.0,
   ),
 
   // --- NOTEHEADS ---

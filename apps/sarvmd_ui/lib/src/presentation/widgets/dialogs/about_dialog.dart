@@ -3,11 +3,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_version.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../logic/services/changelog_service.dart';
+import '../layout/sarv_brand_header.dart';
 
 import 'adaptive_dialog_helper.dart';
 
@@ -118,31 +117,11 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // App Brand Visual
-              SvgPicture.asset(
-                'assets/handwriting/Sarv Handwriting.svg',
-                height: 44,
-                colorFilter: ColorFilter.mode(
-                  cs.onSurface,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // App Title & Tagline
-              Text(
-                AppVersion.name,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurface,
-                ),
-              ),
-              Text(
-                AppVersion.tagline,
-                style: Theme.of(context)
-                    .extension<SarvThemeExtension>()
-                    ?.brandSubtitleStyle,
+              // App Brand Visual & Tagline via Canonical SarvBrandHeader
+              const SarvBrandHeader(
+                mode: SarvBrandHeaderMode.full,
+                logoHeight: 44.0,
+                enableHero: false,
               ),
               const SizedBox(height: 4),
 

@@ -117,6 +117,7 @@
   "mainEnsemble": "Main Ensemble",
   "subGroup": "Sub Group",
   "continuousBarlines": "Continuous Barlines",
+  "initialBarline": "Initial Barline",
 
   "profilePianoTitle": "Piano",
   "profilePianoDesc": "Grand staff for piano or keyboard.",
@@ -325,6 +326,7 @@
   "apply": "Apply",
   "changingLanguage": "Changing language...",
   "continuousBarlinesTooltip": "Connect barlines continuously across staves",
+  "initialBarlineTooltip": "Close staff start with a vertical barline",
   "staffNumber": "Staff {number}",
   "@staffNumber": {
     "placeholders": {
@@ -362,6 +364,12 @@
   "connectorBracketTooltip": "Bracket Connector",
   "connectorBrace": "Brace",
   "connectorBraceTooltip": "Brace Connector",
+  "connectorSubBracket": "Sub-Bracket",
+  "connectorSubBracketTooltip": "Sub-Bracket Connector (thin inner bracket)",
+  "systemGrouping": "System Grouping & Connectors",
+  "systemGroupingDescription": "Organize staves into nested groups and set custom connectors and barline continuity",
+  "groupStaves": "Group Staves",
+  "ungroupStaves": "Ungroup Staves",
   "undo": "Undo",
   "redo": "Redo",
   "menuFile": "File",

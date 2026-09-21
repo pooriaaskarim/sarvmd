@@ -9,6 +9,7 @@
 /// in mm so the file is scale-accurate at 1 mm = 1 user unit.
 
 import 'config.dart';
+import 'domain/clef.dart';
 import 'engraving_config.dart';
 import 'layout.dart';
 import 'domain/smufl.dart';
@@ -311,32 +312,23 @@ void _drawClefs(
 
       if (clef == null) continue;
 
-      final anchorY =
-          staff.topY + (staff.lines - clef.anchorLine) * gap * staff.scale;
-      final anchorSp = (clef.symbol == ClefSymbol.percussion && staff.lines > 1)
-          ? 1.0
-          : 0.0;
-
-      final displayGaps = (clef.symbol == ClefSymbol.tab)
-          ? (staff.lines > 0 ? staff.lines - 1 : 1).toDouble() * staff.scale
-          : 4.0 * staff.scale;
-
-      final effectiveAnchorY = (clef.symbol == ClefSymbol.tab)
-          ? (staff.topY + (staff.lines - 1) * gap * staff.scale)
-          : anchorY;
-
-      final baselineY = effectiveAnchorY + anchorSp * gap * staff.scale;
+      final baselineY =
+          staff.topY + clef.anchorOffsetInSpaces(staff.lines) * gap * staff.scale;
       final glyphX = leftX + gap * engraving.initialClefClearanceSp;
 
-      final (String path, double upem) = switch (clef.symbol) {
-        ClefSymbol.g => (_gClefSvg, 1000.0),
-        ClefSymbol.c => (_cClefSvg, 1000.0),
-        ClefSymbol.f => (_fClefSvg, 1000.0),
-        ClefSymbol.tab => (_tabClefSvg, 1000.0),
-        ClefSymbol.percussion => (_percClefSvg, 1000.0),
+      final (String path, double glyphHeight, double displayGaps) = switch (clef.symbol) {
+        ClefSymbol.g => (_gClefSvg, 1000.0, 4.0 * staff.scale),
+        ClefSymbol.c => (_cClefSvg, 1000.0, 4.0 * staff.scale),
+        ClefSymbol.f => (_fClefSvg, 1000.0, 4.0 * staff.scale),
+        ClefSymbol.tab => (
+            staff.lines <= 4 ? _tabClef4Svg : _tabClef6Svg,
+            staff.lines <= 4 ? 1012.0 : 1512.0,
+            (staff.lines > 1 ? staff.lines - 1 : 1) * 0.90 * staff.scale,
+          ),
+        ClefSymbol.percussion => (_percClefSvg, 1000.0, 4.0 * staff.scale),
       };
 
-      final scale = (gap * displayGaps) / upem;
+      final scale = (gap * displayGaps) / glyphHeight;
 
       buf.writeln(
         '    <g transform="translate(${_f(glyphX)}, ${_f(baselineY)}) '
@@ -356,29 +348,111 @@ void _drawStaffLabels(
   for (var sysIdx = 0; sysIdx < systems.length; sysIdx++) {
     final system = systems[sysIdx];
     final leftX = baseLeftX + system.leftIndentMm;
+    final bool isFirstSystem = sysIdx == 0;
 
-    for (final staff in system.staves) {
+    // 1. Group labels (Outer tier)
+    for (final group in system.groupPlacements) {
+      if (!group.labelVisible) continue;
+      final String label = isFirstSystem
+          ? group.label
+          : (group.abbreviation.trim().isNotEmpty
+              ? group.abbreviation
+              : group.label);
+      if (label.trim().isEmpty) continue;
+
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
+
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
+      final midY = (topY + bottomY) / 2.0;
+
+      final double connectorX = leftX - group.connectorOffsetMm;
+      final labelX = connectorX - GroupPlacementMetrics.groupLabelClearanceMm;
+
+      const fontFamily = 'serif';
+      final fontSizeMm = 11.0 * (25.4 / 72.0);
+
+      _writeRightAlignedText(
+        buf: buf,
+        text: label,
+        rightAnchorXMm: labelX,
+        centerYMm: midY,
+        fontSizeMm: fontSizeMm,
+        fontFamily: fontFamily,
+        isBold: true,
+      );
+    }
+
+    // 2. Identify which staves belong to an actively labeled group or connected group
+    final Set<int> innerStaffIndices = {};
+    for (final group in system.groupPlacements) {
+      final String gLabel = isFirstSystem
+          ? group.label
+          : (group.abbreviation.trim().isNotEmpty
+              ? group.abbreviation
+              : group.label);
+      final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
+      final bool hasConnector = group.connector != SystemConnector.none;
+      if (hasGroupLabel || hasConnector) {
+        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
+          innerStaffIndices.add(s);
+        }
+      }
+    }
+
+    // 3. Staff labels (Inner tier when grouped; outer tier when standalone)
+    for (int sIdx = 0; sIdx < system.staves.length; sIdx++) {
+      final staff = system.staves[sIdx];
       final def = staff.definition;
       if (def != null && def.labelVisible) {
-        final String? label = sysIdx == 0
+        final String? label = isFirstSystem
             ? def.instrumentName
-            : (def.instrumentAbbreviation ?? def.instrumentName);
+            : ((def.instrumentAbbreviation != null &&
+                    def.instrumentAbbreviation!.trim().isNotEmpty)
+                ? def.instrumentAbbreviation
+                : def.instrumentName);
 
         if (label != null && label.trim().isNotEmpty) {
-          final labelX = leftX - 3.0 + def.labelHorizontalOffset;
-          final staffMidY = staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
-          final italicAttr = def.labelItalic ? ' font-style="italic"' : '';
-          final fontFamily = def.labelFontFamily.isNotEmpty ? def.labelFontFamily : 'serif';
+          final double labelX;
+          if (innerStaffIndices.contains(sIdx)) {
+            // Inner staff label: sits right-aligned between connector and starting barline
+            labelX = leftX -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                def.labelHorizontalOffset;
+          } else {
+            // Standalone staff: sits to the left of its connector
+            double maxConnectorOffset = 0.0;
+            for (final g in system.groupPlacements) {
+              if (sIdx >= g.startStaffIdx &&
+                  sIdx <= g.endStaffIdx &&
+                  g.connectorOffsetMm > maxConnectorOffset) {
+                maxConnectorOffset = g.connectorOffsetMm;
+              }
+            }
+            labelX = leftX -
+                maxConnectorOffset -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                def.labelHorizontalOffset;
+          }
+
+          final staffMidY =
+              staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
+          final fontFamily =
+              def.labelFontFamily.isNotEmpty ? def.labelFontFamily : 'serif';
           // Convert labelFontSize in points (pt) to unitless viewBox mm (1 pt = 25.4 / 72 mm).
           // Must remain UNITLESS so SVG viewBox scaling matrix does not double-scale physical units!
           final fontSizeMm = def.labelFontSize * (25.4 / 72.0);
 
-          buf.writeln(
-            '    <text x="${_f(labelX)}" y="${_f(staffMidY)}"'
-            ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$italicAttr'
-            ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">'
-            '${_escapeXml(label)}'
-            '</text>',
+          _writeRightAlignedText(
+            buf: buf,
+            text: label,
+            rightAnchorXMm: labelX,
+            centerYMm: staffMidY,
+            fontSizeMm: fontSizeMm,
+            fontFamily: fontFamily,
+            isItalic: def.labelItalic,
           );
         }
       }
@@ -386,54 +460,140 @@ void _drawStaffLabels(
   }
 }
 
-/// Helper method to draw system connectors (braces / connecting barlines).
+/// Helper method to write single or multi-line right-aligned text in SVG.
+void _writeRightAlignedText({
+  required StringBuffer buf,
+  required String text,
+  required double rightAnchorXMm,
+  required double centerYMm,
+  required double fontSizeMm,
+  required String fontFamily,
+  bool isBold = false,
+  bool isItalic = false,
+}) {
+  final boldAttr = isBold ? ' font-weight="bold"' : '';
+  final italicAttr = isItalic ? ' font-style="italic"' : '';
+  final lines = text.split('\n');
+
+  if (lines.length == 1) {
+    buf.writeln(
+      '    <text x="${_f(rightAnchorXMm)}" y="${_f(centerYMm)}"'
+      ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$boldAttr$italicAttr'
+      ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">'
+      '${_escapeXml(lines.first)}'
+      '</text>',
+    );
+  } else {
+    final lineHeightMm = fontSizeMm * 1.2;
+    final totalHeightMm = (lines.length - 1) * lineHeightMm;
+    final startYMm = centerYMm - (totalHeightMm / 2.0);
+    buf.writeln(
+      '    <text x="${_f(rightAnchorXMm)}" y="${_f(startYMm)}"'
+      ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$boldAttr$italicAttr'
+      ' fill="black" text-anchor="end" dominant-baseline="central" dy="0.1em">',
+    );
+    for (var i = 0; i < lines.length; i++) {
+      final dy = i == 0 ? '0' : _f(lineHeightMm);
+      buf.writeln(
+        '      <tspan x="${_f(rightAnchorXMm)}" dy="$dy">${_escapeXml(lines[i])}</tspan>',
+      );
+    }
+    buf.writeln('    </text>');
+  }
+}
+
+/// Helper method to draw system connectors (braces, brackets, sub-brackets,
+/// and continuous/broken barline segments) for every [GroupPlacement].
 void _drawSystemConnectors(
   StringBuffer buf,
   PageConfig config,
   List<StaffSystem> systems,
 ) {
   final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
-  final connector = config.systemLayout.rootGroup.connector;
-
-  if (connector == SystemConnector.none) return;
+  final leftMarginX = config.margins.left;
 
   for (final system in systems) {
-    final leftX = config.margins.left + system.leftIndentMm;
-    if (system.staves.length <= 1) continue;
+    if (system.staves.isEmpty) continue;
 
-    final sysTopY = system.staves.first.topY;
-    final sysBottomY = system.staves.last.topY + system.staves.last.height;
-    final bool useBrace = connector == SystemConnector.brace;
+    // Sort placements outer-first so outer decorations paint beneath inner ones.
+    final placements = List<GroupPlacement>.from(system.groupPlacements)
+      ..sort((a, b) => a.level.compareTo(b.level));
 
-    buf.writeln(
-      '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
-      ' x2="${_f(leftX)}" y2="${_f(sysBottomY)}"'
-      ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
-    );
+    for (final group in placements) {
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
 
-    if (useBrace) {
-      final double h = sysBottomY - sysTopY;
-      final double scale = h / 997.0;
-      final double tx = leftX - scale * 82.0;
-      final double ty = sysBottomY;
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
 
-      buf.writeln(
-        '    <g transform="translate(${_f(tx)}, ${_f(ty)})'
-        ' scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">'
-        '<path d="$_braceSvg"/></g>',
-      );
-    } else {
-      final tickLen = 2.0;
-      buf.writeln(
-        '    <line x1="${_f(leftX)}" y1="${_f(sysTopY)}"'
-        ' x2="${_f(leftX + tickLen)}" y2="${_f(sysTopY)}"'
-        ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
-      );
-      buf.writeln(
-        '    <line x1="${_f(leftX)}" y1="${_f(sysBottomY)}"'
-        ' x2="${_f(leftX + tickLen)}" y2="${_f(sysBottomY)}"'
-        ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
-      );
+      final double systemLeftX = leftMarginX + system.leftIndentMm;
+      final double connectorX = systemLeftX - group.connectorOffsetMm;
+
+      // ── System barline (continuous or per-staff at systemLeftX) ────────
+      if (group.initialBarline) {
+        if (group.continuousBarlines && groupStaves.length > 1) {
+          buf.writeln(
+            '    <line x1="${_f(systemLeftX)}" y1="${_f(topY)}"'
+            ' x2="${_f(systemLeftX)}" y2="${_f(bottomY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+          );
+        } else {
+          for (final staff in groupStaves) {
+            final sTop = staff.topY;
+            final sBottom = staff.topY + staff.height;
+            buf.writeln(
+              '    <line x1="${_f(systemLeftX)}" y1="${_f(sTop)}"'
+              ' x2="${_f(systemLeftX)}" y2="${_f(sBottom)}"'
+              ' stroke="black" stroke-width="${_f(strokeMm * 2.5)}"/>',
+            );
+          }
+        }
+      }
+
+      // ── Connector glyph ───────────────────────────────────────────────
+      switch (group.connector) {
+        case SystemConnector.brace when groupStaves.length >= 2:
+          final double h = bottomY - topY;
+          final double scale = h / 997.0;
+          final double tx = connectorX - scale * 82.0;
+          final double ty = bottomY;
+          buf.writeln(
+            '    <g transform="translate(${_f(tx)}, ${_f(ty)})'
+            ' scale(${_f(scale)}, -${_f(scale)})" fill="black" stroke="none">'
+            '<path d="$_braceSvg"/></g>',
+          );
+        case SystemConnector.bracket when groupStaves.length >= 2:
+          final double endTickX =
+              connectorX + GroupPlacementMetrics.bracketTickLengthMm;
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(topY)}"'
+            ' x2="${_f(connectorX)}" y2="${_f(bottomY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 3.0)}"/>',
+          );
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(topY)}"'
+            ' x2="${_f(endTickX)}" y2="${_f(topY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 3.0)}"/>',
+          );
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(bottomY)}"'
+            ' x2="${_f(endTickX)}" y2="${_f(bottomY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 3.0)}"/>',
+          );
+        case SystemConnector.subBracket when groupStaves.length >= 2:
+          // Thinner secondary bracket, no serif ticks.
+          buf.writeln(
+            '    <line x1="${_f(connectorX)}" y1="${_f(topY)}"'
+            ' x2="${_f(connectorX)}" y2="${_f(bottomY)}"'
+            ' stroke="black" stroke-width="${_f(strokeMm * 1.8)}"/>',
+          );
+        case SystemConnector.none:
+        case SystemConnector.brace:
+        case SystemConnector.bracket:
+        case SystemConnector.subBracket:
+          break;
+      }
     }
   }
 }
@@ -550,17 +710,17 @@ String _drawElement(PositionedElement elem, double gap, EngravingConfig config) 
     final x = elem.x;
     final y = elem.y;
 
-    final (String path, double upem) = switch (elem.glyph) {
-      SmuflGlyph.gClef => (_gClefSvg, 1000.0),
-      SmuflGlyph.cClef => (_cClefSvg, 1000.0),
-      SmuflGlyph.fClef => (_fClefSvg, 1000.0),
-      SmuflGlyph.tabClef => (_tabClefSvg, 1000.0),
-      SmuflGlyph.percussionClef => (_percClefSvg, 1000.0),
-      _ => (_gClefSvg, 1000.0),
+    final (String path, double glyphHeight, double displayGaps) = switch (elem.glyph) {
+      SmuflGlyph.gClef => (_gClefSvg, 1000.0, 4.0),
+      SmuflGlyph.cClef => (_cClefSvg, 1000.0, 4.0),
+      SmuflGlyph.fClef => (_fClefSvg, 1000.0, 4.0),
+      SmuflGlyph.tabClef => (_tabClef6Svg, 1512.0, 4.5),
+      SmuflGlyph.tabClefFour => (_tabClef4Svg, 1012.0, 2.7),
+      SmuflGlyph.percussionClef => (_percClefSvg, 1000.0, 4.0),
+      _ => (_gClefSvg, 1000.0, 4.0),
     };
 
-    final displayGaps = (elem.glyph == SmuflGlyph.tabClef) ? 3.0 : 4.0;
-    final svgScale = (gap * displayGaps * scale) / upem;
+    final svgScale = (gap * displayGaps * scale) / glyphHeight;
     final anchorSp = switch (elem.glyph) {
       SmuflGlyph.gClef => 0.876,
       SmuflGlyph.cClef => 2.0,
@@ -617,8 +777,11 @@ const String _fClefSvg =
     'M 252.0,262.0 C 78.0,262.0 0.0,135.0 0.0,39.0 C 0.0,-41.0 42.0,-110.0 123.0,-110.0 C 186.0,-110.0 229.0,-66.0 229.0,-4.0 C 229.0,60.0 182.0,100.0 133.0,100.0 C 106.0,100.0 96.0,93.0 83.0,93.0 C 70.0,93.0 67.0,101.0 67.0,111.0 C 67.0,151.0 127.0,224.0 229.0,224.0 C 335.0,224.0 381.0,120.0 381.0,-37.0 C 381.0,-316.0 243.0,-472.0 10.0,-605.0 C 1.0,-610.0 -5.0,-615.0 -5.0,-623.0 C -5.0,-629.0 -1.0,-635.0 8.0,-635.0 C 13.0,-635.0 19.0,-633.0 25.0,-630.0 C 271.0,-510.0 531.0,-332.0 531.0,-28.0 C 531.0,146.0 425.0,262.0 252.0,262.0 Z M 629.0,180.0 C 598.0,180.0 574.0,156.0 574.0,125.0 C 574.0,94.0 598.0,70.0 629.0,70.0 C 660.0,70.0 684.0,94.0 684.0,125.0 C 684.0,156.0 660.0,180.0 629.0,180.0 Z M 630.0,-71.0 C 599.0,-71.0 576.0,-94.0 576.0,-125.0 C 576.0,-156.0 599.0,-179.0 630.0,-179.0 C 661.0,-179.0 684.0,-156.0 684.0,-125.0 C 684.0,-94.0 661.0,-71.0 630.0,-71.0 Z';
 const String _percClefSvg =
     'M 160.0,-235.0 L 160.0,235.0 C 160.0,243.0 154.0,250.0 146.0,250.0 L 14.0,250.0 C 6.0,250.0 0.0,243.0 0.0,235.0 L 0.0,-235.0 C 0.0,-243.0 6.0,-250.0 14.0,-250.0 L 146.0,-250.0 C 154.0,-250.0 160.0,-243.0 160.0,-235.0 Z M 382.0,235.0 C 382.0,243.0 376.0,250.0 368.0,250.0 L 236.0,250.0 C 228.0,250.0 222.0,243.0 222.0,235.0 L 222.0,-235.0 C 222.0,-243.0 228.0,-250.0 236.0,-250.0 L 368.0,-250.0 C 376.0,-250.0 382.0,-243.0 382.0,-235.0 Z';
-const String _tabClefSvg =
-    'M 230.0,482.0 C 230.0,496.0 223.0,503.0 209.0,503.0 L 208.0,503.0 C 194.0,503.0 187.0,496.0 187.0,482.0 L 187.0,-482.0 C 187.0,-496.0 194.0,-503.0 208.0,-503.0 L 209.0,-503.0 C 223.0,-503.0 230.0,-496.0 230.0,-482.0 L 230.0,-44.0 C 230.0,-36.0 235.0,-37.0 239.0,-38.0 C 265.0,-45.0 307.0,-71.0 328.0,-184.0 C 331.0,-200.0 337.0,-209.0 347.0,-209.0 C 358.0,-209.0 363.0,-199.0 368.0,-182.0 C 381.0,-138.0 404.0,-89.0 475.0,-89.0 C 540.0,-89.0 558.0,-153.0 558.0,-284.0 C 558.0,-415.0 535.0,-474.0 452.0,-474.0 C 438.0,-474.0 367.0,-468.0 367.0,-447.0 C 367.0,-442.0 383.0,-436.0 394.0,-432.0 C 414.0,-425.0 434.0,-405.0 434.0,-367.0 C 434.0,-323.0 405.0,-298.0 366.0,-298.0 C 323.0,-298.0 289.0,-327.0 289.0,-380.0 C 289.0,-443.0 344.0,-506.0 463.0,-506.0 C 627.0,-506.0 699.0,-391.0 699.0,-287.0 C 699.0,-149.0 623.0,-53.0 490.0,-53.0 C 461.0,-53.0 442.0,-58.0 429.0,-62.0 C 419.0,-65.0 409.0,-67.0 400.0,-61.0 C 386.0,-52.0 364.0,-20.0 364.0,0.0 C 364.0,20.0 386.0,52.0 400.0,61.0 C 409.0,67.0 419.0,65.0 429.0,62.0 C 442.0,58.0 461.0,53.0 490.0,53.0 C 623.0,53.0 699.0,149.0 699.0,287.0 C 699.0,391.0 627.0,506.0 463.0,506.0 C 344.0,506.0 289.0,443.0 289.0,380.0 C 289.0,327.0 323.0,298.0 366.0,298.0 C 405.0,298.0 434.0,425.0 394.0,432.0 C 383.0,436.0 367.0,442.0 367.0,447.0 C 367.0,468.0 438.0,474.0 452.0,474.0 C 535.0,474.0 558.0,415.0 558.0,284.0 C 558.0,153.0 540.0,89.0 475.0,89.0 C 404.0,89.0 381.0,138.0 368.0,182.0 C 363.0,199.0 358.0,209.0 347.0,209.0 C 337.0,209.0 331.0,200.0 328.0,184.0 C 307.0,71.0 265.0,45.0 239.0,38.0 C 235.0,37.0 230.0,36.0 230.0,44.0 Z M 91.0,-580.0 C 84.0,-580.0 82.0,-578.0 82.0,-571.0 L 82.0,-514.0 C 82.0,-505.0 84.0,-503.0 93.0,-503.0 L 107.0,-503.0 C 121.0,-503.0 128.0,-496.0 128.0,-482.0 L 128.0,482.0 C 128.0,496.0 121.0,503.0 107.0,503.0 L 21.0,503.0 C 7.0,503.0 0.0,496.0 0.0,482.0 L 0.0,-482.0 C 0.0,-496.0 7.0,-503.0 21.0,-503.0 L 35.0,-503.0 C 44.0,-503.0 46.0,-505.0 46.0,-514.0 L 46.0,-571.0 C 46.0,-578.0 44.0,-580.0 37.0,-580.0 L -24.0,-580.0 C -30.0,-580.0 -33.0,-581.0 -33.0,-587.0 C -33.0,-588.0 -33.0,-590.0 -32.0,-594.0 L 58.0,-904.0 C 59.0,-908.0 60.0,-911.0 64.0,-911.0 C 68.0,-911.0 69.0,-908.0 70.0,-904.0 L 160.0,-594.0 C 161.0,-590.0 161.0,-588.0 161.0,-587.0 C 161.0,-581.0 158.0,-580.0 152.0,-580.0 Z';
+const String _tabClef6Svg =
+    'M 387.0,711.0 L 387.0,764.0 L 18.0,764.0 L 18.0,711.0 L 173.0,711.0 L 173.0,293.0 L 233.0,293.0 L 233.0,711.0 Z M 408.0,-228.0 L 243.0,242.0 L 165.0,242.0 L -3.0,-228.0 L 61.0,-228.0 L 111.0,-87.0 L 292.0,-87.0 L 341.0,-228.0 Z M 276.0,-36.0 L 126.0,-36.0 L 203.0,178.0 Z M 378.0,-613.0 C 378.0,-557.0 352.0,-522.0 292.0,-499.0 C 335.0,-479.0 357.0,-444.0 357.0,-397.0 C 357.0,-328.0 307.0,-277.0 218.0,-277.0 L 27.0,-277.0 L 27.0,-748.0 L 239.0,-748.0 C 324.0,-748.0 378.0,-691.0 378.0,-613.0 Z M 297.0,-405.0 C 297.0,-453.0 270.0,-480.0 203.0,-480.0 L 87.0,-480.0 L 87.0,-330.0 L 203.0,-330.0 C 270.0,-330.0 297.0,-357.0 297.0,-405.0 Z M 318.0,-614.0 C 318.0,-659.0 290.0,-695.0 234.0,-695.0 L 87.0,-695.0 L 87.0,-533.0 L 234.0,-533.0 C 290.0,-533.0 318.0,-568.0 318.0,-614.0 Z';
+
+const String _tabClef4Svg =
+    'M 258.0,469.0 L 258.0,504.0 L 11.0,504.0 L 11.0,469.0 L 115.0,469.0 L 115.0,189.0 L 155.0,189.0 L 155.0,469.0 Z M 272.0,-160.0 L 162.0,155.0 L 110.0,155.0 L -3.0,-160.0 L 40.0,-160.0 L 73.0,-65.0 L 195.0,-65.0 L 227.0,-160.0 Z M 184.0,-32.0 L 83.0,-32.0 L 135.0,112.0 Z M 252.0,-418.0 C 252.0,-380.0 235.0,-357.0 195.0,-342.0 C 223.0,-328.0 238.0,-305.0 238.0,-273.0 C 238.0,-227.0 205.0,-193.0 145.0,-193.0 L 17.0,-193.0 L 17.0,-508.0 L 159.0,-508.0 C 216.0,-508.0 252.0,-470.0 252.0,-418.0 Z M 198.0,-279.0 C 198.0,-311.0 180.0,-329.0 135.0,-329.0 L 57.0,-329.0 L 57.0,-228.0 L 135.0,-228.0 C 180.0,-228.0 198.0,-247.0 198.0,-279.0 Z M 212.0,-418.0 C 212.0,-449.0 194.0,-472.0 156.0,-472.0 L 57.0,-472.0 L 57.0,-364.0 L 156.0,-364.0 C 194.0,-364.0 212.0,-388.0 212.0,-418.0 Z';
 
 const String _quarterRestSvg =
     "M100 -250 C120 -180 150 -120 180 -70 C190 -40 180 -10 160 20 C130 50 80 100 40 150 C20 180 10 210 20 240 C30 270 60 300 90 320 L15 320 C-10 280 -20 230 -10 180 Q10 110 50 60 C80 20 110 -30 130 -80 Z";
