@@ -346,5 +346,123 @@ void main() {
       expect(cubit.allStaves.first.instrumentName, equals('Violin I'));
       expect(find.byType(TextField), findsNothing);
     });
+
+    testWidgets(
+        'clef badge switches between clefs and auto-normalizes line count',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Violin I initially has Treble Clef and Line 2
+      expect(find.text('Treble Clef'), findsWidgets);
+      expect(find.text('Line 2'), findsWidgets);
+
+      // Tap the Treble Clef badge on the first staff to open clef picker
+      final trebleBadge = find.text('Treble Clef').first;
+      await tester.ensureVisible(trebleBadge);
+      await tester.tap(trebleBadge);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Popup menu shows Tablature option
+      final tabOption = find.text('Tablature').last;
+      await tester.tap(tabOption);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Verify Cubit updated staff to TabClef with 6 lines
+      expect(cubit.allStaves.first.clef, isA<core.TabClef>());
+      expect(cubit.allStaves.first.lines, equals(6));
+
+      // UI should now render 'Tablature' and '6 Lines'
+      expect(find.text('Tablature'), findsWidgets);
+      expect(find.text('6 Lines'), findsWidgets);
+
+      // Now tap the Tablature badge and switch back to Treble Clef
+      final tabBadge = find.text('Tablature').first;
+      await tester.tap(tabBadge);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      final trebleOption = find.text('Treble Clef').last;
+      await tester.tap(trebleOption);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Line count auto-snaps back to 5 for audible clef
+      expect(cubit.allStaves.first.clef, isA<core.TrebleClef>());
+      expect(cubit.allStaves.first.lines, equals(5));
+      expect(find.text('Line 2'), findsWidgets);
+    });
+
+    testWidgets(
+        'anchor line badge allows switching registers for audible clef',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // In string quartet, Viola (index 2) starts with Alto Clef on Line 3
+      expect(find.text('Alto Clef'), findsOneWidget);
+      expect(find.text('Line 3'), findsOneWidget);
+
+      // Tap Line 3 badge
+      final line3Badge = find.text('Line 3').first;
+      await tester.ensureVisible(line3Badge);
+      await tester.tap(line3Badge);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Select Tenor (Line 4) from register presets
+      final tenorPreset = find.text('Tenor (Line 4)');
+      expect(tenorPreset, findsOneWidget);
+      await tester.tap(tenorPreset);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Viola clef is now TenorClef with anchorLine == 4
+      final viola = cubit.allStaves[2];
+      expect(viola.clef, isA<core.TenorClef>());
+      expect(viola.clef?.anchorLine, equals(4));
+
+      // Badges update to 'Tenor Clef', and both Viola and Cello are on Line 4
+      expect(find.text('Tenor Clef'), findsOneWidget);
+      expect(find.text('Line 4'), findsNWidgets(2));
+    });
   });
 }

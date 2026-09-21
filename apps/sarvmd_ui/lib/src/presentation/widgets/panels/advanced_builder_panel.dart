@@ -1098,15 +1098,30 @@ class _StaffItemState extends State<_StaffItem> {
     final String labelText = '$displayName$abbrevInfo';
 
     String clefLabel = l10n.noClef;
-    if (widget.staff.clef != null) {
-      final name = switch (widget.staff.clef!.symbol) {
-        core.ClefSymbol.g => l10n.trebleClef,
-        core.ClefSymbol.c => l10n.altoClef,
-        core.ClefSymbol.f => l10n.bassClef,
+    final staffClef = widget.staff.clef;
+    final isAudibleClef =
+        staffClef != null && staffClef.symbol.requiresFixedLines;
+
+    if (staffClef != null) {
+      final matchingPreset = staffClef.symbol.registerPresets
+          .where((p) => p.anchorLine == staffClef.anchorLine)
+          .firstOrNull;
+
+      clefLabel = switch (staffClef.symbol) {
+        core.ClefSymbol.g => (staffClef.anchorLine == 1)
+            ? (matchingPreset?.label.split(' (').first ?? 'French Violin')
+            : l10n.trebleClef,
+        core.ClefSymbol.c => switch (staffClef.anchorLine) {
+            4 => l10n.tenorClef,
+            3 => l10n.altoClef,
+            _ => (matchingPreset?.label.split(' (').first ?? l10n.altoClef),
+          },
+        core.ClefSymbol.f => (staffClef.anchorLine == 3)
+            ? (matchingPreset?.label.split(' (').first ?? 'Baritone')
+            : l10n.bassClef,
         core.ClefSymbol.tab => l10n.categoryTablature,
         core.ClefSymbol.percussion => l10n.categoryPercussion,
       };
-      clefLabel = l10n.clefWithLine(name, widget.staff.clef!.anchorLine);
     }
 
     final payload = (
@@ -1407,99 +1422,285 @@ class _StaffItemState extends State<_StaffItem> {
                               spacing: 4,
                               runSpacing: 4,
                               children: [
-                                // Line Count Badge Quick-Picker
-                                PopupMenuButton<int>(
-                                  tooltip: 'Change Line Count',
+                                // 1. Clef Badge Quick-Picker
+                                PopupMenuButton<core.Clef>(
+                                  tooltip: l10n.clefSettingsHeader,
                                   padding: EdgeInsets.zero,
-                                  onSelected: (lines) {
+                                  onSelected: (newClef) {
+                                    final newLines = newClef
+                                            .symbol.requiresFixedLines
+                                        ? 5
+                                        : (widget.staff.lines == 5
+                                            ? newClef.symbol.defaultLines
+                                            : widget.staff.lines);
                                     widget.notifier.updateStaffConfigDetails(
                                       widget.staff.uid,
-                                      lines: lines,
+                                      clef: () => newClef,
+                                      lines: newLines,
                                     );
                                   },
-                                  itemBuilder: (context) => [
-                                    for (int i = 1; i <= 6; i++)
+                                  itemBuilder: (context) {
+                                    final currentClef = widget.staff.clef;
+                                    return [
                                       PopupMenuItem(
-                                        value: i,
-                                        child: Text(l10n.linesCount(i),
-                                            style:
-                                                const TextStyle(fontSize: 12)),
+                                        value: core.Clef.treble,
+                                        child: Row(children: [
+                                          if (currentClef is core.TrebleClef &&
+                                              currentClef.anchorLine == 2)
+                                            Icon(Icons.check,
+                                                size: 14, color: cs.primary)
+                                          else
+                                            const Icon(Icons.music_note,
+                                                size: 14),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.trebleClef,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ]),
                                       ),
-                                  ],
-                                  child: _buildBadge(context,
-                                      l10n.linesCount(widget.staff.lines)),
+                                      PopupMenuItem(
+                                        value: core.Clef.alto,
+                                        child: Row(children: [
+                                          if (currentClef is core.AltoClef)
+                                            Icon(Icons.check,
+                                                size: 14, color: cs.primary)
+                                          else
+                                            const Icon(Icons.music_note,
+                                                size: 14),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.altoClef,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ]),
+                                      ),
+                                      PopupMenuItem(
+                                        value: core.Clef.tenor,
+                                        child: Row(children: [
+                                          if (currentClef is core.TenorClef)
+                                            Icon(Icons.check,
+                                                size: 14, color: cs.primary)
+                                          else
+                                            const Icon(Icons.music_note,
+                                                size: 14),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.tenorClef,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ]),
+                                      ),
+                                      PopupMenuItem(
+                                        value: core.Clef.bass,
+                                        child: Row(children: [
+                                          if (currentClef is core.BassClef &&
+                                              currentClef.anchorLine == 4)
+                                            Icon(Icons.check,
+                                                size: 14, color: cs.primary)
+                                          else
+                                            const Icon(Icons.music_note,
+                                                size: 14),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.bassClef,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ]),
+                                      ),
+                                      PopupMenuItem(
+                                        value: core.Clef.tab,
+                                        child: Row(children: [
+                                          if (currentClef is core.TabClef)
+                                            Icon(Icons.check,
+                                                size: 14, color: cs.primary)
+                                          else
+                                            const Icon(Icons.numbers, size: 14),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.categoryTablature,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ]),
+                                      ),
+                                      PopupMenuItem(
+                                        value: core.Clef.percussion,
+                                        child: Row(children: [
+                                          if (currentClef
+                                              is core.PercussionClef)
+                                            Icon(Icons.check,
+                                                size: 14, color: cs.primary)
+                                          else
+                                            const Icon(Icons.adjust, size: 14),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.categoryPercussion,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ]),
+                                      ),
+                                    ];
+                                  },
+                                  child: _buildBadge(context, clefLabel,
+                                      showChevron: true),
                                 ),
 
-                                // Clef Badge Quick-Picker
-                                PopupMenuButton<core.ClefSymbol>(
-                                  tooltip: 'Change Clef',
-                                  padding: EdgeInsets.zero,
-                                  onSelected: (symbol) {
-                                    final newClef = switch (symbol) {
-                                      core.ClefSymbol.g => core.Clef.treble,
-                                      core.ClefSymbol.c => core.Clef.alto,
-                                      core.ClefSymbol.f => core.Clef.bass,
-                                      core.ClefSymbol.tab => core.Clef.tab,
-                                      core.ClefSymbol.percussion =>
-                                        core.Clef.percussion,
-                                    };
-                                    widget.notifier.updateStaffClef(
-                                        widget.staff.uid, newClef);
-                                  },
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem(
-                                      value: core.ClefSymbol.g,
-                                      child: Row(children: [
-                                        const Icon(Icons.music_note, size: 14),
-                                        const SizedBox(width: 8),
-                                        Text(l10n.trebleClef,
-                                            style:
-                                                const TextStyle(fontSize: 12)),
-                                      ]),
+                                // 2. Dynamic Modifier Badge:
+                                // For Pitched Clefs (G, C, F): Anchor Line Quick-Picker
+                                // For Unpitched/Tab Clefs (Tab, Percussion): Line Count Quick-Picker
+                                if (isAudibleClef)
+                                  PopupMenuButton<int>(
+                                    tooltip: l10n.clefAnchorLineHeader,
+                                    padding: EdgeInsets.zero,
+                                    onSelected: (line) {
+                                      final updatedClef = staffClef.symbol
+                                          .createClef(anchorLine: line);
+                                      widget.notifier.updateStaffClef(
+                                          widget.staff.uid, updatedClef);
+                                    },
+                                    itemBuilder: (context) {
+                                      final presets =
+                                          staffClef.symbol.registerPresets;
+                                      final hasCurrentLine = presets.any((p) =>
+                                          p.anchorLine ==
+                                          staffClef.anchorLine);
+                                      return [
+                                        for (final preset in presets)
+                                          PopupMenuItem<int>(
+                                            value: preset.anchorLine,
+                                            child: Row(
+                                              children: [
+                                                if (staffClef.anchorLine ==
+                                                    preset.anchorLine)
+                                                  Icon(Icons.check,
+                                                      size: 14,
+                                                      color: cs.primary)
+                                                else
+                                                  const SizedBox(width: 14),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    preset.label,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          staffClef.anchorLine ==
+                                                                  preset
+                                                                      .anchorLine
+                                                              ? FontWeight.bold
+                                                              : FontWeight.normal,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        if (!hasCurrentLine)
+                                          PopupMenuItem<int>(
+                                            value: staffClef.anchorLine,
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.check,
+                                                    size: 14,
+                                                    color: cs.primary),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    l10n.clefAnchorLineReadout(
+                                                        staffClef.anchorLine),
+                                                    style: const TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ];
+                                    },
+                                    child: _buildBadge(
+                                      context,
+                                      l10n.clefAnchorLineReadout(
+                                          staffClef.anchorLine),
+                                      showChevron: true,
                                     ),
-                                    PopupMenuItem(
-                                      value: core.ClefSymbol.c,
-                                      child: Row(children: [
-                                        const Icon(Icons.music_note, size: 14),
-                                        const SizedBox(width: 8),
-                                        Text(l10n.altoClef,
-                                            style:
-                                                const TextStyle(fontSize: 12)),
-                                      ]),
+                                  )
+                                else
+                                  PopupMenuButton<int>(
+                                    tooltip: l10n.numberOfStaffLinesHeader,
+                                    padding: EdgeInsets.zero,
+                                    onSelected: (lines) {
+                                      widget.notifier.updateStaffConfigDetails(
+                                        widget.staff.uid,
+                                        lines: lines,
+                                      );
+                                    },
+                                    itemBuilder: (context) => [
+                                      for (int i = 1; i <= 6; i++)
+                                        PopupMenuItem(
+                                          value: i,
+                                          child: Row(
+                                            children: [
+                                              if (widget.staff.lines == i)
+                                                Icon(Icons.check,
+                                                    size: 14,
+                                                    color: cs.primary)
+                                              else
+                                                const SizedBox(width: 14),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  l10n.linesCount(i),
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        widget.staff.lines == i
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                    child: _buildBadge(
+                                      context,
+                                      l10n.linesCount(widget.staff.lines),
+                                      showChevron: true,
                                     ),
-                                    PopupMenuItem(
-                                      value: core.ClefSymbol.f,
-                                      child: Row(children: [
-                                        const Icon(Icons.music_note, size: 14),
-                                        const SizedBox(width: 8),
-                                        Text(l10n.bassClef,
-                                            style:
-                                                const TextStyle(fontSize: 12)),
-                                      ]),
-                                    ),
-                                    PopupMenuItem(
-                                      value: core.ClefSymbol.tab,
-                                      child: Row(children: [
-                                        const Icon(Icons.numbers, size: 14),
-                                        const SizedBox(width: 8),
-                                        Text(l10n.categoryTablature,
-                                            style:
-                                                const TextStyle(fontSize: 12)),
-                                      ]),
-                                    ),
-                                    PopupMenuItem(
-                                      value: core.ClefSymbol.percussion,
-                                      child: Row(children: [
-                                        const Icon(Icons.adjust, size: 14),
-                                        const SizedBox(width: 8),
-                                        Text(l10n.categoryPercussion,
-                                            style:
-                                                const TextStyle(fontSize: 12)),
-                                      ]),
-                                    ),
-                                  ],
-                                  child: _buildBadge(context, clefLabel),
-                                ),
+                                  ),
 
                                 if (!widget.staff.labelVisible)
                                   InkWell(
@@ -1572,25 +1773,44 @@ class _StaffItemState extends State<_StaffItem> {
     );
   }
 
-  Widget _buildBadge(BuildContext context, String text, {Color? color}) {
+  Widget _buildBadge(
+    BuildContext context,
+    String text, {
+    Color? color,
+    bool showChevron = false,
+  }) {
     final cs = Theme.of(context).colorScheme;
+    final badgeColor = color ?? cs.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
       decoration: BoxDecoration(
-        color: (color ?? cs.secondaryContainer).withValues(alpha: 0.15),
+        color: badgeColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: (color ?? cs.secondaryContainer).withValues(alpha: 0.3),
+          color: badgeColor.withValues(alpha: 0.3),
           width: 0.5,
         ),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          color: color ?? cs.primary,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: badgeColor,
+            ),
+          ),
+          if (showChevron) ...[
+            const SizedBox(width: 2),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 10,
+              color: badgeColor,
+            ),
+          ],
+        ],
       ),
     );
   }
