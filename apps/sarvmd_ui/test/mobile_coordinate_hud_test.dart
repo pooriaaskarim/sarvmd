@@ -57,7 +57,7 @@ void main() {
       );
     }
 
-    testWidgets('Long press on canvas shows top glassmorphic coordinate HUD', (tester) async {
+    testWidgets('Long press on canvas shows top glassmorphic coordinate HUD below ruler', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -68,6 +68,17 @@ void main() {
       // Coordinate HUD should appear containing X: and Y: indicators
       expect(find.text('X: '), findsOneWidget);
       expect(find.text('Y: '), findsOneWidget);
+
+      // Verify top HUD sits completely below the 25.0 dp top ruler
+      final hudTop = tester.getTopLeft(find.byKey(const ValueKey('top_coord_hud_active'))).dy;
+      expect(hudTop, greaterThanOrEqualTo(30.0),
+          reason: 'Top coordinate HUD must sit cleanly below the top ruler without covering it');
+
+      // Verify bottom RulerBox HUD ('TOP' / 'CTR' badge) is suppressed on mobile
+      expect(find.text('TOP'), findsNothing,
+          reason: 'Redundant bottom RulerBox coordinate HUD must be suppressed on mobile');
+      expect(find.text('CTR'), findsNothing,
+          reason: 'Redundant bottom RulerBox coordinate HUD must be suppressed on mobile');
     });
 
     testWidgets('Dragging finger updates coordinate readout in real-time', (tester) async {
@@ -88,6 +99,10 @@ void main() {
       // HUD should still be visible and updated
       expect(find.text('X: '), findsOneWidget);
       expect(find.text('Y: '), findsOneWidget);
+
+      // Verify bottom RulerBox HUD remains suppressed during drag
+      expect(find.text('TOP'), findsNothing);
+      expect(find.text('CTR'), findsNothing);
 
       await gesture.up();
       await tester.pump();
