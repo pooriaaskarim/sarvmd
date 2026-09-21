@@ -1163,6 +1163,56 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                     );
                   },
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.3),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.border_left,
+                          size: 14,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            l10n.initialBarline,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Tooltip(
+                          message: l10n.initialBarlineTooltip,
+                          child: Transform.scale(
+                            scale: 0.75,
+                            child: Switch(
+                              value: widget.group.initialBarline,
+                              onChanged: (v) => widget.notifier
+                                  .updateGroupInitialBarline(v,
+                                      groupHash: widget.group.hashCode),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 if (widget.group.children.length > 1)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),

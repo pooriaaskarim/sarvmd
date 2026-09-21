@@ -370,6 +370,10 @@ class DocumentCubit extends Cubit<DocumentState> {
         core.UpdateGroupContinuousBarlinesCommand(value, groupHash: groupHash));
   }
 
+  void updateGroupInitialBarline(bool value, {int? groupHash}) {
+    execute(core.UpdateGroupInitialBarlineCommand(value, groupHash: groupHash));
+  }
+
   void updateGroupDetails({
     int? groupHash,
     String? label,

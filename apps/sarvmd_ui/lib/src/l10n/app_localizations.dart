@@ -758,6 +758,12 @@ abstract class AppLocalizations {
   /// **'Continuous Barlines'**
   String get continuousBarlines;
 
+  /// No description provided for @initialBarline.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial Barline'**
+  String get initialBarline;
+
   /// No description provided for @profilePianoTitle.
   ///
   /// In en, this message translates to:
@@ -1627,6 +1633,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect barlines continuously across staves'**
   String get continuousBarlinesTooltip;
+
+  /// No description provided for @initialBarlineTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close staff start with a vertical barline'**
+  String get initialBarlineTooltip;
 
   /// No description provided for @staffNumber.
   ///

@@ -411,24 +411,26 @@ class _ManuscriptPainter extends CustomPainter {
 
         // 1. Draw Group Barline at systemLeftPx (Continuous within group if enabled)
         // MOLA: Barlines break between instrument families.
-        if (group.continuousBarlines && staves.length > 1) {
-          canvas.drawLine(
-            Offset(systemLeftPx, topY),
-            Offset(systemLeftPx, bottomY),
-            connectorPaint
-              ..strokeWidth = thicknessPx * 2.5, // Bolder for system start
-          );
-        } else if (!group.continuousBarlines) {
-          // For groups with broken barlines, render a segment for each staff at systemLeftPx
-          for (final staff in staves) {
-            final sTop = (staff.topY * scale).roundToDouble();
-            final sBottom =
-                (staff.topY * scale + staff.height * scale).roundToDouble();
+        if (group.initialBarline) {
+          if (group.continuousBarlines && staves.length > 1) {
             canvas.drawLine(
-              Offset(systemLeftPx, sTop),
-              Offset(systemLeftPx, sBottom),
-              connectorPaint..strokeWidth = thicknessPx * 2.5,
+              Offset(systemLeftPx, topY),
+              Offset(systemLeftPx, bottomY),
+              connectorPaint
+                ..strokeWidth = thicknessPx * 2.5, // Bolder for system start
             );
+          } else {
+            // For single staves or groups with broken barlines, render a segment for each staff at systemLeftPx
+            for (final staff in staves) {
+              final sTop = (staff.topY * scale).roundToDouble();
+              final sBottom =
+                  (staff.topY * scale + staff.height * scale).roundToDouble();
+              canvas.drawLine(
+                Offset(systemLeftPx, sTop),
+                Offset(systemLeftPx, sBottom),
+                connectorPaint..strokeWidth = thicknessPx * 2.5,
+              );
+            }
           }
         }
 

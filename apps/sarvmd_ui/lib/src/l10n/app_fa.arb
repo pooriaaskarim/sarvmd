@@ -110,6 +110,7 @@
   "mainEnsemble": "آنسامبل اصلی",
   "subGroup": "زیرگروه",
   "continuousBarlines": "خطوط میزان پیوسته",
+  "initialBarline": "خط شروع میزان",
 
   "profilePianoTitle": "پیانو",
   "profilePianoDesc": "حامل دوگانه (آکولاد) کلید سل و فا برای پیانو یا کیبورد.",
@@ -263,6 +264,7 @@
   "apply": "اعمال",
   "changingLanguage": "در حال تغییر زبان...",
   "continuousBarlinesTooltip": "اتصال پیوسته خطوط میزان بین حامل‌ها",
+  "initialBarlineTooltip": "بستن سمت چپ حامل‌ها با خط میزان ابتدایی",
   "staffNumber": "حامل {number}",
   "linesCount": "{count} خط",
   "noClef": "بدون کلید",

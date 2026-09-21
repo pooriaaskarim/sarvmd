@@ -342,6 +342,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continuousBarlines => 'Continuous Barlines';
 
   @override
+  String get initialBarline => 'Initial Barline';
+
+  @override
   String get profilePianoTitle => 'Piano';
 
   @override
@@ -819,6 +822,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get continuousBarlinesTooltip =>
       'Connect barlines continuously across staves';
+
+  @override
+  String get initialBarlineTooltip =>
+      'Close staff start with a vertical barline';
 
   @override
   String staffNumber(int number) {

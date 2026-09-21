@@ -342,6 +342,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get continuousBarlines => 'خطوط میزان پیوسته';
 
   @override
+  String get initialBarline => 'خط شروع میزان';
+
+  @override
   String get profilePianoTitle => 'پیانو';
 
   @override
@@ -820,6 +823,9 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get continuousBarlinesTooltip => 'اتصال پیوسته خطوط میزان بین حامل‌ها';
+
+  @override
+  String get initialBarlineTooltip => 'بستن سمت چپ حامل‌ها با خط میزان ابتدایی';
 
   @override
   String staffNumber(int number) {
