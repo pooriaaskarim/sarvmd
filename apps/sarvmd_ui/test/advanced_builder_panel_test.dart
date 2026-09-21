@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
@@ -261,6 +262,89 @@ void main() {
       expect(subGroup.children.first, isA<core.StaffDefinition>());
       expect((subGroup.children.first as core.StaffDefinition).uid,
           equals(sourceUid));
+    });
+
+    testWidgets('quick labeling card auto-saves on outside tap',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final editIcon = find.byTooltip('Edit Instrument Name');
+      await tester.ensureVisible(editIcon.first);
+      await tester.tap(editIcon.first);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsAtLeastNWidgets(1));
+      await tester.enterText(find.byType(TextField).first, 'First Violin');
+
+      // Tap outside the card (e.g. at top-left outside the labeling card)
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(cubit.allStaves.first.instrumentName, equals('First Violin'));
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets(
+        'quick labeling card cancels on Escape key without updating staff',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final editIcon = find.byTooltip('Edit Instrument Name');
+      await tester.ensureVisible(editIcon.first);
+      await tester.tap(editIcon.first);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsAtLeastNWidgets(1));
+      await tester.enterText(find.byType(TextField).first, 'Violino Grande');
+
+      // Press Escape key
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      // Original name remains unchanged
+      expect(cubit.allStaves.first.instrumentName, equals('Violin I'));
+      expect(find.byType(TextField), findsNothing);
     });
   });
 }
