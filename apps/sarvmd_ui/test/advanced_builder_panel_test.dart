@@ -66,8 +66,7 @@ void main() {
       expect(cubit.allStaves.length, equals(initialCount + 1));
     });
 
-    testWidgets('inline editing mode updates instrument name',
-        (tester) async {
+    testWidgets('inline editing mode updates instrument name', (tester) async {
       tester.view.physicalSize = const Size(1200, 1000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -95,6 +94,7 @@ void main() {
 
       await tester.ensureVisible(editIcon.first);
       await tester.tap(editIcon.first);
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
       // Should show TextFields for inline name & abbreviation editing
@@ -110,7 +110,8 @@ void main() {
       expect(cubit.allStaves.first.instrumentName, equals('Solo Violin'));
     });
 
-    testWidgets('groupTwoStavesTogether combines two staves into a StaffNodeGroup',
+    testWidgets(
+        'groupTwoStavesTogether combines two staves into a StaffNodeGroup',
         (tester) async {
       final sourceUid = cubit.allStaves[0].uid;
       final targetUid = cubit.allStaves[1].uid;
@@ -123,6 +124,143 @@ void main() {
       final nodeGroup = rootGroup.children.first as core.StaffNodeGroup;
       expect(nodeGroup.children.length, equals(2));
     });
+
+    testWidgets(
+        'single tap on staff card selects staff and enters selection mode',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially no checkmarks
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+
+      // Single tap on the staff label
+      final staffCard = find.textContaining('Violin I');
+      expect(staffCard, findsOneWidget);
+      await tester.tap(staffCard);
+      // Pump past double-tap window so single tap resolves
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Now staff should be selected and checkmark badge visible
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+
+      // Tapping the checkmark badge directly toggles selection off
+      await tester.tap(find.byIcon(Icons.check_rounded));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Selection mode exited
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+    });
+
+    testWidgets(
+        'double tap on staff card triggers inline name editing WITHOUT selecting staff',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Double tap on the staff label
+      final staffCard = find.textContaining('Violin I');
+      expect(staffCard, findsOneWidget);
+
+      await tester.tap(staffCard);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tap(staffCard);
+      await tester.pumpAndSettle();
+
+      // Inline labeling TextField should now be active
+      expect(find.byType(TextField), findsAtLeastNWidgets(1));
+
+      // Staff must NOT be selected!
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+    });
+
+    testWidgets(
+        'dropping a staff item in a subgroup onto itself cancels action without moving to root',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final sourceUid = cubit.allStaves[0].uid;
+      final targetUid = cubit.allStaves[1].uid;
+      cubit.groupTwoStavesTogether(sourceUid, targetUid);
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // Root has 3 children: 1 StaffNodeGroup (with 2 staves) and 2 StaffDefinitions
+      expect(
+          cubit.state.config.systemLayout.rootGroup.children.length, equals(3));
+      expect(cubit.state.config.systemLayout.rootGroup.children.first,
+          isA<core.StaffNodeGroup>());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the first drag handle (Violin I, inside the subgroup)
+      final handle = find.byIcon(Icons.drag_indicator).first;
+      // Drag slightly within itself and drop
+      await tester.drag(handle, const Offset(2, 2));
+      await tester.pumpAndSettle();
+
+      // Verify Violin I is STILL inside the subgroup and NOT moved to root
+      final rootGroup = cubit.state.config.systemLayout.rootGroup;
+      expect(rootGroup.children.length, equals(3));
+      final subGroup = rootGroup.children.first as core.StaffNodeGroup;
+      expect(subGroup.children.length, equals(2));
+      expect(subGroup.children.first, isA<core.StaffDefinition>());
+      expect((subGroup.children.first as core.StaffDefinition).uid,
+          equals(sourceUid));
+    });
   });
 }
-

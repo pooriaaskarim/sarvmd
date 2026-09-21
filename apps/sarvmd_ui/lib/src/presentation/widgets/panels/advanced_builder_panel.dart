@@ -39,7 +39,8 @@ class _HierarchySelectionScope extends InheritedWidget {
   final void Function(int groupHash) onToggleCollapseGroup;
 
   static _HierarchySelectionScope? of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<_HierarchySelectionScope>();
+    return context
+        .dependOnInheritedWidgetOfExactType<_HierarchySelectionScope>();
   }
 
   @override
@@ -65,7 +66,8 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
   String? _lastSelectedUid;
   final Set<int> _collapsedGroupHashes = {};
 
-  void _toggleSelection(String uid, {bool isShift = false, List<String>? allUidsInOrder}) {
+  void _toggleSelection(String uid,
+      {bool isShift = false, List<String>? allUidsInOrder}) {
     setState(() {
       if (isShift && _lastSelectedUid != null && allUidsInOrder != null) {
         final startIdx = allUidsInOrder.indexOf(_lastSelectedUid!);
@@ -139,8 +141,8 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
             lastSelectedUid: _lastSelectedUid,
             collapsedGroupHashes: _collapsedGroupHashes,
             allUidsInOrder: allUidsInOrder,
-            onToggleSelection: (uid, {isShift = false}) =>
-                _toggleSelection(uid, isShift: isShift, allUidsInOrder: allUidsInOrder),
+            onToggleSelection: (uid, {isShift = false}) => _toggleSelection(uid,
+                isShift: isShift, allUidsInOrder: allUidsInOrder),
             onSelectAll: () => _selectAll(allUidsInOrder),
             onClearSelection: _clearSelection,
             onToggleCollapseGroup: _toggleCollapseGroup,
@@ -150,7 +152,8 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                 if (_selectedUids.isEmpty)
                   Row(
                     children: [
-                      Icon(Icons.account_tree_outlined, size: 16, color: cs.primary),
+                      Icon(Icons.account_tree_outlined,
+                          size: 16, color: cs.primary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -170,21 +173,25 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                         }),
                         icon: const Icon(Icons.checklist, size: 16),
                         tooltip: 'Multi-Select Mode',
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        constraints:
+                            const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: const EdgeInsets.all(4),
                       ),
                       IconButton(
-                        onPressed: () => showSystemGroupingDialog(context, notifier: widget.notifier),
+                        onPressed: () => showSystemGroupingDialog(context,
+                            notifier: widget.notifier),
                         icon: const Icon(Icons.account_tree, size: 16),
                         tooltip: l10n.systemGrouping,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        constraints:
+                            const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: const EdgeInsets.all(4),
                       ),
                       IconButton(
                         onPressed: () => widget.notifier.addStaff(),
                         icon: const Icon(Icons.add_circle_outline, size: 16),
                         tooltip: l10n.addStaff,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        constraints:
+                            const BoxConstraints(minWidth: 28, minHeight: 28),
                         padding: const EdgeInsets.all(4),
                       ),
                     ],
@@ -192,11 +199,13 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                 else
                   // Top-Docked Contextual Batch Action Bar (CAB)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: cs.primaryContainer,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: cs.primary.withValues(alpha: 0.6), width: 1.5),
+                      border: Border.all(
+                          color: cs.primary.withValues(alpha: 0.6), width: 1.5),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -206,7 +215,8 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
                               decoration: BoxDecoration(
                                 color: cs.primary,
                                 borderRadius: BorderRadius.circular(6),
@@ -230,13 +240,17 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                                 size: 18,
                                 color: cs.primary,
                               ),
-                              tooltip: _selectedUids.length == allUidsInOrder.length
-                                  ? 'Deselect All'
-                                  : 'Select All',
-                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              tooltip:
+                                  _selectedUids.length == allUidsInOrder.length
+                                      ? 'Deselect All'
+                                      : 'Select All',
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32),
                               padding: const EdgeInsets.all(4),
                               visualDensity: VisualDensity.compact,
-                              style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                              style: IconButton.styleFrom(
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap),
                             ),
                           ],
                         ),
@@ -252,11 +266,13 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                                   width: 32,
                                   height: 32,
                                   child: PopupMenuButton<core.SystemConnector>(
-                                    icon: Icon(Icons.layers, size: 18, color: cs.primary),
+                                    icon: Icon(Icons.layers,
+                                        size: 18, color: cs.primary),
                                     tooltip: 'Group Selected Staves',
                                     padding: EdgeInsets.zero,
                                     onSelected: (connector) {
-                                      widget.notifier.groupSelectedStaves(_selectedUids, connector);
+                                      widget.notifier.groupSelectedStaves(
+                                          _selectedUids, connector);
                                       _clearSelection();
                                     },
                                     itemBuilder: (context) => [
@@ -264,9 +280,11 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                                         value: core.SystemConnector.bracket,
                                         child: Row(
                                           children: [
-                                            Icon(Icons.reorder, size: 16, color: cs.primary),
+                                            Icon(Icons.reorder,
+                                                size: 16, color: cs.primary),
                                             const SizedBox(width: 8),
-                                            const Text('Group with Bracket [', style: TextStyle(fontSize: 12)),
+                                            const Text('Group with Bracket [',
+                                                style: TextStyle(fontSize: 12)),
                                           ],
                                         ),
                                       ),
@@ -274,9 +292,11 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                                         value: core.SystemConnector.brace,
                                         child: Row(
                                           children: [
-                                            Icon(Icons.code, size: 16, color: cs.primary),
+                                            Icon(Icons.code,
+                                                size: 16, color: cs.primary),
                                             const SizedBox(width: 8),
-                                            const Text('Group with Brace {', style: TextStyle(fontSize: 12)),
+                                            const Text('Group with Brace {',
+                                                style: TextStyle(fontSize: 12)),
                                           ],
                                         ),
                                       ),
@@ -286,41 +306,56 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                                 const SizedBox(width: 4),
                                 IconButton(
                                   onPressed: () {
-                                    widget.notifier.batchToggleVisibility(_selectedUids, false);
+                                    widget.notifier.batchToggleVisibility(
+                                        _selectedUids, false);
                                     _clearSelection();
                                   },
-                                  icon: Icon(Icons.visibility_off_outlined, size: 18, color: cs.primary),
+                                  icon: Icon(Icons.visibility_off_outlined,
+                                      size: 18, color: cs.primary),
                                   tooltip: 'Batch Hide Labels',
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
                                   padding: const EdgeInsets.all(4),
                                   visualDensity: VisualDensity.compact,
-                                  style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
                                   onPressed: () {
-                                    widget.notifier.batchDuplicateStaves(_selectedUids);
+                                    widget.notifier
+                                        .batchDuplicateStaves(_selectedUids);
                                     _clearSelection();
                                   },
-                                  icon: Icon(Icons.content_copy_outlined, size: 18, color: cs.primary),
+                                  icon: Icon(Icons.content_copy_outlined,
+                                      size: 18, color: cs.primary),
                                   tooltip: 'Batch Duplicate',
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
                                   padding: const EdgeInsets.all(4),
                                   visualDensity: VisualDensity.compact,
-                                  style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
                                   onPressed: () {
-                                    widget.notifier.batchDeleteStaves(_selectedUids);
+                                    widget.notifier
+                                        .batchDeleteStaves(_selectedUids);
                                     _clearSelection();
                                   },
-                                  icon: Icon(Icons.delete_outline, size: 18, color: cs.error),
+                                  icon: Icon(Icons.delete_outline,
+                                      size: 18, color: cs.error),
                                   tooltip: 'Batch Delete',
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
                                   padding: const EdgeInsets.all(4),
                                   visualDensity: VisualDensity.compact,
-                                  style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
                                 ),
                               ],
                             ),
@@ -330,12 +365,15 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                         // Right Cancel button
                         IconButton(
                           onPressed: _clearSelection,
-                          icon: Icon(Icons.close, size: 18, color: cs.onSurfaceVariant),
+                          icon: Icon(Icons.close,
+                              size: 18, color: cs.onSurfaceVariant),
                           tooltip: 'Cancel Selection',
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          constraints:
+                              const BoxConstraints(minWidth: 32, minHeight: 32),
                           padding: const EdgeInsets.all(4),
                           visualDensity: VisualDensity.compact,
-                          style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          style: IconButton.styleFrom(
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                         ),
                       ],
                     ),
@@ -394,7 +432,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
       decoration: BoxDecoration(
         color: badgeColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
+        border:
+            Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
       ),
       child: Text(
         text,
@@ -412,7 +451,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final scope = _HierarchySelectionScope.of(context);
-    final isCollapsed = scope?.collapsedGroupHashes.contains(widget.group.hashCode) ?? false;
+    final isCollapsed =
+        scope?.collapsedGroupHashes.contains(widget.group.hashCode) ?? false;
     final labelDisplay = widget.group.label.isNotEmpty
         ? (widget.group.abbreviation.isNotEmpty
             ? '${widget.group.label} (${widget.group.abbreviation})'
@@ -420,8 +460,12 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
         : (widget.isRoot ? l10n.mainEnsemble : l10n.subGroup);
 
     return DragTarget<StaffDragPayload>(
-      onWillAcceptWithDetails: (details) => details.data.parentGroupHash != widget.group.hashCode,
+      onWillAcceptWithDetails: (details) => true,
       onAcceptWithDetails: (details) {
+        if (details.data.parentGroupHash == widget.group.hashCode) {
+          // Dropped within its own group container: cancel action (do nothing).
+          return;
+        }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           widget.notifier.moveStaffNode(
             sourceGroupHash: details.data.parentGroupHash,
@@ -432,15 +476,18 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
         });
       },
       builder: (context, candidateData, rejectedData) {
-        final isHovered = candidateData.isNotEmpty;
+        final isHovered = candidateData
+            .any((p) => p != null && p.parentGroupHash != widget.group.hashCode);
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.symmetric(horizontal: widget.isRoot ? 12 : 8, vertical: 8),
+          padding: EdgeInsets.symmetric(
+              horizontal: widget.isRoot ? 12 : 8, vertical: 8),
           decoration: BoxDecoration(
             color: isHovered
                 ? cs.primaryContainer.withValues(alpha: 0.25)
-                : cs.surfaceContainerHighest.withValues(alpha: widget.isRoot ? 0.2 : 0.4),
+                : cs.surfaceContainerHighest
+                    .withValues(alpha: widget.isRoot ? 0.2 : 0.4),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isHovered
@@ -481,7 +528,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
 
                   final foldCaret = !widget.isRoot
                       ? IconButton(
-                          onPressed: () => scope?.onToggleCollapseGroup(widget.group.hashCode),
+                          onPressed: () => scope
+                              ?.onToggleCollapseGroup(widget.group.hashCode),
                           icon: Icon(
                             isCollapsed
                                 ? Icons.keyboard_arrow_right
@@ -489,8 +537,10 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                             size: 16,
                             color: cs.onSurfaceVariant,
                           ),
-                          tooltip: isCollapsed ? 'Expand Group' : 'Collapse Group',
-                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          tooltip:
+                              isCollapsed ? 'Expand Group' : 'Collapse Group',
+                          constraints:
+                              const BoxConstraints(minWidth: 24, minHeight: 24),
                           padding: EdgeInsets.zero,
                           visualDensity: VisualDensity.compact,
                         )
@@ -532,7 +582,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                       tooltip: 'Edit Group Label',
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      constraints:
+                          const BoxConstraints(minWidth: 24, minHeight: 24),
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -552,8 +603,10 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                             ? cs.onSurfaceVariant.withValues(alpha: 0.7)
                             : cs.error,
                       ),
-                      tooltip: widget.group.labelVisible ? l10n.hidden : l10n.hidden,
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      tooltip:
+                          widget.group.labelVisible ? l10n.hidden : l10n.hidden,
+                      constraints:
+                          const BoxConstraints(minWidth: 24, minHeight: 24),
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -561,19 +614,24 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
 
                   final structureActionButtons = [
                     IconButton(
-                      onPressed: () => widget.notifier.addStaffToGroup(groupHash: widget.group.hashCode),
+                      onPressed: () => widget.notifier
+                          .addStaffToGroup(groupHash: widget.group.hashCode),
                       icon: const Icon(Icons.add_circle_outline, size: 14),
                       tooltip: l10n.addStaff,
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      constraints:
+                          const BoxConstraints(minWidth: 24, minHeight: 24),
                       padding: const EdgeInsets.all(2),
                       visualDensity: VisualDensity.compact,
                     ),
                     if (!widget.isRoot) ...[
                       IconButton(
-                        onPressed: () => widget.notifier.ungroupSubGroup(widget.group.hashCode),
-                        icon: Icon(Icons.layers_clear_outlined, size: 14, color: cs.error.withValues(alpha: 0.7)),
+                        onPressed: () => widget.notifier
+                            .ungroupSubGroup(widget.group.hashCode),
+                        icon: Icon(Icons.layers_clear_outlined,
+                            size: 14, color: cs.error.withValues(alpha: 0.7)),
                         tooltip: l10n.reset,
-                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        constraints:
+                            const BoxConstraints(minWidth: 24, minHeight: 24),
                         padding: const EdgeInsets.all(2),
                         visualDensity: VisualDensity.compact,
                       ),
@@ -596,7 +654,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                       if (!showSegmentedPicker) ...[
                         _ConnectorMenuButton(
                           value: widget.group.connector,
-                          onChanged: (v) => widget.notifier.updateGroupConnector(
+                          onChanged: (v) =>
+                              widget.notifier.updateGroupConnector(
                             v,
                             groupHash: widget.group.hashCode,
                           ),
@@ -607,10 +666,12 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                       const SizedBox(width: 4),
                       if (isCompactActions) ...[
                         IconButton(
-                          onPressed: () => widget.notifier.addStaffToGroup(groupHash: widget.group.hashCode),
+                          onPressed: () => widget.notifier.addStaffToGroup(
+                              groupHash: widget.group.hashCode),
                           icon: const Icon(Icons.add_circle_outline, size: 14),
                           tooltip: l10n.addStaff,
-                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          constraints:
+                              const BoxConstraints(minWidth: 24, minHeight: 24),
                           padding: const EdgeInsets.all(2),
                           visualDensity: VisualDensity.compact,
                         ),
@@ -618,7 +679,10 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                           width: 24,
                           height: 24,
                           child: PopupMenuButton<String>(
-                            icon: Icon(Icons.more_vert, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+                            icon: Icon(Icons.more_vert,
+                                size: 14,
+                                color:
+                                    cs.onSurfaceVariant.withValues(alpha: 0.7)),
                             tooltip: 'Group Options',
                             padding: EdgeInsets.zero,
                             onSelected: (value) {
@@ -630,7 +694,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                                   labelVisible: !widget.group.labelVisible,
                                 );
                               } else if (value == 'ungroup') {
-                                widget.notifier.ungroupSubGroup(widget.group.hashCode);
+                                widget.notifier
+                                    .ungroupSubGroup(widget.group.hashCode);
                               }
                             },
                             itemBuilder: (context) => [
@@ -638,9 +703,11 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                                 value: 'edit',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.edit_outlined, size: 16, color: cs.primary),
+                                    Icon(Icons.edit_outlined,
+                                        size: 16, color: cs.primary),
                                     const SizedBox(width: 8),
-                                    const Text('Edit Group Label', style: TextStyle(fontSize: 12)),
+                                    const Text('Edit Group Label',
+                                        style: TextStyle(fontSize: 12)),
                                   ],
                                 ),
                               ),
@@ -649,13 +716,19 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                                 child: Row(
                                   children: [
                                     Icon(
-                                      widget.group.labelVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                      widget.group.labelVisible
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
                                       size: 16,
-                                      color: widget.group.labelVisible ? cs.primary : cs.error,
+                                      color: widget.group.labelVisible
+                                          ? cs.primary
+                                          : cs.error,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      widget.group.labelVisible ? 'Hide Group Label' : 'Show Group Label',
+                                      widget.group.labelVisible
+                                          ? 'Hide Group Label'
+                                          : 'Show Group Label',
                                       style: const TextStyle(fontSize: 12),
                                     ),
                                   ],
@@ -666,9 +739,12 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                                   value: 'ungroup',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.layers_clear_outlined, size: 16, color: cs.error),
+                                      Icon(Icons.layers_clear_outlined,
+                                          size: 16, color: cs.error),
                                       const SizedBox(width: 8),
-                                      Text(l10n.reset, style: TextStyle(fontSize: 12, color: cs.error)),
+                                      Text(l10n.reset,
+                                          style: TextStyle(
+                                              fontSize: 12, color: cs.error)),
                                     ],
                                   ),
                                 ),
@@ -683,7 +759,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         const SizedBox(width: 6),
                         _ConnectorPicker(
                           value: widget.group.connector,
-                          onChanged: (v) => widget.notifier.updateGroupConnector(
+                          onChanged: (v) =>
+                              widget.notifier.updateGroupConnector(
                             v,
                             groupHash: widget.group.hashCode,
                           ),
@@ -698,8 +775,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(8),
@@ -748,10 +825,12 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
               const SizedBox(height: 12),
               if (isCollapsed)
                 InkWell(
-                  onTap: () => scope?.onToggleCollapseGroup(widget.group.hashCode),
+                  onTap: () =>
+                      scope?.onToggleCollapseGroup(widget.group.hashCode),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(8),
@@ -773,7 +852,8 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                           ),
                         ),
                         const Spacer(),
-                        Icon(Icons.unfold_more, size: 14, color: cs.onSurfaceVariant),
+                        Icon(Icons.unfold_more,
+                            size: 14, color: cs.onSurfaceVariant),
                       ],
                     ),
                   ),
@@ -830,6 +910,8 @@ class _StaffItem extends StatefulWidget {
 class _StaffItemState extends State<_StaffItem> {
   bool _isEditingName = false;
   double? _hoverRatioY;
+  bool _isDragging = false;
+
   void _openConfigDialog(BuildContext context) {
     showStaffConfigDialog(
       context,
@@ -842,6 +924,161 @@ class _StaffItemState extends State<_StaffItem> {
     setState(() {
       _isEditingName = true;
     });
+  }
+
+  Widget _buildFeedbackWidget(ColorScheme cs, String displayName) {
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(10),
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: cs.primaryContainer,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: cs.primary, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.drag_indicator, size: 16, color: cs.primary),
+            const SizedBox(width: 6),
+            Text(
+              displayName,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: cs.onPrimaryContainer,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLeftBadge({
+    required BuildContext context,
+    required ColorScheme cs,
+    required bool isSelected,
+    required bool isSelectionMode,
+    required StaffDragPayload payload,
+    required Widget feedbackWidget,
+    required _HierarchySelectionScope? scope,
+  }) {
+    if (isSelectionMode || isSelected) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final isShift = HardwareKeyboard.instance.isShiftPressed;
+          scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+        },
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? cs.primary
+                  : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected
+                    ? cs.primary
+                    : cs.outlineVariant.withValues(alpha: 0.4),
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isSelected
+                      ? Icons.check_rounded
+                      : Icons.radio_button_unchecked,
+                  size: 15,
+                  color: isSelected
+                      ? cs.onPrimary
+                      : cs.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  '${widget.index + 1}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: isSelected ? cs.onPrimary : cs.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Draggable<StaffDragPayload>(
+      data: payload,
+      feedback: feedbackWidget,
+      maxSimultaneousDrags: _isEditingName ? 0 : 1,
+      onDragStarted: () => setState(() => _isDragging = true),
+      onDragEnd: (_) {
+        if (mounted) setState(() => _isDragging = false);
+      },
+      onDraggableCanceled: (_, __) {
+        if (mounted) setState(() => _isDragging = false);
+      },
+      onDragCompleted: () {
+        if (mounted) setState(() => _isDragging = false);
+      },
+      childWhenDragging: Opacity(
+        opacity: 0.35,
+        child: _buildHandleContainer(cs),
+      ),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.grab,
+        child: _buildHandleContainer(cs),
+      ),
+    );
+  }
+
+  Widget _buildHandleContainer(ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border:
+            Border.all(color: cs.primary.withValues(alpha: 0.2), width: 0.8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.drag_indicator,
+            size: 15,
+            color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '${widget.index + 1}',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: cs.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -878,10 +1115,19 @@ class _StaffItemState extends State<_StaffItem> {
       index: widget.index,
     );
 
+    final feedbackWidget = _buildFeedbackWidget(cs, displayName);
+
     return DragTarget<StaffDragPayload>(
-      onWillAcceptWithDetails: (details) =>
-          details.data.staff.uid != widget.staff.uid,
+      onWillAcceptWithDetails: (details) => true,
       onMove: (details) {
+        if (details.data.staff.uid == widget.staff.uid) {
+          if (_hoverRatioY != null) {
+            setState(() {
+              _hoverRatioY = null;
+            });
+          }
+          return;
+        }
         final box = context.findRenderObject() as RenderBox?;
         if (box != null && box.hasSize && box.size.height > 0) {
           final localOffset = box.globalToLocal(details.offset);
@@ -901,6 +1147,10 @@ class _StaffItemState extends State<_StaffItem> {
         }
       },
       onAcceptWithDetails: (details) {
+        if (details.data.staff.uid == widget.staff.uid) {
+          // Dropping onto itself cancels any ordering or grouping action.
+          return;
+        }
         final ratio = _hoverRatioY ?? 0.5;
         setState(() {
           _hoverRatioY = null;
@@ -929,25 +1179,17 @@ class _StaffItemState extends State<_StaffItem> {
         });
       },
       builder: (context, candidateData, rejectedData) {
-        final isDropHovered = candidateData.isNotEmpty;
+        final isDropHovered =
+            candidateData.any((p) => p != null && p.staff.uid != widget.staff.uid);
         final ratio = _hoverRatioY;
         final isTopZone = isDropHovered && ratio != null && ratio < 0.25;
         final isBottomZone = isDropHovered && ratio != null && ratio > 0.75;
         final isCombineZone = isDropHovered &&
             (ratio == null || (ratio >= 0.25 && ratio <= 0.75));
 
-        final itemCard = GestureDetector(
-          onLongPress: () {
-            scope?.onToggleSelection(widget.staff.uid);
-          },
-          onTap: () {
-            if (isSelectionMode) {
-              final isShift = HardwareKeyboard.instance.isShiftPressed;
-              scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
-            } else {
-              _openConfigDialog(context);
-            }
-          },
+        final cardContainer = AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: _isDragging ? 0.35 : 1.0,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             margin: const EdgeInsets.only(bottom: 8),
@@ -1022,7 +1264,8 @@ class _StaffItemState extends State<_StaffItem> {
                   _QuickLabelingCard(
                     title: 'Edit Staff Label',
                     initialName: widget.staff.instrumentName ?? '',
-                    initialAbbreviation: widget.staff.instrumentAbbreviation ?? '',
+                    initialAbbreviation:
+                        widget.staff.instrumentAbbreviation ?? '',
                     onSave: (name, abbrev) {
                       setState(() {
                         _isEditingName = false;
@@ -1042,107 +1285,14 @@ class _StaffItemState extends State<_StaffItem> {
                 else
                   Row(
                     children: [
-                      // Checkbox in selection mode or when selected
-                      if (isSelectionMode || isSelected)
-                        Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 4.0),
-                          child: InkWell(
-                            onTap: () {
-                              final isShift = HardwareKeyboard.instance.isShiftPressed;
-                              scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Icon(
-                              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                              size: 18,
-                              color: isSelected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.4),
-                            ),
-                          ),
-                        ),
-
-                      // Unified Drag Handle & Order Badge
-                      Draggable<StaffDragPayload>(
-                        data: payload,
-                        feedback: Material(
-                          elevation: 6,
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.transparent,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: cs.primaryContainer,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: cs.primary, width: 1.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: cs.shadow.withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              displayName,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: cs.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                        ),
-                        childWhenDragging: Opacity(
-                          opacity: 0.3,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: cs.primary.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.drag_indicator, size: 15, color: cs.primary),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${widget.index + 1}',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: cs.primary),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.grab,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: cs.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: cs.primary.withValues(alpha: 0.2), width: 0.8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.drag_indicator,
-                                  size: 15,
-                                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${widget.index + 1}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                    color: cs.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      _buildLeftBadge(
+                        context: context,
+                        cs: cs,
+                        isSelected: isSelected,
+                        isSelectionMode: isSelectionMode,
+                        payload: payload,
+                        feedbackWidget: feedbackWidget,
+                        scope: scope,
                       ),
                       const SizedBox(width: 8),
 
@@ -1154,78 +1304,69 @@ class _StaffItemState extends State<_StaffItem> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: GestureDetector(
-                                    onDoubleTap: _startEditingName,
-                                    onTap: () {
-                                      if (isSelectionMode) {
-                                        final isShift = HardwareKeyboard.instance.isShiftPressed;
-                                        scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
-                                      } else {
-                                        _openConfigDialog(context);
-                                      }
-                                    },
-                                    child: Tooltip(
-                                      message: labelText,
-                                      child: Text(
-                                        labelText,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: widget.staff.labelVisible
-                                              ? null
-                                              : cs.onSurfaceVariant
-                                                  .withValues(alpha: 0.5),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                  child: Tooltip(
+                                    message: labelText,
+                                    child: Text(
+                                      labelText,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: widget.staff.labelVisible
+                                            ? null
+                                            : cs.onSurfaceVariant
+                                                .withValues(alpha: 0.5),
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                if (!isSelectionMode) ...[
-                                  IconButton(
-                                    onPressed: _startEditingName,
-                                    icon: Icon(
-                                      Icons.edit_outlined,
-                                      size: 16,
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.7),
-                                    ),
-                                    tooltip: 'Edit Instrument Name',
-                                    constraints: const BoxConstraints(
-                                        minWidth: 32, minHeight: 32),
-                                    padding: const EdgeInsets.all(4),
-                                    visualDensity: VisualDensity.compact,
-                                    style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                IconButton(
+                                  onPressed: _startEditingName,
+                                  icon: Icon(
+                                    Icons.edit_outlined,
+                                    size: 16,
+                                    color: cs.onSurfaceVariant
+                                        .withValues(alpha: 0.7),
                                   ),
-                                  IconButton(
-                                    onPressed: () {
-                                      widget.notifier.updateStaffConfigDetails(
-                                        widget.staff.uid,
-                                        visible: !widget.staff.labelVisible,
-                                      );
-                                    },
-                                    icon: Icon(
-                                      widget.staff.labelVisible
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      size: 16,
-                                      color: widget.staff.labelVisible
-                                          ? cs.onSurfaceVariant
-                                              .withValues(alpha: 0.7)
-                                          : cs.error,
-                                    ),
-                                    tooltip: widget.staff.labelVisible
-                                        ? l10n.hidden
-                                        : l10n.hidden,
-                                    constraints: const BoxConstraints(
-                                        minWidth: 32, minHeight: 32),
-                                    padding: const EdgeInsets.all(4),
-                                    visualDensity: VisualDensity.compact,
-                                    style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  tooltip: 'Edit Instrument Name',
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
+                                  padding: const EdgeInsets.all(4),
+                                  visualDensity: VisualDensity.compact,
+                                  style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    widget.notifier.updateStaffConfigDetails(
+                                      widget.staff.uid,
+                                      visible: !widget.staff.labelVisible,
+                                    );
+                                  },
+                                  icon: Icon(
+                                    widget.staff.labelVisible
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    size: 16,
+                                    color: widget.staff.labelVisible
+                                        ? cs.onSurfaceVariant
+                                            .withValues(alpha: 0.7)
+                                        : cs.error,
                                   ),
-                                ],
+                                  tooltip: widget.staff.labelVisible
+                                      ? l10n.hidden
+                                      : l10n.hidden,
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
+                                  padding: const EdgeInsets.all(4),
+                                  visualDensity: VisualDensity.compact,
+                                  style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
+                                ),
                                 IconButton(
                                   onPressed: () => _openConfigDialog(context),
                                   icon: Icon(
@@ -1238,24 +1379,27 @@ class _StaffItemState extends State<_StaffItem> {
                                       minWidth: 32, minHeight: 32),
                                   padding: const EdgeInsets.all(4),
                                   visualDensity: VisualDensity.compact,
-                                  style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                  style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
                                 ),
-                                if (!isSelectionMode)
-                                  IconButton(
-                                    onPressed: () =>
-                                        widget.notifier.removeStaffByUid(widget.staff.uid),
-                                    icon: Icon(
-                                      Icons.remove_circle_outline,
-                                      size: 16,
-                                      color: cs.error,
-                                    ),
-                                    tooltip: l10n.removeStaff,
-                                    constraints: const BoxConstraints(
-                                        minWidth: 32, minHeight: 32),
-                                    padding: const EdgeInsets.all(4),
-                                    visualDensity: VisualDensity.compact,
-                                    style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                IconButton(
+                                  onPressed: () => widget.notifier
+                                      .removeStaffByUid(widget.staff.uid),
+                                  icon: Icon(
+                                    Icons.remove_circle_outline,
+                                    size: 16,
+                                    color: cs.error,
                                   ),
+                                  tooltip: l10n.removeStaff,
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
+                                  padding: const EdgeInsets.all(4),
+                                  visualDensity: VisualDensity.compact,
+                                  style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 4),
@@ -1278,7 +1422,8 @@ class _StaffItemState extends State<_StaffItem> {
                                       PopupMenuItem(
                                         value: i,
                                         child: Text(l10n.linesCount(i),
-                                            style: const TextStyle(fontSize: 12)),
+                                            style:
+                                                const TextStyle(fontSize: 12)),
                                       ),
                                   ],
                                   child: _buildBadge(context,
@@ -1308,7 +1453,8 @@ class _StaffItemState extends State<_StaffItem> {
                                         const Icon(Icons.music_note, size: 14),
                                         const SizedBox(width: 8),
                                         Text(l10n.trebleClef,
-                                            style: const TextStyle(fontSize: 12)),
+                                            style:
+                                                const TextStyle(fontSize: 12)),
                                       ]),
                                     ),
                                     PopupMenuItem(
@@ -1317,7 +1463,8 @@ class _StaffItemState extends State<_StaffItem> {
                                         const Icon(Icons.music_note, size: 14),
                                         const SizedBox(width: 8),
                                         Text(l10n.altoClef,
-                                            style: const TextStyle(fontSize: 12)),
+                                            style:
+                                                const TextStyle(fontSize: 12)),
                                       ]),
                                     ),
                                     PopupMenuItem(
@@ -1326,7 +1473,8 @@ class _StaffItemState extends State<_StaffItem> {
                                         const Icon(Icons.music_note, size: 14),
                                         const SizedBox(width: 8),
                                         Text(l10n.bassClef,
-                                            style: const TextStyle(fontSize: 12)),
+                                            style:
+                                                const TextStyle(fontSize: 12)),
                                       ]),
                                     ),
                                     PopupMenuItem(
@@ -1335,7 +1483,8 @@ class _StaffItemState extends State<_StaffItem> {
                                         const Icon(Icons.numbers, size: 14),
                                         const SizedBox(width: 8),
                                         Text(l10n.categoryTablature,
-                                            style: const TextStyle(fontSize: 12)),
+                                            style:
+                                                const TextStyle(fontSize: 12)),
                                       ]),
                                     ),
                                     PopupMenuItem(
@@ -1344,7 +1493,8 @@ class _StaffItemState extends State<_StaffItem> {
                                         const Icon(Icons.adjust, size: 14),
                                         const SizedBox(width: 8),
                                         Text(l10n.categoryPercussion,
-                                            style: const TextStyle(fontSize: 12)),
+                                            style:
+                                                const TextStyle(fontSize: 12)),
                                       ]),
                                     ),
                                   ],
@@ -1353,7 +1503,8 @@ class _StaffItemState extends State<_StaffItem> {
 
                                 if (!widget.staff.labelVisible)
                                   InkWell(
-                                    onTap: () => widget.notifier.updateStaffConfigDetails(
+                                    onTap: () => widget.notifier
+                                        .updateStaffConfigDetails(
                                       widget.staff.uid,
                                       visible: true,
                                     ),
@@ -1379,6 +1530,40 @@ class _StaffItemState extends State<_StaffItem> {
                   ),
               ],
             ),
+          ),
+        );
+
+        final itemCard = LongPressDraggable<StaffDragPayload>(
+          data: payload,
+          feedback: feedbackWidget,
+          delay: const Duration(milliseconds: 350),
+          maxSimultaneousDrags: _isEditingName ? 0 : 1,
+          onDragStarted: () => setState(() => _isDragging = true),
+          onDragEnd: (_) {
+            if (mounted) setState(() => _isDragging = false);
+          },
+          onDraggableCanceled: (_, __) {
+            if (mounted) setState(() => _isDragging = false);
+          },
+          onDragCompleted: () {
+            if (mounted) setState(() => _isDragging = false);
+          },
+          childWhenDragging: Opacity(
+            opacity: 0.35,
+            child: cardContainer,
+          ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (_isEditingName) return;
+              final isShift = HardwareKeyboard.instance.isShiftPressed;
+              scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+            },
+            onDoubleTap: () {
+              if (_isEditingName) return;
+              _startEditingName();
+            },
+            child: cardContainer,
           ),
         );
 
@@ -1503,7 +1688,8 @@ class _ConnectorMenuButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(iconData, size: 14, color: cs.primary),
-            Icon(Icons.arrow_drop_down, size: 12, color: cs.primary.withValues(alpha: 0.7)),
+            Icon(Icons.arrow_drop_down,
+                size: 12, color: cs.primary.withValues(alpha: 0.7)),
           ],
         ),
       ),
@@ -1554,11 +1740,13 @@ String _generateAutoAbbreviation(String name) {
   if (lower.contains('percussion')) return 'Perc.';
   if (lower.contains('choir') || lower.contains('vocal')) return 'Voc.';
   if (lower.contains('violin 1') || lower.contains('violin i')) return 'Vln. I';
-  if (lower.contains('violin 2') || lower.contains('violin ii')) return 'Vln. II';
+  if (lower.contains('violin 2') || lower.contains('violin ii'))
+    return 'Vln. II';
   if (lower.contains('violin')) return 'Vln.';
   if (lower.contains('viola')) return 'Vla.';
   if (lower.contains('violoncello') || lower.contains('cello')) return 'Vc.';
-  if (lower.contains('double bass') || lower.contains('contrabass')) return 'Cb.';
+  if (lower.contains('double bass') || lower.contains('contrabass'))
+    return 'Cb.';
   if (lower.contains('flute')) return 'Fl.';
   if (lower.contains('oboe')) return 'Ob.';
   if (lower.contains('clarinet')) return 'Cl.';
@@ -1571,9 +1759,13 @@ String _generateAutoAbbreviation(String name) {
 
   final words = trimmed.split(RegExp(r'\s+'));
   if (words.length == 1) {
-    return words.first.length > 4 ? '${words.first.substring(0, 3)}.' : words.first;
+    return words.first.length > 4
+        ? '${words.first.substring(0, 3)}.'
+        : words.first;
   } else {
-    return words.map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}.' : '').join('');
+    return words
+        .map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}.' : '')
+        .join('');
   }
 }
 
@@ -1663,7 +1855,8 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.5), width: 1.2),
+        border:
+            Border.all(color: cs.primary.withValues(alpha: 0.5), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: cs.shadow.withValues(alpha: 0.1),
@@ -1713,8 +1906,10 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                 isDense: true,
                 labelText: 'Full Name / Label',
                 labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
               ),
               onSubmitted: (_) => _abbrevFocusNode.requestFocus(),
             ),
@@ -1734,16 +1929,19 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                       },
                       borderRadius: BorderRadius.circular(6),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
                         decoration: BoxDecoration(
                           color: cs.primaryContainer,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: cs.primary.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.auto_awesome, size: 10, color: cs.onPrimaryContainer),
+                            Icon(Icons.auto_awesome,
+                                size: 10, color: cs.onPrimaryContainer),
                             const SizedBox(width: 3),
                             Flexible(
                               child: Text(
@@ -1772,13 +1970,17 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                       child: TextField(
                         controller: _abbrevController,
                         focusNode: _abbrevFocusNode,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600),
                         decoration: InputDecoration(
                           isDense: true,
                           labelText: 'Abbreviation',
-                          labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                          labelStyle: TextStyle(
+                              fontSize: 10, color: cs.onSurfaceVariant),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6)),
                         ),
                         onSubmitted: (_) => _submit(),
                       ),
@@ -1797,13 +1999,17 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                       child: TextField(
                         controller: _abbrevController,
                         focusNode: _abbrevFocusNode,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600),
                         decoration: InputDecoration(
                           isDense: true,
                           labelText: 'Abbreviation',
-                          labelStyle: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                          labelStyle: TextStyle(
+                              fontSize: 10, color: cs.onSurfaceVariant),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6)),
                         ),
                         onSubmitted: (_) => _submit(),
                       ),
@@ -1826,18 +2032,23 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                 onPressed: widget.onCancel,
                 style: TextButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 ),
-                child: Text('Cancel', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                child: Text('Cancel',
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
               ),
               const SizedBox(width: 6),
               FilledButton.icon(
                 onPressed: _submit,
                 icon: const Icon(Icons.check, size: 14),
-                label: const Text('Save', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                label: const Text('Save',
+                    style:
+                        TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 ),
               ),
             ],
