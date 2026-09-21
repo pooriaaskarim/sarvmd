@@ -18,3 +18,7 @@ When cutting a new application release:
 ### 3. Architectural Versioning Rules
 - **No Hardcoded Versions in UI:** Widgets (`SarvSplashScreen`, `LaunchCoordinator`, `AboutSarvDialog`, etc.) must never introduce inline version string literals. They must consume `ChangelogService.getLatestVersion()` or fall back to `AppVersion.version`.
 - **No Alias Constants:** Do not create duplicate version alias fields (e.g. `fallbackVersion`). Reference `AppVersion.version` directly.
+
+## 4. Architectural & Engraving Knowledge Base
+- **Hierarchical Labeling & Nesting Standards:** [knowledge/hierarchical_labeling_and_nesting_standards.md](knowledge/hierarchical_labeling_and_nesting_standards.md)
+- **Engraving Research & Calculations:** [research/group_and_staff_hierarchical_labeling_standards.md](research/group_and_staff_hierarchical_labeling_standards.md)
