@@ -16,6 +16,113 @@ typedef StaffDragPayload = ({
   int index,
 });
 
+typedef GroupDragPayload = ({
+  core.StaffNodeGroup group,
+  int parentGroupHash,
+  int index,
+});
+
+Object? _activeDropToken;
+Object? _hoveredChildDropPayload;
+
+int _countStaves(core.StaffNodeGroup group) {
+  int count = 0;
+  for (final child in group.children) {
+    if (child is core.StaffDefinition) {
+      count++;
+    } else if (child is core.StaffNodeGroup) {
+      count += _countStaves(child);
+    }
+  }
+  return count;
+}
+
+bool _groupContains(core.StaffNodeGroup parent, int targetHash) {
+  if (parent.hashCode == targetHash) return true;
+  for (final child in parent.children) {
+    if (child is core.StaffNodeGroup) {
+      if (child.hashCode == targetHash || _groupContains(child, targetHash)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+int _computeTargetIndex({
+  required int sourceGroupHash,
+  required int targetGroupHash,
+  required int sourceIndex,
+  required int targetIndex,
+  required bool insertAfter,
+}) {
+  if (sourceGroupHash == targetGroupHash) {
+    if (insertAfter) {
+      return sourceIndex < targetIndex ? targetIndex : targetIndex + 1;
+    } else {
+      return sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    }
+  } else {
+    return insertAfter ? targetIndex + 1 : targetIndex;
+  }
+}
+
+Widget _buildGroupFeedbackWidget(
+  ColorScheme cs,
+  String labelDisplay,
+  int staffCount,
+) {
+  return Material(
+    color: Colors.transparent,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cs.primary, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.folder_outlined, size: 16, color: cs.primary),
+          const SizedBox(width: 8),
+          Text(
+            labelDisplay,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: cs.onSurface,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              staffCount == 1 ? '1 staff' : '$staffCount staves',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: cs.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _HierarchySelectionScope extends InheritedWidget {
   const _HierarchySelectionScope({
     required this.selectedUids,
@@ -403,12 +510,14 @@ class _StaffGroupWidget extends StatefulWidget {
     required this.group,
     this.isRoot = false,
     this.index,
+    this.parentGroupHash,
     required this.notifier,
   });
 
   final core.StaffNodeGroup group;
   final bool isRoot;
   final int? index;
+  final int? parentGroupHash;
   final DocumentCubit notifier;
 
   @override
@@ -417,6 +526,8 @@ class _StaffGroupWidget extends StatefulWidget {
 
 class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
   bool _isEditingName = false;
+  double? _hoverRatioY;
+  bool _isDragging = false;
 
   void _startEditingName() {
     setState(() {
@@ -459,339 +570,581 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
             : widget.group.label)
         : (widget.isRoot ? l10n.mainEnsemble : l10n.subGroup);
 
-    return DragTarget<StaffDragPayload>(
-      onWillAcceptWithDetails: (details) => true,
+    final groupPayload = (!widget.isRoot &&
+            widget.parentGroupHash != null &&
+            widget.index != null)
+        ? (
+            group: widget.group,
+            parentGroupHash: widget.parentGroupHash!,
+            index: widget.index!,
+          )
+        : null;
+    final groupFeedback = groupPayload != null
+        ? _buildGroupFeedbackWidget(
+            cs,
+            labelDisplay,
+            _countStaves(widget.group),
+          )
+        : null;
+
+    return DragTarget<Object>(
+      onWillAcceptWithDetails: (details) {
+        final data = details.data;
+        if (data is StaffDragPayload) return true;
+        if (data is GroupDragPayload) {
+          if (data.group.hashCode == widget.group.hashCode) return false;
+          if (_groupContains(data.group, widget.group.hashCode)) return false;
+          return true;
+        }
+        return false;
+      },
+      onMove: (details) {
+        final data = details.data;
+        if (data is GroupDragPayload) {
+          if (data.group.hashCode == widget.group.hashCode ||
+              _groupContains(data.group, widget.group.hashCode)) {
+            if (_hoverRatioY != null) setState(() => _hoverRatioY = null);
+            return;
+          }
+        }
+        final box = context.findRenderObject() as RenderBox?;
+        if (box != null && box.hasSize && box.size.height > 0) {
+          final localOffset = box.globalToLocal(details.offset);
+          final ratio = (localOffset.dy / box.size.height).clamp(0.0, 1.0);
+          if (_hoverRatioY != ratio) {
+            setState(() => _hoverRatioY = ratio);
+          }
+        }
+      },
+      onLeave: (_) {
+        if (_hoverRatioY != null) {
+          setState(() => _hoverRatioY = null);
+        }
+      },
       onAcceptWithDetails: (details) {
-        if (details.data.parentGroupHash == widget.group.hashCode) {
-          // Dropped within its own group container: cancel action (do nothing).
+        if (identical(_activeDropToken, details.data) ||
+            _activeDropToken == details.data) {
           return;
         }
+        _activeDropToken = details.data;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          widget.notifier.moveStaffNode(
-            sourceGroupHash: details.data.parentGroupHash,
-            targetGroupHash: widget.group.hashCode,
-            sourceIndex: details.data.index,
-            targetIndex: widget.group.children.length,
-          );
+          _activeDropToken = null;
+          _hoveredChildDropPayload = null;
         });
+
+        final data = details.data;
+        final ratio = _hoverRatioY ?? 0.5;
+        setState(() => _hoverRatioY = null);
+
+        if (data is StaffDragPayload) {
+          if (!widget.isRoot &&
+              widget.parentGroupHash != null &&
+              widget.index != null) {
+            if (ratio < 0.15) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final targetIdx = _computeTargetIndex(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: widget.index!,
+                  insertAfter: false,
+                );
+                widget.notifier.moveStaffNode(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: targetIdx,
+                );
+              });
+              return;
+            } else if (ratio > 0.85) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final targetIdx = _computeTargetIndex(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: widget.index!,
+                  insertAfter: true,
+                );
+                widget.notifier.moveStaffNode(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: targetIdx,
+                );
+              });
+              return;
+            }
+          }
+
+          if (data.parentGroupHash == widget.group.hashCode) {
+            return;
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.notifier.moveStaffNode(
+              sourceGroupHash: data.parentGroupHash,
+              targetGroupHash: widget.group.hashCode,
+              sourceIndex: data.index,
+              targetIndex: widget.group.children.length,
+            );
+          });
+        } else if (data is GroupDragPayload) {
+          if (data.group.hashCode == widget.group.hashCode ||
+              _groupContains(data.group, widget.group.hashCode)) {
+            return;
+          }
+
+          if (!widget.isRoot &&
+              widget.parentGroupHash != null &&
+              widget.index != null) {
+            if (ratio < 0.3) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final targetIdx = _computeTargetIndex(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: widget.index!,
+                  insertAfter: false,
+                );
+                widget.notifier.moveStaffNode(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: targetIdx,
+                );
+              });
+              return;
+            } else if (ratio > 0.7) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final targetIdx = _computeTargetIndex(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: widget.index!,
+                  insertAfter: true,
+                );
+                widget.notifier.moveStaffNode(
+                  sourceGroupHash: data.parentGroupHash,
+                  targetGroupHash: widget.parentGroupHash!,
+                  sourceIndex: data.index,
+                  targetIndex: targetIdx,
+                );
+              });
+              return;
+            }
+          }
+
+          if (data.parentGroupHash == widget.group.hashCode) {
+            return;
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            widget.notifier.moveStaffNode(
+              sourceGroupHash: data.parentGroupHash,
+              targetGroupHash: widget.group.hashCode,
+              sourceIndex: data.index,
+              targetIndex: widget.group.children.length,
+            );
+          });
+        }
       },
       builder: (context, candidateData, rejectedData) {
-        final isHovered = candidateData.any(
-            (p) => p != null && p.parentGroupHash != widget.group.hashCode);
+        final hasStaffCandidate = candidateData.any((p) =>
+            p is StaffDragPayload &&
+            p.parentGroupHash != widget.group.hashCode);
+        final hasGroupCandidate = candidateData.any((p) =>
+            p is GroupDragPayload &&
+            p.group.hashCode != widget.group.hashCode &&
+            !_groupContains(p.group, widget.group.hashCode));
+        final isAnyHovered = (hasStaffCandidate || hasGroupCandidate) &&
+            _hoveredChildDropPayload == null;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.symmetric(
-              horizontal: widget.isRoot ? 12 : 8, vertical: 8),
-          decoration: BoxDecoration(
-            color: isHovered
-                ? cs.primaryContainer.withValues(alpha: 0.25)
-                : cs.surfaceContainerHighest
-                    .withValues(alpha: widget.isRoot ? 0.2 : 0.4),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isHovered
-                  ? cs.primary
-                  : cs.outlineVariant.withValues(alpha: 0.5),
-              width: isHovered ? 2 : 1,
+        final ratio = _hoverRatioY;
+        final isTopZone = !widget.isRoot &&
+            isAnyHovered &&
+            ratio != null &&
+            (hasGroupCandidate ? ratio < 0.3 : ratio < 0.15);
+        final isBottomZone = !widget.isRoot &&
+            isAnyHovered &&
+            ratio != null &&
+            (hasGroupCandidate ? ratio > 0.7 : ratio > 0.85);
+        final isBodyHovered = isAnyHovered && !isTopZone && !isBottomZone;
+
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: _isDragging ? 0.35 : 1.0,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.symmetric(
+                horizontal: widget.isRoot ? 12 : 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: isBodyHovered
+                  ? cs.primaryContainer.withValues(alpha: 0.25)
+                  : cs.surfaceContainerHighest
+                      .withValues(alpha: widget.isRoot ? 0.2 : 0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isBodyHovered
+                    ? cs.primary
+                    : cs.outlineVariant.withValues(alpha: 0.5),
+                width: isBodyHovered ? 2 : 1,
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_isEditingName)
-                _QuickLabelingCard(
-                  title: 'Edit Group Label',
-                  initialName: widget.group.label,
-                  initialAbbreviation: widget.group.abbreviation,
-                  onSave: (name, abbrev) {
-                    setState(() {
-                      _isEditingName = false;
-                    });
-                    widget.notifier.updateGroupDetails(
-                      groupHash: widget.group.hashCode,
-                      label: name,
-                      abbreviation: abbrev,
-                    );
-                  },
-                  onCancel: () {
-                    setState(() {
-                      _isEditingName = false;
-                    });
-                  },
-                ),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final double width = constraints.maxWidth;
-                  final bool showSegmentedPicker = width >= 380;
-                  final bool isCompactActions = width < 250;
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isTopZone)
+                  Container(
+                    height: 3,
+                    margin: const EdgeInsets.only(bottom: 6),
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.primary.withValues(alpha: 0.5),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_isEditingName)
+                  _QuickLabelingCard(
+                    title: 'Edit Group Label',
+                    initialName: widget.group.label,
+                    initialAbbreviation: widget.group.abbreviation,
+                    onSave: (name, abbrev) {
+                      setState(() {
+                        _isEditingName = false;
+                      });
+                      widget.notifier.updateGroupDetails(
+                        groupHash: widget.group.hashCode,
+                        label: name,
+                        abbreviation: abbrev,
+                      );
+                    },
+                    onCancel: () {
+                      setState(() {
+                        _isEditingName = false;
+                      });
+                    },
+                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double width = constraints.maxWidth;
+                    final bool showSegmentedPicker = width >= 380;
+                    final bool isCompactActions = width < 250;
 
-                  final foldCaret = !widget.isRoot
-                      ? IconButton(
-                          onPressed: () => scope
-                              ?.onToggleCollapseGroup(widget.group.hashCode),
-                          icon: Icon(
-                            isCollapsed
-                                ? Icons.keyboard_arrow_right
-                                : Icons.keyboard_arrow_down,
-                            size: 16,
-                            color: cs.onSurfaceVariant,
-                          ),
-                          tooltip:
-                              isCollapsed ? 'Expand Group' : 'Collapse Group',
-                          constraints:
-                              const BoxConstraints(minWidth: 24, minHeight: 24),
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                        )
-                      : null;
-
-                  Widget titleWidget = Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: GestureDetector(
-                          onDoubleTap: _startEditingName,
-                          child: Text(
-                            labelDisplay,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: widget.group.labelVisible
-                                  ? cs.onSurfaceVariant
-                                  : cs.onSurfaceVariant.withValues(alpha: 0.5),
-                              letterSpacing: 0.5,
+                    final foldCaret = !widget.isRoot
+                        ? IconButton(
+                            onPressed: () => scope
+                                ?.onToggleCollapseGroup(widget.group.hashCode),
+                            icon: Icon(
+                              isCollapsed
+                                  ? Icons.keyboard_arrow_right
+                                  : Icons.keyboard_arrow_down,
+                              size: 16,
+                              color: cs.onSurfaceVariant,
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            tooltip:
+                                isCollapsed ? 'Expand Group' : 'Collapse Group',
+                            constraints: const BoxConstraints(
+                                minWidth: 24, minHeight: 24),
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                          )
+                        : null;
+
+                    Widget titleWidget = Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: GestureDetector(
+                            onDoubleTap: _startEditingName,
+                            child: Text(
+                              labelDisplay,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: widget.group.labelVisible
+                                    ? cs.onSurfaceVariant
+                                    : cs.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                                letterSpacing: 0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
-                      ),
-                      if (!widget.group.labelVisible) ...[
-                        const SizedBox(width: 4),
-                        _buildBadge(context, l10n.hidden, color: cs.error),
+                        if (!widget.group.labelVisible) ...[
+                          const SizedBox(width: 4),
+                          _buildBadge(context, l10n.hidden, color: cs.error),
+                        ],
                       ],
-                    ],
-                  );
+                    );
 
-                  final labelActionButtons = [
-                    IconButton(
-                      onPressed: _startEditingName,
-                      icon: Icon(
-                        Icons.edit_outlined,
-                        size: 14,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                    if (groupPayload != null && groupFeedback != null) {
+                      titleWidget = LongPressDraggable<GroupDragPayload>(
+                        data: groupPayload,
+                        feedback: groupFeedback,
+                        delay: const Duration(milliseconds: 350),
+                        maxSimultaneousDrags: _isEditingName ? 0 : 1,
+                        onDragStarted: () =>
+                            setState(() => _isDragging = true),
+                        onDragEnd: (_) {
+                          if (mounted) setState(() => _isDragging = false);
+                        },
+                        onDraggableCanceled: (_, __) {
+                          if (mounted) setState(() => _isDragging = false);
+                        },
+                        onDragCompleted: () {
+                          if (mounted) setState(() => _isDragging = false);
+                        },
+                        child: titleWidget,
+                      );
+                    }
+
+                    final labelActionButtons = [
+                      IconButton(
+                        onPressed: _startEditingName,
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          size: 14,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                        tooltip: 'Edit Group Label',
+                        constraints:
+                            const BoxConstraints(minWidth: 24, minHeight: 24),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
                       ),
-                      tooltip: 'Edit Group Label',
-                      constraints:
-                          const BoxConstraints(minWidth: 24, minHeight: 24),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        widget.notifier.updateGroupDetails(
-                          groupHash: widget.group.hashCode,
-                          labelVisible: !widget.group.labelVisible,
-                        );
-                      },
-                      icon: Icon(
-                        widget.group.labelVisible
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        size: 14,
-                        color: widget.group.labelVisible
-                            ? cs.onSurfaceVariant.withValues(alpha: 0.7)
-                            : cs.error,
-                      ),
-                      tooltip:
+                      IconButton(
+                        onPressed: () {
+                          widget.notifier.updateGroupDetails(
+                            groupHash: widget.group.hashCode,
+                            labelVisible: !widget.group.labelVisible,
+                          );
+                        },
+                        icon: Icon(
+                          widget.group.labelVisible
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          size: 14,
+                          color: widget.group.labelVisible
+                              ? cs.onSurfaceVariant.withValues(alpha: 0.7)
+                              : cs.error,
+                        ),
+                        tooltip:
                           widget.group.labelVisible ? l10n.hidden : l10n.hidden,
-                      constraints:
-                          const BoxConstraints(minWidth: 24, minHeight: 24),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ];
+                        constraints:
+                            const BoxConstraints(minWidth: 24, minHeight: 24),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ];
 
-                  final structureActionButtons = [
-                    IconButton(
-                      onPressed: () => widget.notifier
-                          .addStaffToGroup(groupHash: widget.group.hashCode),
-                      icon: const Icon(Icons.add_circle_outline, size: 14),
-                      tooltip: l10n.addStaff,
-                      constraints:
-                          const BoxConstraints(minWidth: 24, minHeight: 24),
-                      padding: const EdgeInsets.all(2),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    if (!widget.isRoot) ...[
+                    final structureActionButtons = [
                       IconButton(
                         onPressed: () => widget.notifier
-                            .ungroupSubGroup(widget.group.hashCode),
-                        icon: Icon(Icons.layers_clear_outlined,
-                            size: 14, color: cs.error.withValues(alpha: 0.7)),
-                        tooltip: l10n.reset,
+                            .addStaffToGroup(groupHash: widget.group.hashCode),
+                        icon: const Icon(Icons.add_circle_outline, size: 14),
+                        tooltip: l10n.addStaff,
                         constraints:
                             const BoxConstraints(minWidth: 24, minHeight: 24),
                         padding: const EdgeInsets.all(2),
                         visualDensity: VisualDensity.compact,
                       ),
-                    ],
-                  ];
-
-                  return Row(
-                    children: [
-                      if (foldCaret != null) foldCaret,
-                      if (!widget.isRoot && widget.index != null) ...[
-                        Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 4.0),
-                          child: Icon(
-                            Icons.drag_indicator,
-                            size: 16,
-                            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                      if (!showSegmentedPicker) ...[
-                        _ConnectorMenuButton(
-                          value: widget.group.connector,
-                          onChanged: (v) =>
-                              widget.notifier.updateGroupConnector(
-                            v,
-                            groupHash: widget.group.hashCode,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(child: titleWidget),
-                      const SizedBox(width: 4),
-                      if (isCompactActions) ...[
+                      if (!widget.isRoot) ...[
                         IconButton(
-                          onPressed: () => widget.notifier.addStaffToGroup(
-                              groupHash: widget.group.hashCode),
-                          icon: const Icon(Icons.add_circle_outline, size: 14),
-                          tooltip: l10n.addStaff,
+                          onPressed: () => widget.notifier
+                              .ungroupSubGroup(widget.group.hashCode),
+                          icon: Icon(Icons.layers_clear_outlined,
+                              size: 14, color: cs.error.withValues(alpha: 0.7)),
+                          tooltip: l10n.reset,
                           constraints:
                               const BoxConstraints(minWidth: 24, minHeight: 24),
                           padding: const EdgeInsets.all(2),
                           visualDensity: VisualDensity.compact,
                         ),
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: PopupMenuButton<String>(
-                            icon: Icon(Icons.more_vert,
-                                size: 14,
-                                color:
-                                    cs.onSurfaceVariant.withValues(alpha: 0.7)),
-                            tooltip: 'Group Options',
-                            padding: EdgeInsets.zero,
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                _startEditingName();
-                              } else if (value == 'visibility') {
-                                widget.notifier.updateGroupDetails(
-                                  groupHash: widget.group.hashCode,
-                                  labelVisible: !widget.group.labelVisible,
-                                );
-                              } else if (value == 'ungroup') {
-                                widget.notifier
-                                    .ungroupSubGroup(widget.group.hashCode);
-                              }
+                      ],
+                    ];
+
+                    return Row(
+                      children: [
+                        if (foldCaret != null) foldCaret,
+                        if (groupPayload != null && groupFeedback != null) ...[
+                          Draggable<GroupDragPayload>(
+                            data: groupPayload,
+                            feedback: groupFeedback,
+                            maxSimultaneousDrags: _isEditingName ? 0 : 1,
+                            onDragStarted: () =>
+                                setState(() => _isDragging = true),
+                            onDragEnd: (_) {
+                              if (mounted) setState(() => _isDragging = false);
                             },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit_outlined,
-                                        size: 16, color: cs.primary),
-                                    const SizedBox(width: 8),
-                                    const Text('Edit Group Label',
-                                        style: TextStyle(fontSize: 12)),
-                                  ],
+                            onDraggableCanceled: (_, __) {
+                              if (mounted) setState(() => _isDragging = false);
+                            },
+                            onDragCompleted: () {
+                              if (mounted) setState(() => _isDragging = false);
+                            },
+                            childWhenDragging: Opacity(
+                              opacity: 0.35,
+                              child: Padding(
+                                padding:
+                                    const EdgeInsetsDirectional.only(end: 4.0),
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  size: 16,
+                                  color:
+                                      cs.onSurfaceVariant.withValues(alpha: 0.5),
                                 ),
                               ),
-                              PopupMenuItem(
-                                value: 'visibility',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      widget.group.labelVisible
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      size: 16,
-                                      color: widget.group.labelVisible
-                                          ? cs.primary
-                                          : cs.error,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      widget.group.labelVisible
-                                          ? 'Hide Group Label'
-                                          : 'Show Group Label',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (!widget.isRoot)
-                                PopupMenuItem(
-                                  value: 'ungroup',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.layers_clear_outlined,
-                                          size: 16, color: cs.error),
-                                      const SizedBox(width: 8),
-                                      Text(l10n.reset,
-                                          style: TextStyle(
-                                              fontSize: 12, color: cs.error)),
-                                    ],
+                            ),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.grab,
+                              child: Tooltip(
+                                message: 'Drag to reorder group',
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsetsDirectional.only(end: 4.0),
+                                  child: Icon(
+                                    Icons.drag_indicator,
+                                    size: 16,
+                                    color: cs.onSurfaceVariant
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ),
-                            ],
+                              ),
+                            ),
                           ),
-                        ),
-                      ] else ...[
-                        ...labelActionButtons,
-                        ...structureActionButtons,
-                      ],
-                      if (showSegmentedPicker) ...[
-                        const SizedBox(width: 6),
-                        _ConnectorPicker(
-                          value: widget.group.connector,
-                          onChanged: (v) =>
-                              widget.notifier.updateGroupConnector(
-                            v,
-                            groupHash: widget.group.hashCode,
+                        ] else if (!widget.isRoot && widget.index != null) ...[
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 4.0),
+                            child: Icon(
+                              Icons.drag_indicator,
+                              size: 16,
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
                           ),
-                          compact: true,
-                        ),
+                        ],
+                        if (!showSegmentedPicker) ...[
+                          _ConnectorMenuButton(
+                            value: widget.group.connector,
+                            onChanged: (v) =>
+                                widget.notifier.updateGroupConnector(
+                              v,
+                              groupHash: widget.group.hashCode,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(child: titleWidget),
+                        const SizedBox(width: 4),
+                        if (isCompactActions) ...[
+                          IconButton(
+                            onPressed: () => widget.notifier.addStaffToGroup(
+                                groupHash: widget.group.hashCode),
+                            icon: const Icon(Icons.add_circle_outline, size: 14),
+                            tooltip: l10n.addStaff,
+                            constraints:
+                                const BoxConstraints(minWidth: 24, minHeight: 24),
+                            padding: const EdgeInsets.all(2),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert,
+                                  size: 14,
+                                  color:
+                                      cs.onSurfaceVariant.withValues(alpha: 0.7)),
+                              tooltip: 'Group Options',
+                              padding: EdgeInsets.zero,
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _startEditingName();
+                                } else if (value == 'visibility') {
+                                  widget.notifier.updateGroupDetails(
+                                    groupHash: widget.group.hashCode,
+                                    labelVisible: !widget.group.labelVisible,
+                                  );
+                                } else if (value == 'ungroup') {
+                                  widget.notifier
+                                      .ungroupSubGroup(widget.group.hashCode);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  height: 32,
+                                  child: Text('Edit Label',
+                                      style: TextStyle(fontSize: 12)),
+                                ),
+                                PopupMenuItem(
+                                  value: 'visibility',
+                                  height: 32,
+                                  child: Text(
+                                    widget.group.labelVisible
+                                        ? 'Hide Label'
+                                        : 'Show Label',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                                if (!widget.isRoot)
+                                  PopupMenuItem(
+                                    value: 'ungroup',
+                                    height: 32,
+                                    child: Text(l10n.reset,
+                                        style: TextStyle(
+                                            fontSize: 12, color: cs.error)),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          ...labelActionButtons,
+                          const SizedBox(width: 2),
+                          ...structureActionButtons,
+                        ],
+                        if (showSegmentedPicker) ...[
+                          const SizedBox(width: 8),
+                          _ConnectorPicker(
+                            value: widget.group.connector,
+                            onChanged: (v) =>
+                                widget.notifier.updateGroupConnector(
+                              v,
+                              groupHash: widget.group.hashCode,
+                            ),
+                            compact: true,
+                          ),
+                        ],
                       ],
-                    ],
-                  );
-                },
-              ),
-              if (widget.group.children.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: cs.outlineVariant.withValues(alpha: 0.3),
-                        width: 0.5,
+                    );
+                  },
+                ),
+                if (widget.group.children.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: cs.outlineVariant.withValues(alpha: 0.3),
+                          width: 0.5,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.line_style,
-                          size: 14,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.line_style,
+                            size: 14,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                          ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -822,66 +1175,84 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 12),
-              if (isCollapsed)
-                InkWell(
-                  onTap: () =>
-                      scope?.onToggleCollapseGroup(widget.group.hashCode),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: cs.outlineVariant.withValues(alpha: 0.3),
-                        width: 0.5,
+                const SizedBox(height: 8),
+                if (isCollapsed)
+                  InkWell(
+                    onTap: () => scope
+                        ?.onToggleCollapseGroup(widget.group.hashCode),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: cs.primary.withValues(alpha: 0.25),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.compress, size: 14, color: cs.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${widget.group.children.length} staves collapsed',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: cs.primary,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.unfold_more,
+                              size: 14, color: cs.onSurfaceVariant),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.compress, size: 14, color: cs.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${widget.group.children.length} staves collapsed',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: cs.primary,
-                          ),
+                  )
+                else
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (int idx = 0; idx < widget.group.children.length; idx++)
+                        switch (widget.group.children[idx]) {
+                          core.StaffDefinition def => _StaffItem(
+                              key: ValueKey('staff_${def.uid}'),
+                              index: idx,
+                              staff: def,
+                              parentGroupHash: widget.group.hashCode,
+                              notifier: widget.notifier,
+                            ),
+                          core.StaffNodeGroup subGroup => _StaffGroupWidget(
+                              key: ValueKey('group_${subGroup.hashCode}_$idx'),
+                              group: subGroup,
+                              index: idx,
+                              parentGroupHash: widget.group.hashCode,
+                              notifier: widget.notifier,
+                            ),
+                        }
+                    ],
+                  ),
+                if (isBottomZone)
+                  Container(
+                    height: 3,
+                    margin: const EdgeInsets.only(top: 6),
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.primary.withValues(alpha: 0.5),
+                          blurRadius: 4,
+                          offset: const Offset(0, -1),
                         ),
-                        const Spacer(),
-                        Icon(Icons.unfold_more,
-                            size: 14, color: cs.onSurfaceVariant),
                       ],
                     ),
                   ),
-                )
-              else
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (int idx = 0; idx < widget.group.children.length; idx++)
-                      switch (widget.group.children[idx]) {
-                        core.StaffDefinition def => _StaffItem(
-                            key: ValueKey('staff_${def.uid}'),
-                            index: idx,
-                            staff: def,
-                            parentGroupHash: widget.group.hashCode,
-                            notifier: widget.notifier,
-                          ),
-                        core.StaffNodeGroup subGroup => _StaffGroupWidget(
-                            key: ValueKey('group_${subGroup.hashCode}_$idx'),
-                            group: subGroup,
-                            index: idx,
-                            notifier: widget.notifier,
-                          ),
-                      }
-                  ],
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -1029,14 +1400,20 @@ class _StaffItemState extends State<_StaffItem> {
       data: payload,
       feedback: feedbackWidget,
       maxSimultaneousDrags: _isEditingName ? 0 : 1,
-      onDragStarted: () => setState(() => _isDragging = true),
+      onDragStarted: () {
+        _hoveredChildDropPayload = null;
+        setState(() => _isDragging = true);
+      },
       onDragEnd: (_) {
+        _hoveredChildDropPayload = null;
         if (mounted) setState(() => _isDragging = false);
       },
       onDraggableCanceled: (_, __) {
+        _hoveredChildDropPayload = null;
         if (mounted) setState(() => _isDragging = false);
       },
       onDragCompleted: () {
+        _hoveredChildDropPayload = null;
         if (mounted) setState(() => _isDragging = false);
       },
       childWhenDragging: Opacity(
@@ -1132,17 +1509,42 @@ class _StaffItemState extends State<_StaffItem> {
 
     final feedbackWidget = _buildFeedbackWidget(cs, displayName);
 
-    return DragTarget<StaffDragPayload>(
-      onWillAcceptWithDetails: (details) => true,
+    return DragTarget<Object>(
+      onWillAcceptWithDetails: (details) {
+        final data = details.data;
+        if (data is StaffDragPayload) return true;
+        if (data is GroupDragPayload) {
+          if (widget.parentGroupHash == data.group.hashCode ||
+              _groupContains(data.group, widget.parentGroupHash)) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      },
       onMove: (details) {
-        if (details.data.staff.uid == widget.staff.uid) {
+        final data = details.data;
+        if (data is StaffDragPayload && data.staff.uid == widget.staff.uid) {
           if (_hoverRatioY != null) {
             setState(() {
               _hoverRatioY = null;
             });
           }
+          _hoveredChildDropPayload = null;
           return;
         }
+        if (data is GroupDragPayload &&
+            (widget.parentGroupHash == data.group.hashCode ||
+                _groupContains(data.group, widget.parentGroupHash))) {
+          if (_hoverRatioY != null) {
+            setState(() {
+              _hoverRatioY = null;
+            });
+          }
+          _hoveredChildDropPayload = null;
+          return;
+        }
+        _hoveredChildDropPayload = data;
         final box = context.findRenderObject() as RenderBox?;
         if (box != null && box.hasSize && box.size.height > 0) {
           final localOffset = box.globalToLocal(details.offset);
@@ -1155,6 +1557,9 @@ class _StaffItemState extends State<_StaffItem> {
         }
       },
       onLeave: (data) {
+        if (_hoveredChildDropPayload == data) {
+          _hoveredChildDropPayload = null;
+        }
         if (_hoverRatioY != null) {
           setState(() {
             _hoverRatioY = null;
@@ -1162,44 +1567,106 @@ class _StaffItemState extends State<_StaffItem> {
         }
       },
       onAcceptWithDetails: (details) {
-        if (details.data.staff.uid == widget.staff.uid) {
-          // Dropping onto itself cancels any ordering or grouping action.
+        _hoveredChildDropPayload = null;
+        if (identical(_activeDropToken, details.data) ||
+            _activeDropToken == details.data) {
           return;
         }
+        _activeDropToken = details.data;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _activeDropToken = null;
+          _hoveredChildDropPayload = null;
+        });
+
+        final data = details.data;
         final ratio = _hoverRatioY ?? 0.5;
         setState(() {
           _hoverRatioY = null;
         });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (ratio < 0.25) {
-            widget.notifier.moveStaffNode(
-              sourceGroupHash: details.data.parentGroupHash,
-              targetGroupHash: widget.parentGroupHash,
-              sourceIndex: details.data.index,
-              targetIndex: widget.index,
-            );
-          } else if (ratio > 0.75) {
-            widget.notifier.moveStaffNode(
-              sourceGroupHash: details.data.parentGroupHash,
-              targetGroupHash: widget.parentGroupHash,
-              sourceIndex: details.data.index,
-              targetIndex: widget.index + 1,
-            );
-          } else {
-            widget.notifier.groupTwoStavesTogether(
-              details.data.staff.uid,
-              widget.staff.uid,
-            );
+
+        if (data is StaffDragPayload) {
+          if (data.staff.uid == widget.staff.uid) {
+            // Dropping onto itself cancels any ordering or grouping action.
+            return;
           }
-        });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (ratio < 0.25) {
+              final targetIdx = _computeTargetIndex(
+                sourceGroupHash: data.parentGroupHash,
+                targetGroupHash: widget.parentGroupHash,
+                sourceIndex: data.index,
+                targetIndex: widget.index,
+                insertAfter: false,
+              );
+              widget.notifier.moveStaffNode(
+                sourceGroupHash: data.parentGroupHash,
+                targetGroupHash: widget.parentGroupHash,
+                sourceIndex: data.index,
+                targetIndex: targetIdx,
+              );
+            } else if (ratio > 0.75) {
+              final targetIdx = _computeTargetIndex(
+                sourceGroupHash: data.parentGroupHash,
+                targetGroupHash: widget.parentGroupHash,
+                sourceIndex: data.index,
+                targetIndex: widget.index,
+                insertAfter: true,
+              );
+              widget.notifier.moveStaffNode(
+                sourceGroupHash: data.parentGroupHash,
+                targetGroupHash: widget.parentGroupHash,
+                sourceIndex: data.index,
+                targetIndex: targetIdx,
+              );
+            } else {
+              widget.notifier.groupTwoStavesTogether(
+                data.staff.uid,
+                widget.staff.uid,
+              );
+            }
+          });
+        } else if (data is GroupDragPayload) {
+          if (widget.parentGroupHash == data.group.hashCode ||
+              _groupContains(data.group, widget.parentGroupHash)) {
+            return;
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final insertAfter = ratio >= 0.5;
+            final targetIdx = _computeTargetIndex(
+              sourceGroupHash: data.parentGroupHash,
+              targetGroupHash: widget.parentGroupHash,
+              sourceIndex: data.index,
+              targetIndex: widget.index,
+              insertAfter: insertAfter,
+            );
+            widget.notifier.moveStaffNode(
+              sourceGroupHash: data.parentGroupHash,
+              targetGroupHash: widget.parentGroupHash,
+              sourceIndex: data.index,
+              targetIndex: targetIdx,
+            );
+          });
+        }
       },
       builder: (context, candidateData, rejectedData) {
-        final isDropHovered = candidateData
-            .any((p) => p != null && p.staff.uid != widget.staff.uid);
+        final isDropHovered = candidateData.any((p) {
+          if (p is StaffDragPayload) return p.staff.uid != widget.staff.uid;
+          if (p is GroupDragPayload) {
+            return widget.parentGroupHash != p.group.hashCode &&
+                !_groupContains(p.group, widget.parentGroupHash);
+          }
+          return false;
+        });
+        final isGroupHover = candidateData.any((p) => p is GroupDragPayload);
         final ratio = _hoverRatioY;
-        final isTopZone = isDropHovered && ratio != null && ratio < 0.25;
-        final isBottomZone = isDropHovered && ratio != null && ratio > 0.75;
-        final isCombineZone = isDropHovered &&
+        final isTopZone = isDropHovered &&
+            ratio != null &&
+            (isGroupHover ? ratio < 0.5 : ratio < 0.25);
+        final isBottomZone = isDropHovered &&
+            ratio != null &&
+            (isGroupHover ? ratio >= 0.5 : ratio > 0.75);
+        final isCombineZone = !isGroupHover &&
+            isDropHovered &&
             (ratio == null || (ratio >= 0.25 && ratio <= 0.75));
 
         final cardContainer = AnimatedOpacity(
@@ -1739,14 +2206,20 @@ class _StaffItemState extends State<_StaffItem> {
           feedback: feedbackWidget,
           delay: const Duration(milliseconds: 350),
           maxSimultaneousDrags: _isEditingName ? 0 : 1,
-          onDragStarted: () => setState(() => _isDragging = true),
+          onDragStarted: () {
+            _hoveredChildDropPayload = null;
+            setState(() => _isDragging = true);
+          },
           onDragEnd: (_) {
+            _hoveredChildDropPayload = null;
             if (mounted) setState(() => _isDragging = false);
           },
           onDraggableCanceled: (_, __) {
+            _hoveredChildDropPayload = null;
             if (mounted) setState(() => _isDragging = false);
           },
           onDragCompleted: () {
+            _hoveredChildDropPayload = null;
             if (mounted) setState(() => _isDragging = false);
           },
           childWhenDragging: Opacity(

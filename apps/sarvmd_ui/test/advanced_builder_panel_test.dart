@@ -464,5 +464,203 @@ void main() {
       expect(find.text('Tenor Clef'), findsOneWidget);
       expect(find.text('Line 4'), findsNWidgets(2));
     });
+
+    testWidgets(
+        'dragging a group reorders it among siblings in the parent group',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      // Group staves 0 & 1 into first group
+      cubit.groupTwoStavesTogether(
+          cubit.allStaves[0].uid, cubit.allStaves[1].uid);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Group staves 2 & 3 into second group
+      final staves = cubit.allStaves;
+      cubit.groupTwoStavesTogether(staves[2].uid, staves[3].uid);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final rootWithTwoGroups = cubit.state.config.systemLayout.rootGroup;
+      expect(rootWithTwoGroups.children.length, equals(2));
+      expect(rootWithTwoGroups.children[0], isA<core.StaffNodeGroup>());
+      expect(rootWithTwoGroups.children[1], isA<core.StaffNodeGroup>());
+
+      final group0 = rootWithTwoGroups.children[0] as core.StaffNodeGroup;
+      final group1 = rootWithTwoGroups.children[1] as core.StaffNodeGroup;
+
+      cubit.updateGroupDetails(groupHash: group0.hashCode, label: 'Violins');
+      cubit.updateGroupDetails(groupHash: group1.hashCode, label: 'Low Strings');
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final groupDragHandles = find.byTooltip('Drag to reorder group');
+      expect(groupDragHandles, findsAtLeastNWidgets(2));
+
+      final firstHandle = groupDragHandles.at(0);
+      final secondHandle = groupDragHandles.at(1);
+
+      final firstHandleCenter = tester.getCenter(firstHandle);
+      final secondHandleCenter = tester.getCenter(secondHandle);
+
+      final gesture = await tester.startGesture(secondHandleCenter);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await gesture
+          .moveTo(Offset(firstHandleCenter.dx, firstHandleCenter.dy - 10));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final updatedRoot = cubit.state.config.systemLayout.rootGroup;
+      expect((updatedRoot.children[0] as core.StaffNodeGroup).label,
+          equals('Low Strings'));
+      expect((updatedRoot.children[1] as core.StaffNodeGroup).label,
+          equals('Violins'));
+    });
+
+    testWidgets(
+        'dropping an ancestor group into its own child group is prevented',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      cubit.groupTwoStavesTogether(
+          cubit.allStaves[0].uid, cubit.allStaves[1].uid);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final rootBefore = cubit.state.config.systemLayout.rootGroup;
+      final groupA = rootBefore.children.first as core.StaffNodeGroup;
+
+      final staff0 = groupA.children[0] as core.StaffDefinition;
+      final staff1 = groupA.children[1] as core.StaffDefinition;
+      cubit.groupTwoStavesTogether(staff0.uid, staff1.uid);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final rootWithSubgroup = cubit.state.config.systemLayout.rootGroup;
+      expect(rootWithSubgroup.children.first, isA<core.StaffNodeGroup>());
+      final outerGroup = rootWithSubgroup.children.first as core.StaffNodeGroup;
+      expect(outerGroup.children.first, isA<core.StaffNodeGroup>());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final groupDragHandles = find.byTooltip('Drag to reorder group');
+      expect(groupDragHandles, findsAtLeastNWidgets(2));
+
+      final outerHandleCenter = tester.getCenter(groupDragHandles.at(0));
+      final innerHandleCenter = tester.getCenter(groupDragHandles.at(1));
+
+      final gesture = await tester.startGesture(outerHandleCenter);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await gesture.moveTo(innerHandleCenter);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      final rootAfter = cubit.state.config.systemLayout.rootGroup;
+      expect(rootAfter.children.first, isA<core.StaffNodeGroup>());
+      final finalOuter = rootAfter.children.first as core.StaffNodeGroup;
+      expect(finalOuter.hashCode, equals(outerGroup.hashCode));
+      expect(finalOuter.children.first, isA<core.StaffNodeGroup>());
+    });
+
+    testWidgets(
+        'dragging a group over a leaf staff reorders group relative to the staff',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      cubit.updateStaffInstrumentName(cubit.allStaves[2].uid, 'Viola');
+      cubit.groupTwoStavesTogether(
+          cubit.allStaves[0].uid, cubit.allStaves[1].uid);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final rootBefore = cubit.state.config.systemLayout.rootGroup;
+      expect(rootBefore.children[0], isA<core.StaffNodeGroup>());
+      expect(rootBefore.children[1], isA<core.StaffDefinition>());
+      expect(rootBefore.children[2], isA<core.StaffDefinition>());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final groupHandle = find.byTooltip('Drag to reorder group').first;
+      final violaCard = find.byKey(ValueKey('staff_${cubit.allStaves[2].uid}'));
+      expect(violaCard, findsOneWidget);
+
+      final groupHandleCenter = tester.getCenter(groupHandle);
+      final violaRect = tester.getRect(violaCard);
+
+      final gesture = await tester.startGesture(groupHandleCenter);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Move into the bottom zone of Viola item (ratio >= 0.5 -> insertAfter = true)
+      await gesture.moveTo(Offset(violaRect.center.dx, violaRect.bottom - 5));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final rootAfter = cubit.state.config.systemLayout.rootGroup;
+      expect(rootAfter.children[0], isA<core.StaffDefinition>());
+      expect((rootAfter.children[0] as core.StaffDefinition).instrumentName,
+          contains('Viola'));
+      expect(rootAfter.children[1], isA<core.StaffNodeGroup>());
+    });
   });
 }
