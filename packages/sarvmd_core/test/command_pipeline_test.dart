@@ -217,5 +217,78 @@ void main() {
       configHistory.redo();
       expect(configHistory.config.systemLayout.rootGroup.initialBarline, isFalse);
     });
+
+    test('RemoveStaffCommand removes targeted staff from nested group without deleting the whole group', () {
+      final configHistory = CommandHistory(
+        initialScore: const Score(title: 'Chamber Score', parts: []),
+      );
+      configHistory.execute(ApplyProfileCommand(StaffProfiles.chamberOrchestra));
+
+      // chamberOrchestra has 4 staves total:
+      // index 0: Violin I (in subGroup)
+      // index 1: Violin II (in subGroup)
+      // index 2: Viola (in rootGroup)
+      // index 3: Cello (in rootGroup)
+      expect(configHistory.config.staffCount, equals(4));
+      final initialRoot = configHistory.config.systemLayout.rootGroup;
+      expect(initialRoot.children.first, isA<StaffNodeGroup>());
+      final initialSub = initialRoot.children.first as StaffNodeGroup;
+      expect(initialSub.children.length, equals(2));
+
+      // Remove staff at index 0 (Violin I)
+      configHistory.execute(RemoveStaffCommand(0));
+
+      expect(configHistory.config.staffCount, equals(3));
+      final updatedRoot = configHistory.config.systemLayout.rootGroup;
+      // Sub-group must NOT have been deleted! It still contains Violin II.
+      expect(updatedRoot.children.first, isA<StaffNodeGroup>());
+      final updatedSub = updatedRoot.children.first as StaffNodeGroup;
+      expect(updatedSub.children.length, equals(1));
+      expect((updatedSub.children.first as StaffDefinition).clef, equals(Clef.treble));
+
+      // Other root children (Viola, Cello) must remain intact
+      expect(updatedRoot.children.length, equals(3)); // subGroup + Viola + Cello
+
+      // Undo restores Violin I back into the sub-group
+      configHistory.undo();
+      expect(configHistory.config.staffCount, equals(4));
+      final revertedSub = configHistory.config.systemLayout.rootGroup.children.first as StaffNodeGroup;
+      expect(revertedSub.children.length, equals(2));
+    });
+
+    test('RemoveStaffByUidCommand prunes empty sub-group when its last staff is removed', () {
+      const v1 = StaffDefinition(uid: 'v1', instrumentName: 'V1');
+      const v2 = StaffDefinition(uid: 'v2', instrumentName: 'V2');
+      const cello = StaffDefinition(uid: 'cello', instrumentName: 'Cello');
+      final violinGroup = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        children: [v1, v2],
+      );
+      final layout = SystemLayout(
+        rootGroup: StaffNodeGroup(children: [violinGroup, cello]),
+      );
+
+      final configHistory = CommandHistory(
+        initialScore: const Score(title: 'Score', parts: []),
+      );
+      configHistory.execute(SetSystemLayoutCommand(layout));
+      expect(configHistory.config.staffCount, equals(3));
+      expect(configHistory.config.systemLayout.rootGroup.children.length, equals(2));
+
+      // Remove first violin
+      configHistory.execute(RemoveStaffByUidCommand(v1.uid));
+      expect(configHistory.config.staffCount, equals(2));
+      var root = configHistory.config.systemLayout.rootGroup;
+      expect(root.children.length, equals(2)); // violinGroup (with 1 staff) + cello
+
+      // Remove second violin - violinGroup now has 0 staves and should be pruned
+      configHistory.execute(RemoveStaffByUidCommand(v2.uid));
+      expect(configHistory.config.staffCount, equals(1));
+      root = configHistory.config.systemLayout.rootGroup;
+      expect(root.children.length, equals(1));
+      expect(root.children.first, isA<StaffDefinition>());
+      expect((root.children.first as StaffDefinition).uid, equals(cello.uid));
+    });
   });
 }
+

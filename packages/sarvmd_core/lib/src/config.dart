@@ -883,6 +883,9 @@ class PageConfig {
   /// Usable height after subtracting margins, in mm.
   double get usableHeight => effectiveHeight - margins.top - margins.bottom;
 
+  /// All descendant staves across the system layout.
+  List<StaffDefinition> get allStaves => systemLayout.rootGroup.allStaves;
+
   /// Total number of staves in the layout.
   int get staffCount {
     int countStaves(StaffGroup group) {

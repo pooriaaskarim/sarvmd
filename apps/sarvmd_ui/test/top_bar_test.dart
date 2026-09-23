@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
 import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/layout/sarv_top_bar.dart';
@@ -223,4 +224,57 @@ void main() {
 
     documentCubit.close();
   });
+
+  testWidgets('SarvTopBar Remove Staff from Edit menu removes only targeted staff from grouped ensemble', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final documentCubit = DocumentCubit();
+    documentCubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+    // chamberOrchestra has 4 staves:
+    // Violin I (in subGroup), Violin II (in subGroup), Viola, Cello
+    expect(documentCubit.state.config.staffCount, equals(4));
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SarvTopBar(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open Edit menu
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Open Remove Staff sub-menu
+    await tester.tap(find.text('Remove Staff'));
+    await tester.pumpAndSettle();
+
+    // Find and tap the first staff item: 1. Staff #1 (5 L)
+    final firstStaffFinder = find.widgetWithText(MenuItemButton, '1. Staff #1 (5 L)');
+    expect(firstStaffFinder, findsOneWidget);
+    await tester.tap(firstStaffFinder);
+    await tester.pumpAndSettle();
+
+    // Exactly 3 staves must remain (not 2 from deleting the whole violin sub-group)
+    expect(documentCubit.state.config.staffCount, equals(3));
+    final root = documentCubit.state.config.systemLayout.rootGroup;
+    expect(root.children.first, isA<core.StaffNodeGroup>());
+    final subGroup = root.children.first as core.StaffNodeGroup;
+    // Sub-group must still exist with Violin II preserved inside it
+    expect(subGroup.children.length, equals(1));
+
+    documentCubit.close();
+  });
 }
+

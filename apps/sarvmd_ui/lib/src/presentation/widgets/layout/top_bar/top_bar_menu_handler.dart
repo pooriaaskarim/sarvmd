@@ -168,9 +168,12 @@ void handleTopBarMenuSelection(
           }
         }
       } else if (value.startsWith('remove_staff_')) {
-        final index = int.tryParse(value.substring('remove_staff_'.length));
-        if (index != null) {
-          documentCubit.removeStaff(index);
+        final param = value.substring('remove_staff_'.length);
+        final index = int.tryParse(param);
+        if (index != null && index >= 0 && index < documentCubit.allStaves.length) {
+          documentCubit.removeStaffByUid(documentCubit.allStaves[index].uid);
+        } else {
+          documentCubit.removeStaffByUid(param);
         }
       }
       break;

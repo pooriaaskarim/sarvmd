@@ -29,5 +29,9 @@
 11. [ ] labeling, specially when groups and subgroup labels are available, deos not use canvas space efficiently. This needs research on what the standard are and how they suggest these labels are shown alongside connectors and all that.
 12. [x] Text inputs that support darg to set value ( like margins and staff spacing stuff ), cannot defer from draging to set value and selecting text. I'd suggest text selection be removed entirely since it not really needed anymore.
 13. [ ] right panel should maintain its state, like scroll position or open section ( in mobile view), when interactions cause it to colapse, or when screen is resized from narrow width to wide width view.
-14. [ ] there is a problem with removing grouped staff lines from the top bar, I tried it once and it caused the entire group to be deleted.
+14. [x] there is a problem with removing grouped staff lines from the top bar, I tried it once and it caused the entire group to be deleted.
+    [x] Replaced root-index removal with UID-targeted staff removal (`removeStaffByUid`) in desktop Edit menu and compact menu
+    [x] Updated `RemoveStaffCommand` in core to resolve index against `PageConfig.allStaves` and delegate to `RemoveStaffByUidCommand`
+    [x] Pruned empty sub-groups automatically in `RemoveStaffByUidCommand` when all child staves are removed
+    [x] Added unit tests (`command_pipeline_test.dart`) and widget tests (`top_bar_test.dart`) covering nested grouped staff removal without group deletion
 15. [ ] CRITICAL: when resizing from Wide width to narrow width, or vice versa, responsiveness mechanism of modal to dialog or vice versa causes all sorts of problems, renders the app unusable. This needs to be addressed later on when mid-sized screens are covered.
