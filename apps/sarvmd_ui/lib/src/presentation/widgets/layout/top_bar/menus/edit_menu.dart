@@ -202,7 +202,7 @@ class TopBarEditMenu extends StatelessWidget {
           return MenuItemButton(
             leadingIcon: Icon(Icons.remove_circle_outline, size: 16, color: cs.error),
             onPressed: () {
-              documentCubit.removeStaff(i);
+              documentCubit.removeStaffByUid(staff.uid);
             },
             child: Text(l10n.staffMenuSummary(i + 1, label, staff.lines)),
           );

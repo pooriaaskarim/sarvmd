@@ -321,7 +321,7 @@ class MoveStaffNodeCommand extends PageConfigCommand {
   }
 }
 
-/// Command to remove a staff node from the root group by index.
+/// Command to remove a staff node by index from [PageConfig.allStaves].
 class RemoveStaffCommand extends PageConfigCommand {
   final int index;
   RemoveStaffCommand(this.index);
@@ -331,16 +331,11 @@ class RemoveStaffCommand extends PageConfigCommand {
 
   @override
   PageConfig mutateConfig(PageConfig current) {
-    final root = current.systemLayout.rootGroup;
-    if (index < 0 || index >= root.children.length) return current;
-    if (root.children.length <= 1) return current;
+    if (current.staffCount <= 1) return current;
+    final staves = current.allStaves;
+    if (index < 0 || index >= staves.length) return current;
 
-    final newChildren = List<StaffNode>.from(root.children)..removeAt(index);
-    return current.copyWith(
-      systemLayout: current.systemLayout.copyWith(
-        rootGroup: root.copyWith(children: newChildren),
-      ),
-    );
+    return RemoveStaffByUidCommand(staves[index].uid).mutateConfig(current);
   }
 }
 
@@ -365,7 +360,14 @@ class RemoveStaffByUidCommand extends PageConfigCommand {
           if (child is StaffDefinition) {
             if (child.uid != uid) newChildren.add(child);
           } else if (child is StaffNodeGroup) {
-            newChildren.add(removeByUid(child));
+            final updatedChild = removeByUid(child);
+            if (updatedChild is StaffNodeGroup) {
+              if (updatedChild.children.isNotEmpty) {
+                newChildren.add(updatedChild);
+              }
+            } else {
+              newChildren.add(updatedChild);
+            }
           }
         }
         return node.copyWith(children: newChildren);

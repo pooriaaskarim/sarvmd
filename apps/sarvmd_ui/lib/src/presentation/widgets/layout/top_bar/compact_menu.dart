@@ -196,7 +196,7 @@ List<PopupMenuEntry<String>> buildCompactMenuItems(
               ? staff.instrumentName!
               : l10n.staffNumberWithHash(i + 1);
           return PopupMenuItem<String>(
-            value: 'remove_staff_$i',
+            value: 'remove_staff_${staff.uid}',
             child: _menuRow(
               icon: Icons.remove_circle_outline,
               label: l10n.staffMenuSummary(i + 1, label, staff.lines),
