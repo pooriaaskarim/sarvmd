@@ -20,6 +20,7 @@ Future<void> showStaffConfigDialog(
 }) {
   return showSarvAdaptiveModal<void>(
     context: context,
+    maxWidth: 550.0,
     builder: (ctx, isMobile) => StaffConfigDialog(
       staff: staff,
       notifier: notifier,
@@ -292,10 +293,6 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
       ),
     );
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      clipBehavior: Clip.antiAlias,
-      child: content,
-    );
+    return content;
   }
 }

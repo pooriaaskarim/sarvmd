@@ -14,6 +14,7 @@ import 'adaptive_dialog_helper.dart';
 Future<void> showSarvAboutDialog(BuildContext context) {
   return showSarvAdaptiveModal<void>(
     context: context,
+    maxWidth: 480.0,
     builder: (ctx, isMobile) => const AboutSarvDialog(),
   );
 }
@@ -275,22 +276,9 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
       },
     );
 
-    if (isMobile) {
-      return content;
-    }
-
-    return Dialog(
-      backgroundColor: cs.surfaceContainerHigh,
-      surfaceTintColor: Colors.transparent,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 620),
-        child: content,
-      ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 480, maxHeight: 620),
+      child: content,
     );
   }
 }
