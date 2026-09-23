@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -37,45 +39,25 @@ jobs:
         run: flutter pub get
         working-directory: apps/sarvmd_ui
 
-      - name: Extract App Version
-        id: get_version
+      - name: Resolve Release Version & Tag
+        id: version
         run: |
-          VERSION=$(grep '^version:' apps/sarvmd_ui/pubspec.yaml | sed -E 's/version:\s*([0-9]+\.[0-9]+\.[0-9]+).*/\1/' | tr -d '\r')
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            TAG_NAME="${GITHUB_REF_NAME}"
+          else
+            VERSION=$(grep '^version:' apps/sarvmd_ui/pubspec.yaml | sed -E 's/version:\s*([0-9]+\.[0-9]+\.[0-9]+).*/\1/' | tr -d '\r')
+            TAG_NAME="v${VERSION}"
+          fi
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "TAG_NAME=v${VERSION}" >> $GITHUB_ENV
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "tag_name=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
 
       - name: Extract Release Notes from CHANGELOG
-        id: release_notes
-        env:
-          TARGET_VERSION: ${{ env.VERSION }}
         run: |
-          python3 - << 'EOF'
-          import os
-
-          version = os.environ.get('TARGET_VERSION', '').strip()
-          with open('apps/sarvmd_ui/CHANGELOG.md', 'r', encoding='utf-8') as f:
-              lines = f.readlines()
-
-          collecting = False
-          notes = []
-          for line in lines:
-              if line.startswith(f'## [{version}]'):
-                  collecting = True
-                  continue
-              elif collecting and line.startswith('## ['):
-                  break
-              elif collecting:
-                  notes.append(line)
-
-          content = ''.join(notes).strip()
-          if not content:
-              content = f'Release v{version} of SarvMD.'
-
-          with open('RELEASE_NOTES.md', 'w', encoding='utf-8') as f:
-              f.write(content + '\n')
-          EOF
+          sed -n "/## \[${VERSION}\]/,/## \[/p" apps/sarvmd_ui/CHANGELOG.md | sed '1d;$d' > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Release ${TAG_NAME} of SarvMD." > RELEASE_NOTES.md
+          fi
 
       - name: Build Android APK
         run: flutter build apk --release
@@ -99,4 +81,3 @@ jobs:
           files: |
             release_artifacts/sarvmd-v*.apk
             release_artifacts/sha256sums.txt
-          token: ${{ github.token }}
