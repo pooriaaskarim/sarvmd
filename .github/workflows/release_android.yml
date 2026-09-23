@@ -48,11 +48,16 @@ jobs:
 
       - name: Extract Release Notes from CHANGELOG
         id: release_notes
+        env:
+          TARGET_VERSION: ${{ env.VERSION }}
         run: |
-          python3 -c "
-          with open('apps/sarvmd_ui/CHANGELOG.md', 'r') as f:
+          python3 - << 'EOF'
+          import os
+
+          version = os.environ.get('TARGET_VERSION', '').strip()
+          with open('apps/sarvmd_ui/CHANGELOG.md', 'r', encoding='utf-8') as f:
               lines = f.readlines()
-          version = '${{ env.VERSION }}'
+
           collecting = False
           notes = []
           for line in lines:
@@ -63,12 +68,14 @@ jobs:
                   break
               elif collecting:
                   notes.append(line)
+
           content = ''.join(notes).strip()
           if not content:
               content = f'Release v{version} of SarvMD.'
-          with open('RELEASE_NOTES.md', 'w') as f:
+
+          with open('RELEASE_NOTES.md', 'w', encoding='utf-8') as f:
               f.write(content + '\n')
-          "
+          EOF
 
       - name: Build Android APK
         run: flutter build apk --release
@@ -92,5 +99,4 @@ jobs:
           files: |
             release_artifacts/sarvmd-v*.apk
             release_artifacts/sha256sums.txt
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
