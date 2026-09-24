@@ -14,6 +14,7 @@ Future<void> showCalibrationDialog(
 ) {
   return showSarvAdaptiveModal<void>(
     context: context,
+    maxWidth: 440.0,
     builder: (ctx, isMobile) => CalibrationDialog(viewCubit: viewCubit),
   );
 }
@@ -67,8 +68,6 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final media = MediaQuery.of(context);
-    final isMobile = media.size.width < 600;
 
     final content = SingleChildScrollView(
       child: Column(
@@ -201,43 +200,49 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                             onLongPress: () => _nudge(-_step * 10),
                             colorScheme: cs,
                           ),
-                          const SizedBox(width: 24),
-                          Builder(builder: (context) {
-                            final dpr = MediaQuery.of(context).devicePixelRatio;
-                            final physicalPpi = _getPhysicalPpi(dpr);
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Builder(builder: (context) {
+                              final dpr = MediaQuery.of(context).devicePixelRatio;
+                              final physicalPpi = _getPhysicalPpi(dpr);
 
-                            return AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 150),
-                              child: Column(
-                                key: ValueKey(physicalPpi),
-                                children: [
-                                  Text(
-                                    UnitFormatter.formatPpi(physicalPpi),
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w900,
-                                      color: _isDefault
-                                          ? cs.onSurfaceVariant
-                                          : cs.primary,
-                                      letterSpacing: -0.8,
+                              return AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 150),
+                                child: Column(
+                                  key: ValueKey(physicalPpi),
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      UnitFormatter.formatPpi(physicalPpi),
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        color: _isDefault
+                                            ? cs.onSurfaceVariant
+                                            : cs.primary,
+                                        letterSpacing: -0.8,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    _isDefault
-                                        ? AppLocalizations.of(context)!.baseline96Dpi
-                                        : AppLocalizations.of(context)!.physicalDensity,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.6),
+                                    Text(
+                                      _isDefault
+                                          ? AppLocalizations.of(context)!.baseline96Dpi
+                                          : AppLocalizations.of(context)!.physicalDensity,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: cs.onSurfaceVariant
+                                            .withValues(alpha: 0.6),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                          const SizedBox(width: 24),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(width: 12),
                           _NudgeButton(
                             icon: Icons.add,
                             onTap: () => _nudge(_step),
@@ -265,64 +270,72 @@ class _CalibrationDialogState extends State<CalibrationDialog> {
                   ),
                 ),
               ),
-              child: Row(
-                children: [
-                  // Reset
-                  AnimatedOpacity(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 350;
+
+                  final resetBtn = AnimatedOpacity(
                     opacity: _isDefault ? 0.4 : 1.0,
                     duration: const Duration(milliseconds: 200),
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.restart_alt, size: 16),
-                      label: Text(AppLocalizations.of(context)!.reset),
-                      onPressed: _isDefault
-                          ? null
-                          : () => setState(() => _localFactor = 1.0),
-                      style: TextButton.styleFrom(
-                        foregroundColor: cs.onSurfaceVariant,
-                        textStyle: const TextStyle(fontSize: 13),
+                    child: isCompact
+                        ? IconButton(
+                            icon: const Icon(Icons.restart_alt, size: 20),
+                            tooltip: AppLocalizations.of(context)!.reset,
+                            onPressed: _isDefault
+                                ? null
+                                : () => setState(() => _localFactor = 1.0),
+                            style: IconButton.styleFrom(
+                              foregroundColor: cs.onSurfaceVariant,
+                            ),
+                          )
+                        : TextButton.icon(
+                            icon: const Icon(Icons.restart_alt, size: 16),
+                            label: Text(AppLocalizations.of(context)!.reset),
+                            onPressed: _isDefault
+                                ? null
+                                : () => setState(() => _localFactor = 1.0),
+                            style: TextButton.styleFrom(
+                              foregroundColor: cs.onSurfaceVariant,
+                              textStyle: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                  );
+
+                  return Row(
+                    children: [
+                      resetBtn,
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: cs.onSurfaceVariant,
+                          textStyle: const TextStyle(fontSize: 13),
+                        ),
+                        child: Text(AppLocalizations.of(context)!.cancel),
                       ),
-                    ),
-                  ),
-                  const Spacer(),
-                  // Cancel
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      foregroundColor: cs.onSurfaceVariant,
-                      textStyle: const TextStyle(fontSize: 13),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.cancel),
-                  ),
-                  const SizedBox(width: 8),
-                  // Apply
-                  FilledButton(
-                    onPressed: _apply,
-                    style: FilledButton.styleFrom(
-                      textStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: _apply,
+                        style: FilledButton.styleFrom(
+                          textStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        child: Text(AppLocalizations.of(context)!.apply),
                       ),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.apply),
-                  ),
-                ],
+                    ],
+                  );
+                },
               ),
             ),
           ],
         ),
       );
 
-    if (isMobile) {
-      return content;
-    }
-
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      clipBehavior: Clip.antiAlias,
-      child: SizedBox(
-        width: 440,
-        child: content,
-      ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 440),
+      child: content,
     );
   }
 }

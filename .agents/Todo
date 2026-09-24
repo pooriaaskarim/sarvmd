@@ -34,4 +34,8 @@
     [x] Updated `RemoveStaffCommand` in core to resolve index against `PageConfig.allStaves` and delegate to `RemoveStaffByUidCommand`
     [x] Pruned empty sub-groups automatically in `RemoveStaffByUidCommand` when all child staves are removed
     [x] Added unit tests (`command_pipeline_test.dart`) and widget tests (`top_bar_test.dart`) covering nested grouped staff removal without group deletion
-15. [ ] CRITICAL: when resizing from Wide width to narrow width, or vice versa, responsiveness mechanism of modal to dialog or vice versa causes all sorts of problems, renders the app unusable. This needs to be addressed later on when mid-sized screens are covered.
+15. [x] CRITICAL: when resizing from Wide width to narrow width, or vice versa, responsiveness mechanism of modal to dialog or vice versa causes all sorts of problems, renders the app unusable.
+    [x] Consolidated modal presentation frame into `showSarvAdaptiveModal` with responsive `Dialog` shell (max-height 90vh, fluid horizontal insets) on desktop and constrained `Material` sheet on mobile
+    [x] Decoupled child dialogs (`AboutSarvDialog`, `CalibrationDialog`, `StaffConfigDialog`, `ExportDialog`) from instantiating their own outer `Dialog(...)` and eliminated unbounded width constraints (`BoxConstraints forces an infinite width`)
+    [x] Made export action row, calibration nudge/readout, and export page-count stepper dynamically wrap and adapt to narrow compact screens without RenderFlex overflows
+    [x] Added comprehensive regression test suite (`adaptive_modal_resize_test.dart`) validating dynamic window resizing across desktop and mobile widths

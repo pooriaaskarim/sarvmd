@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Adaptive Modal & Dialog Resizing**:
+  - Eliminated crashes and unstyled transparent dialog glitch when dynamically resizing between mobile bottom sheets and desktop dialogs.
+  - Resolved `BoxConstraints forces an infinite width` assertion in `ExportDialog` and flex overflows in `CalibrationDialog` and `ExportPageCountSection` on narrow viewports.
+  - Fixed mobile bottom sheets from stretching over the full viewport height by using height-shrinkwrapping alignment and content constraints.
+
 ---
 
 ## [0.9.0] - 2026-09-22
