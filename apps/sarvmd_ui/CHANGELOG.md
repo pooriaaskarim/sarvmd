@@ -9,11 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Automated Android Release CI Pipeline**:
+  - Added GitHub Actions workflow (`release_android.yml`) to automatically build and attach signed release APKs on Git version tags (`v*`).
+  - Configured Gradle build scripts to output standardized versioned artifact filenames (`sarvmd-vX.Y.Z.apk`).
+  - Implemented tag-aware release changelog extraction for automated GitHub Releases.
+
 ### Fixed
+- **Grouped Staff Removal Integrity**:
+  - Prevented accidental deletion of entire parent groups when removing an individual grouped staff via the top Edit menu or compact menu.
+  - Upgraded `RemoveStaffCommand` in `sarvmd_core` to resolve against `PageConfig.allStaves` and delegate to UID-targeted removal (`RemoveStaffByUidCommand`).
+  - Preserved single-staff groups and pruned empty sub-groups automatically when all child staves are removed (documented in ADR-0001).
 - **Adaptive Modal & Dialog Resizing**:
-  - Eliminated crashes and unstyled transparent dialog glitch when dynamically resizing between mobile bottom sheets and desktop dialogs.
-  - Resolved `BoxConstraints forces an infinite width` assertion in `ExportDialog` and flex overflows in `CalibrationDialog` and `ExportPageCountSection` on narrow viewports.
-  - Fixed mobile bottom sheets from stretching over the full viewport height by using height-shrinkwrapping alignment and content constraints.
+  - Eliminated crashes (`BoxConstraints forces an infinite width`) and unstyled transparent dialog glitch when dynamically resizing between mobile bottom sheets and desktop dialogs.
+  - Resolved RenderFlex overflows in `CalibrationDialog`, `ExportDialog`, and `ExportPageCountSection` on compact and narrow viewports.
+  - Fixed mobile bottom sheets and desktop dialogs from stretching over the full viewport height by using height-shrinkwrapping alignment and content constraints.
+- **CI & Gradle Portability**:
+  - Removed hardcoded local Java home path from `gradle.properties` to ensure reliable builds across environments and GitHub Actions runners.
+  - Resolved workflow linter warnings and deprecated action syntax.
 
 ---
 
