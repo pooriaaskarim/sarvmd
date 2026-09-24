@@ -26,22 +26,29 @@ Future<T?> showSarvAdaptiveModal<T>({
       barrierColor: barrierColor ?? Colors.black54,
       builder: (bottomSheetContext) {
         final cs = Theme.of(bottomSheetContext).colorScheme;
+        final sheetMedia = MediaQuery.of(bottomSheetContext);
 
-        return Material(
-          color: cs.surfaceContainerHigh,
-          elevation: 8,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24.0)),
-          clipBehavior: Clip.antiAlias,
-          child: SafeArea(
-            top: false,
-            bottom: true,
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxWidth),
+        return Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: maxWidth,
+              maxHeight: sheetMedia.size.height * 0.90,
+            ),
+            child: Material(
+              color: cs.surfaceContainerHigh,
+              elevation: 8,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24.0)),
+              clipBehavior: Clip.antiAlias,
+              child: SafeArea(
+                top: false,
+                bottom: true,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: sheetMedia.viewInsets.bottom,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

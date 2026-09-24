@@ -141,6 +141,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             : (media.size.height * 0.85).clamp(320.0, 720.0),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // ── Dialog Header ──────────────────────────────────────
           Padding(

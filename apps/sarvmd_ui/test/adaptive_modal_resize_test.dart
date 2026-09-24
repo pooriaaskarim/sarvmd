@@ -217,6 +217,13 @@ void main() {
       // Verify bottom sheet route exists (no Dialog)
       expect(find.byType(Dialog), findsNothing);
 
+      // Verify bottom sheet hugs its content and does NOT stretch over the full screen height (700)
+      final sheetMaterial = find.byWidgetPredicate(
+        (widget) => widget is Material && widget.elevation == 8.0,
+      );
+      expect(sheetMaterial, findsOneWidget);
+      expect(tester.getSize(sheetMaterial).height, lessThan(200));
+
       // Expand to wide desktop window (1200px)
       tester.view.physicalSize = const Size(1200, 800);
       await tester.pumpAndSettle();
