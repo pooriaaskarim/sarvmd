@@ -8,6 +8,7 @@ import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
 import '../layout/top_bar/top_bar_menu_handler.dart';
 import '../layout/top_bar/widgets/editable_score_header.dart';
+import '../common/input_mode_toggle_button.dart';
 
 /// Centered-title top bar for SarvMD Mobile Proposal B ("Conductor's Baton").
 class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
@@ -74,7 +75,8 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
 
-                // Right Zone: Export Quick Action
+                // Right Zone: Mode Toggle & Export Quick Action
+                const InputModeToggleButton(),
                 IconButton(
                   icon: const Icon(Icons.ios_share, size: 19),
                   tooltip: l10n.exportManuscriptTitle,

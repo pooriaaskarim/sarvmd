@@ -21,6 +21,7 @@ class ViewCubit extends Cubit<ViewState> {
   static const String _keyAccent = 'view_accent';
   static const String _keyCalibration = 'view_calibration_factor';
   static const String _keyShowNotation = 'view_show_notation';
+  static const String _keyInputMode = 'view_input_mode';
 
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -70,17 +71,40 @@ class ViewCubit extends Cubit<ViewState> {
     // Load Notation Preview
     final showNotation = prefs.getBool(_keyShowNotation) ?? false;
 
+    // Load Input Mode
+    InputMode inputMode = state.inputMode;
+    final inputModeIndex = prefs.getInt(_keyInputMode);
+    if (inputModeIndex != null &&
+        inputModeIndex >= 0 &&
+        inputModeIndex < InputMode.values.length) {
+      inputMode = InputMode.values[inputModeIndex];
+    } else {
+      // First-run heuristic: If display width is compact/phone (< 600 logical px), default to touch.
+      final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+      if (view != null) {
+        final dpr = view.devicePixelRatio > 0 ? view.devicePixelRatio : 1.0;
+        final logicalWidth = view.physicalSize.width / dpr;
+        if (logicalWidth > 0 && logicalWidth < 600) {
+          inputMode = InputMode.touch;
+          _log.debug('Auto-detected compact screen width; defaulting to touch input mode',
+              context: {'logicalWidth': logicalWidth});
+        }
+      }
+    }
+
     if (isClosed) return;
     emit(state.copyWith(
       themeMode: themeMode,
       accent: accent,
       calibrationFactor: calibrationFactor,
       showNotation: showNotation,
+      inputMode: inputMode,
     ));
     _log.debug('View state restored from SharedPreferences', context: {
       'themeMode': themeMode.name,
       'accent': accent.name,
       'calibrationFactor': calibrationFactor,
+      'inputMode': inputMode.name,
     });
   }
 
@@ -149,5 +173,19 @@ class ViewCubit extends Cubit<ViewState> {
     emit(state.copyWith(showNotation: nextShow));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyShowNotation, nextShow);
+  }
+
+  void setInputMode(InputMode mode) async {
+    _log.debug('Input mode updated', context: {'inputMode': mode.name});
+    emit(state.copyWith(inputMode: mode));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyInputMode, mode.index);
+  }
+
+  void toggleInputMode() {
+    final nextMode = state.inputMode == InputMode.pointer
+        ? InputMode.touch
+        : InputMode.pointer;
+    setInputMode(nextMode);
   }
 }

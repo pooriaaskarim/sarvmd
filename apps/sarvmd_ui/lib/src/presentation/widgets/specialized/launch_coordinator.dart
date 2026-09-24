@@ -10,7 +10,6 @@ import '../../../logic/locale/locale_state.dart';
 import '../../../logic/view/view_cubit.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/services/changelog_service.dart';
-import '../../../core/theme/layout_policy.dart';
 import '../specialized/sarv_splash_screen.dart';
 import '../../screens/editor_screen.dart';
 import '../../screens/mobile_editor_screen.dart';
@@ -59,7 +58,7 @@ class _LaunchCoordinatorState extends State<LaunchCoordinator> {
           transitionDuration: const Duration(milliseconds: 750),
           reverseTransitionDuration: const Duration(milliseconds: 750),
           pageBuilder: (context, animation, secondaryAnimation) =>
-              SarvBreakpoints.isMobile(context)
+              context.read<ViewCubit>().state.inputMode == InputMode.touch
                   ? const MobileEditorScreen(
                       key: ValueKey('mobile_editor_screen'))
                   : const EditorScreen(key: ValueKey('editor_screen')),

@@ -20,6 +20,7 @@ import 'top_bar/top_bar_menu_handler.dart';
 import 'top_bar/widgets/editable_score_header.dart';
 import 'top_bar/widgets/ensemble_profile_picker.dart';
 import 'top_bar/widgets/undo_redo_cluster.dart';
+import '../common/input_mode_toggle_button.dart';
 
 /// Professional Dorico / Figma-style top control header bar for SarvMD.
 class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
@@ -150,6 +151,8 @@ class _CompactLayout extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(width: 4.0),
+        const InputModeToggleButton(),
       ],
     );
   }
@@ -201,6 +204,8 @@ class _WideLayout extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(width: 4.0),
+        const InputModeToggleButton(),
       ],
     );
   }

@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **User-Selectable Input Mode (Pointer vs. Touch)**:
+  - Added explicit interaction mode selection (`InputMode.pointer` and `InputMode.touch`) persisted to user preferences via `ViewCubit`.
+  - Decoupled application layout routing in `LaunchCoordinator` from screen width, allowing tablet users and middle-sized touch devices to use the touch-first conductor interface at any viewport width.
+  - Added `InputModeToggleButton` with safety reload confirmation dialog to both `SarvTopBar` and `MobileTopBar`.
+  - Implemented initial boot heuristic defaulting screens narrower than 600 logical pixels to touch mode on first run.
 - **Automated Android Release CI Pipeline**:
   - Added GitHub Actions workflow (`release_android.yml`) to automatically build and attach signed release APKs on Git version tags (`v*`).
   - Configured Gradle build scripts to output standardized versioned artifact filenames (`sarvmd-vX.Y.Z.apk`).
