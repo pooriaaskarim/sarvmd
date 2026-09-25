@@ -25,11 +25,13 @@ class ConductorToolbar extends StatefulWidget {
     required this.transformationController,
     required this.onZoomPreset,
     this.isVisible = true,
+    this.onOpenMenu,
   });
 
   final TransformationController transformationController;
   final ValueChanged<ZoomPreset> onZoomPreset;
   final bool isVisible;
+  final VoidCallback? onOpenMenu;
 
   @override
   State<ConductorToolbar> createState() => _ConductorToolbarState();
@@ -246,7 +248,11 @@ class _ConductorToolbarState extends State<ConductorToolbar> {
                         tooltip: l10n.appMenuTooltip,
                         onPressed: () {
                           _resetIdleTimer();
-                          Scaffold.of(context).openDrawer();
+                          if (widget.onOpenMenu != null) {
+                            widget.onOpenMenu!();
+                          } else {
+                            Scaffold.of(context).openDrawer();
+                          }
                         },
                         color: cs.primary,
                         visualDensity: VisualDensity.compact,
@@ -445,64 +451,87 @@ class _MobileGuidesSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.visibility_outlined, size: 18, color: cs.primary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.guides,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: cs.onSurface,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.visibility_outlined, size: 18, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.guides,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Close',
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => Navigator.of(context).maybePop(),
               ),
             ],
           ),
           const Divider(height: 16),
-          _MobileGuideTile(
-            label: l10n.mouseWings,
-            value: viewState.isGuideActive(GuideType.rulerWings),
-            onChanged: (v) => viewCubit.toggleGuide(GuideType.rulerWings, v),
-          ),
-          _MobileGuideTile(
-            label: l10n.paperEdges,
-            value: viewState.isGuideActive(GuideType.paperEdges),
-            onChanged: (v) => viewCubit.toggleGuide(GuideType.paperEdges, v),
-          ),
-          _MobileGuideTile(
-            label: l10n.paperCenters,
-            value: viewState.isGuideActive(GuideType.paperCenters),
-            onChanged: (v) => viewCubit.toggleGuide(GuideType.paperCenters, v),
-          ),
-          _MobileGuideTile(
-            label: l10n.documentMargins,
-            value: viewState.isGuideActive(GuideType.margins),
-            onChanged: (v) => viewCubit.toggleGuide(GuideType.margins, v),
-          ),
-          _MobileGuideTile(
-            label: l10n.staffBounds,
-            value: viewState.isGuideActive(GuideType.staffBounds),
-            onChanged: (v) => viewCubit.toggleGuide(GuideType.staffBounds, v),
-          ),
-          const Divider(height: 16),
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.straighten, size: 18, color: cs.primary),
-            title: Text(
-              l10n.actualSize,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _MobileGuideTile(
+                    label: l10n.mouseWings,
+                    value: viewState.isGuideActive(GuideType.rulerWings),
+                    onChanged: (v) => viewCubit.toggleGuide(GuideType.rulerWings, v),
+                  ),
+                  _MobileGuideTile(
+                    label: l10n.paperEdges,
+                    value: viewState.isGuideActive(GuideType.paperEdges),
+                    onChanged: (v) => viewCubit.toggleGuide(GuideType.paperEdges, v),
+                  ),
+                  _MobileGuideTile(
+                    label: l10n.paperCenters,
+                    value: viewState.isGuideActive(GuideType.paperCenters),
+                    onChanged: (v) => viewCubit.toggleGuide(GuideType.paperCenters, v),
+                  ),
+                  _MobileGuideTile(
+                    label: l10n.documentMargins,
+                    value: viewState.isGuideActive(GuideType.margins),
+                    onChanged: (v) => viewCubit.toggleGuide(GuideType.margins, v),
+                  ),
+                  _MobileGuideTile(
+                    label: l10n.staffBounds,
+                    value: viewState.isGuideActive(GuideType.staffBounds),
+                    onChanged: (v) => viewCubit.toggleGuide(GuideType.staffBounds, v),
+                  ),
+                  const Divider(height: 16),
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.straighten, size: 18, color: cs.primary),
+                    title: Text(
+                      l10n.actualSize,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      l10n.physicalDensity,
+                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    ),
+                    onTap: () {
+                      Navigator.of(context).maybePop();
+                      showCalibrationDialog(context, viewCubit);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
-            subtitle: Text(
-              l10n.physicalDensity,
-              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-            ),
-            onTap: () {
-              Navigator.of(context).maybePop();
-              showCalibrationDialog(context, viewCubit);
-            },
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );

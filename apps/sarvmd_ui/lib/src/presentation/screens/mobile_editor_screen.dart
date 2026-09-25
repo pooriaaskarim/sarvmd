@@ -25,7 +25,8 @@ class MobileEditorScreen extends StatefulWidget {
   State<MobileEditorScreen> createState() => _MobileEditorScreenState();
 }
 
-class _MobileEditorScreenState extends State<MobileEditorScreen> {
+class _MobileEditorScreenState extends State<MobileEditorScreen>
+    with SingleTickerProviderStateMixin {
   final TransformationController _transformationController =
       TransformationController();
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
@@ -35,6 +36,48 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
   Timer? _longPressDismissTimer;
   bool _batonVisible = true;
   Timer? _canvasGestureDebounce;
+  Orientation? _lastOrientation;
+
+  late final AnimationController _sideSheetController;
+  late final Animation<Offset> _sideSheetSlideAnimation;
+  late final Animation<double> _scrimOpacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _sideSheetController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _sideSheetSlideAnimation = Tween<Offset>(
+      begin: const Offset(-1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _sideSheetController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    ));
+    _scrimOpacityAnimation = CurvedAnimation(
+      parent: _sideSheetController,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentOrientation = MediaQuery.orientationOf(context);
+    if (_lastOrientation != null && _lastOrientation != currentOrientation) {
+      if (!_sideSheetController.isDismissed) {
+        _sideSheetController.reset();
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _triggerFitZoom();
+      });
+    }
+    _lastOrientation = currentOrientation;
+  }
 
   void _triggerFitZoom() {
     final isPortrait = MediaQuery.orientationOf(context) == Orientation.portrait;
@@ -43,6 +86,20 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
 
   void _onZoomPresetSelected(ZoomPreset preset) {
     _canvasKey.currentState?.applyZoomPreset(preset);
+  }
+
+  void _toggleLandscapeSideSheet() {
+    if (_sideSheetController.isCompleted || _sideSheetController.velocity > 0) {
+      _sideSheetController.reverse();
+    } else {
+      _sideSheetController.forward();
+    }
+  }
+
+  void _closeLandscapeSideSheet() {
+    if (!_sideSheetController.isDismissed) {
+      _sideSheetController.reverse();
+    }
   }
 
   void _handleLongPressStart(Offset localPosition) {
@@ -102,6 +159,7 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
     _canvasGestureDebounce?.cancel();
     _transformationController.dispose();
     _cursorNotifier.dispose();
+    _sideSheetController.dispose();
     super.dispose();
   }
 
@@ -235,6 +293,9 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+
     return BlocListener<DocumentCubit, DocumentState>(
       listenWhen: (previous, current) =>
           previous.config.effectiveWidth != current.config.effectiveWidth ||
@@ -246,75 +307,140 @@ class _MobileEditorScreenState extends State<MobileEditorScreen> {
       },
       child: Directionality(
         textDirection: TextDirection.ltr,
-        child: Scaffold(
-          drawerEdgeDragWidth: 24.0,
-          appBar: const MobileTopBar(),
-          drawer: ConductorDrawer(
-            transformationController: _transformationController,
-            onZoomPreset: _onZoomPresetSelected,
-          ),
-          body: Stack(
-            children: [
-              // Layer 1: Manuscript Canvas Area
-              Positioned.fill(
-                child: MobileCanvasArea(
-                  key: _canvasKey,
-                  transformationController: _transformationController,
-                  cursorNotifier: _cursorNotifier,
-                  bottomPadding: 0.0,
-                  onLongPressStartCanvas: _handleLongPressStart,
-                  onLongPressMoveCanvas: _handleLongPressMove,
-                  onLongPressEndCanvas: _handleLongPressEnd,
-                  onInteractionStart: _onInteractionStart,
-                  onInteractionEnd: _onInteractionEnd,
-                ),
-              ),
-
-              // Layer 2: Aesthetic Top Glassmorphic Coordinate HUD
-              // Positioned cleanly below top ruler (25.0 dp ruler height + 11.0 dp clearance)
-              Positioned(
-                top: 36.0,
-                left: 16.0,
-                right: 16.0,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0.0, -0.3),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: _longPressPos != null
-                      ? KeyedSubtree(
-                          key: const ValueKey('top_coord_hud_active'),
-                          child: _buildTopCoordinateHUD(context, _longPressPos!),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('top_coord_hud_idle')),
-                ),
-              ),
-
-              // Layer 3: Floating Conductor Baton Toolbar (Bottom Center)
-              Positioned(
-                bottom: 20.0 + MediaQuery.paddingOf(context).bottom,
-                left: 0.0,
-                right: 0.0,
-                child: Center(
-                  child: ConductorToolbar(
+        child: PopScope(
+          canPop: !isLandscape || _sideSheetController.isDismissed,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && isLandscape && !_sideSheetController.isDismissed) {
+              _closeLandscapeSideSheet();
+            }
+          },
+          child: Scaffold(
+            drawerEdgeDragWidth: isLandscape ? 0.0 : 24.0,
+            appBar: MobileTopBar(
+              onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
+            ),
+            drawer: isLandscape
+                ? null
+                : ConductorDrawer(
                     transformationController: _transformationController,
                     onZoomPreset: _onZoomPresetSelected,
-                    isVisible: _batonVisible,
+                  ),
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Layer 1: Manuscript Canvas Area
+                Positioned.fill(
+                  child: MobileCanvasArea(
+                    key: _canvasKey,
+                    transformationController: _transformationController,
+                    cursorNotifier: _cursorNotifier,
+                    bottomPadding: 0.0,
+                    onLongPressStartCanvas: _handleLongPressStart,
+                    onLongPressMoveCanvas: _handleLongPressMove,
+                    onLongPressEndCanvas: _handleLongPressEnd,
+                    onInteractionStart: _onInteractionStart,
+                    onInteractionEnd: _onInteractionEnd,
                   ),
                 ),
-              ),
-            ],
+
+                // Layer 2: Aesthetic Top Glassmorphic Coordinate HUD
+                // Positioned cleanly below top ruler (25.0 dp ruler height + 11.0 dp clearance)
+                Positioned(
+                  top: 36.0,
+                  left: 16.0,
+                  right: 16.0,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.0, -0.3),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _longPressPos != null
+                        ? KeyedSubtree(
+                            key: const ValueKey('top_coord_hud_active'),
+                            child: _buildTopCoordinateHUD(context, _longPressPos!),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('top_coord_hud_idle')),
+                  ),
+                ),
+
+                // Layer 3: Floating Conductor Baton Toolbar (Bottom Center)
+                Positioned(
+                  bottom: (isLandscape ? 12.0 : 20.0) + MediaQuery.paddingOf(context).bottom,
+                  left: 0.0,
+                  right: 0.0,
+                  child: Center(
+                    child: ConductorToolbar(
+                      transformationController: _transformationController,
+                      onZoomPreset: _onZoomPresetSelected,
+                      isVisible: _batonVisible,
+                      onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
+                    ),
+                  ),
+                ),
+
+                // Layer 4 & 5: Material 3 Left Side Sheet & Backdrop Scrim (Landscape Only)
+                if (isLandscape)
+                  Positioned.fill(
+                    child: AnimatedBuilder(
+                      animation: _sideSheetController,
+                      builder: (context, _) {
+                        if (_sideSheetController.isDismissed) {
+                          return const SizedBox.shrink();
+                        }
+                        final screenWidth = MediaQuery.sizeOf(context).width;
+                        final sideSheetWidth = 320.0.clamp(280.0, screenWidth * 0.85);
+
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Scrim
+                            Positioned.fill(
+                              child: FadeTransition(
+                                opacity: _scrimOpacityAnimation,
+                                child: GestureDetector(
+                                  onTap: _closeLandscapeSideSheet,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    color: Colors.black.withValues(alpha: 0.35),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // Left Side Sheet
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              left: 0,
+                              width: sideSheetWidth,
+                              child: SlideTransition(
+                                position: _sideSheetSlideAnimation,
+                                child: ConductorDrawer(
+                                  transformationController: _transformationController,
+                                  onZoomPreset: _onZoomPresetSelected,
+                                  isSideSheet: true,
+                                  onClose: _closeLandscapeSideSheet,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

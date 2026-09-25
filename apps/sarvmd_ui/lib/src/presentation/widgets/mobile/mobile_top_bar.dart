@@ -16,10 +16,12 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.height = 40.0,
     this.onOpenDrawer,
+    this.onOpenMenu,
   });
 
   final double height;
   final VoidCallback? onOpenDrawer;
+  final VoidCallback? onOpenMenu;
 
   @override
   Size get preferredSize => Size.fromHeight(height);
@@ -58,7 +60,7 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
                 IconButton(
                   icon: const Icon(Icons.menu, size: 20),
                   tooltip: l10n.appMenuTooltip,
-                  onPressed: onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
+                  onPressed: onOpenMenu ?? onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
                 ),
 
                 // Center Zone: Centered Document Score Title (Inline Editable)
