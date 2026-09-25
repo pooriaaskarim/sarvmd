@@ -162,6 +162,59 @@ void main() {
       expect(find.byType(Dialog), findsOneWidget);
     });
 
+    testWidgets('StaffConfigDialog survives small height screens without RenderFlex overflow', (tester) async {
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = const Size(800, 450);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final staff = documentCubit.state.config.allStaves.first;
+
+      await tester.pumpWidget(
+        buildAppWithButton(
+          onOpen: (context) => showStaffConfigDialog(
+            context,
+            staff: staff,
+            notifier: documentCubit,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(StaffConfigDialog), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Even smaller height: landscape phone (700 x 360)
+      tester.view.physicalSize = const Size(700, 360);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      // Switch to Clef & Lines Tab
+      await tester.tap(find.text('Clef & Lines'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      // Switch to Fine-Tuning Tab
+      await tester.tap(find.text('Fine-Tuning'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      // Toggle preview off and on via visibility eye button
+      final eyeButton = find.byIcon(Icons.visibility_outlined);
+      if (eyeButton.evaluate().isNotEmpty) {
+        await tester.tap(eyeButton);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(find.byIcon(Icons.visibility_off_outlined));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    });
+
     testWidgets('CalibrationDialog maintains Dialog card wrapper when resized narrower than 600px', (tester) async {
       tester.view.devicePixelRatio = 1.0;
       tester.view.physicalSize = const Size(1000, 800);

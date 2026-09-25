@@ -27,6 +27,9 @@ class LiveStaffPreview extends StatelessWidget {
   /// If null, interactive line tapping is disabled.
   final ValueChanged<int>? onAnchorLineChanged;
 
+  /// Custom height for the preview card container.
+  final double height;
+
   const LiveStaffPreview({
     super.key,
     required this.name,
@@ -41,6 +44,7 @@ class LiveStaffPreview extends StatelessWidget {
     required this.fontSize,
     required this.italic,
     this.onAnchorLineChanged,
+    this.height = 140.0,
   });
 
   @override
@@ -55,7 +59,7 @@ class LiveStaffPreview extends StatelessWidget {
       child: Center(
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(maxWidth: 380, maxHeight: 140),
+          constraints: BoxConstraints(maxWidth: 380, maxHeight: height),
           decoration: BoxDecoration(
           color: paperColor,
           borderRadius:
@@ -94,9 +98,9 @@ class LiveStaffPreview extends StatelessWidget {
                   // Only register taps horizontally near the staff lines
                   if (tappedX < startX - 15.0 || tappedX > endX + 15.0) return;
 
-                  const double gap =
-                      15.0; // Scaled up gap for higher tactile precision
-                  final double midY = 140 / 2; // Container height is 140
+                  final double gap =
+                      constraints.maxHeight < 110 ? 11.0 : 15.0;
+                  final double midY = constraints.maxHeight / 2;
                   final double staffHeight = (lines - 1) * gap;
                   final double startY = midY - staffHeight / 2;
 
@@ -171,8 +175,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final double midY = size.height / 2;
-    const double gap =
-        15.0; // Scaled up line spacing for maximum visibility (up from 12.0)
+    final double gap = size.height < 110 ? 11.0 : 15.0;
     final double staffHeight = (lines - 1) * gap;
     final double startY = midY - staffHeight / 2;
 

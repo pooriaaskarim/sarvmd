@@ -34,7 +34,9 @@ Future<T?> showSarvAdaptiveModal<T>({
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: maxWidth,
-              maxHeight: sheetMedia.size.height * 0.90,
+              maxHeight: sheetMedia.size.height < 500
+                  ? sheetMedia.size.height * 0.96
+                  : sheetMedia.size.height * 0.90,
             ),
             child: Material(
               color: cs.surfaceContainerHigh,
@@ -95,14 +97,16 @@ Future<T?> showSarvAdaptiveModal<T>({
             side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
           ),
           clipBehavior: Clip.antiAlias,
-          insetPadding: const EdgeInsets.symmetric(
+          insetPadding: EdgeInsets.symmetric(
             horizontal: 16.0,
-            vertical: 24.0,
+            vertical: dialogMedia.size.height < 600 ? 8.0 : 24.0,
           ),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: maxWidth,
-              maxHeight: dialogMedia.size.height * 0.90,
+              maxHeight: dialogMedia.size.height < 600
+                  ? dialogMedia.size.height * 0.96
+                  : dialogMedia.size.height * 0.90,
             ),
             child: builder(dialogContext, false),
           ),
