@@ -38,7 +38,34 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
   Timer? _canvasGestureDebounce;
   Orientation? _lastOrientation;
   bool? _userTopBarPinnedOverride;
-  bool _isTopBarCompact = false;
+  bool _isTopBarExpanded = false;
+  bool _isEditingScoreTitle = false;
+  Timer? _topBarIdleTimer;
+
+  void _resetTopBarIdleTimer() {
+    _topBarIdleTimer?.cancel();
+    if (_isEditingScoreTitle) return;
+    _topBarIdleTimer = Timer(const Duration(milliseconds: 5000), () {
+      if (mounted && _isTopBarExpanded && !_isEditingScoreTitle) {
+        setState(() {
+          _isTopBarExpanded = false;
+        });
+      }
+    });
+  }
+
+  void _onTitleEditingChanged(bool isEditing) {
+    setState(() {
+      _isEditingScoreTitle = isEditing;
+    });
+    if (isEditing) {
+      _topBarIdleTimer?.cancel();
+    } else {
+      if (!_computeIsTopBarPinned(context) && _isTopBarExpanded) {
+        _resetTopBarIdleTimer();
+      }
+    }
+  }
 
   bool _computeIsTopBarPinned(BuildContext context) {
     if (_userTopBarPinnedOverride != null) {
@@ -81,6 +108,8 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
     super.didChangeDependencies();
     final currentOrientation = MediaQuery.orientationOf(context);
     if (_lastOrientation != null && _lastOrientation != currentOrientation) {
+      _topBarIdleTimer?.cancel();
+      _isTopBarExpanded = false;
       if (!_sideSheetController.isDismissed) {
         _sideSheetController.reset();
       }
@@ -116,11 +145,17 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
 
   void _handleLongPressStart(Offset localPosition) {
     _longPressDismissTimer?.cancel();
+    _topBarIdleTimer?.cancel();
+    if (_isEditingScoreTitle) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      _isEditingScoreTitle = false;
+    }
     HapticFeedback.selectionClick();
     final matrix = _transformationController.value;
     _cursorNotifier.value = MatrixUtils.transformPoint(matrix, localPosition);
     setState(() {
       _longPressPos = localPosition;
+      _isTopBarExpanded = false;
     });
   }
 
@@ -130,6 +165,9 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
     _cursorNotifier.value = MatrixUtils.transformPoint(matrix, localPosition);
     setState(() {
       _longPressPos = localPosition;
+      if (_isTopBarExpanded) {
+        _isTopBarExpanded = false;
+      }
     });
   }
 
@@ -147,9 +185,22 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
 
   void _onInteractionStart(ScaleStartDetails details) {
     _canvasGestureDebounce?.cancel();
-    if (_batonVisible) {
+    _topBarIdleTimer?.cancel();
+    _longPressDismissTimer?.cancel();
+    if (_longPressPos != null) {
+      _cursorNotifier.value = null;
+      setState(() {
+        _longPressPos = null;
+      });
+    }
+    if (_isEditingScoreTitle) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
+    if (_batonVisible || _isTopBarExpanded) {
       setState(() {
         _batonVisible = false;
+        _isTopBarExpanded = false;
       });
     }
   }
@@ -167,6 +218,7 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
 
   @override
   void dispose() {
+    _topBarIdleTimer?.cancel();
     _longPressDismissTimer?.cancel();
     _canvasGestureDebounce?.cancel();
     _transformationController.dispose();
@@ -309,8 +361,13 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
         MediaQuery.orientationOf(context) == Orientation.landscape;
     final isPinned = _computeIsTopBarPinned(context);
     final topPadding = MediaQuery.paddingOf(context).top;
+    final leftPadding = MediaQuery.paddingOf(context).left;
+    final rightPadding = MediaQuery.paddingOf(context).right;
     const topBarHeight = 40.0;
     final canvasTopOffset = isPinned ? (topBarHeight + topPadding) : 0.0;
+    final topSafeArea = isPinned ? 0.0 : topPadding;
+    final leftSafeArea = isLandscape ? leftPadding : 0.0;
+    final showTopBar = isPinned || ((_batonVisible || _isEditingScoreTitle) && _longPressPos == null);
 
     return BlocListener<DocumentCubit, DocumentState>(
       listenWhen: (previous, current) =>
@@ -324,9 +381,14 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: PopScope(
-          canPop: !isLandscape || _sideSheetController.isDismissed,
+          canPop: (!isLandscape || _sideSheetController.isDismissed) && !_isEditingScoreTitle,
           onPopInvokedWithResult: (didPop, result) {
-            if (!didPop && isLandscape && !_sideSheetController.isDismissed) {
+            if (didPop) return;
+            if (_isEditingScoreTitle) {
+              FocusManager.instance.primaryFocus?.unfocus();
+              return;
+            }
+            if (isLandscape && !_sideSheetController.isDismissed) {
               _closeLandscapeSideSheet();
             }
           },
@@ -352,6 +414,8 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                     transformationController: _transformationController,
                     cursorNotifier: _cursorNotifier,
                     bottomPadding: 0.0,
+                    topSafeArea: topSafeArea,
+                    leftSafeArea: leftSafeArea,
                     onLongPressStartCanvas: _handleLongPressStart,
                     onLongPressMoveCanvas: _handleLongPressMove,
                     onLongPressEndCanvas: _handleLongPressEnd,
@@ -363,9 +427,9 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                 // Layer 2: Aesthetic Top Glassmorphic Coordinate HUD
                 // Positioned cleanly below top ruler (25.0 dp ruler height + 11.0 dp clearance)
                 Positioned(
-                  top: canvasTopOffset + 36.0,
-                  left: 16.0,
-                  right: 16.0,
+                  top: canvasTopOffset + topSafeArea + 36.0,
+                  left: 16.0 + leftSafeArea,
+                  right: 16.0 + (isLandscape ? rightPadding : 0.0),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     switchInCurve: Curves.easeOutCubic,
@@ -395,8 +459,8 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                 // Positioned cleanly past the 25.0 dp left ruler (25.0 dp ruler + 11.0 dp clearance)
                 Positioned(
                   bottom: (isLandscape ? 12.0 : 20.0) + MediaQuery.paddingOf(context).bottom,
-                  left: 36.0 + MediaQuery.paddingOf(context).left,
-                  right: (isLandscape ? 20.0 : 16.0) + MediaQuery.paddingOf(context).right,
+                  left: 36.0 + leftSafeArea,
+                  right: (isLandscape ? 20.0 : 16.0) + rightPadding,
                   child: ConductorToolbar(
                     transformationController: _transformationController,
                     onZoomPreset: _onZoomPresetSelected,
@@ -412,30 +476,43 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                   left: 0.0,
                   right: 0.0,
                   child: IgnorePointer(
-                    ignoring: !isPinned && !_batonVisible,
+                    ignoring: !showTopBar,
                     child: AnimatedSlide(
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeOutCubic,
-                      offset: (isPinned || _batonVisible)
+                      offset: showTopBar
                           ? Offset.zero
                           : const Offset(0.0, -1.3),
                       child: AnimatedOpacity(
                         duration: const Duration(milliseconds: 200),
-                        opacity: (isPinned || _batonVisible) ? 1.0 : 0.0,
+                        opacity: showTopBar ? 1.0 : 0.0,
                         child: MobileTopBar(
                           onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
                           isPinned: isPinned,
                           onTogglePin: () {
                             setState(() {
-                              _userTopBarPinnedOverride = !isPinned;
+                              final newPinned = !isPinned;
+                              _userTopBarPinnedOverride = newPinned;
+                              if (!newPinned) {
+                                _isTopBarExpanded = true;
+                                _resetTopBarIdleTimer();
+                              } else {
+                                _topBarIdleTimer?.cancel();
+                              }
                             });
                           },
-                          isCompactPill: !isPinned && _isTopBarCompact,
+                          isCompactPill: !isPinned && (!_isTopBarExpanded && !_isEditingScoreTitle),
                           onToggleCompact: () {
                             setState(() {
-                              _isTopBarCompact = !_isTopBarCompact;
+                              _isTopBarExpanded = !_isTopBarExpanded;
+                              if (_isTopBarExpanded) {
+                                _resetTopBarIdleTimer();
+                              } else {
+                                _topBarIdleTimer?.cancel();
+                              }
                             });
                           },
+                          onTitleEditingChanged: _onTitleEditingChanged,
                         ),
                       ),
                     ),

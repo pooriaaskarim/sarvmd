@@ -14,7 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented smart viewport-aware top bar pinning: defaults to pinned in portrait (`height >= 500dp`) and unpinned in landscape/compact screens (`height < 500dp`), reclaiming 15–20% of vertical canvas space.
   - Added an interactive pin/unpin toggle button (`Icons.push_pin` / `Icons.push_pin_outlined`) in the top bar with persistent user overrides.
   - Added full canvas gesture immersion: when unpinned, the top bar smoothly slides up off-screen (`Offset(0, -1.3)`) in sync with the bottom Conductor HUD on pan/zoom, restoring borderless score visibility.
-  - Added a collapsible floating micro-pill mode with centered title capsule and one-tap expansion.
+  - Standardized the collapsed floating top bar to a 40dp capsule height (matching the expanded toolbar and coordinate HUD) with a reactive intrinsic width dynamically sized to document title length with clamped bounds (`120dp` to `340dp`).
+  - Added dynamic ruler clearance: positioned unpinned top bar (both collapsed capsule and expanded toolbar) 6dp below the top ruler and 8dp past the left ruler, preventing any ruler occlusion or origin-switcher blocking.
+  - Implemented conflict-free coordinate HUD visibility: long-pressing and dragging on the canvas to inspect coordinates automatically collapses and dismisses the floating top bar off-screen, giving unobstructed visibility to the top glassmorphic coordinate HUD.
+  - Enhanced inline title editing: temporarily hides flanking top bar controls in tight/portrait screens to maximize text field room, complete with a dedicated Done button, click-outside auto-save, and system back navigation handling.
+- **Safe-Area Aware Rulers & Edge-to-Edge Bleed**:
+  - Top and left manuscript canvas rulers now dynamically adapt to device notches, status bars, and display cutouts.
+  - The canvas background bleeds edge-to-edge under the status bar, while `RulerBox` expands its top and left background strips and positions graduation numbers, ticks, and the `mm` origin switcher safely below cutouts.
 - **Dual-Island Mobile Conductor Toolbar & Gestural Drawer Trigger**:
   - Decoupled the mobile bottom HUD into independent Left (menu, undo, redo) and Right (zoom, telemetry, guides) wings with 11dp ruler clearance and independent idle auto-collapse timers.
   - Implemented continuous bi-directional drag zoom on both collapsed and expanded zoom chips (drag up/right to zoom in, down/left to zoom out) with tactile haptic selection clicks.

@@ -97,6 +97,10 @@ void main() {
       expect(scaffold.drawerEdgeDragWidth, equals(0.0));
       expect(find.byType(ConductorDrawer), findsNothing);
 
+      // Expand top bar from collapsed title pill
+      await tester.tap(find.byKey(const ValueKey('top_bar_compact_pill')));
+      await tester.pumpAndSettle();
+
       // Tap top bar menu button
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();

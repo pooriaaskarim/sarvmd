@@ -18,6 +18,8 @@ class MobileCanvasArea extends StatefulWidget {
     required this.transformationController,
     required this.cursorNotifier,
     this.bottomPadding = 0,
+    this.topSafeArea = 0.0,
+    this.leftSafeArea = 0.0,
     this.onLongPressCanvas,
     this.onLongPressStartCanvas,
     this.onLongPressMoveCanvas,
@@ -29,6 +31,8 @@ class MobileCanvasArea extends StatefulWidget {
   final TransformationController transformationController;
   final ValueNotifier<Offset?> cursorNotifier;
   final double bottomPadding;
+  final double topSafeArea;
+  final double leftSafeArea;
   final void Function(Offset localPosition)? onLongPressCanvas;
   final void Function(Offset localPosition)? onLongPressStartCanvas;
   final void Function(Offset localPosition)? onLongPressMoveCanvas;
@@ -66,8 +70,10 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
 
     const double rulerSize = 25.0;
     const double padding = 24.0;
-    final canvasWidth = constraints.maxWidth - rulerSize;
-    final canvasHeight = constraints.maxHeight - rulerSize - widget.bottomPadding;
+    final totalRulerWidth = rulerSize + widget.leftSafeArea;
+    final totalRulerHeight = rulerSize + widget.topSafeArea;
+    final canvasWidth = constraints.maxWidth - totalRulerWidth;
+    final canvasHeight = constraints.maxHeight - totalRulerHeight - widget.bottomPadding;
     final availableWidth = (canvasWidth - padding * 2).clamp(1.0, double.infinity);
     final availableHeight = (canvasHeight - padding * 2).clamp(1.0, double.infinity);
 
@@ -136,6 +142,8 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
               viewState: viewState,
               cursorNotifier: widget.cursorNotifier,
               showCoordinateHud: false,
+              topSafeArea: widget.topSafeArea,
+              leftSafeArea: widget.leftSafeArea,
               paperSizeMm: Size(
                 configState.effectiveWidth,
                 configState.effectiveHeight,

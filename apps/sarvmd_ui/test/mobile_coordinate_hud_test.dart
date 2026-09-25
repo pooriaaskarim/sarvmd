@@ -15,6 +15,7 @@ import 'package:sarvmd_ui/src/logic/locale/locale_state.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
 import 'package:sarvmd_ui/src/presentation/screens/mobile_editor_screen.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/mobile/mobile_top_bar.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -106,6 +107,68 @@ void main() {
 
       await gesture.up();
       await tester.pump();
+    });
+
+    testWidgets('In unpinned mode, long-press coordinate dragging hides floating top bar and prevents conflicting visibility', (tester) async {
+      tester.view.physicalSize = const Size(800, 400); // Landscape -> unpinned by default
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Top bar compact pill is visible by default in unpinned mode
+      expect(find.byKey(const ValueKey('top_bar_compact_pill')), findsOneWidget);
+
+      // Verify compact pill sits below the 25.0 dp top ruler
+      final pillTop = tester.getTopLeft(find.byKey(const ValueKey('top_bar_compact_pill'))).dy;
+      expect(pillTop, greaterThanOrEqualTo(25.0),
+          reason: 'Compact pill must sit below the top ruler so it does not cover graduation numbers');
+
+      // Expand to floating bar
+      await tester.tap(find.byKey(const ValueKey('top_bar_compact_pill')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('top_bar_floating_bar')), findsOneWidget);
+
+      // Verify floating bar also sits below top ruler and past left ruler
+      final barPos = tester.getTopLeft(find.byKey(const ValueKey('top_bar_floating_bar')));
+      expect(barPos.dy, greaterThanOrEqualTo(25.0),
+          reason: 'Floating bar must sit below top ruler');
+      expect(barPos.dx, greaterThanOrEqualTo(25.0),
+          reason: 'Floating bar must sit to the right of left ruler');
+
+      // Now start long-press drag on canvas
+      final gesture = await tester.startGesture(const Offset(400, 300));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+
+      // Coordinate HUD is visible
+      expect(find.byKey(const ValueKey('top_coord_hud_active')), findsOneWidget);
+
+      // Floating top bar should be hidden (slid off with opacity 0)
+      final topBarSlide = tester.widget<AnimatedSlide>(
+        find.ancestor(
+          of: find.byType(MobileTopBar),
+          matching: find.byType(AnimatedSlide),
+        ),
+      );
+      expect(topBarSlide.offset.dy, lessThan(0.0),
+          reason: 'Floating top bar should slide off-screen during coordinate drag');
+
+      final topBarOpacity = tester.widget<AnimatedOpacity>(
+        find.ancestor(
+          of: find.byType(MobileTopBar),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(topBarOpacity.opacity, equals(0.0),
+          reason: 'Floating top bar should have 0.0 opacity during coordinate drag');
+
+      await gesture.up();
+      // Allow dismiss timer to flush cleanly
+      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pumpAndSettle();
     });
   });
 }

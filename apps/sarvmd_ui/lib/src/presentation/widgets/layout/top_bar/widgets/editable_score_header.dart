@@ -17,28 +17,46 @@ class EditableScoreHeader extends StatefulWidget {
   final core.Score score;
   final core.PageConfig configState;
   final bool isCompact;
+  final bool expandInEditMode;
+  final ValueChanged<bool>? onEditingChanged;
 
   const EditableScoreHeader({
     super.key,
     required this.score,
     required this.configState,
     this.isCompact = false,
+    this.expandInEditMode = true,
+    this.onEditingChanged,
   });
 
   @override
-  State<EditableScoreHeader> createState() => _EditableScoreHeaderState();
+  State<EditableScoreHeader> createState() => EditableScoreHeaderState();
 }
 
-class _EditableScoreHeaderState extends State<EditableScoreHeader> {
+class EditableScoreHeaderState extends State<EditableScoreHeader> {
   bool _isEditingTitle = false;
   bool _isHovered = false;
   late TextEditingController _titleController;
   final FocusNode _titleFocusNode = FocusNode();
+  DocumentCubit? _documentCubit;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _documentCubit = context.read<DocumentCubit>();
+  }
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.score.title);
+    _titleFocusNode.addListener(_handleFocusChange);
+  }
+
+  void _handleFocusChange() {
+    if (!_titleFocusNode.hasFocus && _isEditingTitle) {
+      _submitTitle();
+    }
   }
 
   @override
@@ -51,20 +69,44 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
 
   @override
   void dispose() {
+    _titleFocusNode.removeListener(_handleFocusChange);
+    if (_isEditingTitle) {
+      _saveTitleIfChanged();
+    }
     _titleController.dispose();
     _titleFocusNode.dispose();
     super.dispose();
   }
 
-  void _submitTitle() {
-    if (!_isEditingTitle) return;
+  void _saveTitleIfChanged() {
     final newTitle = _titleController.text.trim();
-    if (newTitle != widget.score.title) {
-      context.read<DocumentCubit>().execute(
+    if (newTitle != widget.score.title && _documentCubit != null) {
+      _documentCubit!.execute(
             core.SetTitleCommand(newTitle, widget.score.title),
           );
     }
-    setState(() => _isEditingTitle = false);
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditingTitle = true;
+      _titleController.text = widget.score.title;
+    });
+    widget.onEditingChanged?.call(true);
+    _titleFocusNode.requestFocus();
+  }
+
+  void submitTitle() => _submitTitle();
+
+  void _submitTitle() {
+    if (!_isEditingTitle) return;
+    _isEditingTitle = false;
+    _titleFocusNode.unfocus();
+    _saveTitleIfChanged();
+    if (mounted) {
+      setState(() {});
+    }
+    widget.onEditingChanged?.call(false);
   }
 
   @override
@@ -76,60 +118,70 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
     final isCentered = widget.isCompact;
 
     final titleWidget = _isEditingTitle
-        ? ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: 140.0,
-              maxWidth: widget.isCompact ? 220.0 : 340.0,
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              height: 28.0,
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.08),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
-                border: Border(
-                  bottom: BorderSide(
-                    color: cs.primary,
-                    width: 2.0,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: cs.primary.withValues(alpha: 0.12),
-                    blurRadius: 8.0,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+        ? PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              _submitTitle();
+            },
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: 140.0,
+                maxWidth: widget.expandInEditMode
+                    ? double.infinity
+                    : (widget.isCompact ? 220.0 : 340.0),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              alignment: Alignment.center,
-              child: TextField(
-                controller: _titleController,
-                focusNode: _titleFocusNode,
-                autofocus: true,
-                textAlign: isCentered ? TextAlign.center : TextAlign.start,
-                cursorColor: cs.primary,
-                cursorWidth: 2.0,
-                cursorRadius: const Radius.circular(1.0),
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
-                  letterSpacing: 0.3,
-                ),
-                decoration: InputDecoration(
-                  hintText: defaultTitle,
-                  hintStyle: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                height: 28.0,
+                width: widget.expandInEditMode ? double.infinity : null,
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.08),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: cs.primary,
+                      width: 2.0,
+                    ),
                   ),
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
-                  border: InputBorder.none,
+                  boxShadow: [
+                    BoxShadow(
+                      color: cs.primary.withValues(alpha: 0.12),
+                      blurRadius: 8.0,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                onSubmitted: (_) => _submitTitle(),
-                onTapOutside: (_) => _submitTitle(),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                alignment: Alignment.center,
+                child: TextField(
+                  controller: _titleController,
+                  focusNode: _titleFocusNode,
+                  autofocus: true,
+                  textAlign: isCentered ? TextAlign.center : TextAlign.start,
+                  cursorColor: cs.primary,
+                  cursorWidth: 2.0,
+                  cursorRadius: const Radius.circular(1.0),
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                    letterSpacing: 0.3,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: defaultTitle,
+                    hintStyle: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                    isDense: true,
+                    border: InputBorder.none,
+                  ),
+                  onSubmitted: (_) => _submitTitle(),
+                  onTapOutside: (_) => _submitTitle(),
+                ),
               ),
             ),
           )
@@ -137,13 +189,7 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
             onEnter: (_) => setState(() => _isHovered = true),
             onExit: (_) => setState(() => _isHovered = false),
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isEditingTitle = true;
-                  _titleController.text = widget.score.title;
-                });
-                _titleFocusNode.requestFocus();
-              },
+              onTap: _startEditing,
               child: AnimatedScale(
                 scale: _isHovered ? 1.02 : 1.0,
                 duration: const Duration(milliseconds: 150),
@@ -200,10 +246,16 @@ class _EditableScoreHeaderState extends State<EditableScoreHeader> {
             ),
           );
 
-    if (widget.isCompact) {
+    if (widget.isCompact || (_isEditingTitle && widget.expandInEditMode)) {
+      final shouldExpand = widget.expandInEditMode && _isEditingTitle;
       return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [Flexible(child: titleWidget)],
+        mainAxisSize: shouldExpand ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          if (shouldExpand)
+            Expanded(child: titleWidget)
+          else
+            Flexible(child: titleWidget),
+        ],
       );
     }
 

@@ -4,6 +4,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
@@ -17,7 +18,7 @@ import '../common/input_mode_toggle_button.dart';
 /// 1. Pinned: Statically docked at top of viewport.
 /// 2. Floating Unpinned: Frosted glassmorphic pill that auto-slides off-screen on canvas pan/zoom.
 /// 3. Compact Micro-Pill: Centered title capsule leaving maximum canvas clearance.
-class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
+class MobileTopBar extends StatefulWidget implements PreferredSizeWidget {
   const MobileTopBar({
     super.key,
     this.height = 40.0,
@@ -27,6 +28,7 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
     this.onTogglePin,
     this.isCompactPill = false,
     this.onToggleCompact,
+    this.onTitleEditingChanged,
   });
 
   final double height;
@@ -36,9 +38,28 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onTogglePin;
   final bool isCompactPill;
   final VoidCallback? onToggleCompact;
+  final ValueChanged<bool>? onTitleEditingChanged;
 
   @override
   Size get preferredSize => Size.fromHeight(height);
+
+  @override
+  State<MobileTopBar> createState() => _MobileTopBarState();
+}
+
+class _MobileTopBarState extends State<MobileTopBar> {
+  bool _isEditingTitle = false;
+  final GlobalKey<EditableScoreHeaderState> _floatingHeaderKey = GlobalKey<EditableScoreHeaderState>();
+  final GlobalKey<EditableScoreHeaderState> _pinnedHeaderKey = GlobalKey<EditableScoreHeaderState>();
+
+  void _handleTitleEditingChanged(bool isEditing) {
+    if (_isEditingTitle != isEditing) {
+      setState(() {
+        _isEditingTitle = isEditing;
+      });
+    }
+    widget.onTitleEditingChanged?.call(isEditing);
+  }
 
   Widget _buildCompactPill(
     BuildContext context,
@@ -46,73 +67,77 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
     AppLocalizations l10n,
     DocumentState docState,
     double topPadding,
+    double leftPadding,
+    double rightPadding,
+    double screenWidth,
   ) {
+    final titleText = core.ScoreCompiler.getEffectiveTitle(docState.score, docState.config);
+    const double rulerHeight = 25.0;
+    const double minWidth = 120.0;
+    final double maxWidth = (screenWidth - leftPadding - rightPadding - 32.0).clamp(minWidth, 340.0);
+
     return Padding(
-      padding: EdgeInsets.only(top: topPadding + 4.0),
+      key: const ValueKey('top_bar_compact_pill_wrapper'),
+      padding: EdgeInsets.only(top: topPadding + rulerHeight + 6.0),
       child: Center(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20.0),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              key: const ValueKey('top_bar_compact_pill'),
-              height: 36.0,
-              padding: const EdgeInsets.symmetric(horizontal: 6.0),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(20.0),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.35),
-                  width: 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 12.0,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 1. Menu Trigger
-                  IconButton(
-                    icon: const Icon(Icons.menu, size: 18),
-                    tooltip: l10n.appMenuTooltip,
-                    padding: const EdgeInsets.all(4.0),
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    onPressed: onOpenMenu ?? onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
-                  ),
-
-                  // 2. Score Title (Tap to expand full bar)
-                  InkWell(
-                    onTap: onToggleCompact,
-                    borderRadius: BorderRadius.circular(12.0),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                      child: Text(
-                        docState.score.title.trim().isEmpty ? 'Untitled Score' : docState.score.title,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: cs.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+            child: Material(
+              color: Colors.transparent,
+              child: Tooltip(
+                message: 'Expand toolbar',
+                child: InkWell(
+                  key: const ValueKey('top_bar_compact_pill'),
+                  onTap: widget.onToggleCompact,
+                  borderRadius: BorderRadius.circular(20.0),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    height: widget.height,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    constraints: BoxConstraints(
+                      minWidth: minWidth,
+                      maxWidth: maxWidth,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20.0),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.35),
+                        width: 1.0,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 12.0,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            titleText,
+                            style: TextStyle(
+                              fontSize: 13.0,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.1,
+                              color: cs.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-
-                  // 3. Expand Button
-                  IconButton(
-                    icon: const Icon(Icons.more_horiz, size: 18),
-                    tooltip: 'Expand header',
-                    padding: const EdgeInsets.all(4.0),
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                    onPressed: onToggleCompact,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -127,12 +152,20 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
     AppLocalizations l10n,
     DocumentState docState,
     double topPadding,
+    double leftPadding,
+    double rightPadding,
+    bool isTightOnRoom,
   ) {
+    final hideOtherStuff = _isEditingTitle && isTightOnRoom;
+    const double rulerHeight = 25.0;
+    const double leftRulerWidth = 25.0;
+
     return Padding(
+      key: const ValueKey('top_bar_floating_bar_wrapper'),
       padding: EdgeInsets.only(
-        top: topPadding + 4.0,
-        left: 12.0,
-        right: 12.0,
+        top: topPadding + rulerHeight + 6.0,
+        left: leftRulerWidth + 8.0 + leftPadding,
+        right: 12.0 + rightPadding,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20.0),
@@ -140,7 +173,7 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
             key: const ValueKey('top_bar_floating_bar'),
-            height: height,
+            height: widget.height,
             padding: const EdgeInsets.symmetric(horizontal: 6.0),
             decoration: BoxDecoration(
               color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
@@ -159,62 +192,81 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             child: Row(
               children: [
-                // 1. Menu Trigger
-                IconButton(
-                  icon: const Icon(Icons.menu, size: 20),
-                  tooltip: l10n.appMenuTooltip,
-                  padding: const EdgeInsets.all(4.0),
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  onPressed: onOpenMenu ?? onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
-                ),
+                if (!hideOtherStuff)
+                  // 1. Menu Trigger
+                  IconButton(
+                    icon: const Icon(Icons.menu, size: 20),
+                    tooltip: l10n.appMenuTooltip,
+                    padding: const EdgeInsets.all(4.0),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: widget.onOpenMenu ?? widget.onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
+                  ),
 
-                // 2. Score Title Header
+                // 2. Score Title Header (Expands to fill available room)
                 Expanded(
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: EditableScoreHeader(
+                        key: _floatingHeaderKey,
                         score: docState.score,
                         configState: docState.config,
                         isCompact: true,
+                        expandInEditMode: true,
+                        onEditingChanged: _handleTitleEditingChanged,
                       ),
                     ),
                   ),
                 ),
 
-                // 3. Pin / Unpin Button
-                if (onTogglePin != null)
+                if (hideOtherStuff)
                   IconButton(
-                    icon: Icon(
-                      isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                      size: 18,
-                      color: isPinned ? cs.primary : cs.onSurfaceVariant,
+                    key: const ValueKey('top_bar_title_edit_done_button'),
+                    icon: const Icon(Icons.check, size: 20),
+                    tooltip: 'Done',
+                    padding: const EdgeInsets.all(4.0),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    color: cs.primary,
+                    onPressed: () {
+                      _floatingHeaderKey.currentState?.submitTitle();
+                      FocusScope.of(context).unfocus();
+                    },
+                  )
+                else ...[
+                  // 3. Pin / Unpin Button
+                  if (widget.onTogglePin != null)
+                    IconButton(
+                      icon: Icon(
+                        widget.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                        size: 18,
+                        color: widget.isPinned ? cs.primary : cs.onSurfaceVariant,
+                      ),
+                      tooltip: widget.isPinned ? 'Unpin toolbar' : 'Pin toolbar',
+                      padding: const EdgeInsets.all(4.0),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: widget.onTogglePin,
                     ),
-                    tooltip: isPinned ? 'Unpin toolbar' : 'Pin toolbar',
-                    padding: const EdgeInsets.all(4.0),
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: onTogglePin,
-                  ),
 
-                // 4. Minimize to Pill Button
-                if (onToggleCompact != null)
+                  // 4. Minimize to Pill Button
+                  if (widget.onToggleCompact != null)
+                    IconButton(
+                      icon: const Icon(Icons.expand_less, size: 20),
+                      tooltip: 'Collapse to title',
+                      padding: const EdgeInsets.all(4.0),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: widget.onToggleCompact,
+                    ),
+
+                  // 5. Input Mode Toggle & Export Quick Action
+                  const InputModeToggleButton(),
                   IconButton(
-                    icon: const Icon(Icons.unfold_less, size: 18),
-                    tooltip: 'Minimize to pill',
+                    icon: const Icon(Icons.ios_share, size: 19),
+                    tooltip: l10n.exportManuscriptTitle,
                     padding: const EdgeInsets.all(4.0),
                     constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: onToggleCompact,
+                    onPressed: () => handleTopBarMenuSelection(context, 'export', docState),
                   ),
-
-                // 5. Input Mode Toggle & Export Quick Action
-                const InputModeToggleButton(),
-                IconButton(
-                  icon: const Icon(Icons.ios_share, size: 19),
-                  tooltip: l10n.exportManuscriptTitle,
-                  padding: const EdgeInsets.all(4.0),
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  onPressed: () => handleTopBarMenuSelection(context, 'export', docState),
-                ),
+                ],
               ],
             ),
           ),
@@ -229,16 +281,21 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
     AppLocalizations l10n,
     DocumentState docState,
     double topPadding,
+    double leftPadding,
+    double rightPadding,
     double totalHeight,
+    bool isTightOnRoom,
   ) {
+    final hideOtherStuff = _isEditingTitle && isTightOnRoom;
+
     return Container(
       key: const ValueKey('top_bar_pinned_bar'),
       height: totalHeight,
       width: double.infinity,
       padding: EdgeInsets.only(
         top: topPadding,
-        left: 6.0,
-        right: 6.0,
+        left: 6.0 + leftPadding,
+        right: 6.0 + rightPadding,
       ),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh.withValues(alpha: 0.95),
@@ -251,12 +308,13 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       child: Row(
         children: [
-          // Left Zone: Conductor Drawer Trigger
-          IconButton(
-            icon: const Icon(Icons.menu, size: 20),
-            tooltip: l10n.appMenuTooltip,
-            onPressed: onOpenMenu ?? onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
-          ),
+          if (!hideOtherStuff)
+            // Left Zone: Conductor Drawer Trigger
+            IconButton(
+              icon: const Icon(Icons.menu, size: 20),
+              tooltip: l10n.appMenuTooltip,
+              onPressed: widget.onOpenMenu ?? widget.onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
+            ),
 
           // Center Zone: Centered Document Score Title (Inline Editable)
           Expanded(
@@ -264,33 +322,49 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: EditableScoreHeader(
+                  key: _pinnedHeaderKey,
                   score: docState.score,
                   configState: docState.config,
                   isCompact: true,
+                  expandInEditMode: true,
+                  onEditingChanged: _handleTitleEditingChanged,
                 ),
               ),
             ),
           ),
 
-          // Pin / Unpin Button
-          if (onTogglePin != null)
+          if (hideOtherStuff)
             IconButton(
-              icon: Icon(
-                isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                size: 18,
-                color: isPinned ? cs.primary : cs.onSurfaceVariant,
+              key: const ValueKey('top_bar_title_edit_done_button_pinned'),
+              icon: const Icon(Icons.check, size: 20),
+              tooltip: 'Done',
+              color: cs.primary,
+              onPressed: () {
+                _pinnedHeaderKey.currentState?.submitTitle();
+                FocusScope.of(context).unfocus();
+              },
+            )
+          else ...[
+            // Pin / Unpin Button
+            if (widget.onTogglePin != null)
+              IconButton(
+                icon: Icon(
+                  widget.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                  size: 18,
+                  color: widget.isPinned ? cs.primary : cs.onSurfaceVariant,
+                ),
+                tooltip: widget.isPinned ? 'Unpin toolbar' : 'Pin toolbar',
+                onPressed: widget.onTogglePin,
               ),
-              tooltip: isPinned ? 'Unpin toolbar' : 'Pin toolbar',
-              onPressed: onTogglePin,
-            ),
 
-          // Right Zone: Mode Toggle & Export Quick Action
-          const InputModeToggleButton(),
-          IconButton(
-            icon: const Icon(Icons.ios_share, size: 19),
-            tooltip: l10n.exportManuscriptTitle,
-            onPressed: () => handleTopBarMenuSelection(context, 'export', docState),
-          ),
+            // Right Zone: Mode Toggle & Export Quick Action
+            const InputModeToggleButton(),
+            IconButton(
+              icon: const Icon(Icons.ios_share, size: 19),
+              tooltip: l10n.exportManuscriptTitle,
+              onPressed: () => handleTopBarMenuSelection(context, 'export', docState),
+            ),
+          ],
         ],
       ),
     );
@@ -301,21 +375,38 @@ class MobileTopBar extends StatelessWidget implements PreferredSizeWidget {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final topPadding = MediaQuery.paddingOf(context).top;
-    final totalHeight = height + topPadding;
+    final leftPadding = MediaQuery.paddingOf(context).left;
+    final rightPadding = MediaQuery.paddingOf(context).right;
+    final totalHeight = widget.height + topPadding;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isPortrait = MediaQuery.orientationOf(context) == Orientation.portrait;
+    final isTightOnRoom = screenWidth < 560.0 || isPortrait;
 
     return BlocBuilder<DocumentCubit, DocumentState>(
       builder: (context, docState) {
         return Directionality(
           textDirection: TextDirection.ltr,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 220),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
-            child: isPinned
-                ? _buildPinnedBar(context, cs, l10n, docState, topPadding, totalHeight)
-                : isCompactPill
-                    ? _buildCompactPill(context, cs, l10n, docState, topPadding)
-                    : _buildFloatingBar(context, cs, l10n, docState, topPadding),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, -0.35),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: widget.isPinned
+                ? _buildPinnedBar(context, cs, l10n, docState, topPadding, leftPadding, rightPadding, totalHeight, isTightOnRoom)
+                : widget.isCompactPill
+                    ? _buildCompactPill(context, cs, l10n, docState, topPadding, leftPadding, rightPadding, screenWidth)
+                    : _buildFloatingBar(context, cs, l10n, docState, topPadding, leftPadding, rightPadding, isTightOnRoom),
           ),
         );
       },

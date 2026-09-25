@@ -12,6 +12,8 @@ class RulerBox extends StatefulWidget {
     required this.viewState,
     required this.cursorNotifier,
     this.rulerSize = 25.0,
+    this.topSafeArea = 0.0,
+    this.leftSafeArea = 0.0,
     this.showCoordinateHud = true,
   });
 
@@ -25,6 +27,8 @@ class RulerBox extends StatefulWidget {
   /// the rulers, NOT the whole widget tree.
   final ValueNotifier<Offset?> cursorNotifier;
   final double rulerSize;
+  final double topSafeArea;
+  final double leftSafeArea;
 
   /// Whether to display the bottom-right real-time coordinate HUD overlay.
   /// Defaults to true (desktop). Set to false on mobile canvas views where a
@@ -47,23 +51,25 @@ class _RulerBoxState extends State<RulerBox> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final totalTopRulerHeight = widget.rulerSize + widget.topSafeArea;
+    final totalLeftRulerWidth = widget.rulerSize + widget.leftSafeArea;
 
     return Column(
       children: [
         // Top Ruler
         SizedBox(
-          height: widget.rulerSize,
+          height: totalTopRulerHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Premium Origin Switcher Button
+              // Premium Origin Switcher Button (Safe-Area Aware)
               Tooltip(
                 message: _centerOrigin
                     ? 'Switch to Top-Left Origin'
                     : 'Switch to Center Origin',
                 child: Container(
-                  width: widget.rulerSize,
-                  height: widget.rulerSize,
+                  width: totalLeftRulerWidth,
+                  height: totalTopRulerHeight,
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainer,
                     border: Border(
@@ -77,34 +83,41 @@ class _RulerBoxState extends State<RulerBox> {
                       ),
                     ),
                   ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _toggleOrigin,
-                      mouseCursor: SystemMouseCursors.click,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'mm',
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontSize: 7.5,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.2,
-                            ),
+                  child: Align(
+                    alignment: Alignment.bottomRight,
+                    child: SizedBox(
+                      width: widget.rulerSize,
+                      height: widget.rulerSize,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _toggleOrigin,
+                          mouseCursor: SystemMouseCursors.click,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'mm',
+                                style: TextStyle(
+                                  color: colorScheme.primary,
+                                  fontSize: 7.5,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  _centerOrigin ? Icons.filter_center_focus : Icons.open_in_full,
+                                  key: ValueKey(_centerOrigin),
+                                  size: 9.5,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 1),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Icon(
-                              _centerOrigin ? Icons.filter_center_focus : Icons.open_in_full,
-                              key: ValueKey(_centerOrigin),
-                              size: 9.5,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -131,6 +144,8 @@ class _RulerBoxState extends State<RulerBox> {
                             cursorPos: widget.cursorNotifier.value,
                             showWings: widget.viewState
                                 .isGuideActive(GuideType.rulerWings),
+                            topSafeArea: widget.topSafeArea,
+                            leftSafeArea: widget.leftSafeArea,
                           ),
                         ),
                       );
@@ -145,9 +160,9 @@ class _RulerBoxState extends State<RulerBox> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Left Ruler
+              // Left Ruler (Safe-Area Aware)
               SizedBox(
-                width: widget.rulerSize,
+                width: totalLeftRulerWidth,
                 child: GestureDetector(
                   onTap: _toggleOrigin,
                   child: ListenableBuilder(
@@ -168,6 +183,8 @@ class _RulerBoxState extends State<RulerBox> {
                             cursorPos: widget.cursorNotifier.value,
                             showWings: widget.viewState
                                 .isGuideActive(GuideType.rulerWings),
+                            topSafeArea: widget.topSafeArea,
+                            leftSafeArea: widget.leftSafeArea,
                           ),
                         ),
                       );
@@ -355,6 +372,8 @@ class RulerPainter extends CustomPainter {
     required this.colorScheme,
     required this.cursorPos,
     required this.showWings,
+    this.topSafeArea = 0.0,
+    this.leftSafeArea = 0.0,
   });
 
   final Axis axis;
@@ -364,6 +383,8 @@ class RulerPainter extends CustomPainter {
   final ColorScheme colorScheme;
   final Offset? cursorPos;
   final bool showWings;
+  final double topSafeArea;
+  final double leftSafeArea;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -489,7 +510,7 @@ class RulerPainter extends CustomPainter {
             text: TextSpan(text: '$i', style: textStyle),
             textDirection: TextDirection.ltr,
           )..layout();
-          tp.paint(canvas, Offset(pos - tp.width / 2, 2));
+          tp.paint(canvas, Offset(pos - tp.width / 2, size.height - 23.0));
         }
       } else {
         canvas.drawLine(
@@ -503,7 +524,7 @@ class RulerPainter extends CustomPainter {
             textDirection: TextDirection.ltr,
           )..layout();
           canvas.save();
-          canvas.translate(size.width / 2 - 2, pos);
+          canvas.translate(size.width - 14.5, pos);
           canvas.rotate(-math.pi / 2);
           tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
           canvas.restore();
@@ -520,9 +541,9 @@ class RulerPainter extends CustomPainter {
       final pos = axis == Axis.horizontal ? cursorPos!.dx : cursorPos!.dy;
 
       if (axis == Axis.horizontal) {
-        canvas.drawLine(Offset(pos, 0), Offset(pos, size.height), wingPaint);
+        canvas.drawLine(Offset(pos, topSafeArea), Offset(pos, size.height), wingPaint);
       } else {
-        canvas.drawLine(Offset(0, pos), Offset(size.width, pos), wingPaint);
+        canvas.drawLine(Offset(leftSafeArea, pos), Offset(size.width, pos), wingPaint);
       }
     }
   }
@@ -535,6 +556,8 @@ class RulerPainter extends CustomPainter {
         oldDelegate.cursorPos != cursorPos ||
         oldDelegate.showWings != showWings ||
         oldDelegate.paperSizeMm != paperSizeMm ||
-        oldDelegate.centerOrigin != centerOrigin;
+        oldDelegate.centerOrigin != centerOrigin ||
+        oldDelegate.topSafeArea != topSafeArea ||
+        oldDelegate.leftSafeArea != leftSafeArea;
   }
 }
