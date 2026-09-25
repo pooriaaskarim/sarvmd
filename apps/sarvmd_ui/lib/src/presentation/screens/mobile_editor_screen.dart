@@ -374,18 +374,18 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                   ),
                 ),
 
-                // Layer 3: Floating Conductor Baton Toolbar (Bottom Center)
+                // Layer 3: Floating Dual-Island Conductor Baton Toolbar (Proposal A: Left & Right Wings)
+                // Positioned cleanly past the 25.0 dp left ruler (25.0 dp ruler + 11.0 dp clearance)
                 Positioned(
                   bottom: (isLandscape ? 12.0 : 20.0) + MediaQuery.paddingOf(context).bottom,
-                  left: 0.0,
-                  right: 0.0,
-                  child: Center(
-                    child: ConductorToolbar(
-                      transformationController: _transformationController,
-                      onZoomPreset: _onZoomPresetSelected,
-                      isVisible: _batonVisible,
-                      onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
-                    ),
+                  left: 36.0 + MediaQuery.paddingOf(context).left,
+                  right: (isLandscape ? 20.0 : 16.0) + MediaQuery.paddingOf(context).right,
+                  child: ConductorToolbar(
+                    transformationController: _transformationController,
+                    onZoomPreset: _onZoomPresetSelected,
+                    isVisible: _batonVisible,
+                    onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
+                    cursorPosition: _longPressPos,
                   ),
                 ),
 

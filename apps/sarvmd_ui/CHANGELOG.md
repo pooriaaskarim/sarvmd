@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Dual-Island Mobile Conductor Toolbar & Gestural Drawer Trigger**:
+  - Decoupled the mobile bottom HUD into independent Left (menu, undo, redo) and Right (zoom, telemetry, guides) wings with 11dp ruler clearance and independent idle auto-collapse timers.
+  - Implemented continuous bi-directional drag zoom on both collapsed and expanded zoom chips (drag up/right to zoom in, down/left to zoom out) with tactile haptic selection clicks.
+  - Added smooth idle visual transitions on the collapsed zoom chip: active interaction renders prominent percentage text with a subtle background watermark; after 2.5s of inactivity, the percentage softens and the magnifier watermark smoothly fades in.
+  - Added a horizontal right-drag gesture on the Menu HUD in both collapsed and expanded states to intuitively open the navigation drawer (or landscape side sheet) with tactile haptic feedback.
 - **Adaptive Desktop Responsive Layout**:
   - Automatically transitions sidebars between docked mode on wide monitors, floating canvas overlays on medium screens, and auto-collapsing slide-out drawers on split or compact windows, ensuring the manuscript canvas remains fully visible.
   - Added high-visibility edge resize handles with smooth dragging and persistent panel widths.
