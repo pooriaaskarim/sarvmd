@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Progressive Multi-Tier Desktop Top Bar & Cascading App Menu**:
+  - Implemented progressive multi-tier compaction for desktop viewports (`SarvBreakpoints.desktopTopBarMenuThreshold = 760.0`).
+  - Added a dedicated application menu button `[ ☰ ]` (`TopBarCompactAppMenu`) for viewports narrower than 760px that opens a clean cascading `MenuAnchor` with 4 submenus (*File ❯*, *Edit ❯*, *View ❯*, *Help ❯*).
+  - Standardized all desktop menus (`TopBarFileMenu`, `TopBarEditMenu`, `TopBarViewMenu`, `TopBarHelpMenu`) to use unified `MenuAnchor`, `MenuItemButton`, and `SubmenuButton` structures, exposing reusable static `buildChildren` builders.
+  - Reorganized page size presets in the View menu under a cascading `Score Page Sizes ▸` submenu with active selection indicators.
 - **Adaptive Dynamic Header ("Zen Top Bar") in Touch Mode**:
   - Implemented smart viewport-aware top bar pinning: defaults to pinned in portrait (`height >= 500dp`) and unpinned in landscape/compact screens (`height < 500dp`), reclaiming 15–20% of vertical canvas space.
   - Added an interactive pin/unpin toggle button (`Icons.push_pin` / `Icons.push_pin_outlined`) in the top bar with persistent user overrides.
@@ -35,10 +40,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added automated build workflows to package and attach signed release APKs on Git version tags.
 
 ### Changed
+- **Decoupled Brand Logo From Dropdown Trigger**:
+  - `SarvReactiveBrandLogo` now consistently operates as a pure interactive brand mark (`isMenuMode: false`) across wide and compact desktop modes, preserving hover expansion to *"Manuscript Designer"* and tap-to-About interactions.
+  - Replaced the legacy 416-line flat popup menu (`compact_menu.dart`) with native cascading submenus sharing the exact desktop menu tree.
 - **Mobile Landscape Side Navigation**:
   - Transformed the landscape menu into an on-demand, thumb-friendly side drawer with backdrop dismissal, keeping over 60% of the manuscript score in view.
   - Redesigned menu categories into a compact, single-screen layout with an integrated score summary below.
   - Automatically recalculates score fitting when rotating between portrait and landscape orientations.
+
+### Removed
+- **Obsolete Top-Bar Ensemble Profile Picker**:
+  - Permanently removed `EnsembleProfilePicker` from the top bar and codebase, reclaiming ~130px of horizontal top bar real estate and eliminating redundant profile switching controls since profile configuration is fully handled in the sidebar.
 
 ### Fixed
 - **Dialog Ergonomics on Compact & Landscape Screens**:

@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
-import '../../../core/theme/app_theme.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../../core/theme/layout_policy.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
 
@@ -18,7 +17,6 @@ import 'top_bar/menus/help_menu.dart';
 import 'top_bar/menus/view_menu.dart';
 import 'top_bar/top_bar_menu_handler.dart';
 import 'top_bar/widgets/editable_score_header.dart';
-import 'top_bar/widgets/ensemble_profile_picker.dart';
 import 'top_bar/widgets/undo_redo_cluster.dart';
 import '../common/input_mode_toggle_button.dart';
 
@@ -32,12 +30,9 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-    final themeExt = Theme.of(context).extension<SarvThemeExtension>();
 
     return BlocBuilder<DocumentCubit, DocumentState>(
       builder: (context, documentState) {
-        final activeProfile = context.read<DocumentCubit>().activeProfile;
         final configState = documentState.config;
         final topPadding = MediaQuery.paddingOf(context).top;
         final totalHeight = 52.0 + topPadding;
@@ -63,7 +58,7 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 960;
+                final isCompact = constraints.maxWidth < SarvBreakpoints.desktopTopBarMenuThreshold;
 
                 final undoRedoCluster = UndoRedoCluster(
                   documentState: documentState,
@@ -75,9 +70,6 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
                   return _CompactLayout(
                     documentState: documentState,
                     configState: configState,
-                    l10n: l10n,
-                    cs: cs,
-                    themeExt: themeExt,
                     undoRedoCluster: undoRedoCluster,
                   );
                 }
@@ -85,7 +77,6 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
                 return _WideLayout(
                   documentState: documentState,
                   configState: configState,
-                  activeProfile: activeProfile,
                   undoRedoCluster: undoRedoCluster,
                 );
               },
@@ -101,21 +92,15 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
 // Layout variants
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Compact top-bar layout for viewports narrower than 960 px.
+/// Compact top-bar layout for viewports narrower than [SarvBreakpoints.desktopTopBarMenuThreshold] (760 px).
 class _CompactLayout extends StatelessWidget {
   final DocumentState documentState;
   final core.PageConfig configState;
-  final AppLocalizations l10n;
-  final ColorScheme cs;
-  final SarvThemeExtension? themeExt;
   final Widget undoRedoCluster;
 
   const _CompactLayout({
     required this.documentState,
     required this.configState,
-    required this.l10n,
-    required this.cs,
-    required this.themeExt,
     required this.undoRedoCluster,
   });
 
@@ -123,21 +108,11 @@ class _CompactLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        PopupMenuButton<String>(
-          tooltip: l10n.appMenuTooltip,
-          offset: const Offset(0, 44),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-          color: cs.surfaceContainerHigh,
-          onSelected: (value) => handleTopBarMenuSelection(context, value, documentState),
-          itemBuilder: (context) => buildCompactMenuItems(
-            context,
-            l10n,
-            cs,
-            themeExt,
-            documentState,
-            configState,
-          ),
-          child: const SarvReactiveBrandLogo(isMenuMode: true),
+        const SarvReactiveBrandLogo(isMenuMode: false),
+        const SizedBox(width: 4.0),
+        TopBarCompactAppMenu(
+          documentState: documentState,
+          configState: configState,
         ),
         const SizedBox(width: 4.0),
         undoRedoCluster,
@@ -158,17 +133,15 @@ class _CompactLayout extends StatelessWidget {
   }
 }
 
-/// Full wide-mode top-bar layout for viewports at least 960 px wide.
+/// Full wide-mode top-bar layout for viewports at least [SarvBreakpoints.desktopTopBarMenuThreshold] (760 px) wide.
 class _WideLayout extends StatelessWidget {
   final DocumentState documentState;
   final core.PageConfig configState;
-  final core.StaffProfile? activeProfile;
   final Widget undoRedoCluster;
 
   const _WideLayout({
     required this.documentState,
     required this.configState,
-    required this.activeProfile,
     required this.undoRedoCluster,
   });
 
@@ -176,7 +149,7 @@ class _WideLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // ── Zone 1: Brand, Menus & Ensemble Picker ────────────────────────
+        // ── Zone 1: Brand & Desktop Menus ─────────────────────────────────
         const SarvReactiveBrandLogo(isMenuMode: false),
         const SizedBox(width: 8.0),
 
@@ -192,8 +165,6 @@ class _WideLayout extends StatelessWidget {
         const SizedBox(width: 4.0),
         undoRedoCluster,
         const SizedBox(width: 6.0),
-
-        EnsembleProfilePicker(activeProfile: activeProfile),
 
         // ── Zone 2: Center Metadata ───────────────────────────────────────
         Expanded(

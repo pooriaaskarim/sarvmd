@@ -9,55 +9,34 @@ import '../../../../../logic/document/document_cubit.dart';
 import '../../../../../logic/document/document_state.dart';
 import '../../../dialogs/staff_config_dialog.dart';
 import '../top_bar_menu_handler.dart';
+import '../top_bar_menu_header.dart';
 
 /// `Edit` desktop menu for the top bar.
 ///
 /// Uses [MenuAnchor] + [SubmenuButton] to support cascading sub-menus for
-/// "Add Staff" and "Edit Staff" — something [PopupMenuButton] cannot do.
+/// "Add Staff" and "Edit Staff" — shared between wide-mode and compact app menus.
 class TopBarEditMenu extends StatelessWidget {
   final DocumentState documentState;
 
   const TopBarEditMenu({super.key, required this.documentState});
 
-  @override
-  Widget build(BuildContext context) {
+  /// Builds the [Widget] entries for the Edit menu.
+  ///
+  /// Shared between desktop wide-mode [TopBarEditMenu] and compact [TopBarCompactAppMenu].
+  static List<Widget> buildChildren(BuildContext context, DocumentState documentState) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
-    return MenuAnchor(
-      builder: (context, controller, child) {
-        return InkWell(
-          borderRadius: BorderRadius.circular(4.0),
-          onTap: () {
-            if (controller.isOpen) {
-              controller.close();
-            } else {
-              controller.open();
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-            child: Text(
-              l10n.menuEdit,
-              style: TextStyle(
-                fontSize: 13.0,
-                fontWeight: FontWeight.w500,
-                color: cs.onSurface.withValues(alpha: 0.87),
-              ),
-            ),
-          ),
-        );
-      },
-      menuChildren: [
-        // ── Undo / Redo ───────────────────────────────────────────────────
-        MenuItemButton(
-          leadingIcon: Icon(
-            Icons.undo_rounded,
-            size: 17,
-            color: documentState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
-          ),
-          onPressed:
-              documentState.canUndo ? () => handleTopBarMenuSelection(context, 'undo', documentState) : null,
+    return [
+      // ── Undo / Redo ───────────────────────────────────────────────────
+      MenuItemButton(
+        leadingIcon: Icon(
+          Icons.undo_rounded,
+          size: 17,
+          color: documentState.canUndo ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38),
+        ),
+        onPressed:
+            documentState.canUndo ? () => handleTopBarMenuSelection(context, 'undo', documentState) : null,
           trailingIcon: Text('Ctrl+Z', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           child: Text(documentState.lastUndoLabel != null ? '${l10n.undo} ${documentState.lastUndoLabel}' : l10n.undo),
         ),
@@ -138,12 +117,21 @@ class TopBarEditMenu extends StatelessWidget {
           onPressed: () => handleTopBarMenuSelection(context, 'history', documentState),
           child: Text(l10n.editHistoryCount(documentState.undoStack.length)),
         ),
-      ],
+      ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return TopBarMenuHeader(
+      label: l10n.menuEdit,
+      menuChildren: buildChildren(context, documentState),
     );
   }
 
   /// Builds the list of [MenuItemButton]s for each active staff in the layout.
-  List<Widget> _buildEditStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
+  static List<Widget> _buildEditStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
     final documentCubit = context.read<DocumentCubit>();
     final allStaves = documentCubit.allStaves;
 
@@ -179,7 +167,7 @@ class TopBarEditMenu extends StatelessWidget {
   }
 
   /// Builds the list of [MenuItemButton]s to remove active staves in the layout.
-  List<Widget> _buildRemoveStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
+  static List<Widget> _buildRemoveStaffChildren(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
     final documentCubit = context.read<DocumentCubit>();
     final allStaves = documentCubit.allStaves;
 

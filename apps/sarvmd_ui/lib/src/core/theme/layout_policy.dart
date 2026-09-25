@@ -88,6 +88,9 @@ abstract final class SarvBreakpoints {
   /// Breakpoint threshold for docking the primary left desktop sidebar.
   static const double desktopMediumThreshold = 900.0;
 
+  /// Breakpoint threshold for showing the full desktop top bar menus vs. the cascading compact app menu.
+  static const double desktopTopBarMenuThreshold = 760.0;
+
   /// Returns true if the screen width is strictly less than 600px (mobile form factor).
   static bool isMobile(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 600;
