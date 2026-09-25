@@ -10,28 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **User-Selectable Input Mode (Pointer vs. Touch)**:
-  - Added explicit interaction mode selection (`InputMode.pointer` and `InputMode.touch`) persisted to user preferences via `ViewCubit`.
-  - Decoupled application layout routing in `LaunchCoordinator` from screen width, allowing tablet users and middle-sized touch devices to use the touch-first conductor interface at any viewport width.
-  - Added `InputModeToggleButton` with safety reload confirmation dialog to both `SarvTopBar` and `MobileTopBar`.
-  - Implemented initial boot heuristic defaulting screens narrower than 600 logical pixels to touch mode on first run.
-- **Automated Android Release CI Pipeline**:
-  - Added GitHub Actions workflow (`release_android.yml`) to automatically build and attach signed release APKs on Git version tags (`v*`).
-  - Configured Gradle build scripts to output standardized versioned artifact filenames (`sarvmd-vX.Y.Z.apk`).
-  - Implemented tag-aware release changelog extraction for automated GitHub Releases.
+- **Adaptive Desktop Responsive Layout**:
+  - Automatically transitions sidebars between docked mode on wide monitors, floating canvas overlays on medium screens, and auto-collapsing slide-out drawers on split or compact windows, ensuring the manuscript canvas remains fully visible.
+  - Added high-visibility edge resize handles with smooth dragging and persistent panel widths.
+- **Pointer vs. Touch Interaction Toggle**:
+  - Added an input mode toggle in the top bar to freely switch between precision desktop pointer controls and touch-first mobile navigation on any screen size.
+- **Automated Android CI Pipeline**:
+  - Added automated build workflows to package and attach signed release APKs on Git version tags.
+
+### Changed
+- **Mobile Landscape Side Navigation**:
+  - Transformed the landscape menu into an on-demand, thumb-friendly side drawer with backdrop dismissal, keeping over 60% of the manuscript score in view.
+  - Redesigned menu categories into a compact, single-screen layout with an integrated score summary below.
+  - Automatically recalculates score fitting when rotating between portrait and landscape orientations.
 
 ### Fixed
+- **Dialog Ergonomics on Compact & Landscape Screens**:
+  - Resolved cramped layout and overflow issues in staff configuration, calibration, and export dialogs on short viewports and dynamically resized windows.
+  - Added adaptive preview scaling and compact tab bars to the staff configuration modal.
 - **Grouped Staff Removal Integrity**:
-  - Prevented accidental deletion of entire parent groups when removing an individual grouped staff via the top Edit menu or compact menu.
-  - Upgraded `RemoveStaffCommand` in `sarvmd_core` to resolve against `PageConfig.allStaves` and delegate to UID-targeted removal (`RemoveStaffByUidCommand`).
-  - Preserved single-staff groups and pruned empty sub-groups automatically when all child staves are removed (documented in ADR-0001).
-- **Adaptive Modal & Dialog Resizing**:
-  - Eliminated crashes (`BoxConstraints forces an infinite width`) and unstyled transparent dialog glitch when dynamically resizing between mobile bottom sheets and desktop dialogs.
-  - Resolved RenderFlex overflows in `CalibrationDialog`, `ExportDialog`, and `ExportPageCountSection` on compact and narrow viewports.
-  - Fixed mobile bottom sheets and desktop dialogs from stretching over the full viewport height by using height-shrinkwrapping alignment and content constraints.
-- **CI & Gradle Portability**:
-  - Removed hardcoded local Java home path from `gradle.properties` to ensure reliable builds across environments and GitHub Actions runners.
-  - Resolved workflow linter warnings and deprecated action syntax.
+  - Fixed an issue where removing an individual instrument within an ensemble group could unintentionally delete the entire parent section.
 
 ---
 
