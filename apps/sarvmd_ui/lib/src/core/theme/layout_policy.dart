@@ -82,6 +82,12 @@ class BilingualFluidScope extends StatelessWidget {
 
 /// Responsive breakpoints helper for SarvMD UI layouts.
 abstract final class SarvBreakpoints {
+  /// Breakpoint threshold for docking both left and right desktop sidebars.
+  static const double desktopWideThreshold = 1200.0;
+
+  /// Breakpoint threshold for docking the primary left desktop sidebar.
+  static const double desktopMediumThreshold = 900.0;
+
   /// Returns true if the screen width is strictly less than 600px (mobile form factor).
   static bool isMobile(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 600;
@@ -95,5 +101,13 @@ abstract final class SarvBreakpoints {
   /// Returns true if the screen width is 1024px or greater (desktop form factor).
   static bool isDesktop(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= 1024;
+
+  /// Returns true if the viewport is wide enough to dock both desktop sidebars.
+  static bool canDockBothSidebars(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= desktopWideThreshold;
+
+  /// Returns true if the viewport is wide enough to dock the primary left sidebar.
+  static bool canDockPrimarySidebar(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= desktopMediumThreshold;
 }
 
