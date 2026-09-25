@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Adaptive Dynamic Header ("Zen Top Bar") in Touch Mode**:
+  - Implemented smart viewport-aware top bar pinning: defaults to pinned in portrait (`height >= 500dp`) and unpinned in landscape/compact screens (`height < 500dp`), reclaiming 15–20% of vertical canvas space.
+  - Added an interactive pin/unpin toggle button (`Icons.push_pin` / `Icons.push_pin_outlined`) in the top bar with persistent user overrides.
+  - Added full canvas gesture immersion: when unpinned, the top bar smoothly slides up off-screen (`Offset(0, -1.3)`) in sync with the bottom Conductor HUD on pan/zoom, restoring borderless score visibility.
+  - Added a collapsible floating micro-pill mode with centered title capsule and one-tap expansion.
 - **Dual-Island Mobile Conductor Toolbar & Gestural Drawer Trigger**:
   - Decoupled the mobile bottom HUD into independent Left (menu, undo, redo) and Right (zoom, telemetry, guides) wings with 11dp ruler clearance and independent idle auto-collapse timers.
   - Implemented continuous bi-directional drag zoom on both collapsed and expanded zoom chips (drag up/right to zoom in, down/left to zoom out) with tactile haptic selection clicks.

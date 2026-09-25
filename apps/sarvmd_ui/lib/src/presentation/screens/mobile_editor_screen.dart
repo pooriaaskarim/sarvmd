@@ -37,6 +37,18 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
   bool _batonVisible = true;
   Timer? _canvasGestureDebounce;
   Orientation? _lastOrientation;
+  bool? _userTopBarPinnedOverride;
+  bool _isTopBarCompact = false;
+
+  bool _computeIsTopBarPinned(BuildContext context) {
+    if (_userTopBarPinnedOverride != null) {
+      return _userTopBarPinnedOverride!;
+    }
+    // Default smart policy:
+    // Pinned when height >= 500 (e.g. portrait, tablets)
+    // Unpinned when height < 500 (e.g. mobile landscape, compact split screens)
+    return MediaQuery.sizeOf(context).height >= 500.0;
+  }
 
   late final AnimationController _sideSheetController;
   late final Animation<Offset> _sideSheetSlideAnimation;
@@ -295,6 +307,10 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
   Widget build(BuildContext context) {
     final isLandscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
+    final isPinned = _computeIsTopBarPinned(context);
+    final topPadding = MediaQuery.paddingOf(context).top;
+    const topBarHeight = 40.0;
+    final canvasTopOffset = isPinned ? (topBarHeight + topPadding) : 0.0;
 
     return BlocListener<DocumentCubit, DocumentState>(
       listenWhen: (previous, current) =>
@@ -316,9 +332,6 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
           },
           child: Scaffold(
             drawerEdgeDragWidth: isLandscape ? 0.0 : 24.0,
-            appBar: MobileTopBar(
-              onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
-            ),
             drawer: isLandscape
                 ? null
                 : ConductorDrawer(
@@ -329,7 +342,11 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
               fit: StackFit.expand,
               children: [
                 // Layer 1: Manuscript Canvas Area
-                Positioned.fill(
+                Positioned(
+                  top: canvasTopOffset,
+                  left: 0.0,
+                  right: 0.0,
+                  bottom: 0.0,
                   child: MobileCanvasArea(
                     key: _canvasKey,
                     transformationController: _transformationController,
@@ -346,7 +363,7 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                 // Layer 2: Aesthetic Top Glassmorphic Coordinate HUD
                 // Positioned cleanly below top ruler (25.0 dp ruler height + 11.0 dp clearance)
                 Positioned(
-                  top: 36.0,
+                  top: canvasTopOffset + 36.0,
                   left: 16.0,
                   right: 16.0,
                   child: AnimatedSwitcher(
@@ -386,6 +403,42 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                     isVisible: _batonVisible,
                     onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
                     cursorPosition: _longPressPos,
+                  ),
+                ),
+
+                // Layer 4: Adaptive Dynamic Header (Zen Top Bar)
+                Positioned(
+                  top: 0.0,
+                  left: 0.0,
+                  right: 0.0,
+                  child: IgnorePointer(
+                    ignoring: !isPinned && !_batonVisible,
+                    child: AnimatedSlide(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      offset: (isPinned || _batonVisible)
+                          ? Offset.zero
+                          : const Offset(0.0, -1.3),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: (isPinned || _batonVisible) ? 1.0 : 0.0,
+                        child: MobileTopBar(
+                          onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
+                          isPinned: isPinned,
+                          onTogglePin: () {
+                            setState(() {
+                              _userTopBarPinnedOverride = !isPinned;
+                            });
+                          },
+                          isCompactPill: !isPinned && _isTopBarCompact,
+                          onToggleCompact: () {
+                            setState(() {
+                              _isTopBarCompact = !_isTopBarCompact;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
                   ),
                 ),
 
