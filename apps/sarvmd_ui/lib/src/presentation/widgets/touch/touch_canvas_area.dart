@@ -7,6 +7,7 @@ import '../../../core/theme/app_metrics.dart';
 import '../../../core/theme/layout_policy.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/view/view_cubit.dart';
+import '../canvas/canvas_zoom_calculator.dart';
 import '../canvas/preview_canvas.dart';
 import '../canvas/ruler_box.dart';
 import '../common/integrated_scale_control.dart';
@@ -64,54 +65,18 @@ class TouchCanvasAreaState extends State<TouchCanvasArea> {
     final config = context.read<DocumentCubit>().state.config;
     final viewState = context.read<ViewCubit>().state;
 
-    const double lpmm = 96 / 25.4; // canvas internal scale (px per mm)
-    final paperWidth = config.effectiveWidth * lpmm;
-    final paperHeight = config.effectiveHeight * lpmm;
+    final transform = CanvasZoomCalculator.compute(
+      preset: preset,
+      constraints: constraints,
+      config: config,
+      calibrationFactor: viewState.calibrationFactor,
+      padding: 24.0,
+      topSafeArea: widget.topSafeArea,
+      leftSafeArea: widget.leftSafeArea,
+      bottomPadding: widget.bottomPadding,
+    );
 
-    const double rulerSize = 25.0;
-    const double padding = 24.0;
-    final totalRulerWidth = rulerSize + widget.leftSafeArea;
-    final totalRulerHeight = rulerSize + widget.topSafeArea;
-    final canvasWidth = constraints.maxWidth - totalRulerWidth;
-    final canvasHeight = constraints.maxHeight - totalRulerHeight - widget.bottomPadding;
-    final availableWidth = (canvasWidth - padding * 2).clamp(1.0, double.infinity);
-    final availableHeight = (canvasHeight - padding * 2).clamp(1.0, double.infinity);
-
-    double fitScale;
-
-    switch (preset) {
-      case ZoomPreset.actualSize:
-        fitScale = viewState.calibrationFactor
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-      case ZoomPreset.fitWidth:
-        fitScale = (availableWidth / paperWidth)
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-      case ZoomPreset.fitScreen:
-        final scaleX = availableWidth / paperWidth;
-        final scaleY = availableHeight / paperHeight;
-        fitScale = (scaleX < scaleY ? scaleX : scaleY)
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-    }
-
-    final double dx = (canvasWidth - paperWidth * fitScale) / 2;
-    double dy;
-
-    if (preset == ZoomPreset.fitScreen) {
-      dy = (canvasHeight - paperHeight * fitScale) / 2;
-    } else {
-      final scaledHeight = paperHeight * fitScale;
-      if (scaledHeight < availableHeight) {
-        dy = (canvasHeight - scaledHeight) / 2;
-      } else {
-        dy = padding;
-      }
-    }
-
-    widget.transformationController.value = Matrix4.translationValues(dx, dy, 0.0)
-      ..multiply(Matrix4.diagonal3Values(fitScale, fitScale, 1.0));
+    widget.transformationController.value = transform.matrix;
   }
 
   @override

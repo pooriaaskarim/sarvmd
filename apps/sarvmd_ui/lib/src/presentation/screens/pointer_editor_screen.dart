@@ -18,6 +18,7 @@ import '../widgets/layout/pointer_top_bar.dart';
 import '../widgets/common/shortcut_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/staff/profile_picker.dart';
+import '../widgets/canvas/canvas_zoom_calculator.dart';
 import '../widgets/canvas/preview_canvas.dart';
 import '../widgets/panels/view_panel.dart';
 import '../widgets/canvas/ruler_box.dart';
@@ -632,59 +633,15 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
     final config = context.read<DocumentCubit>().state.config;
     final viewState = context.read<ViewCubit>().state;
 
-    const double lpmm = 96 / 25.4; // canvas internal scale
-    final paperWidth = config.effectiveWidth * lpmm;
-    final paperHeight = config.effectiveHeight * lpmm;
+    final transform = CanvasZoomCalculator.compute(
+      preset: preset,
+      constraints: constraints,
+      config: config,
+      calibrationFactor: viewState.calibrationFactor,
+      padding: 40.0,
+    );
 
-    // constraints wraps the full RulerBox (ruler strips + canvas area).
-    // Subtract rulerSize so scale is computed against the canvas-only area.
-    const double rulerSize = 25.0;
-    const double padding = 40.0;
-    final canvasWidth = constraints.maxWidth - rulerSize;
-    final canvasHeight = constraints.maxHeight - rulerSize;
-    final availableWidth = canvasWidth - padding * 2;
-    final availableHeight = canvasHeight - padding * 2;
-
-    double fitScale;
-
-    switch (preset) {
-      case ZoomPreset.actualSize:
-        // Zoom so that 1 mm of paper = 1 mm on the physical screen.
-        // The calibrationFactor is set by the user via the on-screen ruler.
-        fitScale = viewState.calibrationFactor
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-      case ZoomPreset.fitWidth:
-        fitScale = (availableWidth / paperWidth)
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-      case ZoomPreset.fitScreen:
-        final scaleX = availableWidth / paperWidth;
-        final scaleY = availableHeight / paperHeight;
-        fitScale = (scaleX < scaleY ? scaleX : scaleY)
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-    }
-
-    // dx/dy go into the TransformationController which is in canvas-local
-    // coordinates (InteractiveViewer's own space, after the ruler strips).
-    // Center within the canvas area — no rulerSize offset needed.
-    final double dx = (canvasWidth - paperWidth * fitScale) / 2;
-    double dy;
-
-    if (preset == ZoomPreset.fitScreen) {
-      dy = (canvasHeight - paperHeight * fitScale) / 2;
-    } else {
-      final scaledHeight = paperHeight * fitScale;
-      if (scaledHeight < availableHeight) {
-        dy = (canvasHeight - scaledHeight) / 2;
-      } else {
-        dy = padding;
-      }
-    }
-
-    _transformationController.value = Matrix4.translationValues(dx, dy, 0.0)
-      ..multiply(Matrix4.diagonal3Values(fitScale, fitScale, 1.0));
+    _transformationController.value = transform.matrix;
   }
 
   @override
