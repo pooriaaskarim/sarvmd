@@ -138,12 +138,14 @@ class _CompactLayoutState extends State<_CompactLayout> {
           const SizedBox(width: 6.0),
         ],
         Expanded(
-          child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: EditableScoreHeader(
               key: _headerKey,
               score: widget.documentState.score,
               configState: widget.configState,
               isCompact: true,
+              expandInEditMode: _isEditingTitle,
               onEditingChanged: _handleTitleEditingChanged,
             ),
           ),

@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
@@ -17,7 +18,6 @@ class EditableScoreHeader extends StatefulWidget {
   final core.Score score;
   final core.PageConfig configState;
   final bool isCompact;
-  @Deprecated('Score title width is now normalized and dynamically sized')
   final bool expandInEditMode;
   final ValueChanged<bool>? onEditingChanged;
 
@@ -139,169 +139,183 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
       textDirection: Directionality.of(context),
     )..layout();
 
-    final double maxAllowedWidth = widget.isCompact ? 240.0 : 300.0;
-    final double targetWidth = (textPainter.width + 36.0).clamp(140.0, maxAllowedWidth);
+    final shouldExpand = widget.expandInEditMode && _isEditingTitle;
 
-    final titleWidget = _isEditingTitle
-        ? PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, result) {
-              if (didPop) return;
-              _submitTitle();
-            },
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: 140.0,
-                maxWidth: maxAllowedWidth,
-              ),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOutCubic,
-                height: 28.0,
-                width: targetWidth,
-                decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.08),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: cs.primary,
-                      width: 2.0,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final double maxAllowedWidth = shouldExpand
+            ? availableWidth
+            : (widget.isCompact ? math.min(availableWidth, 420.0) : math.min(availableWidth, 680.0));
+        final double targetWidth = shouldExpand
+            ? availableWidth
+            : (textPainter.width + 48.0).clamp(140.0, maxAllowedWidth);
+
+        final titleWidget = _isEditingTitle
+            ? PopScope(
+                canPop: false,
+                onPopInvokedWithResult: (didPop, result) {
+                  if (didPop) return;
+                  _submitTitle();
+                },
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: 140.0,
+                    maxWidth: shouldExpand ? double.infinity : maxAllowedWidth,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOutCubic,
+                    height: 28.0,
+                    width: shouldExpand ? double.infinity : targetWidth,
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.08),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: cs.primary,
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    alignment: shouldExpand ? Alignment.centerLeft : Alignment.center,
+                    child: TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      autofocus: true,
+                      textAlign: shouldExpand ? TextAlign.start : (isCentered ? TextAlign.center : TextAlign.start),
+                      cursorColor: cs.primary,
+                      cursorWidth: 2.0,
+                      cursorRadius: const Radius.circular(1.0),
+                      style: TextStyle(
+                        fontSize: 13.0,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                        letterSpacing: -0.1,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: defaultTitle,
+                        hintStyle: TextStyle(
+                          fontSize: 13.0,
+                          fontWeight: FontWeight.w500,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          letterSpacing: -0.1,
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                        border: InputBorder.none,
+                      ),
+                      onSubmitted: (_) => _submitTitle(),
+                      onTapOutside: (_) => _submitTitle(),
                     ),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                alignment: Alignment.center,
-                child: TextField(
-                  controller: _titleController,
-                  focusNode: _titleFocusNode,
-                  autofocus: true,
-                  textAlign: isCentered ? TextAlign.center : TextAlign.start,
-                  cursorColor: cs.primary,
-                  cursorWidth: 2.0,
-                  cursorRadius: const Radius.circular(1.0),
-                  style: TextStyle(
-                    fontSize: 13.0,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface,
-                    letterSpacing: -0.1,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: defaultTitle,
-                    hintStyle: TextStyle(
-                      fontSize: 13.0,
-                      fontWeight: FontWeight.w500,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                      letterSpacing: -0.1,
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                    isDense: true,
-                    border: InputBorder.none,
-                  ),
-                  onSubmitted: (_) => _submitTitle(),
-                  onTapOutside: (_) => _submitTitle(),
-                ),
-              ),
-            ),
-          )
-        : MouseRegion(
-            onEnter: (_) => setState(() => _isHovered = true),
-            onExit: (_) => setState(() => _isHovered = false),
-            child: GestureDetector(
-              onTap: _startEditing,
-              child: AnimatedScale(
-                scale: _isHovered ? 1.02 : 1.0,
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOutCubic,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  height: 28.0,
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-                  decoration: BoxDecoration(
-                    color: _isHovered
-                        ? cs.primary.withValues(alpha: 0.08)
-                        : cs.surfaceContainerHighest.withValues(alpha: 0.25),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
-                    border: Border(
-                      bottom: BorderSide(
+              )
+            : MouseRegion(
+                onEnter: (_) => setState(() => _isHovered = true),
+                onExit: (_) => setState(() => _isHovered = false),
+                child: GestureDetector(
+                  onTap: _startEditing,
+                  child: AnimatedScale(
+                    scale: _isHovered ? 1.02 : 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      height: 28.0,
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+                      decoration: BoxDecoration(
                         color: _isHovered
-                            ? cs.primary
-                            : cs.outlineVariant.withValues(alpha: 0.35),
-                        width: _isHovered ? 1.8 : 1.0,
+                            ? cs.primary.withValues(alpha: 0.08)
+                            : cs.surfaceContainerHighest.withValues(alpha: 0.25),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _isHovered
+                                ? cs.primary
+                                : cs.outlineVariant.withValues(alpha: 0.35),
+                            width: _isHovered ? 1.8 : 1.0,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: isCentered ? MainAxisAlignment.center : MainAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              effectiveTitle,
+                              style: TextStyle(
+                                fontSize: 13.0,
+                                fontWeight: FontWeight.w600,
+                                color: _isHovered ? cs.primary : cs.onSurface,
+                                letterSpacing: -0.1,
+                              ),
+                              textAlign: isCentered ? TextAlign.center : TextAlign.start,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 5.0),
+                          AnimatedOpacity(
+                            duration: const Duration(milliseconds: 150),
+                            opacity: _isHovered ? 1.0 : 0.45,
+                            child: Icon(
+                              Icons.edit_note_rounded,
+                              size: 15.0,
+                              color: _isHovered ? cs.primary : cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: isCentered ? MainAxisAlignment.center : MainAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          effectiveTitle,
-                          style: TextStyle(
-                            fontSize: 13.0,
-                            fontWeight: FontWeight.w600,
-                            color: _isHovered ? cs.primary : cs.onSurface,
-                            letterSpacing: -0.1,
-                          ),
-                          textAlign: isCentered ? TextAlign.center : TextAlign.start,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 5.0),
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 150),
-                        opacity: _isHovered ? 1.0 : 0.45,
-                        child: Icon(
-                          Icons.edit_note_rounded,
-                          size: 15.0,
-                          color: _isHovered ? cs.primary : cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
+              );
+
+        if (widget.isCompact || shouldExpand) {
+          return Row(
+            mainAxisSize: shouldExpand ? MainAxisSize.max : MainAxisSize.min,
+            children: [
+              if (shouldExpand)
+                Expanded(child: titleWidget)
+              else
+                Flexible(child: titleWidget),
+            ],
+          );
+        }
+
+        final orientationLabel = widget.configState.orientation == core.PageOrientation.portrait
+            ? l10n.portrait.toUpperCase()
+            : l10n.landscape.toUpperCase();
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: titleWidget),
+            const SizedBox(width: 8.0),
+            // Layout status pill (e.g. "A4 • PORTRAIT")
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7.0, vertical: 2.5),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10.0),
+                border: Border.all(color: cs.primary.withValues(alpha: 0.2), width: 0.8),
+              ),
+              child: Text(
+                '${widget.configState.pageSize.name.toUpperCase()} • $orientationLabel',
+                style: TextStyle(
+                  fontSize: 10.0,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: cs.onPrimaryContainer,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          );
-
-    if (widget.isCompact) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(child: titleWidget),
-        ],
-      );
-    }
-
-    final orientationLabel = widget.configState.orientation == core.PageOrientation.portrait
-        ? l10n.portrait.toUpperCase()
-        : l10n.landscape.toUpperCase();
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(child: titleWidget),
-        const SizedBox(width: 8.0),
-        // Layout status pill (e.g. "A4 • PORTRAIT")
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7.0, vertical: 2.5),
-          decoration: BoxDecoration(
-            color: cs.primaryContainer.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(10.0),
-            border: Border.all(color: cs.primary.withValues(alpha: 0.2), width: 0.8),
-          ),
-          child: Text(
-            '${widget.configState.pageSize.name.toUpperCase()} • $orientationLabel',
-            style: TextStyle(
-              fontSize: 10.0,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-              color: cs.onPrimaryContainer,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
