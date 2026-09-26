@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
+import '../../../core/theme/sarv_display_context.dart';
 
 /// Helper utilities for presenting adaptive dialogs and bottom sheets in SarvMD.
 ///
@@ -14,8 +15,8 @@ Future<T?> showSarvAdaptiveModal<T>({
   Color? barrierColor,
   double maxWidth = 560.0,
 }) {
-  final media = MediaQuery.of(context);
-  final isMobile = media.size.width < 600 || media.size.height < 600;
+  final display = SarvDisplayContext.of(context);
+  final isMobile = display.preferBottomSheet;
 
   if (isMobile) {
     return showModalBottomSheet<T>(

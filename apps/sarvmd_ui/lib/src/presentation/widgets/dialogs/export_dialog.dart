@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/services/export_directory_service.dart';
 import '../../../logic/services/export_service.dart';
+import '../../../core/theme/sarv_display_context.dart';
 import 'adaptive_dialog_helper.dart';
 import 'export/export_format.dart';
 import 'export/export_format_selector.dart';
@@ -195,11 +196,11 @@ class _ExportDialogState extends State<ExportDialog> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final media = MediaQuery.of(context);
-    final isMobile = media.size.width < 600;
+    final display = SarvDisplayContext.of(context);
+    final isMobile = display.isPhone;
     final l10n = AppLocalizations.of(context)!;
     final maxDialogHeight =
-        isMobile ? media.size.height * 0.90 : media.size.height * 0.85;
+        isMobile ? display.size.height * 0.90 : display.size.height * 0.85;
 
     final content = Container(
       constraints: BoxConstraints(maxWidth: 580, maxHeight: maxDialogHeight),

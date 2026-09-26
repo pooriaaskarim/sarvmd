@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+export 'sarv_display_context.dart';
+
 /// Deprecated UI alias for [core.LayoutPolicyMode].
 @Deprecated('Use core.LayoutPolicyMode from package:sarvmd_core instead')
 typedef LayoutPolicyMode = core.LayoutPolicyMode;

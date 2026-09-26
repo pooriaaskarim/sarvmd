@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../../core/theme/sarv_display_context.dart';
 import '../../../../core/utils/smufl_glyphs.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -31,7 +32,7 @@ class ClefLinesTab extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
-    final isMobile = MediaQuery.of(context).size.width < 500;
+    final isMobile = SarvDisplayContext.of(context).isNarrowTab;
     final isFixedLines = selectedClefSymbol?.requiresFixedLines ?? false;
 
     return ListView(

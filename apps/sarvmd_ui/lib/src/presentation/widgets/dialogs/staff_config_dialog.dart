@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../staff/instrument_preset.dart';
 import '../staff/live_staff_preview.dart';
+import '../../../core/theme/sarv_display_context.dart';
 import 'adaptive_dialog_helper.dart';
 import 'staff_config/clef_lines_tab.dart';
 import 'staff_config/fine_tuning_tab.dart';
@@ -130,9 +131,9 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final media = MediaQuery.of(context);
-    final isMobile = media.size.width < 600 || media.size.height < 600;
-    final screenHeight = media.size.height;
+    final display = SarvDisplayContext.of(context);
+    final isMobile = display.preferBottomSheet;
+    final screenHeight = display.size.height;
     final isCompactHeight = screenHeight < 680;
     final l10n = AppLocalizations.of(context)!;
 

@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
+import '../../../../core/theme/sarv_display_context.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'precision_numeric_slider.dart';
 
@@ -37,7 +38,7 @@ class FineTuningTab extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
-    final isMobile = MediaQuery.of(context).size.width < 500;
+    final isMobile = SarvDisplayContext.of(context).isNarrowTab;
 
     return ListView(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
