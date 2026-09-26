@@ -75,11 +75,13 @@ void main() {
       expect(hudTop, greaterThanOrEqualTo(30.0),
           reason: 'Top coordinate HUD must sit cleanly below the top ruler without covering it');
 
-      // Verify bottom RulerBox HUD ('TOP' / 'CTR' badge) is suppressed on mobile
+      // Verify bottom HUDs ('TOP' / 'CTR' and CAD telemetry dock) are suppressed on touch
       expect(find.text('TOP'), findsNothing,
-          reason: 'Redundant bottom RulerBox coordinate HUD must be suppressed on mobile');
+          reason: 'Redundant bottom RulerBox coordinate HUD must be suppressed on touch');
       expect(find.text('CTR'), findsNothing,
-          reason: 'Redundant bottom RulerBox coordinate HUD must be suppressed on mobile');
+          reason: 'Redundant bottom RulerBox coordinate HUD must be suppressed on touch');
+      expect(find.byKey(const ValueKey('cad_telemetry_dock')), findsNothing,
+          reason: 'Bottom CAD telemetry coordinates in FloatingHud must be suppressed on touch');
     });
 
     testWidgets('Dragging finger updates coordinate readout in real-time', (tester) async {
@@ -101,9 +103,10 @@ void main() {
       expect(find.text('X: '), findsOneWidget);
       expect(find.text('Y: '), findsOneWidget);
 
-      // Verify bottom RulerBox HUD remains suppressed during drag
+      // Verify bottom HUDs remain suppressed during drag
       expect(find.text('TOP'), findsNothing);
       expect(find.text('CTR'), findsNothing);
+      expect(find.byKey(const ValueKey('cad_telemetry_dock')), findsNothing);
 
       await gesture.up();
       await tester.pump();

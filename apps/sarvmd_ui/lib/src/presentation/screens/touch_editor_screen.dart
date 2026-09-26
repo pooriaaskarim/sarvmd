@@ -466,7 +466,6 @@ class _TouchEditorScreenState extends State<TouchEditorScreen>
                     onZoomPreset: _onZoomPresetSelected,
                     isVisible: _batonVisible,
                     onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
-                    cursorPosition: _longPressPos,
                   ),
                 ),
 
