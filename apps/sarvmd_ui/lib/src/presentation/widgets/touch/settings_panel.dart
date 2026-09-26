@@ -18,10 +18,10 @@ import '../staff/document_settings_group.dart';
 import '../staff/margins_settings_group.dart';
 import '../staff/profile_picker.dart';
 import '../staff/staff_spacing_group.dart';
-import 'mobile_language_button.dart';
-import 'mobile_theme_button.dart';
+import 'touch_language_button.dart';
+import 'touch_theme_button.dart';
 
-enum DrawerSection {
+enum SettingsPanelSection {
   mainMenu,
   profiles,
   pageSetup,
@@ -30,30 +30,30 @@ enum DrawerSection {
   export,
 }
 
-/// Full-height side drawer for Proposal B ("Conductor's Baton").
+/// Full-height side drawer and settings panel for touch mode.
 /// Implements Progressive Disclosure category navigation with sticky primary actions.
-class ConductorDrawer extends StatefulWidget {
-  const ConductorDrawer({
+class SettingsPanel extends StatefulWidget {
+  const SettingsPanel({
     super.key,
     required this.transformationController,
     required this.onZoomPreset,
-    this.isSideSheet = false,
+    this.isPanelDocked = false,
     this.onClose,
   });
 
   final TransformationController transformationController;
   final void Function(ZoomPreset preset) onZoomPreset;
-  final bool isSideSheet;
+  final bool isPanelDocked;
   final VoidCallback? onClose;
 
   @override
-  State<ConductorDrawer> createState() => _ConductorDrawerState();
+  State<SettingsPanel> createState() => _SettingsPanelState();
 }
 
-class _ConductorDrawerState extends State<ConductorDrawer> {
-  DrawerSection _currentSection = DrawerSection.mainMenu;
+class _SettingsPanelState extends State<SettingsPanel> {
+  SettingsPanelSection _currentSection = SettingsPanelSection.mainMenu;
 
-  void _navigateTo(DrawerSection section) {
+  void _navigateTo(SettingsPanelSection section) {
     setState(() {
       _currentSection = section;
     });
@@ -61,7 +61,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
 
   void _goBack() {
     setState(() {
-      _currentSection = DrawerSection.mainMenu;
+      _currentSection = SettingsPanelSection.mainMenu;
     });
   }
 
@@ -74,14 +74,14 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
     final drawerWidth = MediaQuery.sizeOf(context).width * 0.85;
 
     final content = SafeArea(
-      top: !widget.isSideSheet,
+      top: !widget.isPanelDocked,
       child: Column(
         children: [
           // Drawer Header
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: 14.0,
-              vertical: widget.isSideSheet ? 8.0 : 12.0,
+              vertical: widget.isPanelDocked ? 8.0 : 12.0,
             ),
             decoration: BoxDecoration(
               color: cs.surfaceContainerHigh,
@@ -124,9 +124,9 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
                 const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    MobileLanguageButton(),
+                    TouchLanguageButton(),
                     SizedBox(width: 4.0),
-                    MobileThemeButton(),
+                    TouchThemeButton(),
                   ],
                 ),
               ],
@@ -139,7 +139,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
               duration: const Duration(milliseconds: 220),
               switchInCurve: Curves.easeOut,
               switchOutCurve: Curves.easeIn,
-              child: _currentSection == DrawerSection.mainMenu
+              child: _currentSection == SettingsPanelSection.mainMenu
                   ? _buildMainMenu(context, cs, l10n)
                   : _buildSectionContent(context, cs, l10n, sectionTextDir),
             ),
@@ -148,7 +148,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
       ),
     );
 
-    if (widget.isSideSheet) {
+    if (widget.isPanelDocked) {
       return Directionality(
         textDirection: TextDirection.ltr,
         child: Material(
@@ -205,7 +205,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
   }
 
   Widget _buildMainMenu(BuildContext context, ColorScheme cs, AppLocalizations l10n) {
-    final isDense = widget.isSideSheet;
+    final isDense = widget.isPanelDocked;
 
     return Column(
       key: const ValueKey('main_menu'),
@@ -222,35 +222,35 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
                 title: l10n.headerEnsembleProfiles,
                 subtitle: isDense ? null : 'Standard, Solo, Choir & Orchestra',
                 isDense: isDense,
-                onTap: () => _navigateTo(DrawerSection.profiles),
+                onTap: () => _navigateTo(SettingsPanelSection.profiles),
               ),
               _DrawerCategoryTile(
                 icon: Icons.description_outlined,
                 title: l10n.pageSettings,
                 subtitle: isDense ? null : 'Paper size, orientation & margins',
                 isDense: isDense,
-                onTap: () => _navigateTo(DrawerSection.pageSetup),
+                onTap: () => _navigateTo(SettingsPanelSection.pageSetup),
               ),
               _DrawerCategoryTile(
                 icon: Icons.format_line_spacing,
                 title: l10n.staffSpacing,
                 subtitle: isDense ? null : 'Line gap, system gap, inter-staff gap',
                 isDense: isDense,
-                onTap: () => _navigateTo(DrawerSection.staffSpacing),
+                onTap: () => _navigateTo(SettingsPanelSection.staffSpacing),
               ),
               _DrawerCategoryTile(
                 icon: Icons.account_tree_outlined,
                 title: l10n.systemHierarchy,
                 subtitle: isDense ? null : 'Staves, parts & system hierarchy',
                 isDense: isDense,
-                onTap: () => _navigateTo(DrawerSection.systemHierarchy),
+                onTap: () => _navigateTo(SettingsPanelSection.systemHierarchy),
               ),
               _DrawerCategoryTile(
                 icon: Icons.ios_share,
                 title: l10n.exportManuscriptTitle,
                 subtitle: isDense ? null : 'Vector SVG, high-res PNG, PDF & print',
                 isDense: isDense,
-                onTap: () => _navigateTo(DrawerSection.export),
+                onTap: () => _navigateTo(SettingsPanelSection.export),
               ),
               // In landscape side sheet mode, unpin footer so it scrolls below the 5 categories
               if (isDense) ...[
@@ -299,7 +299,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
     final config = docState.config;
 
     switch (_currentSection) {
-      case DrawerSection.profiles:
+      case SettingsPanelSection.profiles:
         title = l10n.headerEnsembleProfiles;
         body = ProfilePicker(
           currentConfig: config,
@@ -307,7 +307,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
         );
         break;
 
-      case DrawerSection.pageSetup:
+      case SettingsPanelSection.pageSetup:
         title = l10n.pageSettings;
         body = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,7 +339,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
         );
         break;
 
-      case DrawerSection.staffSpacing:
+      case SettingsPanelSection.staffSpacing:
         title = l10n.staffSpacing;
         body = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,17 +361,17 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
         );
         break;
 
-      case DrawerSection.systemHierarchy:
+      case SettingsPanelSection.systemHierarchy:
         title = l10n.systemHierarchy;
         body = SystemHierarchyPanel(notifier: cubit);
         break;
 
-      case DrawerSection.export:
+      case SettingsPanelSection.export:
         title = l10n.exportManuscriptTitle;
         body = const ExportPanel();
         break;
 
-      case DrawerSection.mainMenu:
+      case SettingsPanelSection.mainMenu:
         break;
     }
 
@@ -382,7 +382,7 @@ class _ConductorDrawerState extends State<ConductorDrawer> {
         Container(
           padding: EdgeInsets.symmetric(
             horizontal: 8.0,
-            vertical: widget.isSideSheet ? 4.0 : 8.0,
+            vertical: widget.isPanelDocked ? 4.0 : 8.0,
           ),
           decoration: BoxDecoration(
             color: cs.surfaceContainerHigh.withValues(alpha: 0.5),

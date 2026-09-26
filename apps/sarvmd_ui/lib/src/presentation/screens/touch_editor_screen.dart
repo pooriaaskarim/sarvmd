@@ -10,27 +10,27 @@ import '../../core/utils/unit_formatter.dart';
 import '../../logic/document/document_cubit.dart';
 import '../../logic/document/document_state.dart';
 import '../widgets/common/integrated_scale_control.dart';
-import '../widgets/mobile/conductor_drawer.dart';
-import '../widgets/mobile/conductor_toolbar.dart';
-import '../widgets/mobile/mobile_canvas_area.dart';
-import '../widgets/mobile/mobile_top_bar.dart';
+import '../widgets/touch/settings_panel.dart';
+import '../widgets/touch/floating_hud.dart';
+import '../widgets/touch/touch_canvas_area.dart';
+import '../widgets/touch/touch_top_bar.dart';
 
-/// Mobile Editor Screen implementing Proposal B ("Conductor's Baton").
+/// Touch-optimized Editor Screen with gestural HUDs and adaptive settings drawer/sheet.
 /// Features a full-bleed light canvas, 40px ultra-minimal header, floating frosted glass baton toolbar,
 /// full-height side drawer, and top-anchored real-time glassmorphic coordinate HUD bar on long-press & drag.
-class MobileEditorScreen extends StatefulWidget {
-  const MobileEditorScreen({super.key});
+class TouchEditorScreen extends StatefulWidget {
+  const TouchEditorScreen({super.key});
 
   @override
-  State<MobileEditorScreen> createState() => _MobileEditorScreenState();
+  State<TouchEditorScreen> createState() => _TouchEditorScreenState();
 }
 
-class _MobileEditorScreenState extends State<MobileEditorScreen>
+class _TouchEditorScreenState extends State<TouchEditorScreen>
     with SingleTickerProviderStateMixin {
   final TransformationController _transformationController =
       TransformationController();
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
-  final GlobalKey<MobileCanvasAreaState> _canvasKey = GlobalKey();
+  final GlobalKey<TouchCanvasAreaState> _canvasKey = GlobalKey();
 
   Offset? _longPressPos;
   Timer? _longPressDismissTimer;
@@ -396,7 +396,7 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
             drawerEdgeDragWidth: isLandscape ? 0.0 : 24.0,
             drawer: isLandscape
                 ? null
-                : ConductorDrawer(
+                : SettingsPanel(
                     transformationController: _transformationController,
                     onZoomPreset: _onZoomPresetSelected,
                   ),
@@ -409,7 +409,7 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                   left: 0.0,
                   right: 0.0,
                   bottom: 0.0,
-                  child: MobileCanvasArea(
+                  child: TouchCanvasArea(
                     key: _canvasKey,
                     transformationController: _transformationController,
                     cursorNotifier: _cursorNotifier,
@@ -455,13 +455,13 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                   ),
                 ),
 
-                // Layer 3: Floating Dual-Island Conductor Baton Toolbar (Proposal A: Left & Right Wings)
+                // Layer 3: Floating Dual-Island HUD Toolbar (Left & Right Wings)
                 // Positioned cleanly past the 25.0 dp left ruler (25.0 dp ruler + 11.0 dp clearance)
                 Positioned(
                   bottom: (isLandscape ? 12.0 : 20.0) + MediaQuery.paddingOf(context).bottom,
                   left: 36.0 + leftSafeArea,
                   right: (isLandscape ? 20.0 : 16.0) + rightPadding,
-                  child: ConductorToolbar(
+                  child: FloatingHud(
                     transformationController: _transformationController,
                     onZoomPreset: _onZoomPresetSelected,
                     isVisible: _batonVisible,
@@ -486,7 +486,7 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                       child: AnimatedOpacity(
                         duration: const Duration(milliseconds: 200),
                         opacity: showTopBar ? 1.0 : 0.0,
-                        child: MobileTopBar(
+                        child: TouchTopBar(
                           onOpenMenu: isLandscape ? _toggleLandscapeSideSheet : null,
                           isPinned: isPinned,
                           onTogglePin: () {
@@ -556,10 +556,10 @@ class _MobileEditorScreenState extends State<MobileEditorScreen>
                               width: sideSheetWidth,
                               child: SlideTransition(
                                 position: _sideSheetSlideAnimation,
-                                child: ConductorDrawer(
+                                child: SettingsPanel(
                                   transformationController: _transformationController,
                                   onZoomPreset: _onZoomPresetSelected,
-                                  isSideSheet: true,
+                                  isPanelDocked: true,
                                   onClose: _closeLandscapeSideSheet,
                                 ),
                               ),

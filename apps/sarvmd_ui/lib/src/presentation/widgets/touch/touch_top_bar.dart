@@ -18,8 +18,8 @@ import '../common/input_mode_toggle_button.dart';
 /// 1. Pinned: Statically docked at top of viewport.
 /// 2. Floating Unpinned: Frosted glassmorphic pill that auto-slides off-screen on canvas pan/zoom.
 /// 3. Compact Micro-Pill: Centered title capsule leaving maximum canvas clearance.
-class MobileTopBar extends StatefulWidget implements PreferredSizeWidget {
-  const MobileTopBar({
+class TouchTopBar extends StatefulWidget implements PreferredSizeWidget {
+  const TouchTopBar({
     super.key,
     this.height = 40.0,
     this.onOpenDrawer,
@@ -44,10 +44,10 @@ class MobileTopBar extends StatefulWidget implements PreferredSizeWidget {
   Size get preferredSize => Size.fromHeight(height);
 
   @override
-  State<MobileTopBar> createState() => _MobileTopBarState();
+  State<TouchTopBar> createState() => _TouchTopBarState();
 }
 
-class _MobileTopBarState extends State<MobileTopBar> {
+class _TouchTopBarState extends State<TouchTopBar> {
   bool _isEditingTitle = false;
   final GlobalKey<EditableScoreHeaderState> _floatingHeaderKey = GlobalKey<EditableScoreHeaderState>();
   final GlobalKey<EditableScoreHeaderState> _pinnedHeaderKey = GlobalKey<EditableScoreHeaderState>();
@@ -212,7 +212,6 @@ class _MobileTopBarState extends State<MobileTopBar> {
                         score: docState.score,
                         configState: docState.config,
                         isCompact: true,
-                        expandInEditMode: true,
                         onEditingChanged: _handleTitleEditingChanged,
                       ),
                     ),
@@ -309,7 +308,7 @@ class _MobileTopBarState extends State<MobileTopBar> {
       child: Row(
         children: [
           if (!hideOtherStuff)
-            // Left Zone: Conductor Drawer Trigger
+            // Left Zone: Settings Drawer Trigger
             IconButton(
               icon: const Icon(Icons.menu, size: 20),
               tooltip: l10n.appMenuTooltip,
@@ -326,7 +325,6 @@ class _MobileTopBarState extends State<MobileTopBar> {
                   score: docState.score,
                   configState: docState.config,
                   isCompact: true,
-                  expandInEditMode: true,
                   onEditingChanged: _handleTitleEditingChanged,
                 ),
               ),

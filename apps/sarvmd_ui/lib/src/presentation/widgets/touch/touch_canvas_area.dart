@@ -12,8 +12,8 @@ import '../canvas/ruler_box.dart';
 import '../common/integrated_scale_control.dart';
 
 /// Touch & gesture optimized interactive mobile canvas area for SarvMD manuscript rendering.
-class MobileCanvasArea extends StatefulWidget {
-  const MobileCanvasArea({
+class TouchCanvasArea extends StatefulWidget {
+  const TouchCanvasArea({
     super.key,
     required this.transformationController,
     required this.cursorNotifier,
@@ -41,10 +41,10 @@ class MobileCanvasArea extends StatefulWidget {
   final void Function(ScaleEndDetails details)? onInteractionEnd;
 
   @override
-  State<MobileCanvasArea> createState() => MobileCanvasAreaState();
+  State<TouchCanvasArea> createState() => TouchCanvasAreaState();
 }
 
-class MobileCanvasAreaState extends State<MobileCanvasArea> {
+class TouchCanvasAreaState extends State<TouchCanvasArea> {
   BoxConstraints? _lastConstraints;
   bool _hasCentered = false;
   ZoomPreset _currentPreset = ZoomPreset.fitWidth;

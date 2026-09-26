@@ -9,10 +9,10 @@ import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
 import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
-import 'package:sarvmd_ui/src/presentation/screens/editor_screen.dart';
-import 'package:sarvmd_ui/src/presentation/screens/mobile_editor_screen.dart';
+import 'package:sarvmd_ui/src/presentation/screens/pointer_editor_screen.dart';
+import 'package:sarvmd_ui/src/presentation/screens/touch_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/common/input_mode_toggle_button.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/specialized/launch_coordinator.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/specialized/app_entry_point.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -23,7 +23,7 @@ void main() {
   });
 
   group('InputMode Routing & Toggle Tests', () {
-    testWidgets('LaunchCoordinator routes to EditorScreen when inputMode is pointer', (tester) async {
+    testWidgets('AppEntryPoint routes to PointerEditorScreen when inputMode is pointer', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -45,7 +45,7 @@ void main() {
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: LaunchCoordinator(
+            home: AppEntryPoint(
               minSplashDuration: Duration(milliseconds: 50),
             ),
           ),
@@ -55,11 +55,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
-      expect(find.byType(EditorScreen), findsOneWidget);
-      expect(find.byType(MobileEditorScreen), findsNothing);
+      expect(find.byType(PointerEditorScreen), findsOneWidget);
+      expect(find.byType(TouchEditorScreen), findsNothing);
     });
 
-    testWidgets('LaunchCoordinator routes to MobileEditorScreen when inputMode is touch on wide viewport', (tester) async {
+    testWidgets('AppEntryPoint routes to TouchEditorScreen when inputMode is touch on wide viewport', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -81,7 +81,7 @@ void main() {
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: LaunchCoordinator(
+            home: AppEntryPoint(
               minSplashDuration: Duration(milliseconds: 50),
             ),
           ),
@@ -91,8 +91,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
-      expect(find.byType(MobileEditorScreen), findsOneWidget);
-      expect(find.byType(EditorScreen), findsNothing);
+      expect(find.byType(TouchEditorScreen), findsOneWidget);
+      expect(find.byType(PointerEditorScreen), findsNothing);
     });
 
     testWidgets('InputModeToggleButton displays touch icon in pointer mode and confirms cancellation', (tester) async {

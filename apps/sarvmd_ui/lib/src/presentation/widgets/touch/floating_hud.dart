@@ -18,11 +18,11 @@ import '../dialogs/calibration_dialog.dart';
 import '../../../core/theme/app_metrics.dart';
 import '../../../core/utils/unit_formatter.dart';
 
-/// Dual-Island Floating Mobile HUD ("Conductor Baton") for SarvMD (Proposal A + Hybrid).
+/// Dual-Island Floating Touch HUD for SarvMD.
 /// Combines drawer triggers, undo/redo, scrubbable zoom, real-time telemetry morphing, and overlay guides.
 /// Auto-collapses to compact frosted pods after 4 seconds of inactivity, and hides during canvas gestures.
-class ConductorToolbar extends StatefulWidget {
-  const ConductorToolbar({
+class FloatingHud extends StatefulWidget {
+  const FloatingHud({
     super.key,
     required this.transformationController,
     required this.onZoomPreset,
@@ -38,10 +38,10 @@ class ConductorToolbar extends StatefulWidget {
   final Offset? cursorPosition;
 
   @override
-  State<ConductorToolbar> createState() => _ConductorToolbarState();
+  State<FloatingHud> createState() => _FloatingHudState();
 }
 
-class _ConductorToolbarState extends State<ConductorToolbar> {
+class _FloatingHudState extends State<FloatingHud> {
   Timer? _leftIdleTimer;
   Timer? _rightIdleTimer;
   bool _isLeftCollapsed = false;
@@ -64,7 +64,7 @@ class _ConductorToolbarState extends State<ConductorToolbar> {
   }
 
   @override
-  void didUpdateWidget(ConductorToolbar oldWidget) {
+  void didUpdateWidget(FloatingHud oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isVisible != oldWidget.isVisible) {
       if (widget.isVisible) {
@@ -205,7 +205,7 @@ class _ConductorToolbarState extends State<ConductorToolbar> {
       context: context,
       builder: (ctx, _) => BlocBuilder<ViewCubit, ViewState>(
         builder: (context, viewState) {
-          return _MobileGuidesSheet(
+          return _GuidesSheet(
             viewState: viewState,
             viewCubit: viewCubit,
           );
@@ -1076,8 +1076,8 @@ class _CollapsedScrubbableChipState extends State<_CollapsedScrubbableChip> {
   }
 }
 
-class _MobileGuidesSheet extends StatelessWidget {
-  const _MobileGuidesSheet({
+class _GuidesSheet extends StatelessWidget {
+  const _GuidesSheet({
     required this.viewState,
     required this.viewCubit,
   });
@@ -1130,27 +1130,27 @@ class _MobileGuidesSheet extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _MobileGuideTile(
+                  _GuideTile(
                     label: l10n.mouseWings,
                     value: viewState.isGuideActive(GuideType.rulerWings),
                     onChanged: (v) => viewCubit.toggleGuide(GuideType.rulerWings, v),
                   ),
-                  _MobileGuideTile(
+                  _GuideTile(
                     label: l10n.paperEdges,
                     value: viewState.isGuideActive(GuideType.paperEdges),
                     onChanged: (v) => viewCubit.toggleGuide(GuideType.paperEdges, v),
                   ),
-                  _MobileGuideTile(
+                  _GuideTile(
                     label: l10n.paperCenters,
                     value: viewState.isGuideActive(GuideType.paperCenters),
                     onChanged: (v) => viewCubit.toggleGuide(GuideType.paperCenters, v),
                   ),
-                  _MobileGuideTile(
+                  _GuideTile(
                     label: l10n.documentMargins,
                     value: viewState.isGuideActive(GuideType.margins),
                     onChanged: (v) => viewCubit.toggleGuide(GuideType.margins, v),
                   ),
-                  _MobileGuideTile(
+                  _GuideTile(
                     label: l10n.staffBounds,
                     value: viewState.isGuideActive(GuideType.staffBounds),
                     onChanged: (v) => viewCubit.toggleGuide(GuideType.staffBounds, v),
@@ -1184,8 +1184,8 @@ class _MobileGuidesSheet extends StatelessWidget {
   }
 }
 
-class _MobileGuideTile extends StatelessWidget {
-  const _MobileGuideTile({
+class _GuideTile extends StatelessWidget {
+  const _GuideTile({
     required this.label,
     required this.value,
     required this.onChanged,

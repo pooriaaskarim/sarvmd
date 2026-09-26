@@ -13,7 +13,7 @@ import '../../core/theme/layout_policy.dart';
 import '../widgets/common/section_header.dart';
 import '../widgets/staff/staff_spacing_group.dart';
 import '../widgets/animations/fade_in_slide.dart';
-import '../widgets/layout/sarv_top_bar.dart';
+import '../widgets/layout/pointer_top_bar.dart';
 
 import '../widgets/common/shortcut_gateway.dart';
 import '../../l10n/app_localizations.dart';
@@ -29,14 +29,14 @@ import '../../logic/view/view_cubit.dart';
 import '../../logic/view/view_state.dart';
 
 
-class EditorScreen extends StatefulWidget {
-  const EditorScreen({super.key});
+class PointerEditorScreen extends StatefulWidget {
+  const PointerEditorScreen({super.key});
 
   @override
-  State<EditorScreen> createState() => _EditorScreenState();
+  State<PointerEditorScreen> createState() => _PointerEditorScreenState();
 }
 
-class _EditorScreenState extends State<EditorScreen> {
+class _PointerEditorScreenState extends State<PointerEditorScreen> {
   final TransformationController _transformationController =
       TransformationController();
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
@@ -63,19 +63,19 @@ class _EditorScreenState extends State<EditorScreen> {
     super.didChangeDependencies();
     final currentWidth = MediaQuery.sizeOf(context).width;
     if (_lastScreenWidth == null) {
-      if (currentWidth < SarvBreakpoints.desktopWideThreshold) {
+      if (currentWidth < SarvBreakpoints.bothSidebarsDockedMinWidth) {
         _viewPanelCollapsed = true;
       }
-      if (currentWidth < SarvBreakpoints.desktopMediumThreshold) {
+      if (currentWidth < SarvBreakpoints.primarySidebarDockedMinWidth) {
         _sidebarCollapsed = true;
       }
     } else {
-      if (_lastScreenWidth! >= SarvBreakpoints.desktopWideThreshold &&
-          currentWidth < SarvBreakpoints.desktopWideThreshold) {
+      if (_lastScreenWidth! >= SarvBreakpoints.bothSidebarsDockedMinWidth &&
+          currentWidth < SarvBreakpoints.bothSidebarsDockedMinWidth) {
         _viewPanelCollapsed = true;
       }
-      if (_lastScreenWidth! >= SarvBreakpoints.desktopMediumThreshold &&
-          currentWidth < SarvBreakpoints.desktopMediumThreshold) {
+      if (_lastScreenWidth! >= SarvBreakpoints.primarySidebarDockedMinWidth &&
+          currentWidth < SarvBreakpoints.primarySidebarDockedMinWidth) {
         _sidebarCollapsed = true;
       }
     }
@@ -721,7 +721,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 body: SarvShortcutGateway(
                   child: Column(
                     children: [
-                      const SarvTopBar(),
+                      const PointerTopBar(),
                       Expanded(
                         child: Directionality(
                           textDirection: TextDirection.ltr,

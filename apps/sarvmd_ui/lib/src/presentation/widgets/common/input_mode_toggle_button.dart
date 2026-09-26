@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../logic/view/view_cubit.dart';
 import '../../../logic/view/view_state.dart';
-import '../specialized/launch_coordinator.dart';
+import '../specialized/app_entry_point.dart';
 
 /// A top-bar action button that toggles between [InputMode.pointer] and [InputMode.touch].
 ///
 /// Prompts the user with a confirmation dialog before toggling the cubit state and
-/// executing a clean reload through [LaunchCoordinator].
+/// executing a clean reload through [AppEntryPoint].
 class InputModeToggleButton extends StatelessWidget {
   const InputModeToggleButton({super.key});
 
@@ -55,7 +55,7 @@ class InputModeToggleButton extends StatelessWidget {
       cubit?.toggleInputMode();
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => const LaunchCoordinator(
+          builder: (_) => const AppEntryPoint(
             minSplashDuration: Duration(milliseconds: 300),
           ),
         ),

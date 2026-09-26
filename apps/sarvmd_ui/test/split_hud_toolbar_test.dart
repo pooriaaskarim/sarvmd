@@ -13,14 +13,14 @@ import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/locale/locale_state.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
-import 'package:sarvmd_ui/src/presentation/screens/mobile_editor_screen.dart';
+import 'package:sarvmd_ui/src/presentation/screens/touch_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/common/integrated_scale_control.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/mobile/conductor_toolbar.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/touch/floating_hud.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Proposal A: Split Dual-Island ConductorToolbar Tests', () {
+  group('Proposal A: Split Dual-Island FloatingHud Tests', () {
     late LocaleCubit localeCubit;
     late ViewCubit viewCubit;
     late DocumentCubit documentCubit;
@@ -67,7 +67,7 @@ void main() {
               child: SizedBox(
                 width: width,
                 height: 100,
-                child: ConductorToolbar(
+                child: FloatingHud(
                   transformationController: transformationController,
                   onZoomPreset: onZoomPreset ?? (_) {},
                   isVisible: isVisible,
@@ -403,7 +403,7 @@ void main() {
       expect(find.byKey(const ValueKey('cad_telemetry_dock')), findsNothing);
     });
 
-    testWidgets('ConductorToolbar is positioned with left clearance >= 36.0 dp to clear left ruler in MobileEditorScreen', (tester) async {
+    testWidgets('FloatingHud is positioned with left clearance >= 36.0 dp to clear left ruler in TouchEditorScreen', (tester) async {
       await tester.pumpWidget(MultiBlocProvider(
         providers: [
           BlocProvider.value(value: localeCubit),
@@ -418,17 +418,17 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: MobileEditorScreen(),
+          home: TouchEditorScreen(),
         ),
       ));
       await tester.pumpAndSettle();
 
-      final toolbarFinder = find.byType(ConductorToolbar);
+      final toolbarFinder = find.byType(FloatingHud);
       expect(toolbarFinder, findsOneWidget);
 
       final toolbarRect = tester.getRect(toolbarFinder);
       expect(toolbarRect.left, greaterThanOrEqualTo(36.0),
-          reason: 'ConductorToolbar must start to the right of the 25.0 dp left ruler with at least 11.0 dp clearance');
+          reason: 'FloatingHud must start to the right of the 25.0 dp left ruler with at least 11.0 dp clearance');
     });
   });
 }

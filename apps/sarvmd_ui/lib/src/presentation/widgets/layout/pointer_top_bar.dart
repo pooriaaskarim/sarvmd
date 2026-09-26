@@ -21,8 +21,8 @@ import 'top_bar/widgets/undo_redo_cluster.dart';
 import '../common/input_mode_toggle_button.dart';
 
 /// Professional Dorico / Figma-style top control header bar for SarvMD.
-class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
-  const SarvTopBar({super.key});
+class PointerTopBar extends StatelessWidget implements PreferredSizeWidget {
+  const PointerTopBar({super.key});
 
   @override
   Size get preferredSize => const Size.fromHeight(52.0);
@@ -58,7 +58,7 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < SarvBreakpoints.desktopTopBarMenuThreshold;
+                final isCompact = constraints.maxWidth < SarvBreakpoints.fullMenuBarMinWidth;
 
                 final undoRedoCluster = UndoRedoCluster(
                   documentState: documentState,
@@ -92,8 +92,8 @@ class SarvTopBar extends StatelessWidget implements PreferredSizeWidget {
 // Layout variants
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Compact top-bar layout for viewports narrower than [SarvBreakpoints.desktopTopBarMenuThreshold] (760 px).
-class _CompactLayout extends StatelessWidget {
+/// Compact top-bar layout for viewports narrower than [SarvBreakpoints.fullMenuBarMinWidth] (760 px).
+class _CompactLayout extends StatefulWidget {
   final DocumentState documentState;
   final core.PageConfig configState;
   final Widget undoRedoCluster;
@@ -105,35 +105,72 @@ class _CompactLayout extends StatelessWidget {
   });
 
   @override
+  State<_CompactLayout> createState() => _CompactLayoutState();
+}
+
+class _CompactLayoutState extends State<_CompactLayout> {
+  bool _isEditingTitle = false;
+  final GlobalKey<EditableScoreHeaderState> _headerKey = GlobalKey<EditableScoreHeaderState>();
+
+  void _handleTitleEditingChanged(bool isEditing) {
+    if (_isEditingTitle != isEditing) {
+      setState(() {
+        _isEditingTitle = isEditing;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Row(
       children: [
-        const SarvReactiveBrandLogo(isMenuMode: false),
-        const SizedBox(width: 4.0),
-        TopBarCompactAppMenu(
-          documentState: documentState,
-          configState: configState,
-        ),
-        const SizedBox(width: 4.0),
-        undoRedoCluster,
-        const SizedBox(width: 6.0),
+        if (!_isEditingTitle) ...[
+          const SarvReactiveBrandLogo(isMenuMode: false),
+          const SizedBox(width: 4.0),
+          TopBarCompactAppMenu(
+            documentState: widget.documentState,
+            configState: widget.configState,
+          ),
+          const SizedBox(width: 4.0),
+          widget.undoRedoCluster,
+          const SizedBox(width: 6.0),
+        ],
         Expanded(
           child: Center(
             child: EditableScoreHeader(
-              score: documentState.score,
-              configState: configState,
+              key: _headerKey,
+              score: widget.documentState.score,
+              configState: widget.configState,
               isCompact: true,
+              onEditingChanged: _handleTitleEditingChanged,
             ),
           ),
         ),
-        const SizedBox(width: 4.0),
-        const InputModeToggleButton(),
+        if (_isEditingTitle)
+          IconButton(
+            key: const ValueKey('top_bar_title_edit_done_button_compact'),
+            icon: const Icon(Icons.check, size: 20),
+            tooltip: 'Done',
+            padding: const EdgeInsets.all(4.0),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            color: cs.primary,
+            onPressed: () {
+              _headerKey.currentState?.submitTitle();
+              FocusScope.of(context).unfocus();
+            },
+          )
+        else ...[
+          const SizedBox(width: 4.0),
+          const InputModeToggleButton(),
+        ],
       ],
     );
   }
 }
 
-/// Full wide-mode top-bar layout for viewports at least [SarvBreakpoints.desktopTopBarMenuThreshold] (760 px) wide.
+/// Full wide-mode top-bar layout for viewports at least [SarvBreakpoints.fullMenuBarMinWidth] (760 px) wide.
 class _WideLayout extends StatelessWidget {
   final DocumentState documentState;
   final core.PageConfig configState;

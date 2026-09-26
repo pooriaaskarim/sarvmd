@@ -8,7 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
 import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/layout/sarv_top_bar.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/common/input_mode_toggle_button.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/layout/pointer_top_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -17,7 +18,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
-  testWidgets('SarvTopBar renders desktop menu headers, title, and controls in wide mode', (tester) async {
+  testWidgets('PointerTopBar renders desktop menu headers, title, and controls in wide mode', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -33,7 +34,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -68,7 +69,7 @@ void main() {
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar View menu switches page size presets', (tester) async {
+  testWidgets('PointerTopBar View menu switches page size presets', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -84,7 +85,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -108,7 +109,7 @@ void main() {
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar allows inline editing of score title in center zone', (tester) async {
+  testWidgets('PointerTopBar allows inline editing of score title in center zone', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -124,7 +125,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -145,7 +146,7 @@ void main() {
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar collapses menus into cascading app menu button in compact viewports (<760px)', (tester) async {
+  testWidgets('PointerTopBar collapses menus into cascading app menu button in compact viewports (<760px)', (tester) async {
     tester.view.physicalSize = const Size(700, 600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -161,7 +162,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -193,7 +194,73 @@ void main() {
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar Add Staff to System from Edit menu updates DocumentCubit staffCount with correct format', (tester) async {
+  testWidgets('PointerTopBar in compact mode hides flanking controls and shows Done button while editing title', (tester) async {
+    tester.view.physicalSize = const Size(700, 600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final documentCubit = DocumentCubit();
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: PointerTopBar(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify initial compact state has logo, app menu, undo/redo, input mode toggle
+    expect(find.text('MD'), findsOneWidget);
+    expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
+    expect(find.byType(InputModeToggleButton), findsOneWidget);
+    expect(find.byKey(const ValueKey('top_bar_title_edit_done_button_compact')), findsNothing);
+
+    // Tap title to begin editing
+    await tester.tap(find.text('Treble_A4_Portrait'));
+    await tester.pumpAndSettle();
+
+    // Flanking controls should be hidden to make room for title text editing field
+    expect(find.text('MD'), findsNothing);
+    expect(find.byIcon(Icons.menu_rounded), findsNothing);
+    expect(find.byIcon(Icons.undo_rounded), findsNothing);
+    expect(find.byType(InputModeToggleButton), findsNothing);
+
+    // Done button should be visible
+    final doneButton = find.byKey(const ValueKey('top_bar_title_edit_done_button_compact'));
+    expect(doneButton, findsOneWidget);
+
+    // Enter new title
+    await tester.enterText(find.byType(TextField), 'Violin Concerto No. 1');
+    await tester.pump();
+
+    // Tap Done button
+    await tester.tap(doneButton);
+    await tester.pumpAndSettle();
+
+    // Flanking controls should be restored
+    expect(find.text('MD'), findsOneWidget);
+    expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
+    expect(find.byType(InputModeToggleButton), findsOneWidget);
+    expect(find.byKey(const ValueKey('top_bar_title_edit_done_button_compact')), findsNothing);
+
+    // Title should be updated
+    expect(documentCubit.state.score.title, equals('Violin Concerto No. 1'));
+    expect(find.text('Violin Concerto No. 1'), findsOneWidget);
+
+    documentCubit.close();
+  });
+
+  testWidgets('PointerTopBar Add Staff to System from Edit menu updates DocumentCubit staffCount with correct format', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -211,7 +278,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -236,7 +303,7 @@ void main() {
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar Remove Staff from Edit menu removes only targeted staff from grouped ensemble', (tester) async {
+  testWidgets('PointerTopBar Remove Staff from Edit menu removes only targeted staff from grouped ensemble', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -256,7 +323,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),

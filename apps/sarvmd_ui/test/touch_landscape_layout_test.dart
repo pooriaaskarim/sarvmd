@@ -13,10 +13,10 @@ import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/locale/locale_state.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
-import 'package:sarvmd_ui/src/presentation/screens/mobile_editor_screen.dart';
+import 'package:sarvmd_ui/src/presentation/screens/touch_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/common/ensemble_summary_widget.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/mobile/conductor_drawer.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/mobile/conductor_toolbar.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/touch/settings_panel.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/touch/floating_hud.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/staff/profile_picker.dart';
 
 void main() {
@@ -55,12 +55,12 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: MobileEditorScreen(),
+          home: TouchEditorScreen(),
         ),
       );
     }
 
-    testWidgets('Portrait mode: renders ConductorDrawer and opens it via hamburger menu', (tester) async {
+    testWidgets('Portrait mode: renders SettingsPanel and opens it via hamburger menu', (tester) async {
       tester.view.physicalSize = const Size(400, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -79,10 +79,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Drawer should be open
-      expect(find.byType(ConductorDrawer), findsOneWidget);
+      expect(find.byType(SettingsPanel), findsOneWidget);
     });
 
-    testWidgets('Landscape mode: suppresses scaffold drawer and opens ConductorDrawer as Left Side Sheet via menu button', (tester) async {
+    testWidgets('Landscape mode: suppresses scaffold drawer and opens SettingsPanel as Left Side Sheet via menu button', (tester) async {
       tester.view.physicalSize = const Size(800, 400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -95,7 +95,7 @@ void main() {
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(scaffold.drawer, isNull, reason: 'Landscape mode must omit side drawer to preserve canvas width');
       expect(scaffold.drawerEdgeDragWidth, equals(0.0));
-      expect(find.byType(ConductorDrawer), findsNothing);
+      expect(find.byType(SettingsPanel), findsNothing);
 
       // Expand top bar from collapsed title pill
       await tester.tap(find.byKey(const ValueKey('top_bar_compact_pill')));
@@ -105,8 +105,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
 
-      // ConductorDrawer should appear as an elevated Left Side Sheet
-      expect(find.byType(ConductorDrawer), findsOneWidget);
+      // SettingsPanel should appear as an elevated Left Side Sheet
+      expect(find.byType(SettingsPanel), findsOneWidget);
 
       // Verify all 5 categories are displayed simultaneously in dense landscape mode without scrolling
       expect(find.text('ENSEMBLE PROFILES'), findsOneWidget);
@@ -126,7 +126,7 @@ void main() {
       await tester.drag(find.text('Export Manuscript'), const Offset(0, 300));
       await tester.pumpAndSettle();
 
-      // Verify navigation inside ConductorDrawer: tap Ensemble Profiles
+      // Verify navigation inside SettingsPanel: tap Ensemble Profiles
       expect(find.text('ENSEMBLE PROFILES'), findsOneWidget);
       await tester.tap(find.text('ENSEMBLE PROFILES'));
       await tester.pumpAndSettle();
@@ -146,10 +146,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Side sheet dismissed
-      expect(find.byType(ConductorDrawer), findsNothing);
+      expect(find.byType(SettingsPanel), findsNothing);
     });
 
-    testWidgets('Landscape mode: ConductorToolbar tune icon opens ConductorDrawer as Left Side Sheet and backdrop closes it', (tester) async {
+    testWidgets('Landscape mode: FloatingHud tune icon opens SettingsPanel as Left Side Sheet and backdrop closes it', (tester) async {
       tester.view.physicalSize = const Size(800, 400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -158,11 +158,11 @@ void main() {
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle();
 
-      expect(find.byType(ConductorDrawer), findsNothing);
+      expect(find.byType(SettingsPanel), findsNothing);
 
-      // Find tune icon in ConductorToolbar
+      // Find tune icon in FloatingHud
       final tuneFinder = find.descendant(
-        of: find.byType(ConductorToolbar),
+        of: find.byType(FloatingHud),
         matching: find.byIcon(Icons.tune),
       );
       expect(tuneFinder, findsOneWidget);
@@ -170,18 +170,18 @@ void main() {
       await tester.tap(tuneFinder);
       await tester.pumpAndSettle();
 
-      // ConductorDrawer should open as side sheet
-      expect(find.byType(ConductorDrawer), findsOneWidget);
+      // SettingsPanel should open as side sheet
+      expect(find.byType(SettingsPanel), findsOneWidget);
 
       // Tap backdrop scrim on the right side of the screen (e.g. x=600, y=200)
       await tester.tapAt(const Offset(600, 200));
       await tester.pumpAndSettle();
 
-      // ConductorDrawer should be dismissed
-      expect(find.byType(ConductorDrawer), findsNothing);
+      // SettingsPanel should be dismissed
+      expect(find.byType(SettingsPanel), findsNothing);
     });
 
-    testWidgets('Landscape mode: Guides bottom sheet in ConductorToolbar does not overflow RenderFlex on short viewport', (tester) async {
+    testWidgets('Landscape mode: Guides bottom sheet in FloatingHud does not overflow RenderFlex on short viewport', (tester) async {
       tester.view.physicalSize = const Size(800, 360);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -190,15 +190,15 @@ void main() {
       await tester.pumpWidget(createTestApp());
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Find visibility icon (Guides) in ConductorToolbar
+      // Find visibility icon (Guides) in FloatingHud
       final guidesIconFinder = find.descendant(
-        of: find.byType(ConductorToolbar),
+        of: find.byType(FloatingHud),
         matching: find.byIcon(Icons.visibility_outlined),
       );
       if (guidesIconFinder.evaluate().isEmpty) {
         // Expand collapsed baton if idle timer collapsed it
         await tester.tap(find.descendant(
-          of: find.byType(ConductorToolbar),
+          of: find.byType(FloatingHud),
           matching: find.byIcon(Icons.tune),
         ));
         await tester.pump(const Duration(milliseconds: 300));

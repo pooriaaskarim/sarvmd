@@ -13,7 +13,7 @@ import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/locale/locale_state.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
-import 'package:sarvmd_ui/src/presentation/screens/editor_screen.dart';
+import 'package:sarvmd_ui/src/presentation/screens/pointer_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/panels/view_panel.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/staff/profile_picker.dart';
 
@@ -53,7 +53,7 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: EditorScreen(),
+          home: PointerEditorScreen(),
         ),
       );
     }

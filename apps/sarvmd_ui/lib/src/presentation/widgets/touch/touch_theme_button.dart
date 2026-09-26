@@ -26,8 +26,8 @@ class AccentOption extends ThemeMenuOption {
 
 /// Double-rowed theme selection button (Mode + Accent) with dual interaction modes
 /// (click popup & hold-drag selection across rows).
-class MobileThemeButton extends StatelessWidget {
-  const MobileThemeButton({super.key});
+class TouchThemeButton extends StatelessWidget {
+  const TouchThemeButton({super.key});
 
   static const List<ModeOption> _modeOptions = [
     ModeOption(ThemeMode.system, 'Auto', Icons.brightness_auto_rounded),

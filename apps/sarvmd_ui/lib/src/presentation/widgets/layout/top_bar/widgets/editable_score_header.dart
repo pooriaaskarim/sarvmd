@@ -17,6 +17,7 @@ class EditableScoreHeader extends StatefulWidget {
   final core.Score score;
   final core.PageConfig configState;
   final bool isCompact;
+  @Deprecated('Score title width is now normalized and dynamically sized')
   final bool expandInEditMode;
   final ValueChanged<bool>? onEditingChanged;
 
@@ -25,7 +26,7 @@ class EditableScoreHeader extends StatefulWidget {
     required this.score,
     required this.configState,
     this.isCompact = false,
-    this.expandInEditMode = true,
+    this.expandInEditMode = false,
     this.onEditingChanged,
   });
 
@@ -50,7 +51,14 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.score.title);
+    _titleController.addListener(_handleTitleControllerChange);
     _titleFocusNode.addListener(_handleFocusChange);
+  }
+
+  void _handleTitleControllerChange() {
+    if (_isEditingTitle && mounted) {
+      setState(() {});
+    }
   }
 
   void _handleFocusChange() {
@@ -70,6 +78,7 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
   @override
   void dispose() {
     _titleFocusNode.removeListener(_handleFocusChange);
+    _titleController.removeListener(_handleTitleControllerChange);
     if (_isEditingTitle) {
       _saveTitleIfChanged();
     }
@@ -117,6 +126,22 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
     final defaultTitle = core.ScoreCompiler.getDefaultFileName(widget.configState);
     final isCentered = widget.isCompact;
 
+    final textToMeasure = _titleController.text.trim().isEmpty ? defaultTitle : _titleController.text;
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: textToMeasure,
+        style: const TextStyle(
+          fontSize: 13.0,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.1,
+        ),
+      ),
+      textDirection: Directionality.of(context),
+    )..layout();
+
+    final double maxAllowedWidth = widget.isCompact ? 240.0 : 300.0;
+    final double targetWidth = (textPainter.width + 36.0).clamp(140.0, maxAllowedWidth);
+
     final titleWidget = _isEditingTitle
         ? PopScope(
             canPop: false,
@@ -127,14 +152,13 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minWidth: 140.0,
-                maxWidth: widget.expandInEditMode
-                    ? double.infinity
-                    : (widget.isCompact ? 220.0 : 340.0),
+                maxWidth: maxAllowedWidth,
               ),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOutCubic,
                 height: 28.0,
-                width: widget.expandInEditMode ? double.infinity : null,
+                width: targetWidth,
                 decoration: BoxDecoration(
                   color: cs.primary.withValues(alpha: 0.08),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(6.0)),
@@ -144,13 +168,6 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
                       width: 2.0,
                     ),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: cs.primary.withValues(alpha: 0.12),
-                      blurRadius: 8.0,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 alignment: Alignment.center,
@@ -163,17 +180,18 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
                   cursorWidth: 2.0,
                   cursorRadius: const Radius.circular(1.0),
                   style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 13.0,
+                    fontWeight: FontWeight.w600,
                     color: cs.onSurface,
-                    letterSpacing: 0.3,
+                    letterSpacing: -0.1,
                   ),
                   decoration: InputDecoration(
                     hintText: defaultTitle,
                     hintStyle: TextStyle(
-                      fontSize: 13.5,
+                      fontSize: 13.0,
                       fontWeight: FontWeight.w500,
                       color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      letterSpacing: -0.1,
                     ),
                     contentPadding: EdgeInsets.zero,
                     isDense: true,
@@ -220,10 +238,10 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
                         child: Text(
                           effectiveTitle,
                           style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 13.0,
+                            fontWeight: FontWeight.w600,
                             color: _isHovered ? cs.primary : cs.onSurface,
-                            letterSpacing: 0.3,
+                            letterSpacing: -0.1,
                           ),
                           textAlign: isCentered ? TextAlign.center : TextAlign.start,
                           overflow: TextOverflow.ellipsis,
@@ -246,15 +264,11 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
             ),
           );
 
-    if (widget.isCompact || (_isEditingTitle && widget.expandInEditMode)) {
-      final shouldExpand = widget.expandInEditMode && _isEditingTitle;
+    if (widget.isCompact) {
       return Row(
-        mainAxisSize: shouldExpand ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (shouldExpand)
-            Expanded(child: titleWidget)
-          else
-            Flexible(child: titleWidget),
+          Flexible(child: titleWidget),
         ],
       );
     }

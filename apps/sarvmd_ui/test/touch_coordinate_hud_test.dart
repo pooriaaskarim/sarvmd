@@ -14,8 +14,8 @@ import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/locale/locale_state.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
-import 'package:sarvmd_ui/src/presentation/screens/mobile_editor_screen.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/mobile/mobile_top_bar.dart';
+import 'package:sarvmd_ui/src/presentation/screens/touch_editor_screen.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/touch/touch_top_bar.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +53,7 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: MobileEditorScreen(),
+          home: TouchEditorScreen(),
         ),
       );
     }
@@ -149,7 +149,7 @@ void main() {
       // Floating top bar should be hidden (slid off with opacity 0)
       final topBarSlide = tester.widget<AnimatedSlide>(
         find.ancestor(
-          of: find.byType(MobileTopBar),
+          of: find.byType(TouchTopBar),
           matching: find.byType(AnimatedSlide),
         ),
       );
@@ -158,7 +158,7 @@ void main() {
 
       final topBarOpacity = tester.widget<AnimatedOpacity>(
         find.ancestor(
-          of: find.byType(MobileTopBar),
+          of: find.byType(TouchTopBar),
           matching: find.byType(AnimatedOpacity),
         ),
       );
