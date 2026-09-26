@@ -11,8 +11,7 @@ import '../../../logic/view/view_cubit.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/services/changelog_service.dart';
 import '../specialized/sarv_splash_screen.dart';
-import '../../screens/pointer_editor_screen.dart';
-import '../../screens/touch_editor_screen.dart';
+import '../../screens/app_shell.dart';
 
 /// Coordinates application startup and smoothly executes a Hero shared-element transition
 /// from the calligraphic splash screen into the main editor workspace header.
@@ -52,16 +51,13 @@ class _AppEntryPointState extends State<AppEntryPoint> {
         _version = resolvedVersion;
       });
 
-      // Execute Hero shared-element transition into PointerEditorScreen or TouchEditorScreen
+      // Execute Hero shared-element transition into AppShell
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 750),
           reverseTransitionDuration: const Duration(milliseconds: 750),
           pageBuilder: (context, animation, secondaryAnimation) =>
-              context.read<ViewCubit>().state.inputMode == InputMode.touch
-                  ? const TouchEditorScreen(
-                      key: ValueKey('mobile_editor_screen'))
-                  : const PointerEditorScreen(key: ValueKey('editor_screen')),
+              const AppShell(),
 
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(

@@ -5,12 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../logic/view/view_cubit.dart';
 import '../../../logic/view/view_state.dart';
-import '../specialized/app_entry_point.dart';
 
 /// A top-bar action button that toggles between [InputMode.pointer] and [InputMode.touch].
 ///
-/// Prompts the user with a confirmation dialog before toggling the cubit state and
-/// executing a clean reload through [AppEntryPoint].
+/// Prompts the user with a confirmation dialog before toggling the cubit state, seamlessly
+/// transitioning the active UI layout without destroying state or replaying splash.
 class InputModeToggleButton extends StatelessWidget {
   const InputModeToggleButton({super.key});
 
@@ -53,14 +52,6 @@ class InputModeToggleButton extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       final cubit = _getViewCubit(context, listen: false);
       cubit?.toggleInputMode();
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => const AppEntryPoint(
-            minSplashDuration: Duration(milliseconds: 300),
-          ),
-        ),
-        (route) => false,
-      );
     }
   }
 

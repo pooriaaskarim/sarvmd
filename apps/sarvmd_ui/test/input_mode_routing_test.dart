@@ -9,6 +9,7 @@ import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
 import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
+import 'package:sarvmd_ui/src/presentation/screens/app_shell.dart';
 import 'package:sarvmd_ui/src/presentation/screens/pointer_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/screens/touch_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/common/input_mode_toggle_button.dart';
@@ -129,6 +130,46 @@ void main() {
 
       expect(find.text('Switch to Touch Mode?'), findsNothing);
       expect(viewCubit.state.inputMode, equals(InputMode.pointer));
+    });
+
+    testWidgets('InputModeToggleButton confirms switch and seamlessly toggles inputMode in AppShell', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'view_input_mode': InputMode.pointer.index,
+      });
+      final viewCubit = ViewCubit(const ViewState(inputMode: InputMode.pointer));
+
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => LocaleCubit()),
+            BlocProvider(create: (_) => DocumentCubit()),
+            BlocProvider<ViewCubit>.value(value: viewCubit),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AppShell(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PointerEditorScreen), findsOneWidget);
+      expect(find.byType(TouchEditorScreen), findsNothing);
+
+      // Tap input mode toggle button in PointerTopBar
+      await tester.tap(find.byType(InputModeToggleButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Switch to Touch Mode?'), findsOneWidget);
+
+      // Confirm switch
+      await tester.tap(find.text('Switch & Reload'));
+      await tester.pumpAndSettle();
+
+      expect(viewCubit.state.inputMode, equals(InputMode.touch));
+      expect(find.byType(TouchEditorScreen), findsOneWidget);
+      expect(find.byType(PointerEditorScreen), findsNothing);
     });
   });
 }
