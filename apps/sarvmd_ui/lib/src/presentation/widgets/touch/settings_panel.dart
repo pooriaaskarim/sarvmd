@@ -18,17 +18,9 @@ import '../staff/document_settings_group.dart';
 import '../staff/margins_settings_group.dart';
 import '../staff/profile_picker.dart';
 import '../staff/staff_spacing_group.dart';
+import '../../../logic/view/view_state.dart';
 import 'touch_language_button.dart';
 import 'touch_theme_button.dart';
-
-enum SettingsPanelSection {
-  mainMenu,
-  profiles,
-  pageSetup,
-  staffSpacing,
-  systemHierarchy,
-  export,
-}
 
 /// Full-height side drawer and settings panel for touch mode.
 /// Implements Progressive Disclosure category navigation with sticky primary actions.
@@ -51,18 +43,12 @@ class SettingsPanel extends StatefulWidget {
 }
 
 class _SettingsPanelState extends State<SettingsPanel> {
-  SettingsPanelSection _currentSection = SettingsPanelSection.mainMenu;
-
-  void _navigateTo(SettingsPanelSection section) {
-    setState(() {
-      _currentSection = section;
-    });
+  void _navigateTo(BuildContext context, SettingsSection section) {
+    context.read<ViewCubit>().setTouchSection(section);
   }
 
-  void _goBack() {
-    setState(() {
-      _currentSection = SettingsPanelSection.mainMenu;
-    });
+  void _goBack(BuildContext context) {
+    context.read<ViewCubit>().setTouchSection(SettingsSection.mainMenu);
   }
 
   @override
@@ -72,6 +58,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
     final isFa = Localizations.localeOf(context).languageCode == 'fa';
     final sectionTextDir = isFa ? TextDirection.rtl : TextDirection.ltr;
     final drawerWidth = MediaQuery.sizeOf(context).width * 0.85;
+
+    final currentSection =
+        context.watch<ViewCubit>().state.activeTouchSection;
 
     final content = SafeArea(
       top: !widget.isPanelDocked,
@@ -139,9 +128,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
               duration: const Duration(milliseconds: 220),
               switchInCurve: Curves.easeOut,
               switchOutCurve: Curves.easeIn,
-              child: _currentSection == SettingsPanelSection.mainMenu
+              child: currentSection == SettingsSection.mainMenu
                   ? _buildMainMenu(context, cs, l10n)
-                  : _buildSectionContent(context, cs, l10n, sectionTextDir),
+                  : _buildSectionContent(
+                      context, cs, l10n, sectionTextDir, currentSection),
             ),
           ),
         ],
@@ -212,6 +202,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       children: [
         Expanded(
           child: ListView(
+            key: const PageStorageKey('touch_settings_main_menu_scroll'),
             padding: EdgeInsets.symmetric(
               horizontal: isDense ? 12.0 : 14.0,
               vertical: isDense ? 8.0 : 14.0,
@@ -222,37 +213,44 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 title: l10n.headerEnsembleProfiles,
                 subtitle: isDense ? null : 'Standard, Solo, Choir & Orchestra',
                 isDense: isDense,
-                onTap: () => _navigateTo(SettingsPanelSection.profiles),
+                onTap: () => _navigateTo(context, SettingsSection.profiles),
               ),
               _DrawerCategoryTile(
                 icon: Icons.description_outlined,
                 title: l10n.pageSettings,
-                subtitle: isDense ? null : 'Paper size, orientation & margins',
+                subtitle: isDense ? null : 'Paper size & orientation',
                 isDense: isDense,
-                onTap: () => _navigateTo(SettingsPanelSection.pageSetup),
+                onTap: () => _navigateTo(context, SettingsSection.pageSetup),
+              ),
+              _DrawerCategoryTile(
+                icon: Icons.space_dashboard_outlined,
+                title: l10n.marginsLabel,
+                subtitle: isDense ? null : 'Paper margins & padding',
+                isDense: isDense,
+                onTap: () => _navigateTo(context, SettingsSection.margins),
               ),
               _DrawerCategoryTile(
                 icon: Icons.format_line_spacing,
                 title: l10n.staffSpacing,
                 subtitle: isDense ? null : 'Line gap, system gap, inter-staff gap',
                 isDense: isDense,
-                onTap: () => _navigateTo(SettingsPanelSection.staffSpacing),
+                onTap: () => _navigateTo(context, SettingsSection.staffSpacing),
               ),
               _DrawerCategoryTile(
                 icon: Icons.account_tree_outlined,
                 title: l10n.systemHierarchy,
                 subtitle: isDense ? null : 'Staves, parts & system hierarchy',
                 isDense: isDense,
-                onTap: () => _navigateTo(SettingsPanelSection.systemHierarchy),
+                onTap: () => _navigateTo(context, SettingsSection.systemHierarchy),
               ),
               _DrawerCategoryTile(
                 icon: Icons.ios_share,
                 title: l10n.exportManuscriptTitle,
                 subtitle: isDense ? null : 'Vector SVG, high-res PNG, PDF & print',
                 isDense: isDense,
-                onTap: () => _navigateTo(SettingsPanelSection.export),
+                onTap: () => _navigateTo(context, SettingsSection.export),
               ),
-              // In landscape side sheet mode, unpin footer so it scrolls below the 5 categories
+              // In landscape side sheet mode, unpin footer so it scrolls below the 6 categories
               if (isDense) ...[
                 const SizedBox(height: 6.0),
                 Divider(
@@ -290,6 +288,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
     ColorScheme cs,
     AppLocalizations l10n,
     TextDirection sectionTextDir,
+    SettingsSection currentSection,
   ) {
     String title = '';
     Widget body = const SizedBox.shrink();
@@ -298,8 +297,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
     final cubit = context.read<DocumentCubit>();
     final config = docState.config;
 
-    switch (_currentSection) {
-      case SettingsPanelSection.profiles:
+    switch (currentSection) {
+      case SettingsSection.profiles:
         title = l10n.headerEnsembleProfiles;
         body = ProfilePicker(
           currentConfig: config,
@@ -307,39 +306,37 @@ class _SettingsPanelState extends State<SettingsPanel> {
         );
         break;
 
-      case SettingsPanelSection.pageSetup:
+      case SettingsSection.pageSetup:
         title = l10n.pageSettings;
-        body = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DocumentSettingsGroup(
-              pageSize: config.pageSize,
-              onPageSizeChanged: cubit.updatePageSize,
-              orientation: config.orientation,
-              onOrientationChanged: cubit.updateOrientation,
-            ),
-            const SizedBox(height: 16),
-            MarginsSettingsGroup(
-              margins: config.margins,
-              onLeftChanged: cubit.updateLeftMargin,
-              onRightChanged: cubit.updateRightMargin,
-              onTopChanged: cubit.updateTopMargin,
-              onBottomChanged: cubit.updateBottomMargin,
-              onHorizontalChanged: cubit.updateHorizontalMargins,
-              onVerticalChanged: cubit.updateVerticalMargins,
-              onReset: cubit.resetMargins,
-              onScrubStart: (side) => context
-                  .read<ViewCubit>()
-                  .setActiveScrubbingMargin(side),
-              onScrubEnd: () => context
-                  .read<ViewCubit>()
-                  .setActiveScrubbingMargin(null),
-            ),
-          ],
+        body = DocumentSettingsGroup(
+          pageSize: config.pageSize,
+          onPageSizeChanged: cubit.updatePageSize,
+          orientation: config.orientation,
+          onOrientationChanged: cubit.updateOrientation,
         );
         break;
 
-      case SettingsPanelSection.staffSpacing:
+      case SettingsSection.margins:
+        title = l10n.marginsLabel;
+        body = MarginsSettingsGroup(
+          margins: config.margins,
+          onLeftChanged: cubit.updateLeftMargin,
+          onRightChanged: cubit.updateRightMargin,
+          onTopChanged: cubit.updateTopMargin,
+          onBottomChanged: cubit.updateBottomMargin,
+          onHorizontalChanged: cubit.updateHorizontalMargins,
+          onVerticalChanged: cubit.updateVerticalMargins,
+          onReset: cubit.resetMargins,
+          onScrubStart: (side) => context
+              .read<ViewCubit>()
+              .setActiveScrubbingMargin(side),
+          onScrubEnd: () => context
+              .read<ViewCubit>()
+              .setActiveScrubbingMargin(null),
+        );
+        break;
+
+      case SettingsSection.staffSpacing:
         title = l10n.staffSpacing;
         body = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,22 +358,25 @@ class _SettingsPanelState extends State<SettingsPanel> {
         );
         break;
 
-      case SettingsPanelSection.systemHierarchy:
+      case SettingsSection.systemHierarchy:
         title = l10n.systemHierarchy;
-        body = SystemHierarchyPanel(notifier: cubit);
+        body = SystemHierarchyPanel(
+          key: const ValueKey('advanced_panel_touch'),
+          notifier: cubit,
+        );
         break;
 
-      case SettingsPanelSection.export:
+      case SettingsSection.export:
         title = l10n.exportManuscriptTitle;
         body = const ExportPanel();
         break;
 
-      case SettingsPanelSection.mainMenu:
+      case SettingsSection.mainMenu:
         break;
     }
 
     return Column(
-      key: ValueKey(_currentSection.name),
+      key: ValueKey(currentSection.name),
       children: [
         // Sub-page Back Header
         Container(
@@ -396,7 +396,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back, size: 20),
-                onPressed: _goBack,
+                onPressed: () => _goBack(context),
                 tooltip: 'Back to Menu',
               ),
               const SizedBox(width: 4.0),
@@ -419,6 +419,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           child: Directionality(
             textDirection: sectionTextDir,
             child: ListView(
+              key: PageStorageKey('touch_settings_${currentSection.name}_scroll'),
               padding: const EdgeInsets.all(14.0),
               children: [body],
             ),

@@ -120,7 +120,14 @@ class _SummaryRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11)),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 4.0),
           Text(
             value,
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),

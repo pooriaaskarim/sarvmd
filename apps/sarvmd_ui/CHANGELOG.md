@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Upgraded `InputModeToggleButton` to switch modes instantaneously without destroying the navigator history stack or replaying the splash screen.
 
 ### Added
+- **Cross-Mode Panel State Synchronization & "The Section Spine" Navigation Rail**:
+  - Implemented bidirectional active section handoff between Pointer Mode (desktop sidebar with `SectionSpine`) and Touch Mode (drawer subpages), maintaining focused section context across mode toggles and window resizes.
+  - Built "The Section Spine" (`SectionSpine`): a slender, constant 22px scroll rail featuring piecewise-linear handle mapping, dynamic top-section viewport detection, and click-to-jump-and-expand navigation.
+  - Modularized spine rail architecture into focused components: `SectionSpineTrack` (groove, progress fill, boundary stops), `SectionSpineHandle` (fader thumb with tactile 3-line ribbed grip and grab cursor), and `SectionSpineBead` (jewel buttons with frosted-glass floating badges and fold chips).
+  - Unboxed sidebar sections (`CollapsibleSectionCard`): removed heavy card containers and borders for a spacious full-width layout with dynamic, non-clipping stationary states.
+  - Reclaimed 16px of horizontal space on Pointer sidebar by reducing right padding to 8px, and reserved 4px safety margins around profile cards to prevent hover clipping.
 - **Progressive Multi-Tier Desktop Top Bar & Cascading App Menu**:
   - Implemented progressive multi-tier compaction for desktop viewports (`SarvBreakpoints.desktopTopBarMenuThreshold = 760.0`).
   - Added a dedicated application menu button `[ ☰ ]` (`TopBarCompactAppMenu`) for viewports narrower than 760px that opens a clean cascading `MenuAnchor` with 4 submenus (*File ❯*, *Edit ❯*, *View ❯*, *Help ❯*).

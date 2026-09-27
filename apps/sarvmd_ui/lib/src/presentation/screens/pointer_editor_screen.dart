@@ -10,9 +10,7 @@ import '../widgets/staff/document_settings_group.dart';
 import '../widgets/staff/margins_settings_group.dart';
 import '../../core/theme/app_metrics.dart';
 import '../../core/theme/layout_policy.dart';
-import '../widgets/common/section_header.dart';
 import '../widgets/staff/staff_spacing_group.dart';
-import '../widgets/animations/fade_in_slide.dart';
 import '../widgets/layout/pointer_top_bar.dart';
 
 import '../widgets/common/shortcut_gateway.dart';
@@ -24,6 +22,8 @@ import '../widgets/panels/view_panel.dart';
 import '../widgets/canvas/ruler_box.dart';
 import '../widgets/common/integrated_scale_control.dart';
 import '../widgets/panels/advanced_builder_panel.dart';
+import '../widgets/panels/collapsible_section_card.dart';
+import '../widgets/panels/section_spine.dart';
 import '../../logic/document/document_cubit.dart';
 import '../../logic/document/document_state.dart';
 import '../../logic/view/view_cubit.dart';
@@ -41,6 +41,12 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
   final TransformationController _transformationController =
       TransformationController();
   final ValueNotifier<Offset?> _cursorNotifier = ValueNotifier(null);
+  final ScrollController _sidebarScrollController = ScrollController();
+  final GlobalKey _profilesAnchorKey = GlobalKey();
+  final GlobalKey _pageSetupAnchorKey = GlobalKey();
+  final GlobalKey _marginsAnchorKey = GlobalKey();
+  final GlobalKey _staffSpacingAnchorKey = GlobalKey();
+  final GlobalKey _hierarchyAnchorKey = GlobalKey();
   BoxConstraints? _lastConstraints;
   bool _hasCentered = false;
   bool _isDraggingSidebar = false;
@@ -356,6 +362,49 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
     );
   }
 
+  List<SectionSpineEntry> _buildSpineEntries(
+    ViewState viewState,
+    AppLocalizations l10n,
+  ) {
+    return [
+      SectionSpineEntry(
+        section: SettingsSection.profiles,
+        label: l10n.headerEnsembleProfiles,
+        icon: Icons.queue_music_rounded,
+        key: _profilesAnchorKey,
+        isExpanded: viewState.isPointerSectionExpanded(SettingsSection.profiles),
+      ),
+      SectionSpineEntry(
+        section: SettingsSection.pageSetup,
+        label: l10n.pageSettings,
+        icon: Icons.description_outlined,
+        key: _pageSetupAnchorKey,
+        isExpanded: viewState.isPointerSectionExpanded(SettingsSection.pageSetup),
+      ),
+      SectionSpineEntry(
+        section: SettingsSection.margins,
+        label: l10n.marginsLabel,
+        icon: Icons.space_dashboard_outlined,
+        key: _marginsAnchorKey,
+        isExpanded: viewState.isPointerSectionExpanded(SettingsSection.margins),
+      ),
+      SectionSpineEntry(
+        section: SettingsSection.staffSpacing,
+        label: l10n.staffSpacing,
+        icon: Icons.format_line_spacing_rounded,
+        key: _staffSpacingAnchorKey,
+        isExpanded: viewState.isPointerSectionExpanded(SettingsSection.staffSpacing),
+      ),
+      SectionSpineEntry(
+        section: SettingsSection.systemHierarchy,
+        label: l10n.systemHierarchy,
+        icon: Icons.account_tree_outlined,
+        key: _hierarchyAnchorKey,
+        isExpanded: viewState.isPointerSectionExpanded(SettingsSection.systemHierarchy),
+      ),
+    ];
+  }
+
   Widget _buildSidebarContent({
     required BuildContext context,
     required DocumentCubit documentCubit,
@@ -417,144 +466,259 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
         Expanded(
           child: Directionality(
             textDirection: sidebarTextDir,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.paddingLarge),
-              children: [
-                const SizedBox(height: AppSpacing.paddingMedium),
-                FadeInSlide(
-                  delay: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SectionHeader(
-                          title: AppLocalizations.of(context)!
-                              .headerEnsembleProfiles),
-                      const SizedBox(height: AppSpacing.itemGapSmall),
-                      ProfilePicker(
-                        currentConfig: configState,
-                        onProfileSelected: (p) =>
-                            documentCubit.applyProfile(p),
+            child: Builder(
+              builder: (context) {
+                final viewCubit = context.read<ViewCubit>();
+                final viewState = context.watch<ViewCubit>().state;
+                final l10n = AppLocalizations.of(context)!;
+
+                final spineEntries = _buildSpineEntries(viewState, l10n);
+
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(
+                          scrollbars: false,
+                        ),
+                        child: ListView(
+                          key: const PageStorageKey('pointer_primary_sidebar'),
+                          controller: _sidebarScrollController,
+                          padding: const EdgeInsets.fromLTRB(
+                            28.0,
+                            AppSpacing.paddingMedium,
+                            8.0,
+                            AppSpacing.paddingLarge,
+                          ),
+                          children: [
+                            CollapsibleSectionCard(
+                              section: SettingsSection.profiles,
+                              title: l10n.headerEnsembleProfiles,
+                              icon: Icons.queue_music_rounded,
+                              isExpanded: viewState.isPointerSectionExpanded(
+                                  SettingsSection.profiles),
+                              onToggle: () => viewCubit.togglePointerSection(
+                                  SettingsSection.profiles),
+                              anchorKey: _profilesAnchorKey,
+                              child: ProfilePicker(
+                                currentConfig: configState,
+                                onProfileSelected: (p) =>
+                                    documentCubit.applyProfile(p),
+                              ),
+                            ),
+                            CollapsibleSectionCard(
+                              section: SettingsSection.pageSetup,
+                              title: l10n.pageSettings,
+                              icon: Icons.description_outlined,
+                              isExpanded: viewState.isPointerSectionExpanded(
+                                  SettingsSection.pageSetup),
+                              onToggle: () => viewCubit.togglePointerSection(
+                                  SettingsSection.pageSetup),
+                              anchorKey: _pageSetupAnchorKey,
+                              child: DocumentSettingsGroup(
+                                pageSize: configState.pageSize,
+                                onPageSizeChanged: documentCubit.updatePageSize,
+                                orientation: configState.orientation,
+                                onOrientationChanged:
+                                    documentCubit.updateOrientation,
+                              ),
+                            ),
+                            CollapsibleSectionCard(
+                              section: SettingsSection.margins,
+                              title: l10n.marginsLabel,
+                              icon: Icons.space_dashboard_outlined,
+                              isExpanded: viewState.isPointerSectionExpanded(
+                                  SettingsSection.margins),
+                              onToggle: () => viewCubit.togglePointerSection(
+                                  SettingsSection.margins),
+                              anchorKey: _marginsAnchorKey,
+                              action: Tooltip(
+                                message: l10n.reset,
+                                child: InkWell(
+                                  onTap: documentCubit.resetMargins,
+                                  borderRadius: BorderRadius.circular(4.0),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Icon(
+                                      Icons.restore,
+                                      size: 14.0,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              child: MarginsSettingsGroup(
+                                margins: configState.margins,
+                                onLeftChanged: documentCubit.updateLeftMargin,
+                                onRightChanged: documentCubit.updateRightMargin,
+                                onTopChanged: documentCubit.updateTopMargin,
+                                onBottomChanged:
+                                    documentCubit.updateBottomMargin,
+                                onHorizontalChanged:
+                                    documentCubit.updateHorizontalMargins,
+                                onVerticalChanged:
+                                    documentCubit.updateVerticalMargins,
+                                onReset: documentCubit.resetMargins,
+                                onScrubStart: (side) => context
+                                    .read<ViewCubit>()
+                                    .setActiveScrubbingMargin(side),
+                                onScrubEnd: () => context
+                                    .read<ViewCubit>()
+                                    .setActiveScrubbingMargin(null),
+                              ),
+                            ),
+                            CollapsibleSectionCard(
+                              section: SettingsSection.staffSpacing,
+                              title: l10n.staffSpacing,
+                              icon: Icons.format_line_spacing_rounded,
+                              isExpanded: viewState.isPointerSectionExpanded(
+                                  SettingsSection.staffSpacing),
+                              onToggle: () => viewCubit.togglePointerSection(
+                                  SettingsSection.staffSpacing),
+                              anchorKey: _staffSpacingAnchorKey,
+                              action: Tooltip(
+                                message: l10n.reset,
+                                child: InkWell(
+                                  onTap: documentCubit.resetSpacing,
+                                  borderRadius: BorderRadius.circular(4.0),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Icon(
+                                      Icons.restore,
+                                      size: 14.0,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              child: StaffSpacingGroup(
+                                staffConfig: configState.staffConfig,
+                                isDoubleLine: configState.staffCount > 1,
+                                lines: documentCubit.primaryLines,
+                                onLineGapChanged: documentCubit.updateLineGap,
+                                onSystemGapChanged:
+                                    documentCubit.updateSystemGap,
+                                onInterStaffGapChanged:
+                                    documentCubit.updateInterStaffGap,
+                                hints: documentCubit.uiHints,
+                              ),
+                            ),
+                            CollapsibleSectionCard(
+                              section: SettingsSection.systemHierarchy,
+                              title: l10n.systemHierarchy,
+                              icon: Icons.account_tree_outlined,
+                              isExpanded: viewState.isPointerSectionExpanded(
+                                  SettingsSection.systemHierarchy),
+                              onToggle: () => viewCubit.togglePointerSection(
+                                  SettingsSection.systemHierarchy),
+                              anchorKey: _hierarchyAnchorKey,
+                              child: SystemHierarchyPanel(
+                                key: const ValueKey('advanced_panel'),
+                                notifier: documentCubit,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.paddingLarge),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 32),
-                FadeInSlide(
-                  delay: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SectionHeader(
-                          title: AppLocalizations.of(context)!.pageSettings),
-                      const SizedBox(height: AppSpacing.itemGapSmall),
-                      DocumentSettingsGroup(
-                        pageSize: configState.pageSize,
-                        onPageSizeChanged: documentCubit.updatePageSize,
-                        orientation: configState.orientation,
-                        onOrientationChanged:
-                            documentCubit.updateOrientation,
+                    ),
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: 2.0,
+                      child: SectionSpine(
+                        entries: spineEntries,
+                        scrollController: _sidebarScrollController,
+                        onJumpToSection: (section) =>
+                            viewCubit.jumpToSection(section),
+                        activeSection: viewState.jumpTargetSection,
+                        onActiveSectionChanged: (section) =>
+                            viewCubit.setActiveSection(section),
                       ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 32),
-                FadeInSlide(
-                  delay: 3,
-                  child: MarginsSettingsGroup(
-                    margins: configState.margins,
-                    onLeftChanged: documentCubit.updateLeftMargin,
-                    onRightChanged: documentCubit.updateRightMargin,
-                    onTopChanged: documentCubit.updateTopMargin,
-                    onBottomChanged: documentCubit.updateBottomMargin,
-                    onHorizontalChanged:
-                        documentCubit.updateHorizontalMargins,
-                    onVerticalChanged:
-                        documentCubit.updateVerticalMargins,
-                    onReset: documentCubit.resetMargins,
-                    onScrubStart: (side) => context
-                        .read<ViewCubit>()
-                        .setActiveScrubbingMargin(side),
-                    onScrubEnd: () => context
-                        .read<ViewCubit>()
-                        .setActiveScrubbingMargin(null),
-                  ),
-                ),
-                const Divider(height: 32),
-                FadeInSlide(
-                  delay: 4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SectionHeader(
-                        title: AppLocalizations.of(context)!.staffSpacing,
-                        onReset: documentCubit.resetSpacing,
-                      ),
-                      StaffSpacingGroup(
-                        staffConfig: configState.staffConfig,
-                        isDoubleLine: configState.staffCount > 1,
-                        lines: documentCubit.primaryLines,
-                        onLineGapChanged: documentCubit.updateLineGap,
-                        onSystemGapChanged:
-                            documentCubit.updateSystemGap,
-                        onInterStaffGapChanged:
-                            documentCubit.updateInterStaffGap,
-                        hints: documentCubit.uiHints,
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 32),
-                SystemHierarchyPanel(
-                  key: const ValueKey('advanced_panel'),
-                  notifier: documentCubit,
-                ),
-                const SizedBox(height: AppSpacing.paddingLarge),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
         Divider(
             color: Theme.of(context).colorScheme.outline,
             height: 1),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.paddingLarge,
-              vertical: AppSpacing.paddingMedium),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context)!
-                    .systemsCount(documentCubit.layout.systemCount),
-                style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant),
-              ),
-              Tooltip(
-                message:
-                    AppLocalizations.of(context)!.resetAllSettings,
-                child: TextButton.icon(
-                  onPressed: documentCubit.resetToDefaults,
-                  icon: const Icon(Icons.restore, size: 14),
-                  label: Text(AppLocalizations.of(context)!.reset,
-                      style: const TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(
-                    minimumSize: Size.zero,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4)),
-                    foregroundColor: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant,
+        BlocBuilder<ViewCubit, ViewState>(
+          builder: (context, viewState) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.paddingLarge,
+                  vertical: AppSpacing.paddingMedium),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!
+                        .systemsCount(documentCubit.layout.systemCount),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant),
                   ),
-                ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          viewState.expandedPointerSections.isEmpty
+                              ? Icons.unfold_more_rounded
+                              : Icons.unfold_less_rounded,
+                          size: 16,
+                        ),
+                        tooltip: viewState.expandedPointerSections.isEmpty
+                            ? 'Expand All Sections'
+                            : 'Collapse All Sections',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          if (viewState.expandedPointerSections.isEmpty) {
+                            context
+                                .read<ViewCubit>()
+                                .expandAllPointerSections();
+                          } else {
+                            context
+                                .read<ViewCubit>()
+                                .collapseAllPointerSections();
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 4.0),
+                      Tooltip(
+                        message: AppLocalizations.of(context)!.resetAllSettings,
+                        child: TextButton.icon(
+                          onPressed: documentCubit.resetToDefaults,
+                          icon: const Icon(Icons.restore, size: 14),
+                          label: Text(AppLocalizations.of(context)!.reset,
+                              style: const TextStyle(fontSize: 12)),
+                          style: TextButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4)),
+                            foregroundColor: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
@@ -646,6 +810,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
 
   @override
   void dispose() {
+    _sidebarScrollController.dispose();
     _transformationController.dispose();
     _cursorNotifier.dispose();
     super.dispose();

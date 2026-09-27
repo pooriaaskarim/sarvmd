@@ -22,6 +22,8 @@ class ViewCubit extends Cubit<ViewState> {
   static const String _keyCalibration = 'view_calibration_factor';
   static const String _keyShowNotation = 'view_show_notation';
   static const String _keyInputMode = 'view_input_mode';
+  static const String _keyExpandedPointerSections =
+      'view_expanded_pointer_sections';
 
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -92,6 +94,25 @@ class ViewCubit extends Cubit<ViewState> {
       }
     }
 
+    // Load Expanded Pointer Sections
+    Set<SettingsSection> expandedPointerSections = state.expandedPointerSections;
+    final savedExpanded = prefs.getStringList(_keyExpandedPointerSections);
+    if (savedExpanded != null) {
+      final parsed = savedExpanded
+          .map((name) {
+            try {
+              return SettingsSection.values.byName(name);
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<SettingsSection>()
+          .toSet();
+      if (parsed.isNotEmpty) {
+        expandedPointerSections = parsed;
+      }
+    }
+
     if (isClosed) return;
     emit(state.copyWith(
       themeMode: themeMode,
@@ -99,6 +120,7 @@ class ViewCubit extends Cubit<ViewState> {
       calibrationFactor: calibrationFactor,
       showNotation: showNotation,
       inputMode: inputMode,
+      expandedPointerSections: expandedPointerSections,
     ));
     _log.debug('View state restored from SharedPreferences', context: {
       'themeMode': themeMode.name,
@@ -177,7 +199,31 @@ class ViewCubit extends Cubit<ViewState> {
 
   void setInputMode(InputMode mode) async {
     _log.debug('Input mode updated', context: {'inputMode': mode.name});
-    emit(state.copyWith(inputMode: mode));
+
+    SettingsSection? jumpTarget = state.jumpTargetSection;
+    Set<SettingsSection> expanded = state.expandedPointerSections;
+    SettingsSection activeTouch = state.activeTouchSection;
+
+    if (mode == InputMode.pointer) {
+      if (state.activeTouchSection != SettingsSection.mainMenu &&
+          state.activeTouchSection != SettingsSection.export) {
+        jumpTarget = state.activeTouchSection;
+        expanded = Set<SettingsSection>.from(expanded)..add(state.activeTouchSection);
+      }
+    } else if (mode == InputMode.touch) {
+      if (state.jumpTargetSection != null &&
+          state.jumpTargetSection != SettingsSection.mainMenu &&
+          state.jumpTargetSection != SettingsSection.export) {
+        activeTouch = state.jumpTargetSection!;
+      }
+    }
+
+    emit(state.copyWith(
+      inputMode: mode,
+      jumpTargetSection: jumpTarget,
+      expandedPointerSections: expanded,
+      activeTouchSection: activeTouch,
+    ));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyInputMode, mode.index);
   }
@@ -187,5 +233,126 @@ class ViewCubit extends Cubit<ViewState> {
         ? InputMode.touch
         : InputMode.pointer;
     setInputMode(nextMode);
+  }
+
+  void setTouchSection(SettingsSection section) {
+    if (state.activeTouchSection == section) return;
+    _log.debug('Touch section changed', context: {'section': section.name});
+    final newExpanded = section != SettingsSection.mainMenu && section != SettingsSection.export
+        ? (Set<SettingsSection>.from(state.expandedPointerSections)..add(section))
+        : state.expandedPointerSections;
+    emit(state.copyWith(
+      activeTouchSection: section,
+      jumpTargetSection: section != SettingsSection.mainMenu && section != SettingsSection.export
+          ? section
+          : state.jumpTargetSection,
+      expandedPointerSections: newExpanded,
+    ));
+  }
+
+  void setActiveSection(SettingsSection section) {
+    if (section == SettingsSection.mainMenu) {
+      emit(state.copyWith(activeTouchSection: SettingsSection.mainMenu));
+      return;
+    }
+    final newExpanded =
+        Set<SettingsSection>.from(state.expandedPointerSections)..add(section);
+    emit(state.copyWith(
+      activeTouchSection: section,
+      jumpTargetSection: section,
+      expandedPointerSections: newExpanded,
+    ));
+  }
+
+  void togglePointerSection(SettingsSection section) async {
+    final newExpanded = Set<SettingsSection>.from(state.expandedPointerSections);
+    if (newExpanded.contains(section)) {
+      newExpanded.remove(section);
+    } else {
+      newExpanded.add(section);
+    }
+    emit(state.copyWith(expandedPointerSections: newExpanded));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _keyExpandedPointerSections,
+      newExpanded.map((s) => s.name).toList(),
+    );
+  }
+
+  void setPointerSectionExpanded(SettingsSection section, bool expanded) async {
+    final newExpanded = Set<SettingsSection>.from(state.expandedPointerSections);
+    if (expanded) {
+      newExpanded.add(section);
+    } else {
+      newExpanded.remove(section);
+    }
+    emit(state.copyWith(expandedPointerSections: newExpanded));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _keyExpandedPointerSections,
+      newExpanded.map((s) => s.name).toList(),
+    );
+  }
+
+  void expandAllPointerSections() async {
+    const all = {
+      SettingsSection.profiles,
+      SettingsSection.pageSetup,
+      SettingsSection.margins,
+      SettingsSection.staffSpacing,
+      SettingsSection.systemHierarchy,
+    };
+    emit(state.copyWith(expandedPointerSections: all));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _keyExpandedPointerSections,
+      all.map((s) => s.name).toList(),
+    );
+  }
+
+  void collapseAllPointerSections() async {
+    const none = <SettingsSection>{};
+    emit(state.copyWith(expandedPointerSections: none));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _keyExpandedPointerSections,
+      none.map((s) => s.name).toList(),
+    );
+  }
+
+  void jumpToSection(SettingsSection section) {
+    final newExpanded =
+        Set<SettingsSection>.from(state.expandedPointerSections)..add(section);
+    emit(state.copyWith(
+      expandedPointerSections: newExpanded,
+      jumpTargetSection: section,
+      activeTouchSection: section != SettingsSection.mainMenu && section != SettingsSection.export
+          ? section
+          : state.activeTouchSection,
+    ));
+  }
+
+  void clearJumpTarget() {
+    if (state.jumpTargetSection == null) return;
+    emit(state.copyWith(clearJumpTarget: true));
+  }
+
+  void toggleHierarchyGroup(int groupHash) {
+    final newGroups = Set<int>.from(state.collapsedHierarchyGroups);
+    if (newGroups.contains(groupHash)) {
+      newGroups.remove(groupHash);
+    } else {
+      newGroups.add(groupHash);
+    }
+    emit(state.copyWith(collapsedHierarchyGroups: newGroups));
+  }
+
+  void setHierarchySelection(Set<String> uids) {
+    emit(state.copyWith(selectedHierarchyStaffUids: uids));
+  }
+
+  void clearHierarchySelection() {
+    if (state.selectedHierarchyStaffUids.isEmpty) return;
+    emit(state.copyWith(selectedHierarchyStaffUids: const {}));
   }
 }
