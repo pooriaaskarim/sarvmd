@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Intent-Based Nomenclature & Touch/Pointer Architecture**:
+  - Renamed `mobile/` directory to `touch/` and established intent-first component naming (`TouchCanvasArea`, `TouchTopBar`, `FloatingHud`, `SettingsPanel`).
+  - Renamed screens to `PointerEditorScreen` and `TouchEditorScreen`, and top bar to `PointerTopBar`.
+  - Replaced ambiguous breakpoint names in `SarvBreakpoints` with explicit layout event names (`bothSidebarsDockedMinWidth`, `primarySidebarDockedMinWidth`, `fullMenuBarMinWidth`).
+- **Standardized Responsive Display Contract (`SarvDisplayContext`)**:
+  - Introduced `SarvDisplayData`, `SarvDisplayContext`, `SarvDisplayScope`, and `SarvFormFactor` (`phone`, `tablet`, `desktop`) to decouple input modality from viewport classification.
+  - Migrated modal dialogs (`showSarvAdaptiveModal`, `AboutSarvDialog`, `ExportDialog`, `StaffConfigDialog`, and configuration tabs) away from raw `MediaQuery` checks.
+- **Unified Canvas Geometry Engine (`CanvasZoomCalculator`)**:
+  - Centralized zoom preset calculations, safe-area offsets, and transformation matrices into `CanvasZoomCalculator`, eliminating duplicate zoom math across editor shells.
+- **Reboot-Free Input Mode Switching (`AppShell`)**:
+  - Introduced `AppShell` as the root adaptive shell listening to `ViewCubit.state.inputMode` via `AnimatedSwitcher`.
+  - Upgraded `InputModeToggleButton` to switch modes instantaneously without destroying the navigator history stack or replaying the splash screen.
+
 ### Added
 - **Progressive Multi-Tier Desktop Top Bar & Cascading App Menu**:
   - Implemented progressive multi-tier compaction for desktop viewports (`SarvBreakpoints.desktopTopBarMenuThreshold = 760.0`).
@@ -53,6 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Permanently removed `EnsembleProfilePicker` from the top bar and codebase, reclaiming ~130px of horizontal top bar real estate and eliminating redundant profile switching controls since profile configuration is fully handled in the sidebar.
 
 ### Fixed
+- **Canvas Hold-and-Drag Coordinate HUD in Touch Mode**:
+  - Suppressed duplicate bottom coordinate readout during canvas hold-and-drag inspection in `TouchEditorScreen`, maintaining focus on the top coordinate HUD.
+- **Top Bar Title Editing Space & Padding**:
+  - Re-enabled flexible title field expansion (`expandInEditMode`) in `EditableScoreHeader` across both `PointerTopBar` and `TouchTopBar`, eliminating artificial 240/300px width bottlenecks and large empty gaps during inline title editing.
 - **Dialog Ergonomics on Compact & Landscape Screens**:
   - Resolved cramped layout and overflow issues in staff configuration, calibration, and export dialogs on short viewports and dynamically resized windows.
   - Added adaptive preview scaling and compact tab bars to the staff configuration modal.
