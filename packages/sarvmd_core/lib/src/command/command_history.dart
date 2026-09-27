@@ -24,7 +24,7 @@ class CommandHistory {
     this.onDocumentChanged,
   }) : _document = initialDocument ??
             SarvDocument(
-              score: initialScore ?? const Score(title: '', parts: []),
+              score: initialScore ?? const Score(title: ''),
             );
 
   /// Current logical document state.

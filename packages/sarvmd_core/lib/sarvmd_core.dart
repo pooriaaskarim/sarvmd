@@ -20,20 +20,12 @@ export 'src/pdf_emitter.dart';
 // Domain models
 export 'src/domain/document.dart';
 export 'src/domain/metadata.dart';
-export 'src/domain/duration.dart';
-export 'src/domain/pitch.dart';
 export 'src/domain/clef.dart';
-export 'src/domain/signature.dart';
-export 'src/domain/musical_event.dart';
-export 'src/domain/measure.dart';
 export 'src/domain/score.dart';
 export 'src/domain/smufl.dart';
 export 'src/domain/svg_layering_mode.dart';
 
-// Layout engines and Spindles
-export 'src/layout/spacing_spindle.dart';
-export 'src/layout/positioned_element.dart';
-export 'src/layout/engraver.dart';
+// Layout policy
 export 'src/layout/layout_policy.dart';
 
 // Command Pipeline & Transactional Engine

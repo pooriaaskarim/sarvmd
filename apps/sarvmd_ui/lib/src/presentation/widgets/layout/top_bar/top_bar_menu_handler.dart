@@ -35,65 +35,28 @@ void handleTopBarMenuSelection(
     case 'add_staff':
     case 'add_staff_5line':
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Standard Treble Staff',
-        ),
-      ));
       break;
     case 'add_staff_5line_bass':
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Standard Bass Staff',
-        ),
-      ));
       break;
     case 'add_staff_grand':
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
-      final now = DateTime.now().microsecondsSinceEpoch;
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(id: 'part_${now}_1', name: 'Grand Staff Treble'),
-      ));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(id: 'part_${now}_2', name: 'Grand Staff Bass'),
-      ));
       break;
     case 'add_staff_tab':
       documentCubit.addStaff(
           def: const core.StaffDefinition(lines: 6, clef: core.Clef.tab, instrumentName: 'TAB'));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Guitar TAB',
-        ),
-      ));
       break;
     case 'add_staff_rhythm':
       documentCubit.addStaff(
           def: const core.StaffDefinition(
               lines: 1, clef: core.Clef.percussion, instrumentName: 'Rhythm'));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Rhythm Staff',
-        ),
-      ));
       break;
     case 'add_staff_custom':
       final newStaff = documentCubit.addStaff(
           def: const core.StaffDefinition(
         lines: 5,
         clef: core.TrebleClef(),
-      ));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: '',
-        ),
       ));
       showStaffConfigDialog(
         context,

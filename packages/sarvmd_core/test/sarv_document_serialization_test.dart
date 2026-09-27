@@ -140,34 +140,8 @@ void main() {
             ),
           ),
         ),
-        score: Score(
+        score: const Score(
           title: 'Symphony No. 5 in C minor',
-          parts: [
-            Part(
-              id: 'flute-part',
-              name: 'Flute',
-              measures: [
-                Measure(
-                  number: 1,
-                  clef: Clef.treble,
-                  timeSignature: const TimeSignature(2, 4),
-                  keySignature: const KeySignature(-3),
-                  voices: {
-                    'v1': Voice(
-                      id: 'v1',
-                      events: [
-                        const RestEvent(RhythmicDuration.eighth),
-                        const NoteEvent(
-                          Pitch(NoteName.g, octave: 4),
-                          RhythmicDuration.eighth,
-                        ),
-                      ],
-                    ),
-                  },
-                ),
-              ],
-            ),
-          ],
         ),
       );
 
@@ -191,7 +165,6 @@ void main() {
       expect(restored.config.orientation, equals(PageOrientation.landscape));
       expect(restored.config.margins.top, equals(22.5));
       expect(restored.config.allStaves.length, equals(3));
-      expect(restored.score.parts.first.measures.first.voices['v1']!.events.length, equals(2));
     });
 
     test('Schema validation rejects mismatched format', () {

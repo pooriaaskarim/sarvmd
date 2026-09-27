@@ -36,7 +36,7 @@ class SarvDocument {
   final int pageCount;
 
   const SarvDocument({
-    this.score = const Score(title: '', parts: []),
+    this.score = const Score(title: ''),
     this.config = const PageConfig(),
     this.metadata = const DocumentMetadata(),
     this.pageCount = 1,
@@ -66,7 +66,6 @@ class SarvDocument {
         'metadata': metadata.toJson(),
         'pageCount': pageCount,
         'config': config.toJson(),
-        'score': score.toJson(),
       };
 
   /// Serializes the document to a UTF-8 JSON string.
@@ -118,11 +117,19 @@ class SarvDocument {
         (docMap['pageCount'] as num?)?.toInt() ??
         1;
 
-    final score = Score.fromJson(scoreMap);
     final config = PageConfig.fromJson(configMap);
-    final metadata = metadataMap != null
+    final rawMetadata = metadataMap != null
         ? DocumentMetadata.fromJson(metadataMap)
-        : DocumentMetadata(title: score.title);
+        : null;
+
+    final title = (rawMetadata?.title.isNotEmpty ?? false)
+        ? rawMetadata!.title
+        : (scoreMap['title'] as String? ?? '');
+
+    final metadata = rawMetadata != null
+        ? (rawMetadata.title.isNotEmpty ? rawMetadata : rawMetadata.copyWith(title: title))
+        : DocumentMetadata(title: title);
+    final score = Score(title: title);
 
     return SarvDocument(
       score: score,
