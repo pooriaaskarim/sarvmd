@@ -48,5 +48,9 @@
     [x] Decoupled child dialogs (`AboutSarvDialog`, `CalibrationDialog`, `StaffConfigDialog`, `ExportDialog`) from instantiating their own outer `Dialog(...)` and eliminated unbounded width constraints (`BoxConstraints forces an infinite width`)
     [x] Made export action row, calibration nudge/readout, and export page-count stepper dynamically wrap and adapt to narrow compact screens without RenderFlex overflows
     [x] Added comprehensive regression test suite (`adaptive_modal_resize_test.dart`) validating dynamic window resizing across desktop and mobile widths
-16. [ ] Make sure that on mobile, the keyboard does not cover the text input it's supposed to open for.
+16. [x] Make sure that on mobile, the keyboard does not cover the text input it's supposed to open for.
+    [x] Wrapped `SettingsPanel` drawer content in `AnimatedPadding` reacting to `MediaQuery.viewInsetsOf(context).bottom` so inner `ListView` scroll viewport shrinks above the soft keyboard
+    [x] Constrained mobile modal bottom sheets and dialogs in `showSarvAdaptiveModal` using `(screenHeight - viewInsets.bottom)` with bottom padding so modals float cleanly above the keyboard
+    [x] Added centralized `AppSpacing.keyboardScrollPadding` (64px bottom headroom) across numeric scrubbers, margins, staff spacing, precision sliders, export dialogs, and hierarchy inline labeling fields
+    [x] Added comprehensive regression tests in `mobile_keyboard_inset_test.dart` validating focused input bounds and drawer shrinkage under soft keyboard view insets
 17. [ ] Research: is there a way to determince SCREEN DPI on the web, as well?

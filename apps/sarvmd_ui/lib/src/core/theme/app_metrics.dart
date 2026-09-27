@@ -1,3 +1,5 @@
+import 'package:flutter/painting.dart';
+
 // App Metrics
 class AppSpacing {
   static const double sectionGap = 32.0;
@@ -7,6 +9,15 @@ class AppSpacing {
   static const double paddingLarge = 24.0;
   static const double paddingMedium = 16.0;
   static const double paddingSmall = 12.0;
+
+  /// Generous scroll padding for text fields to guarantee comfortable clearance
+  /// above on-screen software keyboards on mobile and touch form factors.
+  static const EdgeInsets keyboardScrollPadding = EdgeInsets.only(
+    bottom: 64.0,
+    top: 24.0,
+    left: 20.0,
+    right: 20.0,
+  );
 }
 
 class AppOpacities {

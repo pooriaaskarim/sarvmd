@@ -7,6 +7,7 @@ import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
 import '../common/ensemble_summary_widget.dart';
 import '../dialogs/staff_config_dialog.dart';
+import '../../../core/theme/app_metrics.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../logic/view/view_cubit.dart';
 
@@ -2820,6 +2821,7 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                   child: TextField(
                     controller: _nameController,
                     focusNode: _nameFocusNode,
+                    scrollPadding: AppSpacing.keyboardScrollPadding,
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -2930,6 +2932,7 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                       child: TextField(
                         controller: _abbrevController,
                         focusNode: _abbrevFocusNode,
+                        scrollPadding: AppSpacing.keyboardScrollPadding,
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,

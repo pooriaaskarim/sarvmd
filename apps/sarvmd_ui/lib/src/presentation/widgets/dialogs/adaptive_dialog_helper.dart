@@ -28,30 +28,34 @@ Future<T?> showSarvAdaptiveModal<T>({
       builder: (bottomSheetContext) {
         final cs = Theme.of(bottomSheetContext).colorScheme;
         final sheetMedia = MediaQuery.of(bottomSheetContext);
+        final availableHeight =
+            (sheetMedia.size.height - sheetMedia.viewInsets.bottom);
 
         return Align(
           alignment: Alignment.bottomCenter,
           heightFactor: 1.0,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: maxWidth,
-              maxHeight: sheetMedia.size.height < 500
-                  ? sheetMedia.size.height * 0.96
-                  : sheetMedia.size.height * 0.90,
+          child: AnimatedPadding(
+            padding: EdgeInsets.only(
+              bottom: sheetMedia.viewInsets.bottom,
             ),
-            child: Material(
-              color: cs.surfaceContainerHigh,
-              elevation: 8,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24.0)),
-              clipBehavior: Clip.antiAlias,
-              child: SafeArea(
-                top: false,
-                bottom: true,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    bottom: sheetMedia.viewInsets.bottom,
-                  ),
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOutQuad,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: maxWidth,
+                maxHeight: availableHeight < 500
+                    ? availableHeight * 0.96
+                    : availableHeight * 0.90,
+              ),
+              child: Material(
+                color: cs.surfaceContainerHigh,
+                elevation: 8,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24.0)),
+                clipBehavior: Clip.antiAlias,
+                child: SafeArea(
+                  top: false,
+                  bottom: sheetMedia.viewInsets.bottom == 0,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -88,6 +92,8 @@ Future<T?> showSarvAdaptiveModal<T>({
       builder: (dialogContext) {
         final cs = Theme.of(dialogContext).colorScheme;
         final dialogMedia = MediaQuery.of(dialogContext);
+        final availableHeight =
+            (dialogMedia.size.height - dialogMedia.viewInsets.bottom);
 
         return Dialog(
           backgroundColor: cs.surfaceContainerHigh,
@@ -100,14 +106,14 @@ Future<T?> showSarvAdaptiveModal<T>({
           clipBehavior: Clip.antiAlias,
           insetPadding: EdgeInsets.symmetric(
             horizontal: 16.0,
-            vertical: dialogMedia.size.height < 600 ? 8.0 : 24.0,
+            vertical: availableHeight < 600 ? 8.0 : 24.0,
           ),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: maxWidth,
-              maxHeight: dialogMedia.size.height < 600
-                  ? dialogMedia.size.height * 0.96
-                  : dialogMedia.size.height * 0.90,
+              maxHeight: availableHeight < 600
+                  ? availableHeight * 0.96
+                  : availableHeight * 0.90,
             ),
             child: builder(dialogContext, false),
           ),

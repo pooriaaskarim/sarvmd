@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Upgraded `InputModeToggleButton` to switch modes instantaneously without destroying the navigator history stack or replaying the splash screen.
 
 ### Added
+- **Mobile Keyboard Inset Resilience & Comfortable Input Clearance**:
+  - Wrapped `SettingsPanel` drawer content in `AnimatedPadding` reacting to `MediaQuery.viewInsetsOf(context).bottom`, shrinking the inner `ListView` scroll viewport and ensuring focused inputs remain visible when the soft keyboard appears.
+  - Adapted modal bottom sheets and dialogs in `showSarvAdaptiveModal` to constrain `maxHeight` by available height (`screenHeight - viewInsets.bottom`) and lift the sheet cleanly above the keyboard.
+  - Standardized `AppSpacing.keyboardScrollPadding` (64px bottom clearance) across numeric scrubbers, margins, staff spacing, precision sliders, export dialogs, and hierarchy labeling fields, guaranteeing generous headroom above on-screen software keyboards.
+  - Added comprehensive widget test suite (`mobile_keyboard_inset_test.dart`) covering drawer shrinking, text field visibility, and modal bottom sheet positioning under soft keyboard view insets.
 - **Cross-Mode Panel State Synchronization & "The Section Spine" Navigation Rail**:
   - Implemented bidirectional active section handoff between Pointer Mode (desktop sidebar with `SectionSpine`) and Touch Mode (drawer subpages), maintaining focused section context across mode toggles and window resizes.
   - Built "The Section Spine" (`SectionSpine`): a slender, constant 22px scroll rail featuring piecewise-linear handle mapping, dynamic top-section viewport detection, and click-to-jump-and-expand navigation.

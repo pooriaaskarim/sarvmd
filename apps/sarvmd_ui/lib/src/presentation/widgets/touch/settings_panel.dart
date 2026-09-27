@@ -62,9 +62,16 @@ class _SettingsPanelState extends State<SettingsPanel> {
     final currentSection =
         context.watch<ViewCubit>().state.activeTouchSection;
 
-    final content = SafeArea(
-      top: !widget.isPanelDocked,
-      child: Column(
+    final viewInsets = MediaQuery.viewInsetsOf(context);
+
+    final content = AnimatedPadding(
+      padding: EdgeInsets.only(bottom: viewInsets.bottom),
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutQuad,
+      child: SafeArea(
+        top: !widget.isPanelDocked,
+        bottom: viewInsets.bottom == 0,
+        child: Column(
         children: [
           // Drawer Header
           Container(
@@ -136,7 +143,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
         ],
       ),
-    );
+    ),
+  );
 
     if (widget.isPanelDocked) {
       return Directionality(

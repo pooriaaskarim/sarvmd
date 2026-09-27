@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/services/export_directory_service.dart';
 import '../../../logic/services/export_service.dart';
+import '../../../core/theme/app_metrics.dart';
 import '../../../core/theme/sarv_display_context.dart';
 import 'adaptive_dialog_helper.dart';
 import 'export/export_format.dart';
@@ -321,6 +322,7 @@ class _ExportDialogState extends State<ExportDialog> {
                         Expanded(
                           child: TextField(
                             controller: _nameController,
+                            scrollPadding: AppSpacing.keyboardScrollPadding,
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
