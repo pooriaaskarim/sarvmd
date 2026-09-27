@@ -312,5 +312,17 @@
   "newScore": "نت جدید",
   "appMenuTooltip": "منوی برنامه",
   "exportOptionsTooltip": "گزینه‌های خروجی",
-  "exportFormatsSummary": "خروجی PDF / TeX / SVG…"
+  "exportFormatsSummary": "خروجی PDF / TeX / SVG…",
+  "menuNew": "جدید",
+  "menuOpen": "باز کردن…",
+  "menuSave": "ذخیره",
+  "menuSaveAs": "ذخیره به نام…",
+  "unsavedChangesTitle": "تغییرات ذخیره‌نشده",
+  "unsavedChangesMessage": "آیا می‌خواهید تغییرات «{documentName}» را قبل از ادامه ذخیره کنید؟",
+  "actionSave": "ذخیره",
+  "actionDiscard": "ذخیره نشود",
+  "actionCancel": "انصراف",
+  "fileSavedSuccess": "سند با موفقیت ذخیره شد.",
+  "fileSaveFailed": "خطا در ذخیره سند.",
+  "fileOpenFailed": "خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است."
 }

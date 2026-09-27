@@ -110,4 +110,13 @@ class CommandHistory {
     _undoStack.clear();
     _redoStack.clear();
   }
+
+  /// Sets a new document state and optionally clears undo and redo history.
+  void setDocument(SarvDocument doc, {bool clearHistory = true}) {
+    _document = doc;
+    if (clearHistory) {
+      clear();
+    }
+    onDocumentChanged?.call(_document);
+  }
 }

@@ -1927,6 +1927,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export PDF / TeX / SVG…'**
   String get exportFormatsSummary;
+
+  /// No description provided for @menuNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get menuNew;
+
+  /// No description provided for @menuOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open…'**
+  String get menuOpen;
+
+  /// No description provided for @menuSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get menuSave;
+
+  /// No description provided for @menuSaveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save As…'**
+  String get menuSaveAs;
+
+  /// No description provided for @unsavedChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved Changes'**
+  String get unsavedChangesTitle;
+
+  /// No description provided for @unsavedChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to save changes to \"{documentName}\" before continuing?'**
+  String unsavedChangesMessage(String documentName);
+
+  /// No description provided for @actionSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get actionSave;
+
+  /// No description provided for @actionDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t Save'**
+  String get actionDiscard;
+
+  /// No description provided for @actionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get actionCancel;
+
+  /// No description provided for @fileSavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Document saved successfully.'**
+  String get fileSavedSuccess;
+
+  /// No description provided for @fileSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save document.'**
+  String get fileSaveFailed;
+
+  /// No description provided for @fileOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.'**
+  String get fileOpenFailed;
 }
 
 class _AppLocalizationsDelegate

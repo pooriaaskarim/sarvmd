@@ -432,5 +432,24 @@
   "newScore": "New Score",
   "appMenuTooltip": "App Menu",
   "exportOptionsTooltip": "Export Options",
-  "exportFormatsSummary": "Export PDF / TeX / SVG…"
+  "exportFormatsSummary": "Export PDF / TeX / SVG…",
+  "menuNew": "New",
+  "menuOpen": "Open…",
+  "menuSave": "Save",
+  "menuSaveAs": "Save As…",
+  "unsavedChangesTitle": "Unsaved Changes",
+  "unsavedChangesMessage": "Do you want to save changes to \"{documentName}\" before continuing?",
+  "@unsavedChangesMessage": {
+    "placeholders": {
+      "documentName": {
+        "type": "String"
+      }
+    }
+  },
+  "actionSave": "Save",
+  "actionDiscard": "Don't Save",
+  "actionCancel": "Cancel",
+  "fileSavedSuccess": "Document saved successfully.",
+  "fileSaveFailed": "Failed to save document.",
+  "fileOpenFailed": "Failed to open document. The file may be corrupt or not a valid .sarv manuscript."
 }

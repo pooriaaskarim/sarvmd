@@ -1,7 +1,13 @@
 1. [x] Mobile View.
 2. [x] Mobile APK.
-3. [ ] Enabling user to work on several Documents, save and load them into/out of a standard file format.
-    This would some need research on whether there is a standard file format for saving and loading music documents.
+3. [x] Enabling user to work on several Documents, save and load them into/out of a standard file format.
+    [x] Standardized `.sarv` native JSON document schema (v1) capturing complete manuscript layout (PageConfig, nested SystemLayout, Score, DocumentMetadata) with zero data loss
+    [x] Built cross-platform `SarvFileService` supporting desktop direct save, system saveAs dialogs, web downloads, and strict format validation
+    [x] Integrated transactional persistence lifecycle in `DocumentCubit` (`newDocument`, `loadDocument`, `openFile`, `save`, `saveAs`)
+    [x] Added dynamic `isDirty` state tracking with undo/redo value-equality sync and visual dirty indicator dot in `EditableScoreHeader`
+    [x] Standardized `TopBarFileMenu` and `SarvShortcutGateway` keybindings (Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Shift+S)
+    [x] Added responsive `UnsavedChangesDialog` guarding new/open workflows with localized HIG actions (Save, Don't Save, Cancel)
+    [x] Implemented comprehensive unit and widget test suites (`sarv_file_service_test.dart`, `document_persistence_test.dart`, `file_ui_components_test.dart`)
 4. [ ] Standard shorcuts with a help cheat-sheet to enable user keyboard speed entry.
 5. [x] Unified look and font and feel for SarvMD logo across the codebase (e.g. splash, about dialog, etc. )
 6. [x] Code standardization across the codebase (e.g. adding comprehensive documentation and comments, Modularizing Big Ass files, etc.)

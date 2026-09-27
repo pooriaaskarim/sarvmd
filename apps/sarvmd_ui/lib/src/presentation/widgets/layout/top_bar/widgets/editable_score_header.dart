@@ -123,6 +123,7 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final isDirty = context.select<DocumentCubit, bool>((c) => c.state.isDirty);
     final effectiveTitle = core.ScoreCompiler.getEffectiveTitle(widget.score, widget.configState);
     final defaultTitle = core.ScoreCompiler.getDefaultFileName(widget.configState);
     final isCentered = widget.isCompact;
@@ -259,6 +260,18 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (isDirty) ...[
+                            const SizedBox(width: 4.0),
+                            Container(
+                              key: const ValueKey('score_header_dirty_dot'),
+                              width: 5.0,
+                              height: 5.0,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: cs.primary,
+                              ),
+                            ),
+                          ],
                           const SizedBox(width: 5.0),
                           AnimatedOpacity(
                             duration: const Duration(milliseconds: 150),

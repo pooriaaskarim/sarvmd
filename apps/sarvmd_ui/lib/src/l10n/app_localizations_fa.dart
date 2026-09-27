@@ -986,4 +986,43 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get exportFormatsSummary => 'خروجی PDF / TeX / SVG…';
+
+  @override
+  String get menuNew => 'جدید';
+
+  @override
+  String get menuOpen => 'باز کردن…';
+
+  @override
+  String get menuSave => 'ذخیره';
+
+  @override
+  String get menuSaveAs => 'ذخیره به نام…';
+
+  @override
+  String get unsavedChangesTitle => 'تغییرات ذخیره‌نشده';
+
+  @override
+  String unsavedChangesMessage(String documentName) {
+    return 'آیا می‌خواهید تغییرات «$documentName» را قبل از ادامه ذخیره کنید؟';
+  }
+
+  @override
+  String get actionSave => 'ذخیره';
+
+  @override
+  String get actionDiscard => 'ذخیره نشود';
+
+  @override
+  String get actionCancel => 'انصراف';
+
+  @override
+  String get fileSavedSuccess => 'سند با موفقیت ذخیره شد.';
+
+  @override
+  String get fileSaveFailed => 'خطا در ذخیره سند.';
+
+  @override
+  String get fileOpenFailed =>
+      'خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است.';
 }

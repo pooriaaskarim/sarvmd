@@ -23,7 +23,33 @@ class TopBarFileMenu extends StatelessWidget {
 
     return [
       MenuItemButton(
+        leadingIcon: Icon(Icons.note_add_outlined, size: 17, color: cs.onSurface),
+        trailingIcon: Text('Ctrl+N', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+        onPressed: () => handleTopBarMenuSelection(context, 'new_document', documentState),
+        child: Text(l10n.menuNew),
+      ),
+      MenuItemButton(
+        leadingIcon: Icon(Icons.file_open_outlined, size: 17, color: cs.onSurface),
+        trailingIcon: Text('Ctrl+O', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+        onPressed: () => handleTopBarMenuSelection(context, 'open_document', documentState),
+        child: Text(l10n.menuOpen),
+      ),
+      MenuItemButton(
+        leadingIcon: Icon(Icons.save_outlined, size: 17, color: cs.onSurface),
+        trailingIcon: Text('Ctrl+S', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+        onPressed: () => handleTopBarMenuSelection(context, 'save_document', documentState),
+        child: Text(l10n.menuSave),
+      ),
+      MenuItemButton(
+        leadingIcon: Icon(Icons.save_as_outlined, size: 17, color: cs.onSurface),
+        trailingIcon: Text('Ctrl+Shift+S', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+        onPressed: () => handleTopBarMenuSelection(context, 'save_as_document', documentState),
+        child: Text(l10n.menuSaveAs),
+      ),
+      const Divider(),
+      MenuItemButton(
         leadingIcon: Icon(Icons.file_upload_outlined, size: 17, color: cs.primary),
+        trailingIcon: Text('Ctrl+E', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
         onPressed: () => handleTopBarMenuSelection(context, 'export', documentState),
         child: Text(l10n.export),
       ),

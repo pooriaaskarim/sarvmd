@@ -986,4 +986,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportFormatsSummary => 'Export PDF / TeX / SVG…';
+
+  @override
+  String get menuNew => 'New';
+
+  @override
+  String get menuOpen => 'Open…';
+
+  @override
+  String get menuSave => 'Save';
+
+  @override
+  String get menuSaveAs => 'Save As…';
+
+  @override
+  String get unsavedChangesTitle => 'Unsaved Changes';
+
+  @override
+  String unsavedChangesMessage(String documentName) {
+    return 'Do you want to save changes to \"$documentName\" before continuing?';
+  }
+
+  @override
+  String get actionSave => 'Save';
+
+  @override
+  String get actionDiscard => 'Don\'t Save';
+
+  @override
+  String get actionCancel => 'Cancel';
+
+  @override
+  String get fileSavedSuccess => 'Document saved successfully.';
+
+  @override
+  String get fileSaveFailed => 'Failed to save document.';
+
+  @override
+  String get fileOpenFailed =>
+      'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.';
 }

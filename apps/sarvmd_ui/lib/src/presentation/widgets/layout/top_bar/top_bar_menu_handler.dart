@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../../logic/document/document_cubit.dart';
 import '../../../../logic/document/document_state.dart';
 import '../../../../logic/locale/locale_cubit.dart';
@@ -12,6 +13,7 @@ import '../../../../logic/view/view_cubit.dart';
 import '../../dialogs/about_dialog.dart';
 import '../../dialogs/export_dialog.dart';
 import '../../dialogs/staff_config_dialog.dart';
+import '../../dialogs/unsaved_changes_dialog.dart';
 
 /// Central dispatcher for all string-keyed menu actions across the top bar.
 ///
@@ -66,6 +68,18 @@ void handleTopBarMenuSelection(
       break;
 
     // ── File / Export ───────────────────────────────────────────────────────
+    case 'new_document':
+      _handleNewDocument(context, documentCubit, documentState);
+      break;
+    case 'open_document':
+      _handleOpenDocument(context, documentCubit, documentState);
+      break;
+    case 'save_document':
+      _handleSaveDocument(context, documentCubit, documentState);
+      break;
+    case 'save_as_document':
+      _handleSaveAsDocument(context, documentCubit, documentState);
+      break;
     case 'export':
       showExportDialog(context);
       break;
@@ -140,5 +154,74 @@ void handleTopBarMenuSelection(
         }
       }
       break;
+  }
+}
+
+Future<void> _handleNewDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  if (state.isDirty) {
+    final action = await showUnsavedChangesDialog(context, documentName: state.displayName);
+    if (action == UnsavedChangesAction.cancel) return;
+    if (action == UnsavedChangesAction.save) {
+      final saved = await cubit.save();
+      if (!saved) return;
+    }
+  }
+  cubit.newDocument();
+}
+
+Future<void> _handleOpenDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  if (state.isDirty) {
+    final action = await showUnsavedChangesDialog(context, documentName: state.displayName);
+    if (action == UnsavedChangesAction.cancel) return;
+    if (action == UnsavedChangesAction.save) {
+      final saved = await cubit.save();
+      if (!saved) return;
+    }
+  }
+  try {
+    await cubit.openFile();
+  } catch (e) {
+    if (context.mounted) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileOpenFailed)),
+      );
+    }
+  }
+}
+
+Future<void> _handleSaveDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    final success = await cubit.save();
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSavedSuccess)),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSaveFailed)),
+      );
+    }
+  }
+}
+
+Future<void> _handleSaveAsDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    final success = await cubit.saveAs();
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSavedSuccess)),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSaveFailed)),
+      );
+    }
   }
 }
