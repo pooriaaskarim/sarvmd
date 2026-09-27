@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-27
+
 ### Changed
 - **Intent-Based Nomenclature & Touch/Pointer Architecture**:
   - Renamed `mobile/` directory to `touch/` and established intent-first component naming (`TouchCanvasArea`, `TouchTopBar`, `FloatingHud`, `SettingsPanel`).
