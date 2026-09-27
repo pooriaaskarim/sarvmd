@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/theme/app_metrics.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// Page count selection section for PDF and TeX exports.
@@ -69,6 +70,7 @@ class ExportPageCountSection extends StatelessWidget {
                     child: TextField(
                       controller: pageController,
                       keyboardType: TextInputType.number,
+                      scrollPadding: AppSpacing.keyboardScrollPadding,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13.5,

@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_metrics.dart';
 
 /// Reusable premium dual-control slider with precision numeric spinners.
 class PrecisionNumericSlider extends StatefulWidget {
@@ -174,6 +175,7 @@ class _PrecisionNumericSliderState extends State<PrecisionNumericSlider> {
                       focusNode: _focusNode,
                       keyboardType: const TextInputType.numberWithOptions(
                           signed: true, decimal: true),
+                      scrollPadding: AppSpacing.keyboardScrollPadding,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,

@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_metrics.dart';
 import '../../../../core/theme/sarv_display_context.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../staff/instrument_preset.dart';
@@ -242,6 +243,7 @@ class _LabelingTabState extends State<LabelingTab> {
                           return TextField(
                             controller: textController,
                             focusNode: focusNode,
+                            scrollPadding: AppSpacing.keyboardScrollPadding,
                             decoration: InputDecoration(
                               hintText: l10n.instrumentNameHint,
                               prefixIcon:
@@ -286,6 +288,7 @@ class _LabelingTabState extends State<LabelingTab> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: widget.abbrController,
+                        scrollPadding: AppSpacing.keyboardScrollPadding,
                         decoration: InputDecoration(
                           hintText: l10n.abbreviationHint,
                           border: OutlineInputBorder(

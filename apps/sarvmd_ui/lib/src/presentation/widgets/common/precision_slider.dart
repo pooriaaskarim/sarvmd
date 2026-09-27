@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_metrics.dart';
 import '../../../core/theme/layout_policy.dart';
 import 'property_row.dart';
 
@@ -86,6 +87,7 @@ class _PrecisionSliderState extends State<PrecisionSlider> {
               enableInteractiveSelection: false,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              scrollPadding: AppSpacing.keyboardScrollPadding,
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,

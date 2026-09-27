@@ -16,6 +16,7 @@ import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
 import 'package:sarvmd_ui/src/presentation/screens/touch_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/canvas/ruler_box.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/layout/top_bar/widgets/editable_score_header.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/touch/touch_top_bar.dart';
 
 void main() {
@@ -482,6 +483,43 @@ void main() {
       // Clean timer flush
       await tester.pump(const Duration(milliseconds: 6000));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('EditableScoreHeader gracefully handles constrained availableWidth (< 140.0) without ArgumentError', (tester) async {
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: documentCubit),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 90.0, // Narrower than 140.0
+                  child: EditableScoreHeader(
+                    score: documentCubit.state.score,
+                    configState: documentCubit.state.config,
+                    isCompact: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditableScoreHeader), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Begin editing while constrained to 90.0
+      await tester.tap(find.byType(EditableScoreHeader));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

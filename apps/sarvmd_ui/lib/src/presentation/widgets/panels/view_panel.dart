@@ -65,6 +65,7 @@ class ViewPanel extends StatelessWidget {
               child: BlocBuilder<ViewCubit, ViewState>(
                 builder: (context, viewState) {
                   return ListView(
+                    key: const PageStorageKey('pointer_view_panel_scroll'),
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.paddingLarge),
                     children: [

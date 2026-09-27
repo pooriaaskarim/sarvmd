@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+import '../../../../../core/theme/app_metrics.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../logic/document/document_cubit.dart';
 
@@ -143,13 +144,14 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth;
+        final availableWidth = math.max(0.0, constraints.maxWidth);
         final double maxAllowedWidth = shouldExpand
             ? availableWidth
             : (widget.isCompact ? math.min(availableWidth, 420.0) : math.min(availableWidth, 680.0));
+        final double minAllowedWidth = math.min(140.0, maxAllowedWidth);
         final double targetWidth = shouldExpand
             ? availableWidth
-            : (textPainter.width + 48.0).clamp(140.0, maxAllowedWidth);
+            : (textPainter.width + 48.0).clamp(minAllowedWidth, maxAllowedWidth);
 
         final titleWidget = _isEditingTitle
             ? PopScope(
@@ -160,7 +162,7 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
                 },
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minWidth: 140.0,
+                    minWidth: minAllowedWidth,
                     maxWidth: shouldExpand ? double.infinity : maxAllowedWidth,
                   ),
                   child: AnimatedContainer(
@@ -184,6 +186,7 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
                       controller: _titleController,
                       focusNode: _titleFocusNode,
                       autofocus: true,
+                      scrollPadding: AppSpacing.keyboardScrollPadding,
                       textAlign: shouldExpand ? TextAlign.start : (isCentered ? TextAlign.center : TextAlign.start),
                       cursorColor: cs.primary,
                       cursorWidth: 2.0,

@@ -13,28 +13,38 @@ import 'touch_editor_screen.dart';
 ///
 /// Listens to [ViewCubit] and transitions seamlessly between the touch-optimized layout
 /// and pointer-optimized desktop layout without destroying application state or replaying splash.
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ViewCubit, ViewState>(
-      buildWhen: (prev, curr) => prev.inputMode != curr.inputMode,
-      builder: (context, viewState) {
-        final isTouch = viewState.inputMode == InputMode.touch;
+  State<AppShell> createState() => _AppShellState();
+}
 
-        return SarvDisplayScope(
-          inputModeOverride: viewState.inputMode,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: isTouch
-                ? const TouchEditorScreen(key: ValueKey('mobile_editor_screen'))
-                : const PointerEditorScreen(key: ValueKey('editor_screen')),
-          ),
-        );
-      },
+class _AppShellState extends State<AppShell> {
+  final PageStorageBucket _pageStorageBucket = PageStorageBucket();
+
+  @override
+  Widget build(BuildContext context) {
+    return PageStorage(
+      bucket: _pageStorageBucket,
+      child: BlocBuilder<ViewCubit, ViewState>(
+        buildWhen: (prev, curr) => prev.inputMode != curr.inputMode,
+        builder: (context, viewState) {
+          final isTouch = viewState.inputMode == InputMode.touch;
+
+          return SarvDisplayScope(
+            inputModeOverride: viewState.inputMode,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: isTouch
+                  ? const TouchEditorScreen(key: ValueKey('mobile_editor_screen'))
+                  : const PointerEditorScreen(key: ValueKey('editor_screen')),
+            ),
+          );
+        },
+      ),
     );
   }
 }
