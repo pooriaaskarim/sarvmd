@@ -9,6 +9,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-27
+
+### Changed
+- **Intent-Based Nomenclature & Touch/Pointer Architecture**:
+  - Renamed `mobile/` directory to `touch/` and established intent-first component naming (`TouchCanvasArea`, `TouchTopBar`, `FloatingHud`, `SettingsPanel`).
+  - Renamed screens to `PointerEditorScreen` and `TouchEditorScreen`, and top bar to `PointerTopBar`.
+  - Replaced ambiguous breakpoint names in `SarvBreakpoints` with explicit layout event names (`bothSidebarsDockedMinWidth`, `primarySidebarDockedMinWidth`, `fullMenuBarMinWidth`).
+- **Standardized Responsive Display Contract (`SarvDisplayContext`)**:
+  - Introduced `SarvDisplayData`, `SarvDisplayContext`, `SarvDisplayScope`, and `SarvFormFactor` (`phone`, `tablet`, `desktop`) to decouple input modality from viewport classification.
+  - Migrated modal dialogs (`showSarvAdaptiveModal`, `AboutSarvDialog`, `ExportDialog`, `StaffConfigDialog`, and configuration tabs) away from raw `MediaQuery` checks.
+- **Unified Canvas Geometry Engine (`CanvasZoomCalculator`)**:
+  - Centralized zoom preset calculations, safe-area offsets, and transformation matrices into `CanvasZoomCalculator`, eliminating duplicate zoom math across editor shells.
+- **Reboot-Free Input Mode Switching (`AppShell`)**:
+  - Introduced `AppShell` as the root adaptive shell listening to `ViewCubit.state.inputMode` via `AnimatedSwitcher`.
+  - Upgraded `InputModeToggleButton` to switch modes instantaneously without destroying the navigator history stack or replaying the splash screen.
+
+### Added
+- **Mobile Keyboard Inset Resilience & Comfortable Input Clearance**:
+  - Wrapped `SettingsPanel` drawer content in `AnimatedPadding` reacting to `MediaQuery.viewInsetsOf(context).bottom`, shrinking the inner `ListView` scroll viewport and ensuring focused inputs remain visible when the soft keyboard appears.
+  - Adapted modal bottom sheets and dialogs in `showSarvAdaptiveModal` to constrain `maxHeight` by available height (`screenHeight - viewInsets.bottom`) and lift the sheet cleanly above the keyboard.
+  - Standardized `AppSpacing.keyboardScrollPadding` (64px bottom clearance) across numeric scrubbers, margins, staff spacing, precision sliders, export dialogs, and hierarchy labeling fields, guaranteeing generous headroom above on-screen software keyboards.
+  - Added comprehensive widget test suite (`mobile_keyboard_inset_test.dart`) covering drawer shrinking, text field visibility, and modal bottom sheet positioning under soft keyboard view insets.
+- **Cross-Mode Panel State Synchronization & "The Section Spine" Navigation Rail**:
+  - Implemented bidirectional active section handoff between Pointer Mode (desktop sidebar with `SectionSpine`) and Touch Mode (drawer subpages), maintaining focused section context across mode toggles and window resizes.
+  - Built "The Section Spine" (`SectionSpine`): a slender, constant 22px scroll rail featuring piecewise-linear handle mapping, dynamic top-section viewport detection, and click-to-jump-and-expand navigation.
+  - Modularized spine rail architecture into focused components: `SectionSpineTrack` (groove, progress fill, boundary stops), `SectionSpineHandle` (fader thumb with tactile 3-line ribbed grip and grab cursor), and `SectionSpineBead` (jewel buttons with frosted-glass floating badges and fold chips).
+  - Unboxed sidebar sections (`CollapsibleSectionCard`): removed heavy card containers and borders for a spacious full-width layout with dynamic, non-clipping stationary states.
+  - Reclaimed 16px of horizontal space on Pointer sidebar by reducing right padding to 8px, and reserved 4px safety margins around profile cards to prevent hover clipping.
+- **Progressive Multi-Tier Desktop Top Bar & Cascading App Menu**:
+  - Implemented progressive multi-tier compaction for desktop viewports (`SarvBreakpoints.desktopTopBarMenuThreshold = 760.0`).
+  - Added a dedicated application menu button `[ ☰ ]` (`TopBarCompactAppMenu`) for viewports narrower than 760px that opens a clean cascading `MenuAnchor` with 4 submenus (*File ❯*, *Edit ❯*, *View ❯*, *Help ❯*).
+  - Standardized all desktop menus (`TopBarFileMenu`, `TopBarEditMenu`, `TopBarViewMenu`, `TopBarHelpMenu`) to use unified `MenuAnchor`, `MenuItemButton`, and `SubmenuButton` structures, exposing reusable static `buildChildren` builders.
+  - Reorganized page size presets in the View menu under a cascading `Score Page Sizes ▸` submenu with active selection indicators.
+- **Adaptive Dynamic Header ("Zen Top Bar") in Touch Mode**:
+  - Implemented smart viewport-aware top bar pinning: defaults to pinned in portrait (`height >= 500dp`) and unpinned in landscape/compact screens (`height < 500dp`), reclaiming 15–20% of vertical canvas space.
+  - Added an interactive pin/unpin toggle button (`Icons.push_pin` / `Icons.push_pin_outlined`) in the top bar with persistent user overrides.
+  - Added full canvas gesture immersion: when unpinned, the top bar smoothly slides up off-screen (`Offset(0, -1.3)`) in sync with the bottom Conductor HUD on pan/zoom, restoring borderless score visibility.
+  - Standardized the collapsed floating top bar to a 40dp capsule height (matching the expanded toolbar and coordinate HUD) with a reactive intrinsic width dynamically sized to document title length with clamped bounds (`120dp` to `340dp`).
+  - Added dynamic ruler clearance: positioned unpinned top bar (both collapsed capsule and expanded toolbar) 6dp below the top ruler and 8dp past the left ruler, preventing any ruler occlusion or origin-switcher blocking.
+  - Implemented conflict-free coordinate HUD visibility: long-pressing and dragging on the canvas to inspect coordinates automatically collapses and dismisses the floating top bar off-screen, giving unobstructed visibility to the top glassmorphic coordinate HUD.
+  - Enhanced inline title editing: temporarily hides flanking top bar controls in tight/portrait screens to maximize text field room, complete with a dedicated Done button, click-outside auto-save, and system back navigation handling.
+- **Safe-Area Aware Rulers & Edge-to-Edge Bleed**:
+  - Top and left manuscript canvas rulers now dynamically adapt to device notches, status bars, and display cutouts.
+  - The canvas background bleeds edge-to-edge under the status bar, while `RulerBox` expands its top and left background strips and positions graduation numbers, ticks, and the `mm` origin switcher safely below cutouts.
+- **Dual-Island Mobile Conductor Toolbar & Gestural Drawer Trigger**:
+  - Decoupled the mobile bottom HUD into independent Left (menu, undo, redo) and Right (zoom, telemetry, guides) wings with 11dp ruler clearance and independent idle auto-collapse timers.
+  - Implemented continuous bi-directional drag zoom on both collapsed and expanded zoom chips (drag up/right to zoom in, down/left to zoom out) with tactile haptic selection clicks.
+  - Added smooth idle visual transitions on the collapsed zoom chip: active interaction renders prominent percentage text with a subtle background watermark; after 2.5s of inactivity, the percentage softens and the magnifier watermark smoothly fades in.
+  - Added a horizontal right-drag gesture on the Menu HUD in both collapsed and expanded states to intuitively open the navigation drawer (or landscape side sheet) with tactile haptic feedback.
+- **Adaptive Desktop Responsive Layout**:
+  - Automatically transitions sidebars between docked mode on wide monitors, floating canvas overlays on medium screens, and auto-collapsing slide-out drawers on split or compact windows, ensuring the manuscript canvas remains fully visible.
+  - Added high-visibility edge resize handles with smooth dragging and persistent panel widths.
+- **Pointer vs. Touch Interaction Toggle**:
+  - Added an input mode toggle in the top bar to freely switch between precision desktop pointer controls and touch-first mobile navigation on any screen size.
+- **Automated Android CI Pipeline**:
+  - Added automated build workflows to package and attach signed release APKs on Git version tags.
+
+### Changed
+- **Decoupled Brand Logo From Dropdown Trigger**:
+  - `SarvReactiveBrandLogo` now consistently operates as a pure interactive brand mark (`isMenuMode: false`) across wide and compact desktop modes, preserving hover expansion to *"Manuscript Designer"* and tap-to-About interactions.
+  - Replaced the legacy 416-line flat popup menu (`compact_menu.dart`) with native cascading submenus sharing the exact desktop menu tree.
+- **Mobile Landscape Side Navigation**:
+  - Transformed the landscape menu into an on-demand, thumb-friendly side drawer with backdrop dismissal, keeping over 60% of the manuscript score in view.
+  - Redesigned menu categories into a compact, single-screen layout with an integrated score summary below.
+  - Automatically recalculates score fitting when rotating between portrait and landscape orientations.
+
+### Removed
+- **Obsolete Top-Bar Ensemble Profile Picker**:
+  - Permanently removed `EnsembleProfilePicker` from the top bar and codebase, reclaiming ~130px of horizontal top bar real estate and eliminating redundant profile switching controls since profile configuration is fully handled in the sidebar.
+
+### Fixed
+- **Canvas Hold-and-Drag Coordinate HUD in Touch Mode**:
+  - Suppressed duplicate bottom coordinate readout during canvas hold-and-drag inspection in `TouchEditorScreen`, maintaining focus on the top coordinate HUD.
+- **Top Bar Title Editing Space & Padding**:
+  - Re-enabled flexible title field expansion (`expandInEditMode`) in `EditableScoreHeader` across both `PointerTopBar` and `TouchTopBar`, eliminating artificial 240/300px width bottlenecks and large empty gaps during inline title editing.
+- **Dialog Ergonomics on Compact & Landscape Screens**:
+  - Resolved cramped layout and overflow issues in staff configuration, calibration, and export dialogs on short viewports and dynamically resized windows.
+  - Added adaptive preview scaling and compact tab bars to the staff configuration modal.
+- **Grouped Staff Removal Integrity**:
+  - Fixed an issue where removing an individual instrument within an ensemble group could unintentionally delete the entire parent section.
+
 ---
 
 ## [0.9.0] - 2026-09-22

@@ -11,134 +11,120 @@ import '../top_bar_menu_header.dart';
 
 /// `View` desktop menu for the top bar.
 ///
-/// Covers page size presets, orientation toggle, theme toggle, and language switch.
+/// Covers page size presets (via cascading submenu), orientation toggle, theme toggle, and language switch.
 /// The [onThemeToggle] callback is provided by the parent so the menu stays decoupled
 /// from the concrete theme management implementation (ThemeCubit, etc.).
 class TopBarViewMenu extends StatelessWidget {
   final DocumentState documentState;
   final core.PageConfig configState;
-  final VoidCallback onThemeToggle;
+  final VoidCallback? onThemeToggle;
 
   const TopBarViewMenu({
     super.key,
     required this.documentState,
     required this.configState,
-    required this.onThemeToggle,
+    this.onThemeToggle,
   });
 
-  @override
-  Widget build(BuildContext context) {
+  /// Builds the [Widget] entries for the View menu.
+  ///
+  /// Shared between desktop wide-mode [TopBarViewMenu] and compact [TopBarCompactAppMenu].
+  static List<Widget> buildChildren(
+    BuildContext context,
+    DocumentState documentState,
+    core.PageConfig configState, [
+    VoidCallback? onThemeToggle,
+  ]) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    return [
+      // ── Score Page Sizes ▸ ───────────────────────────────────────────
+      SubmenuButton(
+        leadingIcon: Icon(Icons.aspect_ratio_rounded, size: 17, color: cs.onSurface),
+        menuChildren: [
+          _buildPageSizeItem(context, documentState, configState, core.PageSize.a3, 'A3 (297×420 mm)', cs),
+          _buildPageSizeItem(context, documentState, configState, core.PageSize.a4, 'A4 (210×297 mm)', cs),
+          _buildPageSizeItem(context, documentState, configState, core.PageSize.a5, 'A5 (148×210 mm)', cs),
+          _buildPageSizeItem(context, documentState, configState, core.PageSize.b4, 'B4 (250×353 mm)', cs),
+          _buildPageSizeItem(context, documentState, configState, core.PageSize.b5, 'B5 (176×250 mm)', cs),
+          _buildPageSizeItem(context, documentState, configState, core.PageSize.letter, 'Letter (216×279 mm)', cs),
+        ],
+        child: Text(l10n.headerScorePageSizes),
+      ),
+
+      // ── Orientation ──────────────────────────────────────────────────
+      MenuItemButton(
+        leadingIcon: Icon(Icons.screen_rotation_outlined, size: 17, color: cs.onSurface),
+        onPressed: () => handleTopBarMenuSelection(context, 'toggle_orientation', documentState),
+        child: Text(
+          l10n.orientationToggleSummary(
+            configState.orientation == core.PageOrientation.portrait
+                ? l10n.portrait
+                : l10n.landscape,
+          ),
+        ),
+      ),
+      const Divider(),
+
+      // ── Theme toggle ─────────────────────────────────────────────────
+      MenuItemButton(
+        leadingIcon: Icon(
+          isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+          size: 17,
+          color: cs.onSurface,
+        ),
+        onPressed: onThemeToggle ?? () => handleTopBarMenuSelection(context, 'theme', documentState),
+        child: Text(isDark ? l10n.lightTheme : l10n.darkTheme),
+      ),
+
+      // ── Language toggle ──────────────────────────────────────────────
+      MenuItemButton(
+        leadingIcon: Icon(Icons.language, size: 17, color: cs.onSurface),
+        onPressed: () => handleTopBarMenuSelection(context, 'language', documentState),
+        child: Text(l10n.toggleLanguage),
+      ),
+    ];
+  }
+
+  static Widget _buildPageSizeItem(
+    BuildContext context,
+    DocumentState documentState,
+    core.PageConfig configState,
+    core.PageSize pageSize,
+    String label,
+    ColorScheme cs,
+  ) {
+    final isSelected = configState.pageSize == pageSize;
+    return MenuItemButton(
+      leadingIcon: Icon(
+        isSelected ? Icons.check_rounded : null,
+        size: 17,
+        color: cs.primary,
+      ),
+      onPressed: () => handleTopBarMenuSelection(
+        context,
+        'preset_${pageSize.name}',
+        documentState,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          color: isSelected ? cs.primary : null,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return TopBarMenuHeader(
       label: l10n.menuView,
-      onSelected: (value) {
-        if (value == 'theme') {
-          onThemeToggle();
-        } else {
-          handleTopBarMenuSelection(context, value, documentState);
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          enabled: false,
-          child: Text(
-            l10n.headerScorePageSizes,
-            style: const TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-              color: Colors.grey,
-            ),
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'preset_a3',
-          child: Text(
-            'A3 (297×420 mm) ${configState.pageSize == core.PageSize.a3 ? '✓' : ''}',
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'preset_a4',
-          child: Text(
-            'A4 (210×297 mm) ${configState.pageSize == core.PageSize.a4 ? '✓' : ''}',
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'preset_a5',
-          child: Text(
-            'A5 (148×210 mm) ${configState.pageSize == core.PageSize.a5 ? '✓' : ''}',
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'preset_b4',
-          child: Text(
-            'B4 (250×353 mm) ${configState.pageSize == core.PageSize.b4 ? '✓' : ''}',
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'preset_b5',
-          child: Text(
-            'B5 (176×250 mm) ${configState.pageSize == core.PageSize.b5 ? '✓' : ''}',
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'preset_letter',
-          child: Text(
-            'Letter (216×279 mm) ${configState.pageSize == core.PageSize.letter ? '✓' : ''}',
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(
-          value: 'toggle_orientation',
-          child: Text(
-            l10n.orientationToggleSummary(
-              configState.orientation == core.PageOrientation.portrait
-                  ? l10n.portrait
-                  : l10n.landscape,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(
-          value: 'theme',
-          child: Row(
-            children: [
-              Icon(
-                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                size: 17,
-                color: cs.onSurface,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  isDark ? l10n.lightTheme : l10n.darkTheme,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'language',
-          child: Row(
-            children: [
-              Icon(Icons.language, size: 17, color: cs.onSurface),
-              const SizedBox(width: 10),
-              Expanded(child: Text(l10n.toggleLanguage, overflow: TextOverflow.ellipsis)),
-            ],
-          ),
-        ),
-      ],
+      menuChildren: buildChildren(context, documentState, configState, onThemeToggle),
     );
   }
 }

@@ -10,7 +10,7 @@ import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
 import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
 import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/specialized/launch_coordinator.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/specialized/app_entry_point.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/specialized/sarv_splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,7 +21,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  group('LaunchCoordinator & SplashScreen System Tests', () {
+  group('AppEntryPoint & SplashScreen System Tests', () {
     testWidgets('SplashScreen displays brand assets and localized subtitle', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -60,7 +60,7 @@ void main() {
       expect(find.text('Manuscript Designer'), findsOneWidget);
     });
 
-    testWidgets('LaunchCoordinator transitions from SplashScreen to EditorScreen after minimum duration', (tester) async {
+    testWidgets('AppEntryPoint transitions from SplashScreen to PointerEditorScreen after minimum duration', (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -77,7 +77,7 @@ void main() {
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: LaunchCoordinator(
+            home: AppEntryPoint(
               minSplashDuration: Duration(milliseconds: 100),
             ),
           ),
@@ -91,7 +91,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 150));
       await tester.pumpAndSettle();
 
-      // Should now be on EditorScreen workspace
+      // Should now be on PointerEditorScreen workspace
       expect(find.byType(SarvSplashScreen), findsNothing);
     });
   });

@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+export 'sarv_display_context.dart';
+
 /// Deprecated UI alias for [core.LayoutPolicyMode].
 @Deprecated('Use core.LayoutPolicyMode from package:sarvmd_core instead')
 typedef LayoutPolicyMode = core.LayoutPolicyMode;
@@ -82,6 +84,15 @@ class BilingualFluidScope extends StatelessWidget {
 
 /// Responsive breakpoints helper for SarvMD UI layouts.
 abstract final class SarvBreakpoints {
+  /// Breakpoint threshold for docking both left and right desktop sidebars.
+  static const double bothSidebarsDockedMinWidth = 1200.0;
+
+  /// Breakpoint threshold for docking the primary left desktop sidebar.
+  static const double primarySidebarDockedMinWidth = 900.0;
+
+  /// Breakpoint threshold for showing the full desktop top bar menus vs. the cascading compact app menu.
+  static const double fullMenuBarMinWidth = 760.0;
+
   /// Returns true if the screen width is strictly less than 600px (mobile form factor).
   static bool isMobile(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 600;
@@ -95,5 +106,13 @@ abstract final class SarvBreakpoints {
   /// Returns true if the screen width is 1024px or greater (desktop form factor).
   static bool isDesktop(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= 1024;
+
+  /// Returns true if the viewport is wide enough to dock both desktop sidebars.
+  static bool canDockBothSidebars(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= bothSidebarsDockedMinWidth;
+
+  /// Returns true if the viewport is wide enough to dock the primary left sidebar.
+  static bool canDockPrimarySidebar(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= primarySidebarDockedMinWidth;
 }
 

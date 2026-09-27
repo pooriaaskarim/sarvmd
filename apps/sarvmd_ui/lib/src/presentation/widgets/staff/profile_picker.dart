@@ -53,12 +53,17 @@ class _ProfilePickerState extends State<ProfilePicker> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Calculate item width based on available space to form a grid
-        // We want roughly 2 items per row in a 320px sidebar.
-        final crossAxisCount = constraints.maxWidth > 250 ? 2 : 1;
+        // Calculate item width based on available space to form a grid.
+        // We reserve a generous 4px horizontal margin and 4px vertical margin
+        // so that card hover scale (1.03), translateY (-2.0), and drop shadows
+        // remain completely within layout headroom and never get clipped.
+        const marginHorizontal = 4.0;
+        const marginVertical = 4.0;
+        final availableWidth = constraints.maxWidth - (marginHorizontal * 2);
+        final crossAxisCount = availableWidth > 240 ? 2 : 1;
         const spacing = 8.0;
         final itemWidth =
-            (constraints.maxWidth - (spacing * (crossAxisCount - 1))) /
+            (availableWidth - (spacing * (crossAxisCount - 1))) /
                 crossAxisCount;
 
         final colorScheme = Theme.of(context).colorScheme;
@@ -72,9 +77,14 @@ class _ProfilePickerState extends State<ProfilePicker> {
 
         return Directionality(
           textDirection: textDirection,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: marginHorizontal,
+              vertical: marginVertical,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // ── Responsive Category Pill Selector (Wraps cleanly to sidebar width) ───
             Wrap(
               spacing: 6,
@@ -168,9 +178,10 @@ class _ProfilePickerState extends State<ProfilePicker> {
             ),
           ],
         ),
-      );
-    },
-  );
+      ),
+    );
+  },
+);
   }
 }
 

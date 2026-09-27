@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/theme/app_metrics.dart';
 import '../../../core/utils/unit_formatter.dart';
 import '../common/section_header.dart';
 import '../../../l10n/app_localizations.dart';
@@ -382,6 +383,7 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
                     enableInteractiveSelection: false,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
+                    scrollPadding: AppSpacing.keyboardScrollPadding,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: _isHovering ? colorScheme.primary : colorScheme.onSurface,

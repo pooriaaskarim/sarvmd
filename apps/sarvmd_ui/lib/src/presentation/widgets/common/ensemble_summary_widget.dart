@@ -55,15 +55,18 @@ class EnsembleSummaryWidget extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      l10n.ensembleSummary,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: cs.primary,
-                        letterSpacing: 0.5,
+                    Expanded(
+                      child: Text(
+                        l10n.ensembleSummary,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: cs.primary,
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: isFa ? TextAlign.right : TextAlign.left,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: isFa ? TextAlign.right : TextAlign.left,
                     ),
                     if (showPageBadge)
                       Container(
@@ -117,7 +120,14 @@ class _SummaryRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11)),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 4.0),
           Text(
             value,
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),

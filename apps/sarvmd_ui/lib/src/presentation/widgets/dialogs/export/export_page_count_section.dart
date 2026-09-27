@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/theme/app_metrics.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// Page count selection section for PDF and TeX exports.
@@ -33,10 +34,11 @@ class ExportPageCountSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 300;
+              final labelWidget = Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.filter_none_outlined,
                       size: 16, color: cs.primary),
@@ -50,8 +52,10 @@ class ExportPageCountSection extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-              Row(
+              );
+
+              final stepperWidget = Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _StepButton(
                     icon: Icons.remove,
@@ -66,6 +70,7 @@ class ExportPageCountSection extends StatelessWidget {
                     child: TextField(
                       controller: pageController,
                       keyboardType: TextInputType.number,
+                      scrollPadding: AppSpacing.keyboardScrollPadding,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13.5,
@@ -113,8 +118,27 @@ class ExportPageCountSection extends StatelessWidget {
                         : null,
                   ),
                 ],
-              ),
-            ],
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    labelWidget,
+                    const SizedBox(height: 8),
+                    stepperWidget,
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  labelWidget,
+                  stepperWidget,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 10),
 

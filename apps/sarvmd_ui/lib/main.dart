@@ -17,7 +17,7 @@ import 'src/logic/locale/locale_cubit.dart';
 import 'src/logic/locale/locale_state.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/layout_policy.dart';
-import 'src/presentation/widgets/specialized/launch_coordinator.dart';
+import 'src/presentation/widgets/specialized/app_entry_point.dart';
 import 'src/presentation/widgets/common/language_transition_overlay.dart';
 
 void main() {
@@ -128,7 +128,7 @@ class SarvApp extends StatelessWidget {
                   ),
                 );
               },
-              home: const LaunchCoordinator(),
+              home: const AppEntryPoint(),
             );
           },
         );

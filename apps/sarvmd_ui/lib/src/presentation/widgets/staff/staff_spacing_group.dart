@@ -609,6 +609,7 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
                     enabled: widget.enabled,
                     enableInteractiveSelection: false,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    scrollPadding: AppSpacing.keyboardScrollPadding,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: (_isScrubbing || _isLabelHovered) ? cs.primary : cs.onSurface,

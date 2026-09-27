@@ -7,7 +7,9 @@ import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
 import '../common/ensemble_summary_widget.dart';
 import '../dialogs/staff_config_dialog.dart';
+import '../../../core/theme/app_metrics.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../logic/view/view_cubit.dart';
 
 typedef StaffDragPayload = ({
   core.StaffDefinition staff,
@@ -172,57 +174,96 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
   String? _lastSelectedUid;
   final Set<int> _collapsedGroupHashes = {};
 
+  ViewCubit? _getViewCubit(BuildContext context) {
+    try {
+      return context.read<ViewCubit>();
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _toggleSelection(String uid,
       {bool isShift = false, List<String>? allUidsInOrder}) {
-    setState(() {
-      if (isShift && _lastSelectedUid != null && allUidsInOrder != null) {
-        final startIdx = allUidsInOrder.indexOf(_lastSelectedUid!);
-        final endIdx = allUidsInOrder.indexOf(uid);
-        if (startIdx != -1 && endIdx != -1) {
-          final low = math.min(startIdx, endIdx);
-          final high = math.max(startIdx, endIdx);
-          for (int i = low; i <= high; i++) {
-            _selectedUids.add(allUidsInOrder[i]);
-          }
-        } else {
-          _selectedUids.add(uid);
+    final viewCubit = _getViewCubit(context);
+    final currentSelected = Set<String>.from(
+      viewCubit?.state.selectedHierarchyStaffUids ?? _selectedUids,
+    );
+
+    if (isShift && _lastSelectedUid != null && allUidsInOrder != null) {
+      final startIdx = allUidsInOrder.indexOf(_lastSelectedUid!);
+      final endIdx = allUidsInOrder.indexOf(uid);
+      if (startIdx != -1 && endIdx != -1) {
+        final low = math.min(startIdx, endIdx);
+        final high = math.max(startIdx, endIdx);
+        for (int i = low; i <= high; i++) {
+          currentSelected.add(allUidsInOrder[i]);
         }
       } else {
-        if (_selectedUids.contains(uid)) {
-          _selectedUids.remove(uid);
-        } else {
-          _selectedUids.add(uid);
-        }
+        currentSelected.add(uid);
       }
-      _lastSelectedUid = uid;
-    });
+    } else {
+      if (currentSelected.contains(uid)) {
+        currentSelected.remove(uid);
+      } else {
+        currentSelected.add(uid);
+      }
+    }
+    _lastSelectedUid = uid;
+    if (viewCubit != null) {
+      viewCubit.setHierarchySelection(currentSelected);
+    } else {
+      setState(() {
+        _selectedUids.clear();
+        _selectedUids.addAll(currentSelected);
+      });
+    }
   }
 
   void _selectAll(List<String> allUids) {
-    setState(() {
-      if (_selectedUids.length == allUids.length) {
+    final viewCubit = _getViewCubit(context);
+    final currentSelected =
+        viewCubit?.state.selectedHierarchyStaffUids ?? _selectedUids;
+    final Set<String> next;
+    if (currentSelected.length == allUids.length) {
+      next = {};
+    } else {
+      next = Set<String>.from(allUids);
+    }
+    if (viewCubit != null) {
+      viewCubit.setHierarchySelection(next);
+    } else {
+      setState(() {
         _selectedUids.clear();
-      } else {
-        _selectedUids.addAll(allUids);
-      }
-    });
+        _selectedUids.addAll(next);
+      });
+    }
   }
 
   void _clearSelection() {
-    setState(() {
-      _selectedUids.clear();
-      _lastSelectedUid = null;
-    });
+    _lastSelectedUid = null;
+    final viewCubit = _getViewCubit(context);
+    if (viewCubit != null) {
+      viewCubit.clearHierarchySelection();
+    } else {
+      setState(() {
+        _selectedUids.clear();
+      });
+    }
   }
 
   void _toggleCollapseGroup(int groupHash) {
-    setState(() {
-      if (_collapsedGroupHashes.contains(groupHash)) {
-        _collapsedGroupHashes.remove(groupHash);
-      } else {
-        _collapsedGroupHashes.add(groupHash);
-      }
-    });
+    final viewCubit = _getViewCubit(context);
+    if (viewCubit != null) {
+      viewCubit.toggleHierarchyGroup(groupHash);
+    } else {
+      setState(() {
+        if (_collapsedGroupHashes.contains(groupHash)) {
+          _collapsedGroupHashes.remove(groupHash);
+        } else {
+          _collapsedGroupHashes.add(groupHash);
+        }
+      });
+    }
   }
 
   @override
@@ -237,15 +278,35 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
         final allStaves = widget.notifier.allStaves;
         final allUidsInOrder = allStaves.map((s) => s.uid).toList();
 
+        ViewCubit? viewCubit;
+        try {
+          viewCubit = context.watch<ViewCubit>();
+        } catch (_) {}
+
+        final collapsedGroups =
+            viewCubit?.state.collapsedHierarchyGroups ?? _collapsedGroupHashes;
+        final selectedUids = Set<String>.from(
+          viewCubit?.state.selectedHierarchyStaffUids ?? _selectedUids,
+        );
+
         // Prune selected UIDs if staves were deleted externally
-        _selectedUids.removeWhere((uid) => !allUidsInOrder.contains(uid));
+        final bool hadDeletedStaves =
+            selectedUids.any((uid) => !allUidsInOrder.contains(uid));
+        if (hadDeletedStaves) {
+          selectedUids.removeWhere((uid) => !allUidsInOrder.contains(uid));
+          if (viewCubit != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) viewCubit!.setHierarchySelection(selectedUids);
+            });
+          }
+        }
 
         return Directionality(
           textDirection: textDirection,
           child: _HierarchySelectionScope(
-            selectedUids: _selectedUids,
+            selectedUids: selectedUids,
             lastSelectedUid: _lastSelectedUid,
-            collapsedGroupHashes: _collapsedGroupHashes,
+            collapsedGroupHashes: collapsedGroups,
             allUidsInOrder: allUidsInOrder,
             onToggleSelection: (uid, {isShift = false}) => _toggleSelection(uid,
                 isShift: isShift, allUidsInOrder: allUidsInOrder),
@@ -255,7 +316,7 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_selectedUids.isEmpty)
+                if (selectedUids.isEmpty)
                   Row(
                     children: [
                       Icon(Icons.account_tree_outlined,
@@ -2760,6 +2821,7 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                   child: TextField(
                     controller: _nameController,
                     focusNode: _nameFocusNode,
+                    scrollPadding: AppSpacing.keyboardScrollPadding,
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -2870,6 +2932,7 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                       child: TextField(
                         controller: _abbrevController,
                         focusNode: _abbrevFocusNode,
+                        scrollPadding: AppSpacing.keyboardScrollPadding,
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,

@@ -16,14 +16,14 @@ import 'package:sarvmd_ui/src/logic/locale/locale_state.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_state.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/layout/sarv_reactive_brand_logo.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/mobile/conductor_drawer.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/mobile/mobile_language_button.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/mobile/mobile_theme_button.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/touch/settings_panel.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/touch/touch_language_button.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/touch/touch_theme_button.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('ConductorDrawer Header & Mobile Controls Tests', () {
+  group('SettingsPanel Header & Mobile Controls Tests', () {
     late LocaleCubit localeCubit;
     late ViewCubit viewCubit;
     late DocumentCubit documentCubit;
@@ -57,7 +57,7 @@ void main() {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            endDrawer: ConductorDrawer(
+            endDrawer: SettingsPanel(
               transformationController: TransformationController(),
               onZoomPreset: (_) {},
             ),
@@ -72,7 +72,7 @@ void main() {
       );
     }
 
-    testWidgets('ConductorDrawer renders solid SarvReactiveBrandLogo and AppVersion', (tester) async {
+    testWidgets('SettingsPanel renders solid SarvReactiveBrandLogo and AppVersion', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.tap(find.text('Open Drawer'));
       await tester.pumpAndSettle();
@@ -86,18 +86,18 @@ void main() {
       // Verify version string is present under the logo
       expect(find.text('v${AppVersion.version}'), findsOneWidget);
 
-      // Verify MobileLanguageButton and MobileThemeButton are present
-      expect(find.byType(MobileLanguageButton), findsOneWidget);
-      expect(find.byType(MobileThemeButton), findsOneWidget);
+      // Verify TouchLanguageButton and TouchThemeButton are present
+      expect(find.byType(TouchLanguageButton), findsOneWidget);
+      expect(find.byType(TouchThemeButton), findsOneWidget);
     });
 
-    testWidgets('MobileLanguageButton opens horizontal context menu and selects language', (tester) async {
+    testWidgets('TouchLanguageButton opens horizontal context menu and selects language', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.tap(find.text('Open Drawer'));
       await tester.pumpAndSettle();
 
       // Tap language button to open context menu
-      await tester.tap(find.byType(MobileLanguageButton));
+      await tester.tap(find.byType(TouchLanguageButton));
       await tester.pumpAndSettle();
 
       // Verify horizontal options English and فارسی are visible
@@ -113,13 +113,13 @@ void main() {
       expect(localeCubit.state.isPersian, isTrue);
     });
 
-    testWidgets('MobileThemeButton opens double-rowed context menu and updates theme mode & accent', (tester) async {
+    testWidgets('TouchThemeButton opens double-rowed context menu and updates theme mode & accent', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.tap(find.text('Open Drawer'));
       await tester.pumpAndSettle();
 
       // Tap theme button to open context menu
-      await tester.tap(find.byType(MobileThemeButton));
+      await tester.tap(find.byType(TouchThemeButton));
       await tester.pumpAndSettle();
 
       // Verify Row 1 (MODE) and Row 2 (ACCENT) headers exist
@@ -143,7 +143,7 @@ void main() {
       expect(viewCubit.state.themeMode, ThemeMode.dark);
 
       // Open theme menu again to select accent
-      await tester.tap(find.byType(MobileThemeButton));
+      await tester.tap(find.byType(TouchThemeButton));
       await tester.pumpAndSettle();
 
       // Select Sage accent
