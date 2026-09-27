@@ -78,6 +78,20 @@ class Voice {
 
   @override
   String toString() => 'Voice($id, eventsCount: ${events.length}, totalTime: $totalDuration)';
+
+  /// Serializes this voice to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'events': events.map((e) => e.toJson()).toList(),
+      };
+
+  /// Deserializes a [Voice] from a JSON map.
+  factory Voice.fromJson(Map<String, dynamic> json) => Voice(
+        id: json['id'] as String? ?? 'voice1',
+        events: (json['events'] as List<dynamic>? ?? [])
+            .map((e) => MusicalEvent.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 }
 
 /// Represents a single musical measure across all active voices.
@@ -170,4 +184,31 @@ class Measure {
 
   @override
   String toString() => 'Measure($number, voicesCount: ${voices.length})';
+
+  /// Serializes this measure to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'number': number,
+        'voices': voices.map((k, v) => MapEntry(k, v.toJson())),
+        'timeSignature': timeSignature?.toJson(),
+        'keySignature': keySignature?.toJson(),
+        'clef': clef?.toJson(),
+      };
+
+  /// Deserializes a [Measure] from a JSON map.
+  factory Measure.fromJson(Map<String, dynamic> json) => Measure(
+        number: json['number'] as int? ?? 1,
+        voices: (json['voices'] as Map<String, dynamic>? ?? {}).map(
+          (k, v) => MapEntry(k, Voice.fromJson(v as Map<String, dynamic>)),
+        ),
+        timeSignature: json['timeSignature'] != null
+            ? TimeSignature.fromJson(
+                json['timeSignature'] as Map<String, dynamic>)
+            : null,
+        keySignature: json['keySignature'] != null
+            ? KeySignature.fromJson(json['keySignature'] as Map<String, dynamic>)
+            : null,
+        clef: json['clef'] != null
+            ? Clef.fromJson(json['clef'] as Map<String, dynamic>)
+            : null,
+      );
 }

@@ -3,6 +3,7 @@
 
 import '../domain/document.dart';
 import '../domain/measure.dart';
+import '../domain/metadata.dart';
 import '../domain/score.dart';
 import 'document_command.dart';
 
@@ -31,12 +32,22 @@ class SetTitleCommand extends DocumentCommand {
   String get label => 'Set Title';
 
   @override
-  SarvDocument execute(SarvDocument current) =>
-      current.copyWith(score: current.score.copyWith(title: newTitle));
+  SarvDocument execute(SarvDocument current) => current.copyWith(
+        score: current.score.copyWith(title: newTitle),
+        metadata: current.metadata.copyWith(
+          title: newTitle,
+          modifiedAt: DateTime.now(),
+        ),
+      );
 
   @override
-  SarvDocument undo(SarvDocument current) =>
-      current.copyWith(score: current.score.copyWith(title: _previousTitle));
+  SarvDocument undo(SarvDocument current) => current.copyWith(
+        score: current.score.copyWith(title: _previousTitle),
+        metadata: current.metadata.copyWith(
+          title: _previousTitle,
+          modifiedAt: DateTime.now(),
+        ),
+      );
 
   @override
   bool canCoalesceWith(DocumentCommand other) => other is SetTitleCommand;
@@ -45,6 +56,64 @@ class SetTitleCommand extends DocumentCommand {
   DocumentCommand coalesceWith(DocumentCommand other) {
     final next = other as SetTitleCommand;
     return SetTitleCommand(next.newTitle, _previousTitle);
+  }
+}
+
+/// Transactional command to update document metadata.
+class SetMetadataCommand extends DocumentCommand {
+  final DocumentMetadata newMetadata;
+  DocumentMetadata? _previousMetadata;
+
+  SetMetadataCommand(this.newMetadata);
+
+  @override
+  String get label => 'Update Metadata';
+
+  @override
+  SarvDocument execute(SarvDocument current) {
+    _previousMetadata = current.metadata;
+    return current.copyWith(
+      metadata: newMetadata.copyWith(modifiedAt: DateTime.now()),
+      score: current.score.copyWith(title: newMetadata.title),
+    );
+  }
+
+  @override
+  SarvDocument undo(SarvDocument current) {
+    if (_previousMetadata == null) return current;
+    return current.copyWith(
+      metadata: _previousMetadata,
+      score: current.score.copyWith(title: _previousMetadata!.title),
+    );
+  }
+}
+
+/// Transactional command to set the document target page count.
+class SetPageCountCommand extends DocumentCommand {
+  final int newPageCount;
+  int? _previousPageCount;
+
+  SetPageCountCommand(this.newPageCount);
+
+  @override
+  String get label => 'Set Page Count';
+
+  @override
+  SarvDocument execute(SarvDocument current) {
+    _previousPageCount = current.pageCount;
+    return current.copyWith(
+      pageCount: newPageCount.clamp(1, 100),
+      metadata: current.metadata.copyWith(modifiedAt: DateTime.now()),
+    );
+  }
+
+  @override
+  SarvDocument undo(SarvDocument current) {
+    if (_previousPageCount == null) return current;
+    return current.copyWith(
+      pageCount: _previousPageCount,
+      metadata: current.metadata.copyWith(modifiedAt: DateTime.now()),
+    );
   }
 }
 

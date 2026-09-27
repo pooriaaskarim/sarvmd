@@ -161,4 +161,19 @@ class Pitch implements Comparable<Pitch> {
     final accStr = accidental == Accidental.natural ? '' : accidental.symbol;
     return '${noteName.name.toUpperCase()}$accStr$octave';
   }
+
+  /// Serializes this pitch to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'noteName': noteName.name,
+        'accidental': accidental.name,
+        'octave': octave,
+      };
+
+  /// Deserializes a [Pitch] from a JSON map.
+  factory Pitch.fromJson(Map<String, dynamic> json) => Pitch(
+        NoteName.values.byName(json['noteName'] as String? ?? 'c'),
+        accidental: Accidental.values
+            .byName(json['accidental'] as String? ?? 'natural'),
+        octave: json['octave'] as int? ?? 4,
+      );
 }

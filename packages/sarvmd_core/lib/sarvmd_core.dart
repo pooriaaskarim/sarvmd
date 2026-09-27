@@ -19,6 +19,7 @@ export 'src/pdf_emitter.dart';
 
 // Domain models
 export 'src/domain/document.dart';
+export 'src/domain/metadata.dart';
 export 'src/domain/duration.dart';
 export 'src/domain/pitch.dart';
 export 'src/domain/clef.dart';

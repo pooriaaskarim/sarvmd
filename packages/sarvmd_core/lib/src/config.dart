@@ -800,6 +800,19 @@ class Margins {
         left: left ?? this.left,
         right: right ?? this.right,
       );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Margins &&
+          runtimeType == other.runtimeType &&
+          top == other.top &&
+          bottom == other.bottom &&
+          left == other.left &&
+          right == other.right;
+
+  @override
+  int get hashCode => Object.hash(top, bottom, left, right);
 }
 
 /// Complete page configuration combining size, layout, staff, and margins.

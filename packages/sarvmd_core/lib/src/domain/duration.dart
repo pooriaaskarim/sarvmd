@@ -163,4 +163,17 @@ class RhythmicDuration implements Comparable<RhythmicDuration> {
 
   /// A sixty-fourth note duration (1/64).
   static const RhythmicDuration sixtyFourth = RhythmicDuration(1, 64);
+
+  /// Serializes this duration to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'numerator': numerator,
+        'denominator': denominator,
+      };
+
+  /// Deserializes a [RhythmicDuration] from a JSON map.
+  factory RhythmicDuration.fromJson(Map<String, dynamic> json) =>
+      RhythmicDuration(
+        json['numerator'] as int? ?? 1,
+        json['denominator'] as int? ?? 4,
+      );
 }

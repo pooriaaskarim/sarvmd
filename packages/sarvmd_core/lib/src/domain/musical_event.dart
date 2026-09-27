@@ -24,6 +24,29 @@ sealed class MusicalEvent {
   ///
   /// Represented as a [RhythmicDuration] to prevent cumulative rounding or floating-point drift.
   final RhythmicDuration duration;
+
+  /// Serializes this musical event to a JSON map.
+  Map<String, dynamic> toJson();
+
+  /// Deserializes a [MusicalEvent] from a JSON map.
+  factory MusicalEvent.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String?;
+    final dur = RhythmicDuration.fromJson(json['duration'] as Map<String, dynamic>);
+    return switch (type) {
+      'note' => NoteEvent(
+          Pitch.fromJson(json['pitch'] as Map<String, dynamic>),
+          dur,
+        ),
+      'rest' => RestEvent(dur),
+      'chord' => ChordEvent(
+          (json['pitches'] as List<dynamic>)
+              .map((p) => Pitch.fromJson(p as Map<String, dynamic>))
+              .toList(),
+          dur,
+        ),
+      _ => throw FormatException('Unknown MusicalEvent type: $type in $json'),
+    };
+  }
 }
 
 /// Represents a single pitch played for a specific duration.
@@ -36,6 +59,13 @@ class NoteEvent extends MusicalEvent {
 
   /// The pitch spelling (letter, accidental, and octave) of the note.
   final Pitch pitch;
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'note',
+        'pitch': pitch.toJson(),
+        'duration': duration.toJson(),
+      };
 
   @override
   bool operator ==(Object other) =>
@@ -58,6 +88,12 @@ class RestEvent extends MusicalEvent {
   
   /// Creates a [RestEvent] representing a timed silence.
   const RestEvent(RhythmicDuration duration) : super(duration);
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'rest',
+        'duration': duration.toJson(),
+      };
 
   @override
   bool operator ==(Object other) =>
@@ -87,6 +123,13 @@ class ChordEvent extends MusicalEvent {
 
   /// The list of pitches sounding simultaneously in this chord.
   final List<Pitch> pitches;
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'chord',
+        'pitches': pitches.map((p) => p.toJson()).toList(),
+        'duration': duration.toJson(),
+      };
 
   @override
   bool operator ==(Object other) {

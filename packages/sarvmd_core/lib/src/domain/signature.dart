@@ -48,6 +48,19 @@ class TimeSignature {
 
   /// Standard Cut Time (2/2).
   static const TimeSignature cutTime = TimeSignature(2, 2);
+
+  /// Serializes this time signature to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'beats': beats,
+        'beatValue': beatValue,
+      };
+
+  /// Deserializes a [TimeSignature] from a JSON map.
+  factory TimeSignature.fromJson(Map<String, dynamic> json) =>
+      TimeSignature(
+        json['beats'] as int? ?? 4,
+        json['beatValue'] as int? ?? 4,
+      );
 }
 
 /// Represents a standard musical key signature in the Circle of Fifths.
@@ -135,4 +148,13 @@ class KeySignature {
 
   /// Reference key signature of C Major (no sharps or flats).
   static const KeySignature cMajor = KeySignature(0);
+
+  /// Serializes this key signature to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'fifths': fifths,
+      };
+
+  /// Deserializes a [KeySignature] from a JSON map.
+  factory KeySignature.fromJson(Map<String, dynamic> json) =>
+      KeySignature(json['fifths'] as int? ?? 0);
 }

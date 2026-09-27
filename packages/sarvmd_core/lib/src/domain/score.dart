@@ -68,6 +68,22 @@ class Part {
 
   @override
   String toString() => 'Part($id, name: $name, measuresCount: ${measures.length})';
+
+  /// Serializes this part to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'measures': measures.map((m) => m.toJson()).toList(),
+      };
+
+  /// Deserializes a [Part] from a JSON map.
+  factory Part.fromJson(Map<String, dynamic> json) => Part(
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        measures: (json['measures'] as List<dynamic>? ?? [])
+            .map((m) => Measure.fromJson(m as Map<String, dynamic>))
+            .toList(),
+      );
 }
 
 /// Represents the top-level musical score AST (Abstract Syntax Tree).
@@ -124,4 +140,18 @@ class Score {
 
   @override
   String toString() => 'Score($title, partsCount: ${parts.length})';
+
+  /// Serializes this score to a JSON map.
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'parts': parts.map((p) => p.toJson()).toList(),
+      };
+
+  /// Deserializes a [Score] from a JSON map.
+  factory Score.fromJson(Map<String, dynamic> json) => Score(
+        title: json['title'] as String? ?? '',
+        parts: (json['parts'] as List<dynamic>? ?? [])
+            .map((p) => Part.fromJson(p as Map<String, dynamic>))
+            .toList(),
+      );
 }
