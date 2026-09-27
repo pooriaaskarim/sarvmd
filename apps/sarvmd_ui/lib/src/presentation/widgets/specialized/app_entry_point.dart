@@ -10,15 +10,13 @@ import '../../../logic/locale/locale_state.dart';
 import '../../../logic/view/view_cubit.dart';
 import '../../../logic/view/view_state.dart';
 import '../../../logic/services/changelog_service.dart';
-import '../../../core/theme/layout_policy.dart';
 import '../specialized/sarv_splash_screen.dart';
-import '../../screens/editor_screen.dart';
-import '../../screens/mobile_editor_screen.dart';
+import '../../screens/app_shell.dart';
 
 /// Coordinates application startup and smoothly executes a Hero shared-element transition
 /// from the calligraphic splash screen into the main editor workspace header.
-class LaunchCoordinator extends StatefulWidget {
-  const LaunchCoordinator({
+class AppEntryPoint extends StatefulWidget {
+  const AppEntryPoint({
     super.key,
     this.minSplashDuration = const Duration(milliseconds: 1100),
   });
@@ -26,10 +24,10 @@ class LaunchCoordinator extends StatefulWidget {
   final Duration minSplashDuration;
 
   @override
-  State<LaunchCoordinator> createState() => _LaunchCoordinatorState();
+  State<AppEntryPoint> createState() => _AppEntryPointState();
 }
 
-class _LaunchCoordinatorState extends State<LaunchCoordinator> {
+class _AppEntryPointState extends State<AppEntryPoint> {
   String _version = AppVersion.version;
   bool _hasNavigated = false;
 
@@ -53,16 +51,13 @@ class _LaunchCoordinatorState extends State<LaunchCoordinator> {
         _version = resolvedVersion;
       });
 
-      // Execute Hero shared-element transition into EditorScreen or MobileEditorScreen
+      // Execute Hero shared-element transition into AppShell
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 750),
           reverseTransitionDuration: const Duration(milliseconds: 750),
           pageBuilder: (context, animation, secondaryAnimation) =>
-              SarvBreakpoints.isMobile(context)
-                  ? const MobileEditorScreen(
-                      key: ValueKey('mobile_editor_screen'))
-                  : const EditorScreen(key: ValueKey('editor_screen')),
+              const AppShell(),
 
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(

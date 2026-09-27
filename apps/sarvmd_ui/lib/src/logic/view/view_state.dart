@@ -4,6 +4,12 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
+/// The interaction mode determining whether the UI optimizes for mouse/pointer or direct touch.
+enum InputMode {
+  pointer,
+  touch,
+}
+
 /// The active guide overlay lines shown on the sheet music manuscript canvas.
 enum GuideType {
   paperEdges,
@@ -21,6 +27,7 @@ class ViewState {
   final Set<GuideType> activeGuides;
   final bool showNotation;
   final String? activeScrubbingMargin;
+  final InputMode inputMode;
 
   const ViewState({
     this.themeMode = ThemeMode.system,
@@ -29,6 +36,7 @@ class ViewState {
     this.activeGuides = const {GuideType.paperEdges, GuideType.rulerWings},
     this.showNotation = false,
     this.activeScrubbingMargin,
+    this.inputMode = InputMode.pointer,
   });
 
   ViewState copyWith({
@@ -39,6 +47,7 @@ class ViewState {
     bool? showNotation,
     String? activeScrubbingMargin,
     bool clearScrubbingMargin = false,
+    InputMode? inputMode,
   }) {
     return ViewState(
       themeMode: themeMode ?? this.themeMode,
@@ -49,6 +58,7 @@ class ViewState {
       activeScrubbingMargin: clearScrubbingMargin
           ? null
           : (activeScrubbingMargin ?? this.activeScrubbingMargin),
+      inputMode: inputMode ?? this.inputMode,
     );
   }
 

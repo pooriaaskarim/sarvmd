@@ -7,17 +7,20 @@ import '../../../core/theme/app_metrics.dart';
 import '../../../core/theme/layout_policy.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/view/view_cubit.dart';
+import '../canvas/canvas_zoom_calculator.dart';
 import '../canvas/preview_canvas.dart';
 import '../canvas/ruler_box.dart';
 import '../common/integrated_scale_control.dart';
 
 /// Touch & gesture optimized interactive mobile canvas area for SarvMD manuscript rendering.
-class MobileCanvasArea extends StatefulWidget {
-  const MobileCanvasArea({
+class TouchCanvasArea extends StatefulWidget {
+  const TouchCanvasArea({
     super.key,
     required this.transformationController,
     required this.cursorNotifier,
     this.bottomPadding = 0,
+    this.topSafeArea = 0.0,
+    this.leftSafeArea = 0.0,
     this.onLongPressCanvas,
     this.onLongPressStartCanvas,
     this.onLongPressMoveCanvas,
@@ -29,6 +32,8 @@ class MobileCanvasArea extends StatefulWidget {
   final TransformationController transformationController;
   final ValueNotifier<Offset?> cursorNotifier;
   final double bottomPadding;
+  final double topSafeArea;
+  final double leftSafeArea;
   final void Function(Offset localPosition)? onLongPressCanvas;
   final void Function(Offset localPosition)? onLongPressStartCanvas;
   final void Function(Offset localPosition)? onLongPressMoveCanvas;
@@ -37,10 +42,10 @@ class MobileCanvasArea extends StatefulWidget {
   final void Function(ScaleEndDetails details)? onInteractionEnd;
 
   @override
-  State<MobileCanvasArea> createState() => MobileCanvasAreaState();
+  State<TouchCanvasArea> createState() => TouchCanvasAreaState();
 }
 
-class MobileCanvasAreaState extends State<MobileCanvasArea> {
+class TouchCanvasAreaState extends State<TouchCanvasArea> {
   BoxConstraints? _lastConstraints;
   bool _hasCentered = false;
   ZoomPreset _currentPreset = ZoomPreset.fitWidth;
@@ -60,52 +65,18 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
     final config = context.read<DocumentCubit>().state.config;
     final viewState = context.read<ViewCubit>().state;
 
-    const double lpmm = 96 / 25.4; // canvas internal scale (px per mm)
-    final paperWidth = config.effectiveWidth * lpmm;
-    final paperHeight = config.effectiveHeight * lpmm;
+    final transform = CanvasZoomCalculator.compute(
+      preset: preset,
+      constraints: constraints,
+      config: config,
+      calibrationFactor: viewState.calibrationFactor,
+      padding: 24.0,
+      topSafeArea: widget.topSafeArea,
+      leftSafeArea: widget.leftSafeArea,
+      bottomPadding: widget.bottomPadding,
+    );
 
-    const double rulerSize = 25.0;
-    const double padding = 24.0;
-    final canvasWidth = constraints.maxWidth - rulerSize;
-    final canvasHeight = constraints.maxHeight - rulerSize - widget.bottomPadding;
-    final availableWidth = (canvasWidth - padding * 2).clamp(1.0, double.infinity);
-    final availableHeight = (canvasHeight - padding * 2).clamp(1.0, double.infinity);
-
-    double fitScale;
-
-    switch (preset) {
-      case ZoomPreset.actualSize:
-        fitScale = viewState.calibrationFactor
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-      case ZoomPreset.fitWidth:
-        fitScale = (availableWidth / paperWidth)
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-      case ZoomPreset.fitScreen:
-        final scaleX = availableWidth / paperWidth;
-        final scaleY = availableHeight / paperHeight;
-        fitScale = (scaleX < scaleY ? scaleX : scaleY)
-            .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-        break;
-    }
-
-    final double dx = (canvasWidth - paperWidth * fitScale) / 2;
-    double dy;
-
-    if (preset == ZoomPreset.fitScreen) {
-      dy = (canvasHeight - paperHeight * fitScale) / 2;
-    } else {
-      final scaledHeight = paperHeight * fitScale;
-      if (scaledHeight < availableHeight) {
-        dy = (canvasHeight - scaledHeight) / 2;
-      } else {
-        dy = padding;
-      }
-    }
-
-    widget.transformationController.value = Matrix4.translationValues(dx, dy, 0.0)
-      ..multiply(Matrix4.diagonal3Values(fitScale, fitScale, 1.0));
+    widget.transformationController.value = transform.matrix;
   }
 
   @override
@@ -136,6 +107,8 @@ class MobileCanvasAreaState extends State<MobileCanvasArea> {
               viewState: viewState,
               cursorNotifier: widget.cursorNotifier,
               showCoordinateHud: false,
+              topSafeArea: widget.topSafeArea,
+              leftSafeArea: widget.leftSafeArea,
               paperSizeMm: Size(
                 configState.effectiveWidth,
                 configState.effectiveHeight,

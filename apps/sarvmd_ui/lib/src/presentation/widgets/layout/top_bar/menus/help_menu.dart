@@ -14,26 +14,29 @@ class TopBarHelpMenu extends StatelessWidget {
 
   const TopBarHelpMenu({super.key, required this.documentState});
 
+  /// Builds the [Widget] entries for the Help menu.
+  ///
+  /// Shared between desktop wide-mode [TopBarHelpMenu] and compact [TopBarCompactAppMenu].
+  static List<Widget> buildChildren(BuildContext context, DocumentState documentState) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    return [
+      MenuItemButton(
+        leadingIcon: Icon(Icons.info_outline, size: 17, color: cs.onSurface),
+        onPressed: () => handleTopBarMenuSelection(context, 'about', documentState),
+        child: Text(l10n.aboutSarvMD),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
     return TopBarMenuHeader(
       label: l10n.menuHelp,
-      onSelected: (value) => handleTopBarMenuSelection(context, value, documentState),
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          value: 'about',
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, size: 17, color: cs.onSurface),
-              const SizedBox(width: 10),
-              Expanded(child: Text(l10n.aboutSarvMD, overflow: TextOverflow.ellipsis)),
-            ],
-          ),
-        ),
-      ],
+      menuChildren: buildChildren(context, documentState),
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/services/export_directory_service.dart';
 import '../../../logic/services/export_service.dart';
+import '../../../core/theme/sarv_display_context.dart';
 import 'adaptive_dialog_helper.dart';
 import 'export/export_format.dart';
 import 'export/export_format_selector.dart';
@@ -26,6 +27,7 @@ Future<ExportResult?> showExportDialog(
   final documentCubit = context.read<DocumentCubit>();
   return showSarvAdaptiveModal<ExportResult>(
     context: context,
+    maxWidth: 580.0,
     builder: (ctx, isMobile) => BlocProvider.value(
       value: documentCubit,
       child: ExportDialog(initialFormat: initialFormat),
@@ -194,15 +196,14 @@ class _ExportDialogState extends State<ExportDialog> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final media = MediaQuery.of(context);
-    final isMobile = media.size.width < 600;
+    final display = SarvDisplayContext.of(context);
+    final isMobile = display.isPhone;
     final l10n = AppLocalizations.of(context)!;
     final maxDialogHeight =
-        isMobile ? media.size.height * 0.90 : media.size.height * 0.85;
+        isMobile ? display.size.height * 0.90 : display.size.height * 0.85;
 
     final content = Container(
-      width: isMobile ? double.infinity : 580,
-      constraints: BoxConstraints(maxHeight: maxDialogHeight),
+      constraints: BoxConstraints(maxWidth: 580, maxHeight: maxDialogHeight),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -530,47 +531,44 @@ class _ExportDialogState extends State<ExportDialog> {
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(_lastResult),
-                  child: Text(l10n.cancel),
-                ),
-                const SizedBox(width: 10),
-                FilledButton.icon(
-                  onPressed: _isExporting ? null : _handleExport,
-                  icon: _isExporting
-                      ? SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: cs.onPrimary,
-                          ),
-                        )
-                      : const Icon(Icons.download, size: 16),
-                  label: Text(
-                    _isExporting
-                        ? l10n.exportingState
-                        : l10n.exportButtonLabel(_selectedFormat.shortLabel),
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(_lastResult),
+                    child: Text(l10n.cancel),
                   ),
-                ),
-              ],
+                  FilledButton.icon(
+                    onPressed: _isExporting ? null : _handleExport,
+                    icon: _isExporting
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: cs.onPrimary,
+                            ),
+                          )
+                        : const Icon(Icons.download, size: 16),
+                    label: Text(
+                      _isExporting
+                          ? l10n.exportingState
+                          : l10n.exportButtonLabel(_selectedFormat.shortLabel),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
 
-    return Dialog(
-      backgroundColor: cs.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outline.withValues(alpha: 0.4), width: 1),
-      ),
-      child: content,
-    );
+    return content;
   }
 }

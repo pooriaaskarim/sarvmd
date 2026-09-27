@@ -14,26 +14,29 @@ class TopBarFileMenu extends StatelessWidget {
 
   const TopBarFileMenu({super.key, required this.documentState});
 
+  /// Builds the [Widget] entries for the File menu.
+  ///
+  /// Shared between desktop wide-mode [TopBarFileMenu] and compact [TopBarCompactAppMenu].
+  static List<Widget> buildChildren(BuildContext context, DocumentState documentState) {
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    return [
+      MenuItemButton(
+        leadingIcon: Icon(Icons.file_upload_outlined, size: 17, color: cs.primary),
+        onPressed: () => handleTopBarMenuSelection(context, 'export', documentState),
+        child: Text(l10n.export),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
     return TopBarMenuHeader(
       label: l10n.menuFile,
-      onSelected: (value) => handleTopBarMenuSelection(context, value, documentState),
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          value: 'export',
-          child: Row(
-            children: [
-              Icon(Icons.file_upload_outlined, size: 17, color: cs.onSurface),
-              const SizedBox(width: 10),
-              Expanded(child: Text(l10n.export, overflow: TextOverflow.ellipsis)),
-            ],
-          ),
-        ),
-      ],
+      menuChildren: buildChildren(context, documentState),
     );
   }
 }

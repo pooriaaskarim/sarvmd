@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../staff/instrument_preset.dart';
 import '../staff/live_staff_preview.dart';
+import '../../../core/theme/sarv_display_context.dart';
 import 'adaptive_dialog_helper.dart';
 import 'staff_config/clef_lines_tab.dart';
 import 'staff_config/fine_tuning_tab.dart';
@@ -20,6 +21,7 @@ Future<void> showStaffConfigDialog(
 }) {
   return showSarvAdaptiveModal<void>(
     context: context,
+    maxWidth: 550.0,
     builder: (ctx, isMobile) => StaffConfigDialog(
       staff: staff,
       notifier: notifier,
@@ -59,6 +61,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   late String _fontFamily;
   late double _fontSize;
   late bool _italic;
+  bool? _userToggledPreview;
 
   @override
   void initState() {
@@ -128,35 +131,76 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final media = MediaQuery.of(context);
-    final isMobile = media.size.width < 600;
+    final display = SarvDisplayContext.of(context);
+    final isMobile = display.preferBottomSheet;
+    final screenHeight = display.size.height;
+    final isCompactHeight = screenHeight < 680;
     final l10n = AppLocalizations.of(context)!;
+
+    final bool showPreview = _userToggledPreview ?? (screenHeight >= 420);
+    final double previewHeight = screenHeight >= 680
+        ? 140.0
+        : (screenHeight >= 500 ? 96.0 : 76.0);
+    final double previewPaddingV = screenHeight >= 680
+        ? 12.0
+        : (screenHeight >= 500 ? 6.0 : 4.0);
+
+    final double maxDialogHeight = isMobile
+        ? (screenHeight < 500 ? screenHeight * 0.96 : screenHeight * 0.90)
+        : (screenHeight < 600
+            ? screenHeight * 0.96
+            : (screenHeight * 0.85).clamp(280.0, 720.0));
 
     final content = Container(
       constraints: BoxConstraints(
         maxWidth: 550,
-        maxHeight: isMobile
-            ? media.size.height * 0.90
-            : (media.size.height * 0.85).clamp(320.0, 720.0),
+        maxHeight: maxDialogHeight,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // ── Dialog Header ──────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 16, 8),
+            padding: EdgeInsets.fromLTRB(
+              isCompactHeight ? 20 : 24,
+              isCompactHeight ? 10 : 20,
+              isCompactHeight ? 12 : 16,
+              isCompactHeight ? 6 : 8,
+            ),
             child: Row(
               children: [
-                Icon(Icons.settings_outlined, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
+                Icon(
+                  Icons.settings_outlined,
+                  color: theme.colorScheme.primary,
+                  size: isCompactHeight ? 20 : 24,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     l10n.configureStaffSettings,
-                    style: textTheme.titleLarge
+                    style: (isCompactHeight
+                            ? textTheme.titleMedium
+                            : textTheme.titleLarge)
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: Icon(
+                    showPreview
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    size: 20,
+                  ),
+                  tooltip: l10n.view,
+                  onPressed: () {
+                    setState(() {
+                      _userToggledPreview = !showPreview;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  tooltip: l10n.close,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -173,40 +217,91 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
             indicatorColor: theme.colorScheme.primary,
             indicatorSize: TabBarIndicatorSize.tab,
             tabs: [
-              Tab(icon: const Icon(Icons.label_outlined), text: l10n.tabLabeling),
               Tab(
-                  icon: const Icon(Icons.music_note_outlined),
-                  text: l10n.tabClefLines),
-              Tab(icon: const Icon(Icons.tune_outlined), text: l10n.tabFineTuning),
+                height: isCompactHeight ? 38 : null,
+                icon: isCompactHeight ? null : const Icon(Icons.label_outlined),
+                text: isCompactHeight ? null : l10n.tabLabeling,
+                child: isCompactHeight
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.label_outlined, size: 16),
+                          const SizedBox(width: 6),
+                          Text(l10n.tabLabeling,
+                              style: const TextStyle(fontSize: 12.5)),
+                        ],
+                      )
+                    : null,
+              ),
+              Tab(
+                height: isCompactHeight ? 38 : null,
+                icon: isCompactHeight
+                    ? null
+                    : const Icon(Icons.music_note_outlined),
+                text: isCompactHeight ? null : l10n.tabClefLines,
+                child: isCompactHeight
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.music_note_outlined, size: 16),
+                          const SizedBox(width: 6),
+                          Text(l10n.tabClefLines,
+                              style: const TextStyle(fontSize: 12.5)),
+                        ],
+                      )
+                    : null,
+              ),
+              Tab(
+                height: isCompactHeight ? 38 : null,
+                icon: isCompactHeight ? null : const Icon(Icons.tune_outlined),
+                text: isCompactHeight ? null : l10n.tabFineTuning,
+                child: isCompactHeight
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.tune_outlined, size: 16),
+                          const SizedBox(width: 6),
+                          Text(l10n.tabFineTuning,
+                              style: const TextStyle(fontSize: 12.5)),
+                        ],
+                      )
+                    : null,
+              ),
             ],
           ),
 
           const Divider(height: 1),
 
           // ── Interactive Live Preview Panel ─────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: LiveStaffPreview(
-              name: _currentName.isEmpty
-                  ? l10n.defaultInstrumentName
-                  : _currentName,
-              abbrev: _abbrController.text,
-              lines: _selectedLines,
-              clefSymbol: _selectedClefSymbol,
-              anchorLine: _selectedAnchorLine,
-              visible: _labelVisible,
-              hOffset: _horizontalOffset,
-              vOffset: _verticalOffset,
-              fontFamily: _fontFamily,
-              fontSize: _fontSize,
-              italic: _italic,
-              onAnchorLineChanged: (newLine) {
-                setState(() {
-                  _selectedAnchorLine = newLine;
-                });
-              },
+          if (showPreview) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isCompactHeight ? 16 : 24,
+                vertical: previewPaddingV,
+              ),
+              child: LiveStaffPreview(
+                height: previewHeight,
+                name: _currentName.isEmpty
+                    ? l10n.defaultInstrumentName
+                    : _currentName,
+                abbrev: _abbrController.text,
+                lines: _selectedLines,
+                clefSymbol: _selectedClefSymbol,
+                anchorLine: _selectedAnchorLine,
+                visible: _labelVisible,
+                hOffset: _horizontalOffset,
+                vOffset: _verticalOffset,
+                fontFamily: _fontFamily,
+                fontSize: _fontSize,
+                italic: _italic,
+                onAnchorLineChanged: (newLine) {
+                  setState(() {
+                    _selectedAnchorLine = newLine;
+                  });
+                },
+              ),
             ),
-          ),
+          ],
 
           // ── Tab Bar Views ─────────────────────────────────────
           Expanded(
@@ -261,7 +356,10 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
 
           // ── Dialog Actions ─────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompactHeight ? 20 : 24,
+              vertical: isCompactHeight ? 8 : 16,
+            ),
             child: Row(
               children: [
                 IconButton(
@@ -292,10 +390,6 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
       ),
     );
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      clipBehavior: Clip.antiAlias,
-      child: content,
-    );
+    return content;
   }
 }

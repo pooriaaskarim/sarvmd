@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
 import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/layout/sarv_top_bar.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/common/input_mode_toggle_button.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/layout/pointer_top_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -16,7 +18,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
-  testWidgets('SarvTopBar renders desktop menu headers, profile picker, title, and split export CTA in wide mode', (tester) async {
+  testWidgets('PointerTopBar renders desktop menu headers, title, and controls in wide mode', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -32,7 +34,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -45,9 +47,6 @@ void main() {
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('View'), findsOneWidget);
     expect(find.text('Help'), findsOneWidget);
-
-    // Verify ensemble profile picker
-    expect(find.byIcon(Icons.queue_music_rounded), findsOneWidget);
 
     // Verify center editable metadata (Title) & status badge
     expect(find.text('Treble_A4_Portrait'), findsOneWidget);
@@ -70,7 +69,7 @@ void main() {
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar Ensemble Profile Picker switches paper presets', (tester) async {
+  testWidgets('PointerTopBar View menu switches page size presets', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -86,27 +85,31 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    // Open ensemble picker
-    await tester.tap(find.byIcon(Icons.queue_music_rounded));
+    // Open View menu
+    await tester.tap(find.text('View'));
     await tester.pumpAndSettle();
 
-    // Select Piano
-    await tester.tap(find.text('Piano').last);
+    // Open Score Page Sizes sub-menu
+    await tester.tap(find.text('SCORE PAGE SIZES'));
     await tester.pumpAndSettle();
 
-    expect(documentCubit.activeProfile?.id, equals('piano'));
+    // Select A3
+    await tester.tap(find.text('A3 (297×420 mm)'));
+    await tester.pumpAndSettle();
+
+    expect(documentCubit.state.config.pageSize, equals(core.PageSize.a3));
 
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar allows inline editing of score title in center zone', (tester) async {
+  testWidgets('PointerTopBar allows inline editing of score title in center zone', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -122,7 +125,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -143,8 +146,8 @@ void main() {
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar collapses menus into logo dropdown menu in compact viewports (<960px)', (tester) async {
-    tester.view.physicalSize = const Size(800, 600);
+  testWidgets('PointerTopBar collapses menus into cascading app menu button in compact viewports (<760px)', (tester) async {
+    tester.view.physicalSize = const Size(700, 600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
@@ -159,7 +162,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -169,19 +172,95 @@ void main() {
     // Top desktop menu headers should be hidden in compact mode
     expect(find.text('File'), findsNothing);
     expect(find.text('Edit'), findsNothing);
+    expect(find.text('View'), findsNothing);
+    expect(find.text('Help'), findsNothing);
 
-    // Tap brand logo to open compact popup menu
-    await tester.tap(find.text('MD'));
+    // Dedicated app menu button should be present
+    final menuButton = find.byIcon(Icons.menu_rounded);
+    expect(menuButton, findsOneWidget);
+
+    // Brand logo MD is present as brand mark
+    expect(find.text('MD'), findsOneWidget);
+
+    // Tap app menu button to open cascading menu
+    await tester.tap(menuButton);
     await tester.pumpAndSettle();
 
     expect(find.text('File'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('View'), findsOneWidget);
+    expect(find.text('Help'), findsOneWidget);
 
     documentCubit.close();
   });
 
-  testWidgets('SarvTopBar Add Staff to System from Edit menu updates DocumentCubit staffCount with correct format', (tester) async {
+  testWidgets('PointerTopBar in compact mode hides flanking controls and shows Done button while editing title', (tester) async {
+    tester.view.physicalSize = const Size(700, 600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final documentCubit = DocumentCubit();
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: PointerTopBar(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify initial compact state has logo, app menu, undo/redo, input mode toggle
+    expect(find.text('MD'), findsOneWidget);
+    expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
+    expect(find.byType(InputModeToggleButton), findsOneWidget);
+    expect(find.byKey(const ValueKey('top_bar_title_edit_done_button_compact')), findsNothing);
+
+    // Tap title to begin editing
+    await tester.tap(find.text('Treble_A4_Portrait'));
+    await tester.pumpAndSettle();
+
+    // Flanking controls should be hidden to make room for title text editing field
+    expect(find.text('MD'), findsNothing);
+    expect(find.byIcon(Icons.menu_rounded), findsNothing);
+    expect(find.byIcon(Icons.undo_rounded), findsNothing);
+    expect(find.byType(InputModeToggleButton), findsNothing);
+
+    // Done button should be visible
+    final doneButton = find.byKey(const ValueKey('top_bar_title_edit_done_button_compact'));
+    expect(doneButton, findsOneWidget);
+
+    // Enter new title
+    await tester.enterText(find.byType(TextField), 'Violin Concerto No. 1');
+    await tester.pump();
+
+    // Tap Done button
+    await tester.tap(doneButton);
+    await tester.pumpAndSettle();
+
+    // Flanking controls should be restored
+    expect(find.text('MD'), findsOneWidget);
+    expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
+    expect(find.byType(InputModeToggleButton), findsOneWidget);
+    expect(find.byKey(const ValueKey('top_bar_title_edit_done_button_compact')), findsNothing);
+
+    // Title should be updated
+    expect(documentCubit.state.score.title, equals('Violin Concerto No. 1'));
+    expect(find.text('Violin Concerto No. 1'), findsOneWidget);
+
+    documentCubit.close();
+  });
+
+  testWidgets('PointerTopBar Add Staff to System from Edit menu updates DocumentCubit staffCount with correct format', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -199,7 +278,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SarvTopBar(),
+            body: PointerTopBar(),
           ),
         ),
       ),
@@ -223,4 +302,57 @@ void main() {
 
     documentCubit.close();
   });
+
+  testWidgets('PointerTopBar Remove Staff from Edit menu removes only targeted staff from grouped ensemble', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final documentCubit = DocumentCubit();
+    documentCubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+    // chamberOrchestra has 4 staves:
+    // Violin I (in subGroup), Violin II (in subGroup), Viola, Cello
+    expect(documentCubit.state.config.staffCount, equals(4));
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<DocumentCubit>.value(value: documentCubit),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: PointerTopBar(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open Edit menu
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Open Remove Staff sub-menu
+    await tester.tap(find.text('Remove Staff'));
+    await tester.pumpAndSettle();
+
+    // Find and tap the first staff item: 1. Staff #1 (5 L)
+    final firstStaffFinder = find.widgetWithText(MenuItemButton, '1. Staff #1 (5 L)');
+    expect(firstStaffFinder, findsOneWidget);
+    await tester.tap(firstStaffFinder);
+    await tester.pumpAndSettle();
+
+    // Exactly 3 staves must remain (not 2 from deleting the whole violin sub-group)
+    expect(documentCubit.state.config.staffCount, equals(3));
+    final root = documentCubit.state.config.systemLayout.rootGroup;
+    expect(root.children.first, isA<core.StaffNodeGroup>());
+    final subGroup = root.children.first as core.StaffNodeGroup;
+    // Sub-group must still exist with Violin II preserved inside it
+    expect(subGroup.children.length, equals(1));
+
+    documentCubit.close();
+  });
 }
+

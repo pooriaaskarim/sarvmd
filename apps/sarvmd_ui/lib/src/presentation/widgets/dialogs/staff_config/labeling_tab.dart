@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/material.dart';
+import '../../../../core/theme/sarv_display_context.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../staff/instrument_preset.dart';
 
@@ -53,7 +54,7 @@ class _LabelingTabState extends State<LabelingTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final isMobile = MediaQuery.of(context).size.width < 500;
+    final isMobile = SarvDisplayContext.of(context).isNarrowTab;
     final l10n = AppLocalizations.of(context)!;
 
     return ListView(

@@ -55,15 +55,18 @@ class EnsembleSummaryWidget extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      l10n.ensembleSummary,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: cs.primary,
-                        letterSpacing: 0.5,
+                    Expanded(
+                      child: Text(
+                        l10n.ensembleSummary,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: cs.primary,
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: isFa ? TextAlign.right : TextAlign.left,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: isFa ? TextAlign.right : TextAlign.left,
                     ),
                     if (showPageBadge)
                       Container(

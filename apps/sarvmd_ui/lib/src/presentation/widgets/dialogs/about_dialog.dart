@@ -8,12 +8,14 @@ import '../../../core/constants/app_version.dart';
 import '../../../logic/services/changelog_service.dart';
 import '../layout/sarv_brand_header.dart';
 
+import '../../../core/theme/sarv_display_context.dart';
 import 'adaptive_dialog_helper.dart';
 
 /// Shows the standard SarvMD About & Version Information dialog.
 Future<void> showSarvAboutDialog(BuildContext context) {
   return showSarvAdaptiveModal<void>(
     context: context,
+    maxWidth: 480.0,
     builder: (ctx, isMobile) => const AboutSarvDialog(),
   );
 }
@@ -100,8 +102,7 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final media = MediaQuery.of(context);
-    final isMobile = media.size.width < 600;
+    final isMobile = SarvDisplayContext.of(context).isPhone;
 
     final content = FutureBuilder<List<ReleaseEntry>>(
       future: _changelogFuture,
@@ -275,22 +276,9 @@ class _AboutSarvDialogState extends State<AboutSarvDialog> {
       },
     );
 
-    if (isMobile) {
-      return content;
-    }
-
-    return Dialog(
-      backgroundColor: cs.surfaceContainerHigh,
-      surfaceTintColor: Colors.transparent,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 620),
-        child: content,
-      ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 480, maxHeight: 620),
+      child: content,
     );
   }
 }

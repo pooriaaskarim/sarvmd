@@ -17,8 +17,8 @@ enum LangOption {
 }
 
 /// Language selection button with dual interaction modes (click popup & hold-drag selection).
-class MobileLanguageButton extends StatelessWidget {
-  const MobileLanguageButton({super.key});
+class TouchLanguageButton extends StatelessWidget {
+  const TouchLanguageButton({super.key});
 
   @override
   Widget build(BuildContext context) {
