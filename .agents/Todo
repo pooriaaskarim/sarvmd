@@ -9,7 +9,10 @@
     [x] Verified vector symbol and TAB clef rendering parity across PDF, SVG, and LaTeX emitters
     [x] Standardized TAB clef looks & sizing based on authentic SMuFL Bravura music font (U+E06D 6-string TAB clef, U+E06E 4-string TAB clef) scaled dynamically to 90% of staff height inside outer staff lines, with exact vertical midline centering across PDF emitter, SVG emitter, LaTeX emitter, and Flutter UI previews (PreviewCanvas, LiveStaffPreview, ClefConfigWidget)
     [x] Created automated 32-scenario QA Visual Validation Gallery (all 14 presets, page geometries, layering modes, and hierarchical labeling)
-8. [ ] We need a middle sized Screens responsive UI. This might go well with some enhancements to the mobile view, or even the same view. Examinatio needed.
+8. [x] We need a middle sized Screens responsive UI. This might go well with some enhancements to the mobile view, or even the same view. Examinatio needed.
+    [x] Introduced `SarvDisplayContext` and `SarvFormFactor` (`phone`, `tablet`, `desktop`) decoupling input modality from viewport classification
+    [x] Implemented multi-tier top bar compaction with cascading application menu (`TopBarCompactAppMenu`) for mid-size / compact desktop screens (< 760px)
+    [x] Standardized responsive dialogs (`showSarvAdaptiveModal`) with fluid margins and adaptive layouts across tablets and split screens
 9. [x] CRITICAL: The staff lines need to be unified sometimes with a special bracket like symbol (e.g. Guitar + Tab is usually represented this way). Also if a users wants to select out some of the staff lines, say Grand Staffs in an ensemble, and just connect them with a bracket, and maybe some of the other with some other type of bracket, he would have now way to achieve that, rn. This one would need some research. Maybe it's a good idea to get back to MOLA documents.
     [x] Add SystemConnector.subBracket (thin secondary bracket, no serifs)
     [x] Fix SVG & PDF emitters to traverse all GroupPlacements (previously only root connector was rendered)
@@ -39,3 +42,5 @@
     [x] Decoupled child dialogs (`AboutSarvDialog`, `CalibrationDialog`, `StaffConfigDialog`, `ExportDialog`) from instantiating their own outer `Dialog(...)` and eliminated unbounded width constraints (`BoxConstraints forces an infinite width`)
     [x] Made export action row, calibration nudge/readout, and export page-count stepper dynamically wrap and adapt to narrow compact screens without RenderFlex overflows
     [x] Added comprehensive regression test suite (`adaptive_modal_resize_test.dart`) validating dynamic window resizing across desktop and mobile widths
+16. [ ] Make sure that on mobile, the keyboard does not cover the text input it's supposed to open for.
+17. [ ] Research: is there a way to determince SCREEN DPI on the web, as well?
