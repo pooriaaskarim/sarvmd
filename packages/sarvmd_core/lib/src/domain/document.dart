@@ -88,7 +88,7 @@ class SarvDocument {
       );
     }
 
-    final version = json['version'] as int? ?? currentVersion;
+    final version = (json['version'] as num?)?.toInt() ?? currentVersion;
     if (version > currentVersion) {
       throw FormatException(
         'Unsupported .sarv version $version. Maximum supported version is $currentVersion. '
@@ -97,21 +97,21 @@ class SarvDocument {
     }
 
     // Support nested document structure if present
-    final docMap = json['document'] is Map<String, dynamic>
-        ? json['document'] as Map<String, dynamic>
+    final docMap = json['document'] is Map
+        ? (json['document'] as Map).cast<String, dynamic>()
         : json;
 
-    final metadataMap = json['metadata'] is Map<String, dynamic>
-        ? json['metadata'] as Map<String, dynamic>
-        : docMap['metadata'] as Map<String, dynamic>?;
+    final metadataMap = json['metadata'] is Map
+        ? (json['metadata'] as Map).cast<String, dynamic>()
+        : (docMap['metadata'] is Map ? (docMap['metadata'] as Map).cast<String, dynamic>() : null);
 
-    final configMap = docMap['config'] is Map<String, dynamic>
-        ? docMap['config'] as Map<String, dynamic>
-        : (json['config'] as Map<String, dynamic>? ?? const {});
+    final configMap = docMap['config'] is Map
+        ? (docMap['config'] as Map).cast<String, dynamic>()
+        : (json['config'] is Map ? (json['config'] as Map).cast<String, dynamic>() : const <String, dynamic>{});
 
-    final scoreMap = docMap['score'] is Map<String, dynamic>
-        ? docMap['score'] as Map<String, dynamic>
-        : (json['score'] as Map<String, dynamic>? ?? const {});
+    final scoreMap = docMap['score'] is Map
+        ? (docMap['score'] as Map).cast<String, dynamic>()
+        : (json['score'] is Map ? (json['score'] as Map).cast<String, dynamic>() : const <String, dynamic>{});
 
     final pageCount = (json['pageCount'] as num?)?.toInt() ??
         (docMap['pageCount'] as num?)?.toInt() ??
@@ -149,6 +149,15 @@ class SarvDocument {
     }
     return SarvDocument.fromJson(decoded);
   }
+
+  /// Checks whether two documents have identical musical and layout content,
+  /// ignoring volatile operational timestamps.
+  bool hasSameContent(SarvDocument other) =>
+      identical(this, other) ||
+      (score == other.score &&
+          config == other.config &&
+          pageCount == other.pageCount &&
+          metadata.hasSameContent(other.metadata));
 
   @override
   bool operator ==(Object other) =>

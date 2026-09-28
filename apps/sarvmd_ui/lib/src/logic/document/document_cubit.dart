@@ -17,34 +17,46 @@ final _log = AppLogger.score;
 class DocumentCubit extends Cubit<DocumentState> {
   final core.CommandHistory _history;
   final SarvFileService _fileService;
+  final bool _enablePersistence;
   Timer? _saveTimer;
 
   static const _prefDocKey = 'sarvmd_document';
   static const _prefLegacyKey = 'sarvmd_config';
+  static const _prefFilePathKey = 'sarvmd_file_path';
 
   DocumentCubit([
     core.CommandHistory? history,
     SarvFileService? fileService,
+    bool autoLoadFromPrefs = true,
   ]) : this._internal(
           history ??
               core.CommandHistory(
                 initialDocument: core.SarvDocument(
+                  score: const core.Score(title: ''),
                   config: core.StaffProfiles.treble.applyTo(const core.PageConfig()),
-                  metadata: const core.DocumentMetadata(title: 'Untitled Manuscript'),
+                  metadata: const core.DocumentMetadata(title: ''),
                 ),
               ),
           fileService ?? SarvFileService(),
+          autoLoadFromPrefs: autoLoadFromPrefs,
         );
 
-  DocumentCubit._internal(core.CommandHistory history, SarvFileService fileService)
-      : _history = history,
+  DocumentCubit._internal(
+    core.CommandHistory history,
+    SarvFileService fileService, {
+    bool autoLoadFromPrefs = true,
+  })  : _history = history,
         _fileService = fileService,
+        _enablePersistence = autoLoadFromPrefs,
         super(DocumentState(
           document: history.document,
           undoStack: history.undoStack,
           redoStack: history.redoStack,
+          lastSavedDocument: history.document,
         )) {
-    _loadFromPrefs();
+    if (autoLoadFromPrefs) {
+      _loadFromPrefs();
+    }
   }
 
   Future<void> _loadFromPrefs() async {
@@ -52,12 +64,19 @@ class DocumentCubit extends Cubit<DocumentState> {
 
     // 1. Try restoring full SarvDocument
     final docJsonStr = prefs.getString(_prefDocKey);
+    final savedFilePath = prefs.getString(_prefFilePathKey);
     if (docJsonStr != null) {
       try {
         final jsonMap = jsonDecode(docJsonStr) as Map<String, dynamic>;
         final loadedDoc = core.SarvDocument.fromJson(jsonMap);
         _history.setDocument(loadedDoc, clearHistory: true);
-        _syncState();
+        emit(DocumentState(
+          document: loadedDoc,
+          undoStack: const [],
+          redoStack: const [],
+          filePath: savedFilePath,
+          lastSavedDocument: loadedDoc,
+        ));
         _log.debug('SarvDocument restored from SharedPreferences');
         return;
       } catch (e, st) {
@@ -84,6 +103,7 @@ class DocumentCubit extends Cubit<DocumentState> {
   }
 
   void _save() {
+    if (!_enablePersistence) return;
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 500), () async {
       try {
@@ -112,8 +132,9 @@ class DocumentCubit extends Cubit<DocumentState> {
   void newDocument([core.StaffProfile? profile]) {
     final prof = profile ?? core.StaffProfiles.treble;
     final newDoc = core.SarvDocument(
+      score: const core.Score(title: ''),
       config: prof.applyTo(const core.PageConfig()),
-      metadata: const core.DocumentMetadata(title: 'Untitled Manuscript'),
+      metadata: const core.DocumentMetadata(title: ''),
     );
     _history.setDocument(newDoc, clearHistory: true);
     emit(DocumentState(
@@ -124,12 +145,18 @@ class DocumentCubit extends Cubit<DocumentState> {
       lastSavedDocument: newDoc,
     ));
     _save();
+    SharedPreferences.getInstance().then((p) => p.remove(_prefFilePathKey));
     _log.info('New document created with profile: ${prof.id}');
   }
 
   /// Sets the title of the score/document with undo/redo support.
   void setTitle(String title) {
-    execute(core.SetTitleCommand(title, state.score.title));
+    execute(core.SetTitleCommand(title, state.score.title, state.metadata.title));
+  }
+
+  /// Updates the metadata of the document with undo/redo support.
+  void updateMetadata(core.DocumentMetadata metadata) {
+    execute(core.SetMetadataCommand(metadata));
   }
 
   /// Loads an external [document] into the editor session.
@@ -143,6 +170,13 @@ class DocumentCubit extends Cubit<DocumentState> {
       lastSavedDocument: document,
     ));
     _save();
+    SharedPreferences.getInstance().then((p) {
+      if (filePath != null) {
+        p.setString(_prefFilePathKey, filePath);
+      } else {
+        p.remove(_prefFilePathKey);
+      }
+    });
     _log.info('Document loaded into editor session', context: {
       'filePath': filePath ?? 'unsaved',
       'title': document.metadata.title,
@@ -165,6 +199,8 @@ class DocumentCubit extends Cubit<DocumentState> {
         filePath: savedPath,
         lastSavedDocument: state.document,
       ));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefFilePathKey, savedPath);
       return true;
     }
     return false;
@@ -184,6 +220,8 @@ class DocumentCubit extends Cubit<DocumentState> {
         filePath: savedPath,
         lastSavedDocument: state.document,
       ));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefFilePathKey, savedPath);
       return true;
     }
     return false;
@@ -200,6 +238,14 @@ class DocumentCubit extends Cubit<DocumentState> {
       return true;
     }
     return false;
+  }
+
+  /// Directly loads a `.sarv` file from [path] into the editor session.
+  Future<bool> loadFromPath(String path, {SarvFileService? fileService}) async {
+    final service = fileService ?? _fileService;
+    final result = await service.loadFileFromPath(path);
+    loadDocument(result.document, filePath: result.filePath);
+    return true;
   }
 
   /// Marks the current state as clean / saved.

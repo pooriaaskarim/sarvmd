@@ -92,7 +92,11 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
     final newTitle = _titleController.text.trim();
     if (newTitle != widget.score.title && _documentCubit != null) {
       _documentCubit!.execute(
-            core.SetTitleCommand(newTitle, widget.score.title),
+            core.SetTitleCommand(
+              newTitle,
+              widget.score.title,
+              _documentCubit!.state.metadata.title,
+            ),
           );
     }
   }
@@ -261,14 +265,25 @@ class EditableScoreHeaderState extends State<EditableScoreHeader> {
                             ),
                           ),
                           if (isDirty) ...[
-                            const SizedBox(width: 4.0),
-                            Container(
-                              key: const ValueKey('score_header_dirty_dot'),
-                              width: 5.0,
-                              height: 5.0,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: cs.primary,
+                            const SizedBox(width: 5.0),
+                            Tooltip(
+                              message: l10n.unsavedChangesTitle,
+                              waitDuration: const Duration(milliseconds: 300),
+                              child: Container(
+                                key: const ValueKey('score_header_dirty_dot'),
+                                width: 7.0,
+                                height: 7.0,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: cs.primary,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: cs.primary.withValues(alpha: 0.6),
+                                      blurRadius: 4.0,
+                                      spreadRadius: 1.0,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],

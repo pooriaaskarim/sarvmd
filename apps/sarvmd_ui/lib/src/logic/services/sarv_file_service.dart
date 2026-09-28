@@ -6,8 +6,10 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../core/utils/app_logger.dart';
+import 'recent_documents_service.dart';
 import 'web_download/web_download.dart';
 
 final _log = AppLogger.export;
@@ -37,8 +39,22 @@ class SarvFileService {
   ///
   /// Returns `null` if the user cancels the picker dialog.
   /// Throws [FormatException] if the selected file is not a valid `.sarv` document.
+  /// Prompts the user to pick a `.sarv` file and deserializes it into a [core.SarvDocument].
+  ///
+  /// Returns `null` if the user cancels the picker dialog.
+  /// Throws [FormatException] if the selected file is not a valid `.sarv` document.
   Future<SarvFileLoadResult?> openSarvFile() async {
     _log.info('Opening file picker for .sarv document');
+
+    // On Web, use native File System Access or FileReader to avoid casting bugs
+    if (kIsWeb && _customPicker == null) {
+      final webResult = await openFileWeb();
+      if (webResult == null) {
+        _log.debug('Web file picking cancelled by user');
+        return null;
+      }
+      return _parseJsonDocument(webResult.content, fileName: webResult.fileName);
+    }
 
     final result = await _filePicker.pickFiles(
       type: FileType.custom,
@@ -59,12 +75,32 @@ class SarvFileService {
     String jsonString;
     if (platformFile.bytes != null) {
       jsonString = utf8.decode(platformFile.bytes!);
+    } else if (platformFile.readStream != null) {
+      final chunks = await platformFile.readStream!.toList();
+      final bytes = chunks.expand((c) => c).toList();
+      jsonString = utf8.decode(bytes);
     } else if (filePath != null && !kIsWeb) {
       final file = File(filePath);
       jsonString = await file.readAsString();
     } else {
       throw const FormatException('Unable to read selected file contents.');
     }
+
+    return _parseJsonDocument(jsonString, filePath: filePath, fileName: fileName);
+  }
+
+  /// Parses raw JSON text into a validated [SarvFileLoadResult].
+  SarvFileLoadResult _parseJsonDocument(
+    String rawJson, {
+    String? filePath,
+    required String fileName,
+  }) {
+    var jsonString = rawJson;
+    // Strip UTF-8 Byte Order Mark (BOM) if present
+    if (jsonString.startsWith('\uFEFF')) {
+      jsonString = jsonString.substring(1);
+    }
+    jsonString = jsonString.trim();
 
     dynamic decoded;
     try {
@@ -73,15 +109,20 @@ class SarvFileService {
       throw FormatException('File is not valid JSON: $e');
     }
 
-    if (decoded is! Map<String, dynamic>) {
+    if (decoded is! Map) {
       throw const FormatException('Expected JSON object as root of .sarv document.');
     }
 
-    if (decoded['format'] != 'sarv') {
+    final map = decoded.cast<String, dynamic>();
+
+    if (map['format'] != 'sarv') {
       throw const FormatException('File is not a valid SarvMD manuscript document (missing format: "sarv").');
     }
 
-    final document = core.SarvDocument.fromJson(decoded);
+    final document = core.SarvDocument.fromJson(map);
+    if (filePath != null && filePath.isNotEmpty && !kIsWeb) {
+      RecentDocumentsService.addRecentDocument(filePath);
+    }
     _log.info('Successfully loaded .sarv document', context: {
       'fileName': fileName,
       'filePath': filePath ?? 'web',
@@ -93,6 +134,16 @@ class SarvFileService {
       filePath: filePath,
       fileName: fileName,
     );
+  }
+
+  /// Loads and parses a `.sarv` file directly from the filesystem [path].
+  Future<SarvFileLoadResult> loadFileFromPath(String path) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Direct path reading is unsupported on web');
+    }
+    final file = File(path);
+    final jsonString = await file.readAsString();
+    return _parseJsonDocument(jsonString, filePath: path, fileName: p.basename(path));
   }
 
   /// Saves the given [document] to disk.
@@ -116,6 +167,7 @@ class SarvFileService {
       _log.info('Directly saving .sarv document to existing path', context: {'filePath': filePath});
       final file = File(filePath);
       await file.writeAsBytes(bytes);
+      RecentDocumentsService.addRecentDocument(filePath);
       return filePath;
     }
 
@@ -140,9 +192,9 @@ class SarvFileService {
 
     _log.info('Prompting saveAs for .sarv document', context: {'defaultFileName': sanitizedName});
 
-    if (kIsWeb) {
-      downloadFileWeb(sanitizedName, bytes, 'application/json');
-      return sanitizedName;
+    if (kIsWeb && _customPicker == null) {
+      final savedName = await saveFileWeb(sanitizedName, bytes);
+      return savedName;
     }
 
     final chosenPath = await _filePicker.saveFile(
@@ -161,12 +213,13 @@ class SarvFileService {
     final effectivePath = _normalizeExtension(chosenPath);
     final file = File(effectivePath);
     await file.writeAsBytes(bytes);
+    RecentDocumentsService.addRecentDocument(effectivePath);
     _log.info('Successfully saved .sarv document', context: {'filePath': effectivePath});
     return effectivePath;
   }
 
   static String _normalizeExtension(String name) {
-    if (name.trim().isEmpty) return 'Untitled.sarv';
+    if (name.trim().isEmpty) return 'Untitled Manuscript.sarv';
     if (!name.toLowerCase().endsWith('.sarv')) {
       return '$name.sarv';
     }

@@ -1025,4 +1025,52 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get fileOpenFailed =>
       'خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است.';
+
+  @override
+  String get menuOpenRecent => 'باز کردن موارد اخیر';
+
+  @override
+  String get menuClearRecent => 'پاک کردن موارد اخیر';
+
+  @override
+  String get menuNoRecentFiles => 'هیچ فایل اخیری وجود ندارد';
+
+  @override
+  String get menuDocumentProperties => 'ویژگی‌های سند…';
+
+  @override
+  String get documentPropertiesTitle => 'ویژگی‌های سند';
+
+  @override
+  String get metadataScoreTitle => 'عنوان';
+
+  @override
+  String get metadataSubtitle => 'زیرعنوان';
+
+  @override
+  String get metadataComposer => 'آهنگساز';
+
+  @override
+  String get metadataArranger => 'تنظیم‌کننده';
+
+  @override
+  String get metadataLyricist => 'ترانه‌سرا';
+
+  @override
+  String get metadataCopyright => 'کپی‌رایت / حق نشر';
+
+  @override
+  String get metadataCreatedAt => 'تاریخ ایجاد';
+
+  @override
+  String get metadataModifiedAt => 'آخرین ویرایش';
+
+  @override
+  String get metadataFilePath => 'محل فایل';
+
+  @override
+  String get metadataUnsaved => 'دست‌نویس ذخیره‌نشده';
+
+  @override
+  String get actionApply => 'اعمال';
 }

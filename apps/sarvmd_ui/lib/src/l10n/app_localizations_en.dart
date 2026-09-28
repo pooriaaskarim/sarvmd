@@ -1025,4 +1025,52 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fileOpenFailed =>
       'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.';
+
+  @override
+  String get menuOpenRecent => 'Open Recent';
+
+  @override
+  String get menuClearRecent => 'Clear Recent Files';
+
+  @override
+  String get menuNoRecentFiles => 'No Recent Files';
+
+  @override
+  String get menuDocumentProperties => 'Document Properties…';
+
+  @override
+  String get documentPropertiesTitle => 'Document Properties';
+
+  @override
+  String get metadataScoreTitle => 'Title';
+
+  @override
+  String get metadataSubtitle => 'Subtitle';
+
+  @override
+  String get metadataComposer => 'Composer';
+
+  @override
+  String get metadataArranger => 'Arranger';
+
+  @override
+  String get metadataLyricist => 'Lyricist';
+
+  @override
+  String get metadataCopyright => 'Copyright';
+
+  @override
+  String get metadataCreatedAt => 'Created';
+
+  @override
+  String get metadataModifiedAt => 'Modified';
+
+  @override
+  String get metadataFilePath => 'File Location';
+
+  @override
+  String get metadataUnsaved => 'Unsaved Manuscript';
+
+  @override
+  String get actionApply => 'Apply';
 }

@@ -139,6 +139,19 @@ class DocumentMetadata {
     return true;
   }
 
+  /// Checks whether two metadata instances share identical user-facing metadata,
+  /// ignoring volatile operational timestamps ([modifiedAt] and [createdAt]).
+  bool hasSameContent(DocumentMetadata other) =>
+      identical(this, other) ||
+      (title == other.title &&
+          subtitle == other.subtitle &&
+          composer == other.composer &&
+          arranger == other.arranger &&
+          lyricist == other.lyricist &&
+          copyright == other.copyright &&
+          profileId == other.profileId &&
+          _mapEquals(customProperties, other.customProperties));
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

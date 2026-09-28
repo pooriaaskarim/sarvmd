@@ -39,13 +39,16 @@ class DocumentState {
   /// The physical page configuration.
   core.PageConfig get config => document.config;
 
+  /// Total number of staves in the page layout.
+  int get staffCount => config.allStaves.length;
+
   /// Whether the document has unsaved modifications.
   ///
   /// If [lastSavedDocument] is set, compares [document] against it.
   /// If [lastSavedDocument] is null, considers modified if the user has executed any commands.
   bool get isDirty {
     if (lastSavedDocument != null) {
-      return document != lastSavedDocument;
+      return !document.hasSameContent(lastSavedDocument!);
     }
     return undoStack.isNotEmpty;
   }
@@ -61,7 +64,7 @@ class DocumentState {
     if (document.metadata.title.trim().isNotEmpty) {
       return document.metadata.title.trim();
     }
-    return 'Untitled';
+    return 'Untitled Manuscript';
   }
 
   /// Returns a modified copy of this state with updated properties.

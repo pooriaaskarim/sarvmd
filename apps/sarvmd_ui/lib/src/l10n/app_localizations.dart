@@ -1999,6 +1999,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.'**
   String get fileOpenFailed;
+
+  /// No description provided for @menuOpenRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Recent'**
+  String get menuOpenRecent;
+
+  /// No description provided for @menuClearRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Recent Files'**
+  String get menuClearRecent;
+
+  /// No description provided for @menuNoRecentFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No Recent Files'**
+  String get menuNoRecentFiles;
+
+  /// No description provided for @menuDocumentProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Properties…'**
+  String get menuDocumentProperties;
+
+  /// No description provided for @documentPropertiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Properties'**
+  String get documentPropertiesTitle;
+
+  /// No description provided for @metadataScoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get metadataScoreTitle;
+
+  /// No description provided for @metadataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitle'**
+  String get metadataSubtitle;
+
+  /// No description provided for @metadataComposer.
+  ///
+  /// In en, this message translates to:
+  /// **'Composer'**
+  String get metadataComposer;
+
+  /// No description provided for @metadataArranger.
+  ///
+  /// In en, this message translates to:
+  /// **'Arranger'**
+  String get metadataArranger;
+
+  /// No description provided for @metadataLyricist.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyricist'**
+  String get metadataLyricist;
+
+  /// No description provided for @metadataCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright'**
+  String get metadataCopyright;
+
+  /// No description provided for @metadataCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get metadataCreatedAt;
+
+  /// No description provided for @metadataModifiedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get metadataModifiedAt;
+
+  /// No description provided for @metadataFilePath.
+  ///
+  /// In en, this message translates to:
+  /// **'File Location'**
+  String get metadataFilePath;
+
+  /// No description provided for @metadataUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved Manuscript'**
+  String get metadataUnsaved;
+
+  /// No description provided for @actionApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get actionApply;
 }
 
 class _AppLocalizationsDelegate

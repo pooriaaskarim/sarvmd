@@ -451,5 +451,21 @@
   "actionCancel": "Cancel",
   "fileSavedSuccess": "Document saved successfully.",
   "fileSaveFailed": "Failed to save document.",
-  "fileOpenFailed": "Failed to open document. The file may be corrupt or not a valid .sarv manuscript."
+  "fileOpenFailed": "Failed to open document. The file may be corrupt or not a valid .sarv manuscript.",
+  "menuOpenRecent": "Open Recent",
+  "menuClearRecent": "Clear Recent Files",
+  "menuNoRecentFiles": "No Recent Files",
+  "menuDocumentProperties": "Document Properties…",
+  "documentPropertiesTitle": "Document Properties",
+  "metadataScoreTitle": "Title",
+  "metadataSubtitle": "Subtitle",
+  "metadataComposer": "Composer",
+  "metadataArranger": "Arranger",
+  "metadataLyricist": "Lyricist",
+  "metadataCopyright": "Copyright",
+  "metadataCreatedAt": "Created",
+  "metadataModifiedAt": "Modified",
+  "metadataFilePath": "File Location",
+  "metadataUnsaved": "Unsaved Manuscript",
+  "actionApply": "Apply"
 }

@@ -10,19 +10,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'src/l10n/app_localizations.dart';
 import 'src/core/utils/app_logger.dart';
-import 'src/logic/document/document_cubit.dart';
+import 'src/logic/workspace/workspace_cubit.dart';
 import 'src/logic/view/view_state.dart';
 import 'src/logic/view/view_cubit.dart';
 import 'src/logic/locale/locale_cubit.dart';
 import 'src/logic/locale/locale_state.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/layout_policy.dart';
+import 'src/logic/services/recent_documents_service.dart';
 import 'src/presentation/widgets/specialized/app_entry_point.dart';
 import 'src/presentation/widgets/common/language_transition_overlay.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   // 1. Initialize logging before anything else.
   AppLogger.init(isDev: kDebugMode);
+  unawaited(RecentDocumentsService.init());
 
   // 2. Record session start — the anchor point for every log file.
   AppLogger.get('sarvmd').info('SarvMD starting', context: {
@@ -71,7 +75,7 @@ void main() {
       MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => LocaleCubit()),
-          BlocProvider(create: (_) => DocumentCubit()),
+          BlocProvider(create: (_) => WorkspaceCubit()),
           BlocProvider(create: (_) => ViewCubit()),
         ],
         child: const SarvApp(),

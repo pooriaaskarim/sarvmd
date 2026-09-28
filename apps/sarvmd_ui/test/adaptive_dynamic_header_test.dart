@@ -317,7 +317,7 @@ void main() {
       expect(find.byKey(const ValueKey('top_bar_pinned_bar')), findsOneWidget);
       expect(find.byIcon(Icons.menu), findsOneWidget);
       expect(find.byIcon(Icons.push_pin), findsOneWidget);
-      expect(find.byIcon(Icons.ios_share), findsOneWidget);
+      expect(find.byIcon(Icons.folder_open_outlined), findsOneWidget);
       expect(find.byKey(const ValueKey('top_bar_title_edit_done_button_pinned')), findsNothing);
 
       // Tap title to begin editing
@@ -331,7 +331,7 @@ void main() {
       // Flanking controls must be hidden to give maximum room to title field
       expect(find.byIcon(Icons.menu), findsNothing);
       expect(find.byIcon(Icons.push_pin), findsNothing);
-      expect(find.byIcon(Icons.ios_share), findsNothing);
+      expect(find.byIcon(Icons.folder_open_outlined), findsNothing);
 
       // Done checkmark button must be displayed
       expect(find.byKey(const ValueKey('top_bar_title_edit_done_button_pinned')), findsOneWidget);
@@ -348,7 +348,7 @@ void main() {
       // Flanking controls must smoothly return
       expect(find.byIcon(Icons.menu), findsOneWidget);
       expect(find.byIcon(Icons.push_pin), findsOneWidget);
-      expect(find.byIcon(Icons.ios_share), findsOneWidget);
+      expect(find.byIcon(Icons.folder_open_outlined), findsOneWidget);
       expect(find.byKey(const ValueKey('top_bar_title_edit_done_button_pinned')), findsNothing);
 
       // Title updated
@@ -385,7 +385,7 @@ void main() {
       expect(find.byIcon(Icons.menu), findsNothing);
       expect(find.byIcon(Icons.push_pin_outlined), findsNothing);
       expect(find.byIcon(Icons.expand_less), findsNothing);
-      expect(find.byIcon(Icons.ios_share), findsNothing);
+      expect(find.byIcon(Icons.folder_open_outlined), findsNothing);
       expect(find.byKey(const ValueKey('top_bar_title_edit_done_button')), findsOneWidget);
 
       // Tap Done
@@ -396,7 +396,7 @@ void main() {
       expect(find.byIcon(Icons.menu), findsOneWidget);
       expect(find.byIcon(Icons.push_pin_outlined), findsOneWidget);
       expect(find.byIcon(Icons.expand_less), findsOneWidget);
-      expect(find.byIcon(Icons.ios_share), findsOneWidget);
+      expect(find.byIcon(Icons.folder_open_outlined), findsOneWidget);
       expect(find.byKey(const ValueKey('top_bar_title_edit_done_button')), findsNothing);
 
       // Wait past idle timer to complete clean tear down

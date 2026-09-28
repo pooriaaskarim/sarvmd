@@ -184,5 +184,45 @@ void main() {
       expect(find.text('Save As…'), findsOneWidget);
       expect(find.text('EXPORT'), findsOneWidget);
     });
+
+    testWidgets('triggers UnsavedChangesDialog when New is clicked with unsaved edits', (tester) async {
+      await tester.pumpWidget(
+        _buildTestApp(
+          cubit: cubit,
+          child: BlocBuilder<DocumentCubit, DocumentState>(
+            builder: (context, state) => TopBarFileMenu(
+              documentState: state,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Make dirty
+      cubit.setTitle('Modified Piece');
+      await tester.pumpAndSettle();
+
+      // Open menu
+      await tester.tap(find.text('File'));
+      await tester.pumpAndSettle();
+
+      // Tap New
+      await tester.tap(find.text('New'));
+      await tester.pumpAndSettle();
+
+      // Verify dialog is shown
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.text("Don't Save"), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+
+      // Tap Cancel -> remains dirty
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Dialog), findsNothing);
+      expect(cubit.state.isDirty, isTrue);
+      expect(cubit.state.score.title, equals('Modified Piece'));
+    });
   });
 }

@@ -23,8 +23,10 @@ class NoOpCommand extends DocumentCommand {
 class SetTitleCommand extends DocumentCommand {
   final String newTitle;
   final String _previousTitle;
+  final String _previousMetadataTitle;
 
-  SetTitleCommand(this.newTitle, [this._previousTitle = '']);
+  SetTitleCommand(this.newTitle, [this._previousTitle = '', String? previousMetadataTitle])
+      : _previousMetadataTitle = previousMetadataTitle ?? _previousTitle;
 
   @override
   String get label => 'Set Title';
@@ -42,8 +44,7 @@ class SetTitleCommand extends DocumentCommand {
   SarvDocument undo(SarvDocument current) => current.copyWith(
         score: current.score.copyWith(title: _previousTitle),
         metadata: current.metadata.copyWith(
-          title: _previousTitle,
-          modifiedAt: DateTime.now(),
+          title: _previousMetadataTitle,
         ),
       );
 
@@ -53,7 +54,7 @@ class SetTitleCommand extends DocumentCommand {
   @override
   DocumentCommand coalesceWith(DocumentCommand other) {
     final next = other as SetTitleCommand;
-    return SetTitleCommand(next.newTitle, _previousTitle);
+    return SetTitleCommand(next.newTitle, _previousTitle, _previousMetadataTitle);
   }
 }
 

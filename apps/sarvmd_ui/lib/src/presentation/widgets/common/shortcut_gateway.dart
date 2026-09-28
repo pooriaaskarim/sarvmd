@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../logic/document/document_cubit.dart';
+import '../../../logic/workspace/workspace_cubit.dart';
+import '../dialogs/unsaved_changes_dialog.dart';
 import '../layout/top_bar/top_bar_menu_handler.dart';
 
 class UndoIntent extends Intent {
@@ -34,6 +36,26 @@ class SaveAsDocumentIntent extends Intent {
 
 class ExportIntent extends Intent {
   const ExportIntent();
+}
+
+class DocumentPropertiesIntent extends Intent {
+  const DocumentPropertiesIntent();
+}
+
+class NewTabIntent extends Intent {
+  const NewTabIntent();
+}
+
+class CloseTabIntent extends Intent {
+  const CloseTabIntent();
+}
+
+class NextTabIntent extends Intent {
+  const NextTabIntent();
+}
+
+class PreviousTabIntent extends Intent {
+  const PreviousTabIntent();
 }
 
 /// Global keyboard shortcut interceptor gateway for SarvMD.
@@ -75,6 +97,18 @@ class SarvShortcutGateway extends StatelessWidget {
         SingleActivator(LogicalKeyboardKey.keyS, meta: true, shift: true): SaveAsDocumentIntent(),
         SingleActivator(LogicalKeyboardKey.keyE, control: true): ExportIntent(),
         SingleActivator(LogicalKeyboardKey.keyE, meta: true): ExportIntent(),
+        SingleActivator(LogicalKeyboardKey.keyI, control: true): DocumentPropertiesIntent(),
+        SingleActivator(LogicalKeyboardKey.keyI, meta: true): DocumentPropertiesIntent(),
+
+        // Tab operations
+        SingleActivator(LogicalKeyboardKey.keyT, control: true): NewTabIntent(),
+        SingleActivator(LogicalKeyboardKey.keyT, meta: true): NewTabIntent(),
+        SingleActivator(LogicalKeyboardKey.keyW, control: true): CloseTabIntent(),
+        SingleActivator(LogicalKeyboardKey.keyW, meta: true): CloseTabIntent(),
+        SingleActivator(LogicalKeyboardKey.tab, control: true): NextTabIntent(),
+        SingleActivator(LogicalKeyboardKey.pageDown, control: true): NextTabIntent(),
+        SingleActivator(LogicalKeyboardKey.tab, control: true, shift: true): PreviousTabIntent(),
+        SingleActivator(LogicalKeyboardKey.pageUp, control: true): PreviousTabIntent(),
       },
 
       child: Actions(
@@ -129,6 +163,62 @@ class SarvShortcutGateway extends StatelessWidget {
             onInvoke: (intent) {
               final cubit = context.read<DocumentCubit>();
               handleTopBarMenuSelection(context, 'export', cubit.state);
+              return null;
+            },
+          ),
+          DocumentPropertiesIntent: CallbackAction<DocumentPropertiesIntent>(
+            onInvoke: (intent) {
+              final cubit = context.read<DocumentCubit>();
+              handleTopBarMenuSelection(context, 'document_properties', cubit.state);
+              return null;
+            },
+          ),
+          NewTabIntent: CallbackAction<NewTabIntent>(
+            onInvoke: (intent) {
+              final workspace = context.read<WorkspaceCubit?>();
+              if (workspace != null) {
+                workspace.openNewTab();
+              } else {
+                final cubit = context.read<DocumentCubit>();
+                handleTopBarMenuSelection(context, 'new_document', cubit.state);
+              }
+              return null;
+            },
+          ),
+          CloseTabIntent: CallbackAction<CloseTabIntent>(
+            onInvoke: (intent) {
+              final workspace = context.read<WorkspaceCubit?>();
+              if (workspace != null) {
+                workspace.closeTab(
+                  workspace.state.activeIndex,
+                  unsavedGuard: (session) async {
+                    if (!session.isDirty) return true;
+                    final action = await showUnsavedChangesDialog(
+                      context,
+                      documentName: session.title,
+                    );
+                    if (action == UnsavedChangesAction.save) {
+                      return await session.cubit.save();
+                    }
+                    if (action == UnsavedChangesAction.discard) {
+                      return true;
+                    }
+                    return false;
+                  },
+                );
+              }
+              return null;
+            },
+          ),
+          NextTabIntent: CallbackAction<NextTabIntent>(
+            onInvoke: (intent) {
+              context.read<WorkspaceCubit?>()?.nextTab();
+              return null;
+            },
+          ),
+          PreviousTabIntent: CallbackAction<PreviousTabIntent>(
+            onInvoke: (intent) {
+              context.read<WorkspaceCubit?>()?.previousTab();
               return null;
             },
           ),

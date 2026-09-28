@@ -5,15 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+import '../../../../core/utils/app_logger.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../logic/document/document_cubit.dart';
 import '../../../../logic/document/document_state.dart';
 import '../../../../logic/locale/locale_cubit.dart';
+import '../../../../logic/services/sarv_file_service.dart';
 import '../../../../logic/view/view_cubit.dart';
+import '../../../../logic/workspace/workspace_cubit.dart';
 import '../../dialogs/about_dialog.dart';
+import '../../dialogs/document_properties_dialog.dart';
 import '../../dialogs/export_dialog.dart';
 import '../../dialogs/staff_config_dialog.dart';
 import '../../dialogs/unsaved_changes_dialog.dart';
+
+final _log = AppLogger.get('sarvmd.ui.menu');
 
 /// Central dispatcher for all string-keyed menu actions across the top bar.
 ///
@@ -69,10 +75,20 @@ void handleTopBarMenuSelection(
 
     // ── File / Export ───────────────────────────────────────────────────────
     case 'new_document':
-      _handleNewDocument(context, documentCubit, documentState);
+      final workspace = context.read<WorkspaceCubit?>();
+      if (workspace != null) {
+        workspace.openNewTab();
+      } else {
+        _handleNewDocument(context, documentCubit, documentState);
+      }
       break;
     case 'open_document':
-      _handleOpenDocument(context, documentCubit, documentState);
+      final workspace = context.read<WorkspaceCubit?>();
+      if (workspace != null) {
+        _handleWorkspaceOpenDocument(context, workspace);
+      } else {
+        _handleOpenDocument(context, documentCubit, documentState);
+      }
       break;
     case 'save_document':
       _handleSaveDocument(context, documentCubit, documentState);
@@ -82,6 +98,9 @@ void handleTopBarMenuSelection(
       break;
     case 'export':
       showExportDialog(context);
+      break;
+    case 'document_properties':
+      showDocumentPropertiesDialog(context);
       break;
 
     // ── View / Appearance ───────────────────────────────────────────────────
@@ -158,8 +177,9 @@ void handleTopBarMenuSelection(
 }
 
 Future<void> _handleNewDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
-  if (state.isDirty) {
-    final action = await showUnsavedChangesDialog(context, documentName: state.displayName);
+  final liveState = cubit.state;
+  if (liveState.isDirty) {
+    final action = await showUnsavedChangesDialog(context, documentName: liveState.displayName);
     if (action == UnsavedChangesAction.cancel) return;
     if (action == UnsavedChangesAction.save) {
       final saved = await cubit.save();
@@ -170,8 +190,9 @@ Future<void> _handleNewDocument(BuildContext context, DocumentCubit cubit, Docum
 }
 
 Future<void> _handleOpenDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
-  if (state.isDirty) {
-    final action = await showUnsavedChangesDialog(context, documentName: state.displayName);
+  final liveState = cubit.state;
+  if (liveState.isDirty) {
+    final action = await showUnsavedChangesDialog(context, documentName: liveState.displayName);
     if (action == UnsavedChangesAction.cancel) return;
     if (action == UnsavedChangesAction.save) {
       final saved = await cubit.save();
@@ -180,7 +201,8 @@ Future<void> _handleOpenDocument(BuildContext context, DocumentCubit cubit, Docu
   }
   try {
     await cubit.openFile();
-  } catch (e) {
+  } catch (e, st) {
+    _log.error('Failed to open document', error: e, stackTrace: st);
     if (context.mounted) {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -221,6 +243,87 @@ Future<void> _handleSaveAsDocument(BuildContext context, DocumentCubit cubit, Do
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.fileSaveFailed)),
+      );
+    }
+  }
+}
+
+Future<void> _handleWorkspaceOpenDocument(BuildContext context, WorkspaceCubit workspace) async {
+  try {
+    final result = await SarvFileService().openSarvFile();
+    if (result != null) {
+      await workspace.openDocumentTab(
+        result.document,
+        filePath: result.filePath,
+        title: result.fileName,
+      );
+    }
+  } catch (e, st) {
+    _log.error('Failed to open document in workspace', error: e, stackTrace: st);
+    if (context.mounted) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileOpenFailed)),
+      );
+    }
+  }
+}
+
+/// Handles opening a recent document file from its [filePath].
+Future<void> handleOpenRecentDocument(
+  BuildContext context,
+  String filePath,
+) async {
+  final l10n = AppLocalizations.of(context)!;
+  final fileService = SarvFileService();
+
+  try {
+    final workspace = context.read<WorkspaceCubit?>();
+    if (workspace != null) {
+      // If already open in an existing session, switch to that tab
+      final existingIndex = workspace.state.sessions.indexWhere(
+        (s) => s.filePath == filePath,
+      );
+      if (existingIndex != -1) {
+        workspace.switchTab(existingIndex);
+        return;
+      }
+
+      final loadResult = await fileService.loadFileFromPath(filePath);
+      await workspace.openDocumentTab(
+        loadResult.document,
+        filePath: loadResult.filePath,
+        title: loadResult.fileName,
+      );
+    } else {
+      final documentCubit = context.read<DocumentCubit>();
+      final documentState = documentCubit.state;
+      if (documentState.isDirty) {
+        final action = await showUnsavedChangesDialog(
+          context,
+          documentName: documentState.displayName,
+        );
+        if (action == UnsavedChangesAction.cancel) return;
+        if (action == UnsavedChangesAction.save) {
+          final saved = await documentCubit.save();
+          if (!saved) return;
+        }
+      }
+      final loadResult = await fileService.loadFileFromPath(filePath);
+      documentCubit.loadDocument(
+        loadResult.document,
+        filePath: loadResult.filePath,
+      );
+    }
+  } catch (e, st) {
+    _log.error('Failed to open recent document', error: e, stackTrace: st);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.fileOpenFailed),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }

@@ -324,5 +324,21 @@
   "actionCancel": "انصراف",
   "fileSavedSuccess": "سند با موفقیت ذخیره شد.",
   "fileSaveFailed": "خطا در ذخیره سند.",
-  "fileOpenFailed": "خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است."
+  "fileOpenFailed": "خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است.",
+  "menuOpenRecent": "باز کردن موارد اخیر",
+  "menuClearRecent": "پاک کردن موارد اخیر",
+  "menuNoRecentFiles": "هیچ فایل اخیری وجود ندارد",
+  "menuDocumentProperties": "ویژگی‌های سند…",
+  "documentPropertiesTitle": "ویژگی‌های سند",
+  "metadataScoreTitle": "عنوان",
+  "metadataSubtitle": "زیرعنوان",
+  "metadataComposer": "آهنگساز",
+  "metadataArranger": "تنظیم‌کننده",
+  "metadataLyricist": "ترانه‌سرا",
+  "metadataCopyright": "کپی‌رایت / حق نشر",
+  "metadataCreatedAt": "تاریخ ایجاد",
+  "metadataModifiedAt": "آخرین ویرایش",
+  "metadataFilePath": "محل فایل",
+  "metadataUnsaved": "دست‌نویس ذخیره‌نشده",
+  "actionApply": "اعمال"
 }
