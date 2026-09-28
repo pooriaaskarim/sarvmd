@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../core/utils/app_logger.dart';
@@ -39,10 +40,6 @@ class SarvFileService {
   ///
   /// Returns `null` if the user cancels the picker dialog.
   /// Throws [FormatException] if the selected file is not a valid `.sarv` document.
-  /// Prompts the user to pick a `.sarv` file and deserializes it into a [core.SarvDocument].
-  ///
-  /// Returns `null` if the user cancels the picker dialog.
-  /// Throws [FormatException] if the selected file is not a valid `.sarv` document.
   Future<SarvFileLoadResult?> openSarvFile() async {
     _log.info('Opening file picker for .sarv document');
 
@@ -56,12 +53,29 @@ class SarvFileService {
       return _parseJsonDocument(webResult.content, fileName: webResult.fileName);
     }
 
-    final result = await _filePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['sarv'],
-      allowMultiple: false,
-      withData: true,
-    );
+    final bool isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    FilePickerResult? result;
+
+    try {
+      result = await _filePicker.pickFiles(
+        type: isMobile ? FileType.any : FileType.custom,
+        allowedExtensions: isMobile ? null : const ['sarv'],
+        allowMultiple: false,
+        withData: true,
+      );
+    } on PlatformException catch (e) {
+      // Android MimeTypeMap fails for unregistered custom extensions like .sarv.
+      // Gracefully fall back to FileType.any if the platform rejects custom extension filter.
+      _log.warning(
+        'Platform file picker rejected custom extension filter, falling back to FileType.any',
+        error: e,
+      );
+      result = await _filePicker.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+        withData: true,
+      );
+    }
 
     if (result == null || result.files.isEmpty) {
       _log.debug('File picking cancelled by user');
@@ -197,13 +211,29 @@ class SarvFileService {
       return savedName;
     }
 
-    final chosenPath = await _filePicker.saveFile(
-      dialogTitle: 'Save Manuscript Document',
-      fileName: sanitizedName,
-      type: FileType.custom,
-      allowedExtensions: const ['sarv'],
-      bytes: bytes,
-    );
+    final bool isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    String? chosenPath;
+
+    try {
+      chosenPath = await _filePicker.saveFile(
+        dialogTitle: 'Save Manuscript Document',
+        fileName: sanitizedName,
+        type: isMobile ? FileType.any : FileType.custom,
+        allowedExtensions: isMobile ? null : const ['sarv'],
+        bytes: bytes,
+      );
+    } on PlatformException catch (e) {
+      _log.warning(
+        'Platform save dialog rejected custom extension filter, falling back to FileType.any',
+        error: e,
+      );
+      chosenPath = await _filePicker.saveFile(
+        dialogTitle: 'Save Manuscript Document',
+        fileName: sanitizedName,
+        type: FileType.any,
+        bytes: bytes,
+      );
+    }
 
     if (chosenPath == null) {
       _log.debug('Save As cancelled by user');
@@ -211,8 +241,12 @@ class SarvFileService {
     }
 
     final effectivePath = _normalizeExtension(chosenPath);
-    final file = File(effectivePath);
-    await file.writeAsBytes(bytes);
+    try {
+      final file = File(effectivePath);
+      await file.writeAsBytes(bytes);
+    } catch (e) {
+      _log.warning('Could not write directly to effectivePath (may be managed by OS/SAF)', error: e);
+    }
     RecentDocumentsService.addRecentDocument(effectivePath);
     _log.info('Successfully saved .sarv document', context: {'filePath': effectivePath});
     return effectivePath;

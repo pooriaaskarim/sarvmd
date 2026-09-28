@@ -73,6 +73,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `WorkspaceCubit.openDocumentTab` to mount parsed documents into tabs directly without attempting unsupported direct filesystem reads on Web.
 - **Recent Documents Menu Activation & Deactivated Ancestor Error (`TopBarFileMenu`)**:
   - Fixed a crash (`Looking up a deactivated widget's ancestor is unsafe`) when opening a document from the Open Recent submenu caused by `BuildContext` shadowing inside `RecentDocumentsService`'s `ValueListenableBuilder`.
+- **Android File Picker Extension Filter & Storage Resilience (`SarvFileService`)**:
+  - Resolved `PlatformException(FilePicker, Unsupported filter...)` on Android caused by Android OS `MimeTypeMap` failing to resolve unregistered custom `.sarv` file extensions.
+  - Configured `FileType.any` on Android and mobile platforms, paired with graceful `PlatformException` recovery and strict JSON/schema content validation.
+  - Hardened `saveAsSarvFile` against Storage Access Framework (SAF) direct file write exceptions.
   - Re-routed `handleOpenRecentDocument` to bind to the persistent top bar widget's `BuildContext` instead of the transient menu popup overlay element tree that is deactivated upon item tap.
   - Hardened cubit resolution in `top_bar_menu_handler.dart` by resolving `WorkspaceCubit` and `DocumentCubit` synchronously before asynchronous suspension points, and guarded UI dialog and snackbar feedback with `context.mounted`.
 

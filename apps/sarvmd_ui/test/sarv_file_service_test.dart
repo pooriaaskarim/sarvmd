@@ -3,9 +3,9 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:sarvmd_ui/src/logic/services/sarv_file_service.dart';
@@ -16,6 +16,10 @@ class _FakeFilePicker extends FilePicker {
 
   String? capturedSaveFileName;
   Uint8List? capturedSaveBytes;
+  FileType? capturedPickType;
+  List<String>? capturedAllowedExtensions;
+  FileType? capturedSaveType;
+  bool throwUnsupportedFilterOnCustom = false;
 
   @override
   Future<FilePickerResult?> pickFiles({
@@ -32,6 +36,14 @@ class _FakeFilePicker extends FilePicker {
     bool lockParentWindow = false,
     bool readSequential = false,
   }) async {
+    capturedPickType = type;
+    capturedAllowedExtensions = allowedExtensions;
+    if (throwUnsupportedFilterOnCustom && type == FileType.custom) {
+      throw PlatformException(
+        code: 'FilePicker',
+        message: 'Unsupported filter. Make sure that you are only using the extension without the dot...',
+      );
+    }
     return pickResult;
   }
 
@@ -47,6 +59,13 @@ class _FakeFilePicker extends FilePicker {
   }) async {
     capturedSaveFileName = fileName;
     capturedSaveBytes = bytes;
+    capturedSaveType = type;
+    if (throwUnsupportedFilterOnCustom && type == FileType.custom) {
+      throw PlatformException(
+        code: 'FilePicker',
+        message: 'Unsupported filter. Make sure that you are only using the extension without the dot...',
+      );
+    }
     return saveResult;
   }
 
@@ -212,5 +231,49 @@ void main() {
 
       expect(savedPath, isNull);
     });
+
+    test('openSarvFile falls back to FileType.any when platform throws filter PlatformException', () async {
+      const sampleDoc = core.SarvDocument(
+        metadata: core.DocumentMetadata(title: 'Fallback Score'),
+      );
+      final docJson = jsonEncode(sampleDoc.toJson());
+      final bytes = Uint8List.fromList(utf8.encode(docJson));
+
+      fakePicker.throwUnsupportedFilterOnCustom = true;
+      fakePicker.pickResult = FilePickerResult([
+        PlatformFile(
+          name: 'fallback_score.sarv',
+          size: bytes.length,
+          bytes: bytes,
+        ),
+      ]);
+
+      final result = await service.openSarvFile();
+      expect(result, isNotNull);
+      expect(result!.document.metadata.title, equals('Fallback Score'));
+      expect(fakePicker.capturedPickType, equals(FileType.any));
+      expect(fakePicker.capturedAllowedExtensions, isNull);
+    });
+
+    test('saveAsSarvFile falls back to FileType.any when platform throws filter PlatformException', () async {
+      final targetPath = '${tempDir.path}/fallback_save.sarv';
+      fakePicker.throwUnsupportedFilterOnCustom = true;
+      fakePicker.saveResult = targetPath;
+
+      const doc = core.SarvDocument(
+        metadata: core.DocumentMetadata(title: 'Fallback Save'),
+      );
+
+      final savedPath = await service.saveAsSarvFile(
+        document: doc,
+        defaultFileName: 'fallback_save',
+      );
+
+      expect(savedPath, equals(targetPath));
+      expect(fakePicker.capturedSaveType, equals(FileType.any));
+      final savedFile = File(targetPath);
+      expect(savedFile.existsSync(), isTrue);
+    });
   });
 }
+
