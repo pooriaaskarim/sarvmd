@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -230,6 +231,69 @@ void main() {
       expect(workspace.state.tabCount, equals(2));
       expect(workspace.state.activeSession.filePath, equals(file.path));
       expect(workspace.state.activeSession.document.metadata.title, equals('Novel Piece'));
+    });
+
+    testWidgets('tapping recent document in TopBarFileMenu opens it without deactivation error', (tester) async {
+      final initialCubit = DocumentCubit(null, null, false);
+      final workspace = WorkspaceCubit(initialCubit: initialCubit);
+      addTearDown(() async => await workspace.close());
+
+      initialCubit.setTitle('First Score');
+
+      final file = File('${tempDir.path}/clicked_score.sarv');
+      const doc = core.SarvDocument(
+        score: core.Score(),
+        config: core.PageConfig(),
+        metadata: core.DocumentMetadata(title: 'Clicked Score'),
+      );
+      file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(doc.toJson()));
+
+      await RecentDocumentsService.addRecentDocument(file.path);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en')],
+          home: BlocProvider<WorkspaceCubit>.value(
+            value: workspace,
+            child: Scaffold(
+              body: TopBarFileMenu(documentState: initialCubit.state),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open File menu
+      await tester.tap(find.text('File'));
+      await tester.pumpAndSettle();
+
+      // Open Recent submenu
+      await tester.tap(find.text('Open Recent'));
+      await tester.pumpAndSettle();
+
+      // Find and trigger the recent file entry's onPressed callback
+      final buttonFinder = find.widgetWithText(MenuItemButton, 'clicked_score.sarv');
+      expect(buttonFinder, findsOneWidget);
+      final button = tester.widget<MenuItemButton>(buttonFinder);
+      expect(button.onPressed, isNotNull);
+
+      await tester.runAsync(() async {
+        button.onPressed!();
+        for (int i = 0; i < 20 && workspace.state.tabCount == 1; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+      });
+      await tester.pumpAndSettle();
+
+      expect(workspace.state.tabCount, equals(2));
+      expect(workspace.state.activeSession.filePath, equals(file.path));
+      expect(workspace.state.activeSession.document.metadata.title, equals('Clicked Score'));
     });
   });
 }

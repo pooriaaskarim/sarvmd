@@ -274,11 +274,11 @@ Future<void> handleOpenRecentDocument(
   BuildContext context,
   String filePath,
 ) async {
-  final l10n = AppLocalizations.of(context)!;
   final fileService = SarvFileService();
+  final workspace = context.read<WorkspaceCubit?>();
+  final documentCubit = workspace == null ? context.read<DocumentCubit>() : null;
 
   try {
-    final workspace = context.read<WorkspaceCubit?>();
     if (workspace != null) {
       // If already open in an existing session, switch to that tab
       final existingIndex = workspace.state.sessions.indexWhere(
@@ -295,10 +295,9 @@ Future<void> handleOpenRecentDocument(
         filePath: loadResult.filePath,
         title: loadResult.fileName,
       );
-    } else {
-      final documentCubit = context.read<DocumentCubit>();
+    } else if (documentCubit != null) {
       final documentState = documentCubit.state;
-      if (documentState.isDirty) {
+      if (documentState.isDirty && context.mounted) {
         final action = await showUnsavedChangesDialog(
           context,
           documentName: documentState.displayName,
@@ -318,13 +317,16 @@ Future<void> handleOpenRecentDocument(
   } catch (e, st) {
     _log.error('Failed to open recent document', error: e, stackTrace: st);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.fileOpenFailed),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      final l10n = AppLocalizations.of(context);
+      if (l10n != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.fileOpenFailed),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }

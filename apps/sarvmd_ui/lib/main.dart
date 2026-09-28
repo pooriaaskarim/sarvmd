@@ -22,65 +22,67 @@ import 'src/presentation/widgets/specialized/app_entry_point.dart';
 import 'src/presentation/widgets/common/language_transition_overlay.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 1. Initialize logging before anything else.
-  AppLogger.init(isDev: kDebugMode);
-  unawaited(RecentDocumentsService.init());
-
-  // 2. Record session start — the anchor point for every log file.
-  AppLogger.get('sarvmd').info('SarvMD starting', context: {
-    'mode': kDebugMode ? 'debug' : 'release',
-    'platform': defaultTargetPlatform.name,
-    'isWeb': kIsWeb,
-  });
-
-  // 3. Capture Flutter framework errors (layout overflows, widget errors, etc.).
-  FlutterError.onError = (final details) {
-    final errorStr = details.exception.toString();
-    if (errorStr.contains('_handledContextLostEvent')) {
-      AppLogger.get('sarvmd.web').warning(
-        'WebGL context lost event handled during engine restart',
-      );
-      return;
-    }
-    AppLogger.crash.error(
-      'Flutter framework error',
-      error: details.exception,
-      stackTrace: details.stack,
-    );
-  };
-
-  // 4. Capture errors on the platform message channel (Dart ↔ native layer).
-  //    These are NOT caught by FlutterError.onError or runZonedGuarded.
-  PlatformDispatcher.instance.onError = (error, stack) {
-    final errorStr = error.toString();
-    if (errorStr.contains('_handledContextLostEvent')) {
-      AppLogger.get('sarvmd.web').warning(
-        'WebGL context lost event handled during engine restart',
-      );
-      return true;
-    }
-    AppLogger.crash.error(
-      'Platform dispatcher error',
-      error: error,
-      stackTrace: stack,
-    );
-    return true; // Returning true marks the error as handled.
-  };
-
-  // 5. Capture all remaining async errors that escape the widget tree.
   runZonedGuarded(
-    () => runApp(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => LocaleCubit()),
-          BlocProvider(create: (_) => WorkspaceCubit()),
-          BlocProvider(create: (_) => ViewCubit()),
-        ],
-        child: const SarvApp(),
-      ),
-    ),
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // 1. Initialize logging before anything else.
+      AppLogger.init(isDev: kDebugMode);
+      unawaited(RecentDocumentsService.init());
+
+      // 2. Record session start — the anchor point for every log file.
+      AppLogger.get('sarvmd').info('SarvMD starting', context: {
+        'mode': kDebugMode ? 'debug' : 'release',
+        'platform': defaultTargetPlatform.name,
+        'isWeb': kIsWeb,
+      });
+
+      // 3. Capture Flutter framework errors (layout overflows, widget errors, etc.).
+      FlutterError.onError = (final details) {
+        final errorStr = details.exception.toString();
+        if (errorStr.contains('_handledContextLostEvent')) {
+          AppLogger.get('sarvmd.web').warning(
+            'WebGL context lost event handled during engine restart',
+          );
+          return;
+        }
+        AppLogger.crash.error(
+          'Flutter framework error',
+          error: details.exception,
+          stackTrace: details.stack,
+        );
+      };
+
+      // 4. Capture errors on the platform message channel (Dart ↔ native layer).
+      //    These are NOT caught by FlutterError.onError or runZonedGuarded.
+      PlatformDispatcher.instance.onError = (error, stack) {
+        final errorStr = error.toString();
+        if (errorStr.contains('_handledContextLostEvent')) {
+          AppLogger.get('sarvmd.web').warning(
+            'WebGL context lost event handled during engine restart',
+          );
+          return true;
+        }
+        AppLogger.crash.error(
+          'Platform dispatcher error',
+          error: error,
+          stackTrace: stack,
+        );
+        return true; // Returning true marks the error as handled.
+      };
+
+      // 5. Run application within the unified zone.
+      runApp(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => LocaleCubit()),
+            BlocProvider(create: (_) => WorkspaceCubit()),
+            BlocProvider(create: (_) => ViewCubit()),
+          ],
+          child: const SarvApp(),
+        ),
+      );
+    },
     (error, stack) {
       final errorStr = error.toString();
       if (errorStr.contains('_handledContextLostEvent')) {

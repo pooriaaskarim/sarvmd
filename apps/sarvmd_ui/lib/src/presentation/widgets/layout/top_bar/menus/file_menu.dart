@@ -38,7 +38,7 @@ class TopBarFileMenu extends StatelessWidget {
       ),
       ValueListenableBuilder<List<String>>(
         valueListenable: RecentDocumentsService.recentDocumentsNotifier,
-        builder: (context, recentFiles, _) {
+        builder: (_, recentFiles, __) {
           return SubmenuButton(
             leadingIcon: Icon(Icons.history_outlined, size: 17, color: cs.onSurface),
             menuChildren: recentFiles.isEmpty
