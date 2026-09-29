@@ -26,7 +26,13 @@
     [x] Distinct File Deduplication for File Copies: Refined tab deduplication in `WorkspaceCubit` and `AppShell` so distinct files (e.g. `sample.sarv` vs `sample (1).sarv`) open in separate tabs regardless of identical score titles or manuscript contents
     [x] Zero-Document Empty Workspace & Welcome Hub (`EmptyWorkspaceView`): Replaced automatic default document reset on sole tab closure with sleek No Document Welcome Hub featuring starter presets, vector mini-staves, recent files history, template browser, and drag-and-drop prompt
     [x] Empty Workspace Hub Maturation: Enforced LTR top navigation bar in Persian RTL mode, suppressed desktop shortcuts in touch mode, adapted drop zone prompt into touch tap-to-open, localized all starter presets in English and Persian, added Material InkWell touch ripples, and mirrored navigation chevrons in RTL
-4. [ ] Standard shorcuts with a help cheat-sheet to enable user keyboard speed entry.
+4. [x] Standard shortcuts with a help cheat-sheet to enable user keyboard speed entry.
+    [x] Built comprehensive Keyboard Shortcuts Cheat-Sheet modal (`KeyboardShortcutsDialog`) organized across 5 categories (File & Tabs, Edit & History, View & Navigation, Panels & Dialogs, General)
+    [x] Interactive search & filtering with real-time query matching across localized shortcut names and keycaps
+    [x] Platform-aware keycap typography (`_KeyCap` badges) supporting macOS modifiers (⌘, ⌥, ⇧) and Windows/Linux modifiers (Ctrl, Alt, Shift) with strict LTR isolation in RTL/Persian locales
+    [x] Multi-entry trigger bindings: F1, Ctrl+?, Help menu item ("Keyboard Shortcuts"), and compact menu integration
+    [x] Center-focal zooming for touch HUD controls (`FloatingHud` zoom steppers and scrub chip) eliminating jarring top-left affine drift
+    [x] Linter resolution and test verification across all shortcut gateways and UI interactions
 5. [x] Unified look and font and feel for SarvMD logo across the codebase (e.g. splash, about dialog, etc. )
 6. [x] Code standardization across the codebase (e.g. adding comprehensive documentation and comments, Modularizing Big Ass files, etc.)
 7. [x] CRITICAL: Exporting seems to not work properly; on mobile it rendered some irrelevant symbols when exporting Guitar + Tab. Needs mode examincation on mobile and web and linux! and probably more profiles.
