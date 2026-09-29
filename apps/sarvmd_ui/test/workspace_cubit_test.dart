@@ -228,6 +228,53 @@ void main() {
       expect(workspaceCubit.state.tabCount, 1);
       expect(reopened.id, equals(session.id));
     });
+
+    test('openDocumentTab with identical content but distinct filenames opens separate tabs', () async {
+      const doc = core.SarvDocument(
+        score: core.Score(title: 'sample'),
+        metadata: core.DocumentMetadata(title: 'sample'),
+      );
+
+      // 1. Open original sample.sarv
+      final session1 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample.sarv',
+        title: 'sample.sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(session1.title, equals('sample.sarv'));
+
+      // 2. Open Save As copy sample (1).sarv with EXACT SAME content
+      final session2 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample (1).sarv',
+        title: 'sample (1).sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(session2.id, isNot(equals(session1.id)));
+      expect(session2.title, equals('sample (1).sarv'));
+
+      // 3. Dropping sample.sarv again switches back to tab 0
+      final switched1 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample.sarv',
+        title: 'sample.sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(switched1.id, equals(session1.id));
+
+      // 4. Dropping sample (1).sarv switches to tab 1
+      final switched2 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample (1).sarv',
+        title: 'sample (1).sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(switched2.id, equals(session2.id));
+    });
   });
 
   group('WorkspaceCubit Session Persistence', () {

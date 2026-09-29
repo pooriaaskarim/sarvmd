@@ -238,14 +238,20 @@ class _AppShellState extends State<AppShell> {
               : fileName;
 
           if (workspace != null) {
-            final wasAlreadyOpen = workspace.state.sessions.any(
-              (s) => (s.filePath != null &&
-                      (s.filePath == effectiveFilePath ||
-                       p.basename(s.filePath!) == fileName ||
-                       p.basename(s.filePath!) == p.basename(effectiveFilePath))) ||
-                     s.title == fileName ||
-                     s.document.hasSameContent(doc),
-            );
+            final wasAlreadyOpen = workspace.state.sessions.any((s) {
+              final sessionPath = (s.filePath != null && !s.filePath!.startsWith('blob:')) ? s.filePath : null;
+              final sessionBase = sessionPath != null ? p.basename(sessionPath) : null;
+              if (sessionPath != null) {
+                if (!kIsWeb && p.isAbsolute(effectiveFilePath) && p.isAbsolute(sessionPath)) {
+                  return p.normalize(effectiveFilePath) == p.normalize(sessionPath);
+                }
+                return sessionBase == fileName || sessionBase == p.basename(effectiveFilePath);
+              }
+              if (sessionBase != null) {
+                return sessionBase == fileName;
+              }
+              return s.title == fileName;
+            });
             final session = await workspace.openDocumentTab(
               doc,
               filePath: effectiveFilePath,

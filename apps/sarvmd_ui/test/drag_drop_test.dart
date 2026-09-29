@@ -312,5 +312,91 @@ void main() {
       expect(workspaceCubit.state.activeSession.title, equals('symphony.sarv'));
       expect(find.text('Switched to tab "Web Symphony"'), findsOneWidget);
     });
+
+    testWidgets('dropping sample.sarv followed by sample (1).sarv with identical content opens separate tabs', (tester) async {
+      await tester.pumpWidget(_buildTestShell(
+        workspaceCubit: workspaceCubit,
+        viewCubit: viewCubit,
+        localeCubit: localeCubit,
+      ));
+      await tester.pumpAndSettle();
+
+      const doc = core.SarvDocument(
+        score: core.Score(title: 'sample'),
+        metadata: core.DocumentMetadata(title: 'sample'),
+      );
+      final bytes = Uint8List.fromList(utf8.encode(doc.toSarvJson()));
+      final dropTarget = tester.widget<DropTarget>(find.byType(DropTarget));
+
+      // 1. Drop sample.sarv
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [
+              _TestWebDropItem(
+                bytes,
+                name: 'sample.sarv',
+                path: 'blob:http://localhost:54321/blob-1',
+              ),
+            ],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeSession.title, equals('sample.sarv'));
+
+      // 2. Drop sample (1).sarv (identical content from Save As, but different file name)
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [
+              _TestWebDropItem(
+                bytes,
+                name: 'sample (1).sarv',
+                path: 'blob:http://localhost:54321/blob-2',
+              ),
+            ],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(workspaceCubit.state.activeSession.title, equals('sample (1).sarv'));
+      expect(find.text('Opened "sample"'), findsOneWidget);
+
+      // 3. Drop sample.sarv again -> switches to tab 0
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [
+              _TestWebDropItem(
+                bytes,
+                name: 'sample.sarv',
+                path: 'blob:http://localhost:54321/blob-3',
+              ),
+            ],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(workspaceCubit.state.activeSession.title, equals('sample.sarv'));
+      expect(find.text('Switched to tab "sample"'), findsOneWidget);
+    });
   });
 }
