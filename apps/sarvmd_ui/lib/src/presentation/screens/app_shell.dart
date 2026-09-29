@@ -25,6 +25,7 @@ import '../../core/utils/app_logger.dart';
 import '../../l10n/app_localizations.dart';
 import 'pointer_editor_screen.dart';
 import 'touch_editor_screen.dart';
+import '../widgets/workspace/empty_workspace_view.dart';
 
 final _log = AppLogger.get('sarvmd.ui.shell');
 
@@ -361,16 +362,22 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (workspaceCubit != null) {
-      content = BlocListener<WorkspaceCubit, WorkspaceState>(
-        listenWhen: (prev, curr) => prev.hasDirtyTabs != curr.hasDirtyTabs,
-        listener: (context, state) {
-          setWebUnsavedChangesGuard(state.hasDirtyTabs);
-        },
-        child: BlocProvider<DocumentCubit>.value(
-          value: workspaceCubit.state.activeCubit,
-          child: content,
-        ),
-      );
+      if (!workspaceCubit.state.hasActiveSession) {
+        content = const SarvDisplayScope(
+          child: EmptyWorkspaceView(key: ValueKey('empty_workspace_view')),
+        );
+      } else {
+        content = BlocListener<WorkspaceCubit, WorkspaceState>(
+          listenWhen: (prev, curr) => prev.hasDirtyTabs != curr.hasDirtyTabs,
+          listener: (context, state) {
+            setWebUnsavedChangesGuard(state.hasDirtyTabs);
+          },
+          child: BlocProvider<DocumentCubit>.value(
+            value: workspaceCubit.state.activeCubit,
+            child: content,
+          ),
+        );
+      }
     } else {
       content = BlocListener<DocumentCubit, DocumentState>(
         listenWhen: (prev, curr) => prev.isDirty != curr.isDirty,
@@ -395,7 +402,12 @@ class _AppShellState extends State<AppShell> {
         bucket: _pageStorageBucket,
         child: Stack(
           children: [
-            content,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: content,
+            ),
             if (_isDraggingFile)
               Positioned.fill(
                 child: IgnorePointer(

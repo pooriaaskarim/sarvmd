@@ -22,7 +22,23 @@ class WorkspaceState {
     this.revision = 0,
   });
 
+  /// Whether the workspace contains at least one open document session.
+  bool get hasActiveSession => sessions.isNotEmpty;
+
+  /// The active focused [DocumentSession], or `null` if no documents are open.
+  DocumentSession? get activeSessionOrNull {
+    if (sessions.isEmpty) return null;
+    final clampedIndex = activeIndex.clamp(0, sessions.length - 1);
+    return sessions[clampedIndex];
+  }
+
+  /// The [DocumentCubit] belonging to the active session, or `null` if no documents are open.
+  DocumentCubit? get activeCubitOrNull => activeSessionOrNull?.cubit;
+
   /// The active focused [DocumentSession].
+  ///
+  /// Throws [StateError] if [sessions] is empty. Check [hasActiveSession] or use [activeSessionOrNull]
+  /// when the workspace may be empty.
   DocumentSession get activeSession {
     if (sessions.isEmpty) {
       throw StateError('WorkspaceState must contain at least one DocumentSession.');

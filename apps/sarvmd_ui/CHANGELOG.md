@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Zero-Document Empty Workspace & Welcome Hub (`EmptyWorkspaceView`)**:
+  - Seamless transition into a sleek, state-of-the-art "No Document / Welcome Hub" when all open tabs/manuscripts are closed (0 open sessions).
+  - Minimal top navigation bar featuring `SarvBrandHeader` in compact mode, `LanguageToggleButton` (English/Persian bilingual switch), and theme toggle (Dark/Light).
+  - Centered hero section featuring full `SarvBrandHeader` with handwriting logo and Gouldian engraving typography.
+  - "Start New Manuscript" quick-pick card with curated presets (Solo Treble, Grand Staff, Guitar + TAB, Chamber Orchestra) and high-fidelity custom-vector `MiniStaffPreview` staves.
+  - "Browse all templates…" action launching `ProfilePicker` within an adaptive modal (`showSarvAdaptiveModal`).
+  - "Recent Manuscripts" history card consuming `RecentDocumentsService` with path tooltips, click-to-open, and history clearing.
+  - "Open other file…" primary action and full-window drag-and-drop landing prompt card with border highlighting.
+  - Standard keyboard shortcut legend (`Ctrl+N` for New, `Ctrl+O` for Open).
+  - Responsive single-column (portrait/narrow) and two-column (wide/desktop) adaptive layouts with zero layout overflow.
 - **Desktop CLI Launch Argument Support (`FileOpenService`)**:
   - Direct opening of `.sarv` files from terminal command line or desktop launcher invocation (`sarvmd <file.sarv>`).
   - Integrated command-line argument passing from `main(List<String> args)` to `FileOpenService.init(launchArgs: args)`.

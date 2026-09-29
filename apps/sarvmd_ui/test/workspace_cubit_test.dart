@@ -134,7 +134,7 @@ void main() {
       expect(workspaceCubit.state.activeSession.id, tab2.id);
     });
 
-    test('closing the sole tab resets to untitled document without destroying workspace', () async {
+    test('closing the sole tab transitions to empty workspace (0 tabs)', () async {
       expect(workspaceCubit.state.tabCount, 1);
       workspaceCubit.state.activeCubit.setTitle('Single Document');
       await pumpEventQueue();
@@ -142,9 +142,17 @@ void main() {
 
       final closed = await workspaceCubit.closeTab(0);
       expect(closed, isTrue);
+      expect(workspaceCubit.state.tabCount, 0);
+      expect(workspaceCubit.state.sessions, isEmpty);
+      expect(workspaceCubit.state.hasActiveSession, isFalse);
+      expect(workspaceCubit.state.activeSessionOrNull, isNull);
+      expect(workspaceCubit.state.activeCubitOrNull, isNull);
+
+      // Opening a new tab from empty state works seamlessly
+      final newTab = workspaceCubit.openNewTab();
       expect(workspaceCubit.state.tabCount, 1);
-      expect(workspaceCubit.state.activeSession.title, 'Treble_A4_Portrait');
-      expect(workspaceCubit.state.activeSession.isDirty, isFalse);
+      expect(workspaceCubit.state.hasActiveSession, isTrue);
+      expect(workspaceCubit.state.activeSession.id, newTab.id);
     });
 
     test('reorderTabs moves tab to new position', () {

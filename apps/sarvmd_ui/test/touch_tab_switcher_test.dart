@@ -130,7 +130,7 @@ void main() {
       expect(workspaceCubit.state.tabCount, 1);
     });
 
-    testWidgets('dismissing the sole tab resets to new document and closes modal without Dismissible error', (tester) async {
+    testWidgets('dismissing the sole tab closes modal and transitions to empty workspace', (tester) async {
       await tester.pumpWidget(_buildTouchApp(workspaceCubit: workspaceCubit));
       await tester.pumpAndSettle();
 
@@ -148,13 +148,12 @@ void main() {
 
       // Modal should be dismissed
       expect(find.byType(TouchTabSwitcherModal), findsNothing);
-      // Workspace still has 1 tab, but with a fresh session id and untitled state
-      expect(workspaceCubit.state.tabCount, 1);
-      expect(workspaceCubit.state.activeSession.id, isNot(equals(soleTabId)));
-      expect(workspaceCubit.state.activeSession.title, 'Treble_A4_Portrait');
+      // Workspace transitions to empty state (0 tabs)
+      expect(workspaceCubit.state.tabCount, 0);
+      expect(workspaceCubit.state.hasActiveSession, isFalse);
     });
 
-    testWidgets('tapping close on the sole tab closes modal and resets to fresh document', (tester) async {
+    testWidgets('tapping close on the sole tab closes modal and transitions to empty workspace', (tester) async {
       await tester.pumpWidget(_buildTouchApp(workspaceCubit: workspaceCubit));
       await tester.pumpAndSettle();
 
@@ -167,8 +166,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TouchTabSwitcherModal), findsNothing);
-      expect(workspaceCubit.state.tabCount, 1);
-      expect(workspaceCubit.state.activeSession.id, isNot(equals(soleTabId)));
+      expect(workspaceCubit.state.tabCount, 0);
+      expect(workspaceCubit.state.hasActiveSession, isFalse);
     });
   });
 }

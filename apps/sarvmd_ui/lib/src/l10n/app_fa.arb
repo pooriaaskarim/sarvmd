@@ -343,5 +343,15 @@
   "metadataFilePath": "محل فایل",
   "metadataUnsaved": "دست‌نویس ذخیره‌نشده",
   "actionApply": "اعمال",
-  "dragDropOverlayHint": "برای باز کردن، دست‌نوشتهٔ sarv. را اینجا رها کنید"
+  "dragDropOverlayHint": "برای باز کردن، دست‌نوشتهٔ sarv. را اینجا رها کنید",
+  "welcomeTitle": "سرو؛ طراح دست‌نویس موسیقی",
+  "welcomeSubtitle": "طراحی بی‌نقص کاغذهای نت موسیقی منطبق با استانداردهای گولد",
+  "startNewManuscript": "شروع دست‌نویس جدید",
+  "recentManuscripts": "دست‌نویس‌های اخیر",
+  "noRecentManuscripts": "هنوز دست‌نویسی باز نشده است",
+  "browseAllTemplates": "مشاهده همه الگوها…",
+  "openOtherFile": "باز کردن فایل دیگر…",
+  "dropToOpenHint": "برای شروع ویرایش، فایل sarv. را در هر کجای صفحه رها کنید",
+  "shortcutNewHint": "نت جدید Ctrl+N",
+  "shortcutOpenHint": "باز کردن Ctrl+O"
 }

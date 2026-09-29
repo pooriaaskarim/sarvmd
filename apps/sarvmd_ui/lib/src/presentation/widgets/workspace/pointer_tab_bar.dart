@@ -67,7 +67,7 @@ class _PointerTabBarState extends State<PointerTabBar> {
   @override
   Widget build(BuildContext context) {
     final workspaceCubit = context.watch<WorkspaceCubit?>();
-    if (workspaceCubit == null) {
+    if (workspaceCubit == null || !workspaceCubit.state.hasActiveSession) {
       return const SizedBox.shrink();
     }
 

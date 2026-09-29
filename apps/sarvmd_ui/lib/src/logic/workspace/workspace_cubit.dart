@@ -169,8 +169,9 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     }
 
     // 2. Check if current active tab is a clean, untouched blank tab
-    final current = state.activeSession;
-    final isPristineBlank = !current.isDirty &&
+    final current = state.activeSessionOrNull;
+    final isPristineBlank = current != null &&
+        !current.isDirty &&
         current.filePath == null &&
         current.document.score.title.trim().isEmpty &&
         current.cubit.state.undoStack.isEmpty;
@@ -257,24 +258,18 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       if (!canClose) return false;
     }
 
-    // If closing the sole tab, replace it with a fresh untitled blank session rather than leaving 0 tabs
+    // If closing the sole tab, transition to empty workspace (0 tabs)
     if (state.sessions.length == 1) {
       _subscriptions[targetSession.id]?.cancel();
       _subscriptions.remove(targetSession.id);
       unawaited(targetSession.dispose());
 
-      final freshSession = DocumentSession(
-        id: _nextTabId(),
-        cubit: DocumentCubit(null, null, false),
-      );
-      _subscribeSession(freshSession);
-
       emit(state.copyWith(
-        sessions: [freshSession],
+        sessions: const [],
         activeIndex: 0,
       ));
       _debouncedSaveSession();
-      _log.info('Reset sole tab to fresh untitled session: ${freshSession.id}');
+      _log.info('Closed sole tab; transitioned to empty workspace');
       return true;
     }
 
@@ -356,7 +351,20 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       final rawTabs = data['tabs'] as List<dynamic>?;
       final savedActiveIndex = (data['activeIndex'] as num?)?.toInt() ?? 0;
 
-      if (rawTabs == null || rawTabs.isEmpty) return;
+      if (rawTabs == null) return;
+      if (rawTabs.isEmpty && !isClosed) {
+        for (final s in state.sessions) {
+          _subscriptions[s.id]?.cancel();
+          unawaited(s.dispose());
+        }
+        _subscriptions.clear();
+        emit(state.copyWith(
+          sessions: const [],
+          activeIndex: 0,
+        ));
+        _log.info('Restored empty workspace session (0 tabs)');
+        return;
+      }
 
       final restoredSessions = <DocumentSession>[];
       for (int i = 0; i < rawTabs.length; i++) {
