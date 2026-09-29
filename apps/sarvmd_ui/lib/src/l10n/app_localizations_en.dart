@@ -1118,4 +1118,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutOpenHint => 'Ctrl+O Open';
+
+  @override
+  String get touchOpenExistingPrompt =>
+      'Tap to open an existing .sarv manuscript';
+
+  @override
+  String get presetSoloTrebleTitle => 'Solo Treble';
+
+  @override
+  String get presetSoloTrebleSubtitle => 'Standard 5-line classical staff';
+
+  @override
+  String get presetGrandStaffTitle => 'Grand Staff';
+
+  @override
+  String get presetGrandStaffSubtitle =>
+      'Piano system with brace & treble/bass';
+
+  @override
+  String get presetGuitarTabTitle => 'Guitar + TAB';
+
+  @override
+  String get presetGuitarTabSubtitle => 'Standard notation with 6-string TAB';
+
+  @override
+  String get presetChamberOrchestraTitle => 'Chamber Orchestra';
+
+  @override
+  String get presetChamberOrchestraSubtitle =>
+      'String quartet & winds hierarchy';
 }

@@ -1119,4 +1119,32 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get shortcutOpenHint => 'باز کردن Ctrl+O';
+
+  @override
+  String get touchOpenExistingPrompt =>
+      'برای باز کردن دست‌نویس ذخیره‌شده اینجا ضربه بزنید';
+
+  @override
+  String get presetSoloTrebleTitle => 'تک‌خط حامل سل';
+
+  @override
+  String get presetSoloTrebleSubtitle => 'حامل ۵ خطی استاندارد کلاسیک';
+
+  @override
+  String get presetGrandStaffTitle => 'حامل پیانو (بزرگ)';
+
+  @override
+  String get presetGrandStaffSubtitle => 'سیستم پیانو با آکولاد و کلید سل/فا';
+
+  @override
+  String get presetGuitarTabTitle => 'گیتار و تبلچر';
+
+  @override
+  String get presetGuitarTabSubtitle => 'نت‌نگاری استاندارد همراه تبلچر ۶ سیم';
+
+  @override
+  String get presetChamberOrchestraTitle => 'ارکستر مجلسی';
+
+  @override
+  String get presetChamberOrchestraSubtitle => 'کوارتت زهی و سازهای بادی';
 }

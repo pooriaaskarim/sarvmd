@@ -12,13 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Zero-Document Empty Workspace & Welcome Hub (`EmptyWorkspaceView`)**:
   - Seamless transition into a sleek, state-of-the-art "No Document / Welcome Hub" when all open tabs/manuscripts are closed (0 open sessions).
-  - Minimal top navigation bar featuring `SarvBrandHeader` in compact mode, `LanguageToggleButton` (English/Persian bilingual switch), and theme toggle (Dark/Light).
+  - Minimal top navigation bar enforced with strict LTR orientation across all locales (anchoring `SarvBrandHeader` on the left and `InputModeToggleButton`, `LanguageToggleButton`, and theme toggle on the right).
+  - Input-mode awareness: automatically suppresses desktop keyboard shortcut legends (`Ctrl+N`, `Ctrl+O`) when operating in Touch mode, and adapts the drop-target card prompt into a tap-to-open button ("Tap to open an existing .sarv manuscript").
+  - Fully bilingual localized starter presets (Solo Treble, Grand Staff, Guitar + TAB, Chamber Orchestra) in both English and Persian (`app_en.arb`, `app_fa.arb`) with custom-vector `MiniStaffPreview` staves.
+  - Interactive touch ergonomics: wrapped preset and history cards in Material `InkWell` ripples, mirrored forward chevrons in RTL layouts, allowed two-line subtitle wraps on mobile screens, and padded scrolling areas above OS navigation bars.
   - Centered hero section featuring full `SarvBrandHeader` with handwriting logo and Gouldian engraving typography.
-  - "Start New Manuscript" quick-pick card with curated presets (Solo Treble, Grand Staff, Guitar + TAB, Chamber Orchestra) and high-fidelity custom-vector `MiniStaffPreview` staves.
   - "Browse all templates…" action launching `ProfilePicker` within an adaptive modal (`showSarvAdaptiveModal`).
   - "Recent Manuscripts" history card consuming `RecentDocumentsService` with path tooltips, click-to-open, and history clearing.
   - "Open other file…" primary action and full-window drag-and-drop landing prompt card with border highlighting.
-  - Standard keyboard shortcut legend (`Ctrl+N` for New, `Ctrl+O` for Open).
   - Responsive single-column (portrait/narrow) and two-column (wide/desktop) adaptive layouts with zero layout overflow.
 - **Desktop CLI Launch Argument Support (`FileOpenService`)**:
   - Direct opening of `.sarv` files from terminal command line or desktop launcher invocation (`sarvmd <file.sarv>`).

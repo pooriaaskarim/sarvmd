@@ -353,5 +353,14 @@
   "openOtherFile": "باز کردن فایل دیگر…",
   "dropToOpenHint": "برای شروع ویرایش، فایل sarv. را در هر کجای صفحه رها کنید",
   "shortcutNewHint": "نت جدید Ctrl+N",
-  "shortcutOpenHint": "باز کردن Ctrl+O"
+  "shortcutOpenHint": "باز کردن Ctrl+O",
+  "touchOpenExistingPrompt": "برای باز کردن دست‌نویس ذخیره‌شده اینجا ضربه بزنید",
+  "presetSoloTrebleTitle": "تک‌خط حامل سل",
+  "presetSoloTrebleSubtitle": "حامل ۵ خطی استاندارد کلاسیک",
+  "presetGrandStaffTitle": "حامل پیانو (بزرگ)",
+  "presetGrandStaffSubtitle": "سیستم پیانو با آکولاد و کلید سل/فا",
+  "presetGuitarTabTitle": "گیتار و تبلچر",
+  "presetGuitarTabSubtitle": "نت‌نگاری استاندارد همراه تبلچر ۶ سیم",
+  "presetChamberOrchestraTitle": "ارکستر مجلسی",
+  "presetChamberOrchestraSubtitle": "کوارتت زهی و سازهای بادی"
 }
