@@ -2173,6 +2173,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ctrl+O Open'**
   String get shortcutOpenHint;
+
+  /// No description provided for @touchOpenExistingPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open an existing .sarv manuscript'**
+  String get touchOpenExistingPrompt;
+
+  /// No description provided for @presetSoloTrebleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Solo Treble'**
+  String get presetSoloTrebleTitle;
+
+  /// No description provided for @presetSoloTrebleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard 5-line classical staff'**
+  String get presetSoloTrebleSubtitle;
+
+  /// No description provided for @presetGrandStaffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Staff'**
+  String get presetGrandStaffTitle;
+
+  /// No description provided for @presetGrandStaffSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Piano system with brace & treble/bass'**
+  String get presetGrandStaffSubtitle;
+
+  /// No description provided for @presetGuitarTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guitar + TAB'**
+  String get presetGuitarTabTitle;
+
+  /// No description provided for @presetGuitarTabSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard notation with 6-string TAB'**
+  String get presetGuitarTabSubtitle;
+
+  /// No description provided for @presetChamberOrchestraTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chamber Orchestra'**
+  String get presetChamberOrchestraTitle;
+
+  /// No description provided for @presetChamberOrchestraSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'String quartet & winds hierarchy'**
+  String get presetChamberOrchestraSubtitle;
 }
 
 class _AppLocalizationsDelegate

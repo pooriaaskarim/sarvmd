@@ -10,10 +10,12 @@ import '../../../l10n/app_localizations.dart';
 import '../../../logic/services/recent_documents_service.dart';
 import '../../../logic/services/sarv_file_service.dart';
 import '../../../logic/view/view_cubit.dart';
+import '../../../logic/view/view_state.dart';
 import '../../../logic/workspace/workspace_cubit.dart';
+import '../common/input_mode_toggle_button.dart';
+import '../common/language_switch_control.dart';
 import '../dialogs/adaptive_dialog_helper.dart';
 import '../layout/sarv_brand_header.dart';
-import '../common/language_switch_control.dart';
 import '../staff/mini_staff_preview.dart';
 import '../staff/profile_picker.dart';
 
@@ -31,36 +33,38 @@ class EmptyWorkspaceView extends StatelessWidget {
     final workspaceCubit = context.read<WorkspaceCubit>();
     final viewCubit = context.watch<ViewCubit>();
     final isDark = theme.brightness == Brightness.dark;
+    final isTouch = viewCubit.state.inputMode == InputMode.touch;
 
-    const primaryCards = [
+    final primaryCards = [
       _PresetStarter(
         profile: core.StaffProfiles.treble,
-        title: 'Solo Treble',
-        subtitle: 'Standard 5-line classical staff',
+        title: l10n?.presetSoloTrebleTitle ?? 'Solo Treble',
+        subtitle: l10n?.presetSoloTrebleSubtitle ?? 'Standard 5-line classical staff',
       ),
       _PresetStarter(
         profile: core.StaffProfiles.piano,
-        title: 'Grand Staff',
-        subtitle: 'Piano system with brace & treble/bass',
+        title: l10n?.presetGrandStaffTitle ?? 'Grand Staff',
+        subtitle: l10n?.presetGrandStaffSubtitle ?? 'Piano system with brace & treble/bass',
       ),
       _PresetStarter(
         profile: core.StaffProfiles.guitarTab,
-        title: 'Guitar + TAB',
-        subtitle: 'Notation with 6-string tablature',
+        title: l10n?.presetGuitarTabTitle ?? 'Guitar + TAB',
+        subtitle: l10n?.presetGuitarTabSubtitle ?? 'Standard notation with 6-string TAB',
       ),
       _PresetStarter(
         profile: core.StaffProfiles.chamberOrchestra,
-        title: 'Chamber Orchestra',
-        subtitle: 'String quartet & winds hierarchy',
+        title: l10n?.presetChamberOrchestraTitle ?? 'Chamber Orchestra',
+        subtitle: l10n?.presetChamberOrchestraSubtitle ?? 'String quartet & winds hierarchy',
       ),
     ];
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            // ── Minimalist Top Navigation Header ──
+            // ── Minimalist Top Navigation Header (Enforced LTR Layout) ──
             Container(
               height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -72,28 +76,33 @@ class EmptyWorkspaceView extends StatelessWidget {
                   ),
                 ),
               ),
-              child: Row(
-                children: [
-                  const SarvBrandHeader(
-                    mode: SarvBrandHeaderMode.compactMenu,
-                    scaleFactor: 0.85,
-                    enableInteractiveAbout: true,
-                  ),
-                  const Spacer(),
-                  const LanguageToggleButton(),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: isDark ? 'Light Theme' : 'Dark Theme',
-                    icon: Icon(
-                      isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                      size: 18,
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  children: [
+                    const SarvBrandHeader(
+                      mode: SarvBrandHeaderMode.reactive,
+                      scaleFactor: 0.9,
+                      enableInteractiveAbout: true,
                     ),
-                    onPressed: () {
-                      final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
-                      viewCubit.updateThemeMode(newMode);
-                    },
-                  ),
-                ],
+                    const Spacer(),
+                    const InputModeToggleButton(),
+                    const SizedBox(width: 8),
+                    const LanguageToggleButton(),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: isDark ? 'Light Theme' : 'Dark Theme',
+                      icon: Icon(
+                        isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                        size: 18,
+                      ),
+                      onPressed: () {
+                        final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
+                        viewCubit.updateThemeMode(newMode);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -102,9 +111,15 @@ class EmptyWorkspaceView extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth >= 840;
+                  final bottomInset = MediaQuery.paddingOf(context).bottom;
 
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    padding: EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      top: 28,
+                      bottom: 40 + bottomInset,
+                    ),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 880),
@@ -153,6 +168,7 @@ class EmptyWorkspaceView extends StatelessWidget {
                                       theme,
                                       l10n,
                                       workspaceCubit,
+                                      isWide: true,
                                     ),
                                   ),
                                 ],
@@ -171,15 +187,24 @@ class EmptyWorkspaceView extends StatelessWidget {
                                 theme,
                                 l10n,
                                 workspaceCubit,
+                                isWide: false,
                               ),
                             ],
 
                             const SizedBox(height: 28),
 
-                            // ── Drop Prompt & Shortcut Footers ──
-                            _buildDropTargetPrompt(context, theme, l10n, workspaceCubit),
-                            const SizedBox(height: 16),
-                            _buildShortcutLegend(context, theme, l10n),
+                            // ── Drop / Open Prompt & Shortcut Footers ──
+                            _buildDropTargetPrompt(
+                              context,
+                              theme,
+                              l10n,
+                              workspaceCubit,
+                              isTouch: isTouch,
+                            ),
+                            if (!isTouch) ...[
+                              const SizedBox(height: 16),
+                              _buildShortcutLegend(context, theme, l10n),
+                            ],
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -285,8 +310,9 @@ class EmptyWorkspaceView extends StatelessWidget {
     BuildContext context,
     ThemeData theme,
     AppLocalizations? l10n,
-    WorkspaceCubit workspaceCubit,
-  ) {
+    WorkspaceCubit workspaceCubit, {
+    required bool isWide,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -352,17 +378,17 @@ class EmptyWorkspaceView extends StatelessWidget {
             builder: (context, recents, _) {
               if (recents.isEmpty) {
                 return Container(
-                  height: 220,
+                  height: isWide ? 200 : 120,
                   alignment: Alignment.center,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.library_music_outlined,
-                        size: 40,
+                        Icons.history_toggle_off_outlined,
+                        size: 36,
                         color: theme.colorScheme.outlineVariant,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Text(
                         l10n?.noRecentManuscripts ?? 'No recent manuscripts yet',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -427,13 +453,14 @@ class EmptyWorkspaceView extends StatelessWidget {
     );
   }
 
-  // ── Drag & Drop Landing Target ──
+  // ── Drag & Drop / Tap Landing Target ──
   Widget _buildDropTargetPrompt(
     BuildContext context,
     ThemeData theme,
     AppLocalizations? l10n,
-    WorkspaceCubit workspaceCubit,
-  ) {
+    WorkspaceCubit workspaceCubit, {
+    required bool isTouch,
+  }) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {
@@ -465,14 +492,16 @@ class EmptyWorkspaceView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.file_download_outlined,
+              isTouch ? Icons.folder_open_outlined : Icons.file_download_outlined,
               color: theme.colorScheme.primary,
               size: 22,
             ),
             const SizedBox(width: 12),
             Flexible(
               child: Text(
-                l10n?.dropToOpenHint ?? 'Drag and drop a .sarv manuscript anywhere to start editing',
+                isTouch
+                    ? (l10n?.touchOpenExistingPrompt ?? 'Tap to open an existing .sarv manuscript')
+                    : (l10n?.dropToOpenHint ?? 'Drag and drop a .sarv manuscript anywhere to start editing'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface,
@@ -594,83 +623,92 @@ class _StarterPresetTileState extends State<_StarterPresetTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? theme.colorScheme.primary.withValues(alpha: 0.06)
-                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
               color: _isHovered
-                  ? theme.colorScheme.primary.withValues(alpha: 0.6)
-                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-              width: _isHovered ? 1.5 : 1.0,
+                  ? theme.colorScheme.primary.withValues(alpha: 0.06)
+                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isHovered
+                    ? theme.colorScheme.primary.withValues(alpha: 0.6)
+                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                width: _isHovered ? 1.5 : 1.0,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              // Vector Mini Preview
-              Container(
-                width: 64,
-                height: 44,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+            child: Row(
+              children: [
+                // Vector Mini Preview
+                Container(
+                  width: 64,
+                  height: 44,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: MiniStaffPreview(
+                    systemLayout: widget.starter.profile.systemLayout,
+                    active: _isHovered,
                   ),
                 ),
-                child: MiniStaffPreview(
-                  systemLayout: widget.starter.profile.systemLayout,
-                  active: _isHovered,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.starter.title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _isHovered
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.starter.title,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _isHovered
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.starter.subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                        fontSize: 11,
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.starter.subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          fontSize: 11,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: _isHovered
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant,
-              ),
-            ],
+                const SizedBox(width: 8),
+                Transform.scale(
+                  scaleX: isRtl ? -1.0 : 1.0,
+                  child: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: _isHovered
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outlineVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -707,62 +745,66 @@ class _RecentDocumentTileState extends State<_RecentDocumentTile> {
       child: Tooltip(
         message: widget.filePath,
         waitDuration: const Duration(milliseconds: 500),
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: _isHovered
-                  ? theme.colorScheme.primary.withValues(alpha: 0.05)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
                 color: _isHovered
-                    ? theme.colorScheme.primary.withValues(alpha: 0.5)
-                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                    : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _isHovered
+                      ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.description_outlined,
-                  size: 20,
-                  color: _isHovered ? theme.colorScheme.primary : theme.colorScheme.outline,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        fileName,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: _isHovered ? theme.colorScheme.primary : theme.colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        dirName,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
-                          fontSize: 10.5,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.description_outlined,
+                    size: 20,
+                    color: _isHovered ? theme.colorScheme.primary : theme.colorScheme.outline,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.open_in_new_rounded,
-                  size: 14,
-                  color: _isHovered ? theme.colorScheme.primary : Colors.transparent,
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fileName,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: _isHovered ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          dirName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                            fontSize: 10.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.open_in_new_rounded,
+                    size: 14,
+                    color: _isHovered ? theme.colorScheme.primary : Colors.transparent,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

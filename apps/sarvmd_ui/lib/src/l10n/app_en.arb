@@ -496,5 +496,14 @@
   "openOtherFile": "Open other file…",
   "dropToOpenHint": "Drag and drop a .sarv manuscript anywhere to start editing",
   "shortcutNewHint": "Ctrl+N New",
-  "shortcutOpenHint": "Ctrl+O Open"
+  "shortcutOpenHint": "Ctrl+O Open",
+  "touchOpenExistingPrompt": "Tap to open an existing .sarv manuscript",
+  "presetSoloTrebleTitle": "Solo Treble",
+  "presetSoloTrebleSubtitle": "Standard 5-line classical staff",
+  "presetGrandStaffTitle": "Grand Staff",
+  "presetGrandStaffSubtitle": "Piano system with brace & treble/bass",
+  "presetGuitarTabTitle": "Guitar + TAB",
+  "presetGuitarTabSubtitle": "Standard notation with 6-string TAB",
+  "presetChamberOrchestraTitle": "Chamber Orchestra",
+  "presetChamberOrchestraSubtitle": "String quartet & winds hierarchy"
 }
