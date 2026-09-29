@@ -50,13 +50,42 @@ class ExportDirectoryService {
     return getDefaultDirectory();
   }
 
+  /// Normalizes raw directory path input, expanding `~` to user home directory,
+  /// stripping `file://` URI schemes, and removing trailing separators.
+  static String normalizeDirectoryPath(String raw) {
+    var path = raw.trim();
+    if (path.isEmpty) return path;
+
+    // Handle file:// URI scheme
+    if (path.startsWith('file://')) {
+      try {
+        path = Uri.parse(path).toFilePath();
+      } catch (_) {
+        path = path.replaceFirst('file://', '');
+      }
+    }
+
+    // Expand ~ / ~/ on non-web platforms
+    if (!kIsWeb && (path == '~' || path.startsWith('~/') || path.startsWith(r'~\'))) {
+      final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+      if (home != null && home.isNotEmpty) {
+        path = path == '~' ? home : p.join(home, path.substring(2));
+      }
+    }
+
+    // Clean redundant separators
+    path = p.normalize(path);
+    return path;
+  }
+
   /// Save a custom export directory path to [SharedPreferences].
   static Future<void> saveExportDirectory(String path) async {
     if (isWeb) return;
     try {
+      final normalized = normalizeDirectoryPath(path);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefKey, path);
-      _log.info('Export directory preference saved', context: {'path': path});
+      await prefs.setString(_prefKey, normalized);
+      _log.info('Export directory preference saved', context: {'path': normalized});
     } catch (e) {
       _log.error('Failed to save export directory preference', error: e);
     }
@@ -64,15 +93,25 @@ class ExportDirectoryService {
 
   /// Opens the native OS directory picker dialog (Linux/macOS/Windows)
   /// and returns the chosen directory path, or `null` if canceled.
-  static Future<String?> pickDirectory({String? dialogTitle}) async {
+  static Future<String?> pickDirectory({
+    String? dialogTitle,
+    String? initialDirectory,
+  }) async {
     if (isWeb) return null;
     try {
+      final startDir = initialDirectory != null && initialDirectory.isNotEmpty
+          ? normalizeDirectoryPath(initialDirectory)
+          : await getExportDirectory();
+      final effectiveStartDir = Directory(startDir).existsSync() ? startDir : null;
+
       final selectedDirectory = await FilePicker.platform.getDirectoryPath(
         dialogTitle: dialogTitle ?? 'Select Manuscript Export Folder',
+        initialDirectory: effectiveStartDir,
       );
-      if (selectedDirectory != null && selectedDirectory.isNotEmpty) {
-        await saveExportDirectory(selectedDirectory);
-        return selectedDirectory;
+      if (selectedDirectory != null && selectedDirectory.trim().isNotEmpty) {
+        final normalized = normalizeDirectoryPath(selectedDirectory);
+        await saveExportDirectory(normalized);
+        return normalized;
       }
     } catch (e) {
       _log.error('Error opening native directory picker', error: e);
