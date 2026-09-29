@@ -2,9 +2,13 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logd/logd.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/app_logger.dart';
 import '../document/document_cubit.dart';
 import '../services/sarv_file_service.dart';
@@ -12,18 +16,24 @@ import 'document_session.dart';
 import 'workspace_state.dart';
 
 /// Cubit managing multi-document workspace sessions, active tab routing,
-/// and tab lifecycle operations.
+/// and tab lifecycle operations with session persistence.
 class WorkspaceCubit extends Cubit<WorkspaceState> {
   static final Logger _log = AppLogger.get('sarvmd.workspace');
+  static const String prefSessionKey = 'sarvmd_workspace_session';
 
   final SarvFileService _fileService;
   final Map<String, StreamSubscription<dynamic>> _subscriptions = {};
   int _tabSequence = 0;
+  final bool _autoRestoreSession;
+  Timer? _saveDebounceTimer;
+  Completer<void>? _restoreCompleter;
 
   WorkspaceCubit({
     DocumentCubit? initialCubit,
     SarvFileService? fileService,
+    bool autoRestoreSession = true,
   })  : _fileService = fileService ?? SarvFileService(),
+        _autoRestoreSession = initialCubit == null && autoRestoreSession,
         super(WorkspaceState(
           sessions: [
             DocumentSession(
@@ -34,6 +44,10 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
           activeIndex: 0,
         )) {
     _subscribeSession(state.sessions.first);
+    if (_autoRestoreSession) {
+      _restoreCompleter = Completer<void>();
+      unawaited(_restoreSessionFromPrefs());
+    }
   }
 
   void _subscribeSession(DocumentSession session) {
@@ -41,6 +55,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     _subscriptions[session.id] = session.cubit.stream.listen((_) {
       if (!isClosed) {
         emit(state.copyWith());
+        _debouncedSaveSession();
       }
     });
   }
@@ -79,6 +94,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       sessions: updatedSessions,
       activeIndex: newIndex,
     ));
+    _debouncedSaveSession();
     _log.info('Opened new tab: ${session.id} (${session.title})');
     return session;
   }
@@ -93,6 +109,10 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     String? filePath,
     String? title,
   }) async {
+    if (_restoreCompleter != null) {
+      await _restoreCompleter!.future;
+    }
+
     // 1. Check if already open by filePath
     if (filePath != null && filePath.isNotEmpty) {
       final existingIndex = state.sessions.indexWhere((s) => s.filePath == filePath);
@@ -112,6 +132,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     if (isPristineBlank) {
       current.cubit.loadDocument(document, filePath: filePath);
       emit(state.copyWith());
+      _debouncedSaveSession();
       return current;
     }
 
@@ -131,6 +152,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       sessions: updatedSessions,
       activeIndex: newIndex,
     ));
+    _debouncedSaveSession();
     _log.info('Opened document tab: ${session.id} -> ${title ?? filePath ?? document.metadata.title}');
     return session;
   }
@@ -140,6 +162,10 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
   /// If the file is already open in another tab, focuses that tab.
   /// If the current active tab is completely pristine and untitled, replaces it.
   Future<DocumentSession> openFileTab(String filePath) async {
+    if (_restoreCompleter != null) {
+      await _restoreCompleter!.future;
+    }
+
     final result = await _fileService.loadFileFromPath(filePath);
     return await openDocumentTab(
       result.document,
@@ -154,6 +180,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
     if (index == state.activeIndex) return;
 
     emit(state.copyWith(activeIndex: index));
+    _debouncedSaveSession();
     _log.debug('Switched to tab index: $index (${state.sessions[index].title})');
   }
 
@@ -200,6 +227,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
         sessions: [freshSession],
         activeIndex: 0,
       ));
+      _debouncedSaveSession();
       _log.info('Reset sole tab to fresh untitled session: ${freshSession.id}');
       return true;
     }
@@ -222,6 +250,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       sessions: updatedSessions,
       activeIndex: newActiveIndex,
     ));
+    _debouncedSaveSession();
     _log.info('Closed tab at index $index, remaining: ${updatedSessions.length}');
     return true;
   }
@@ -264,10 +293,135 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       sessions: updated,
       activeIndex: newActiveIndex,
     ));
+    _debouncedSaveSession();
+  }
+
+  /// Restores persisted workspace sessions from [SharedPreferences] upon startup.
+  Future<void> _restoreSessionFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(prefSessionKey);
+      if (raw == null || raw.trim().isEmpty) return;
+
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is! Map) return;
+      final Map<String, dynamic> data = decoded.cast<String, dynamic>();
+
+      final rawTabs = data['tabs'] as List<dynamic>?;
+      final savedActiveIndex = (data['activeIndex'] as num?)?.toInt() ?? 0;
+
+      if (rawTabs == null || rawTabs.isEmpty) return;
+
+      final restoredSessions = <DocumentSession>[];
+      for (int i = 0; i < rawTabs.length; i++) {
+        final tabEntry = rawTabs[i];
+        if (tabEntry is! Map) continue;
+        final tabMap = tabEntry.cast<String, dynamic>();
+        final filePath = tabMap['filePath'] as String?;
+        core.SarvDocument? doc;
+
+        if (!kIsWeb && filePath != null && filePath.isNotEmpty && File(filePath).existsSync()) {
+          try {
+            final loadResult = await _fileService.loadFileFromPath(filePath);
+            doc = loadResult.document;
+          } catch (e) {
+            _log.warning('Could not reload persisted file path: $filePath', error: e);
+          }
+        }
+
+        if (doc == null && tabMap['document'] is Map) {
+          try {
+            doc = core.SarvDocument.fromJson((tabMap['document'] as Map).cast<String, dynamic>());
+          } catch (e) {
+            _log.warning('Could not parse persisted document JSON for tab $i', error: e);
+          }
+        }
+
+        if (doc != null) {
+          final cubit = DocumentCubit(null, null, false);
+          cubit.loadDocument(doc, filePath: filePath);
+          final tabId = tabMap['id'] as String? ?? _nextTabId();
+          restoredSessions.add(DocumentSession(id: tabId, cubit: cubit));
+        }
+      }
+
+      if (restoredSessions.isNotEmpty && !isClosed) {
+        for (final s in state.sessions) {
+          _subscriptions[s.id]?.cancel();
+          unawaited(s.dispose());
+        }
+        _subscriptions.clear();
+
+        for (final session in restoredSessions) {
+          _subscribeSession(session);
+        }
+
+        final clampedIndex = savedActiveIndex.clamp(0, restoredSessions.length - 1);
+        emit(state.copyWith(
+          sessions: restoredSessions,
+          activeIndex: clampedIndex,
+        ));
+        _log.info('Restored workspace session with ${restoredSessions.length} tabs');
+      }
+    } catch (e, st) {
+      _log.warning('Failed to restore workspace session', error: e, stackTrace: st);
+    } finally {
+      if (_restoreCompleter != null && !_restoreCompleter!.isCompleted) {
+        _restoreCompleter!.complete();
+      }
+      _restoreCompleter = null;
+    }
+  }
+
+  void _debouncedSaveSession() {
+    if (!_autoRestoreSession) return;
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _saveSessionToPrefs();
+    });
+  }
+
+  /// Immediately flushes any pending debounced session save to [SharedPreferences].
+  Future<void> flushSessionSave() async {
+    _saveDebounceTimer?.cancel();
+    await _saveSessionToPrefs();
+  }
+
+  Future<void> _saveSessionToPrefs() async {
+    if (isClosed) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tabsData = <Map<String, dynamic>>[];
+      for (final s in state.sessions) {
+        tabsData.add({
+          'id': s.id,
+          'filePath': s.filePath,
+          'document': s.document.toJson(),
+        });
+      }
+      final data = {
+        'version': 1,
+        'activeIndex': state.activeIndex,
+        'tabs': tabsData,
+      };
+      await prefs.setString(prefSessionKey, jsonEncode(data));
+      _log.debug('Saved workspace session (${tabsData.length} tabs)');
+    } catch (e) {
+      _log.warning('Failed to save workspace session', error: e);
+    }
+  }
+
+  /// Clears persisted workspace session state from [SharedPreferences].
+  static Future<void> clearSavedSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(prefSessionKey);
+    } catch (_) {}
   }
 
   @override
   Future<void> close() async {
+    _saveDebounceTimer?.cancel();
     for (final sub in _subscriptions.values) {
       await sub.cancel();
     }

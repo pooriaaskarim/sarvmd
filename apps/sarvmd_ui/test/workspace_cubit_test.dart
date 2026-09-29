@@ -169,4 +169,53 @@ void main() {
       expect(workspaceCubit.state.activeIndex, 0);
     });
   });
+
+  group('WorkspaceCubit Session Persistence', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test('flushes session state to SharedPreferences and restores upon initialization', () async {
+      final initialCubit = WorkspaceCubit(autoRestoreSession: false);
+      final tab2 = initialCubit.openNewTab(profile: core.StaffProfiles.piano);
+      initialCubit.state.activeCubit.setTitle('Persisted Piano Piece');
+      await pumpEventQueue();
+
+      await initialCubit.flushSessionSave();
+      await initialCubit.close();
+
+      final prefs = await SharedPreferences.getInstance();
+      final savedJson = prefs.getString(WorkspaceCubit.prefSessionKey);
+      expect(savedJson, isNotNull);
+      expect(savedJson, contains('Persisted Piano Piece'));
+
+      // Now create a new WorkspaceCubit with autoRestoreSession: true
+      final restoredCubit = WorkspaceCubit(autoRestoreSession: true);
+      // Wait for async session restoration
+      await pumpEventQueue();
+
+      expect(restoredCubit.state.tabCount, 2);
+      expect(restoredCubit.state.activeIndex, 1);
+      expect(restoredCubit.state.sessions[1].id, tab2.id);
+      expect(restoredCubit.state.activeSession.title, 'Persisted Piano Piece');
+
+      await restoredCubit.close();
+    });
+
+    test('clearSavedSession removes persisted session from SharedPreferences', () async {
+      final cubit = WorkspaceCubit(autoRestoreSession: false);
+      cubit.openNewTab();
+      await cubit.flushSessionSave();
+
+      var prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(WorkspaceCubit.prefSessionKey), isTrue);
+
+      await WorkspaceCubit.clearSavedSession();
+      prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(WorkspaceCubit.prefSessionKey), isFalse);
+
+      await cubit.close();
+    });
+  });
 }
+

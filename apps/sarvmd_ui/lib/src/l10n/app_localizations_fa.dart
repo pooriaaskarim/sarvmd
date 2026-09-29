@@ -1083,4 +1083,8 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get actionApply => 'اعمال';
+
+  @override
+  String get dragDropOverlayHint =>
+      'برای باز کردن، دست‌نوشتهٔ sarv. را اینجا رها کنید';
 }

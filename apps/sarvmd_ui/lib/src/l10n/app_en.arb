@@ -485,5 +485,6 @@
   "metadataModifiedAt": "Modified",
   "metadataFilePath": "File Location",
   "metadataUnsaved": "Unsaved Manuscript",
-  "actionApply": "Apply"
+  "actionApply": "Apply",
+  "dragDropOverlayHint": "Drop .sarv manuscript to open"
 }

@@ -1083,4 +1083,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionApply => 'Apply';
+
+  @override
+  String get dragDropOverlayHint => 'Drop .sarv manuscript to open';
 }

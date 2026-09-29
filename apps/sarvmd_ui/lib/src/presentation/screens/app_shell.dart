@@ -2,9 +2,14 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../core/theme/sarv_display_context.dart';
 import '../../logic/document/document_cubit.dart';
 import '../../logic/document/document_state.dart';
@@ -36,6 +41,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   StreamSubscription<String>? _fileOpenSub;
+  bool _isDraggingFile = false;
 
   @override
   void initState() {
@@ -167,6 +173,100 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  /// Handles files dropped directly onto the workspace window.
+  Future<void> _handleDroppedFiles(List<DropItem> files) async {
+    final sarvFiles = files.where((f) {
+      final effectiveName = f.name.isNotEmpty ? f.name : f.path.split(RegExp(r'[/\\]')).last;
+      return effectiveName.toLowerCase().endsWith('.sarv');
+    }).toList();
+
+    if (sarvFiles.isEmpty) {
+      if (mounted && files.isNotEmpty) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(l10n?.fileOpenFailed ?? 'Only .sarv manuscript files are supported.'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    for (final file in sarvFiles) {
+      if (!mounted) break;
+      final fileName = file.name.isNotEmpty ? file.name : file.path.split(RegExp(r'[/\\]')).last;
+      if (!kIsWeb && file.path.isNotEmpty && File(file.path).existsSync()) {
+        await _handleExternalFilePath(file.path);
+      } else {
+        try {
+          final bytes = await file.readAsBytes();
+          final jsonString = utf8.decode(bytes);
+          final dynamic decoded = jsonDecode(jsonString);
+          if (decoded is! Map) continue;
+          final doc = core.SarvDocument.fromJson(decoded.cast<String, dynamic>());
+          final workspace = context.read<WorkspaceCubit?>();
+          if (workspace != null) {
+            await workspace.openDocumentTab(doc, title: fileName);
+          } else {
+            final docCubit = context.read<DocumentCubit?>();
+            docCubit?.loadDocument(doc);
+          }
+          if (mounted) {
+            final l10n = AppLocalizations.of(context);
+            final title = doc.metadata.title.trim().isNotEmpty ? doc.metadata.title : fileName;
+            final message = l10n?.fileOpenedSuccess(title) ?? 'Opened "$title"';
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+                content: Row(
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      color: Theme.of(context).colorScheme.onInverseSurface,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(message, overflow: TextOverflow.ellipsis)),
+                  ],
+                ),
+              ),
+            );
+          }
+        } catch (e, st) {
+          _log.error('Failed to parse dropped file: ${file.name}', error: e, stackTrace: st);
+          if (mounted) {
+            final l10n = AppLocalizations.of(context);
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: Text(
+                  l10n?.fileOpenFailed ?? 'Could not open file: ${e.toString()}',
+                ),
+              ),
+            );
+          }
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _fileOpenSub?.cancel();
@@ -204,7 +304,6 @@ class _AppShellState extends State<AppShell> {
           setWebUnsavedChangesGuard(state.hasDirtyTabs);
         },
         child: BlocProvider<DocumentCubit>.value(
-          key: ValueKey('active_doc_cubit_${workspaceCubit.state.activeSession.id}'),
           value: workspaceCubit.state.activeCubit,
           child: content,
         ),
@@ -219,9 +318,76 @@ class _AppShellState extends State<AppShell> {
       );
     }
 
-    return PageStorage(
-      bucket: _pageStorageBucket,
-      child: content,
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return DropTarget(
+      onDragEntered: (_) => setState(() => _isDraggingFile = true),
+      onDragExited: (_) => setState(() => _isDraggingFile = false),
+      onDragDone: (details) async {
+        setState(() => _isDraggingFile = false);
+        await _handleDroppedFiles(details.files);
+      },
+      child: PageStorage(
+        bucket: _pageStorageBucket,
+        child: Stack(
+          children: [
+            content,
+            if (_isDraggingFile)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                      border: Border.all(
+                        color: theme.colorScheme.primary,
+                        width: 3,
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.file_download_outlined,
+                              color: theme.colorScheme.primary,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              l10n?.dragDropOverlayHint ?? 'Drop .sarv manuscript to open',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
