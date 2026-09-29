@@ -15,6 +15,11 @@
     [x] Recent Documents List ("Open Recent ▸"): Persist recently opened `.sarv` file paths in `SharedPreferences` and expose under `File > Open Recent` menu with clear history action
     [x] Score Metadata / Document Properties Dialog: UI dialog to view and edit extended `.sarv` metadata fields (`composer`, `subtitle`, `arranger`, `lyricist`, `copyright`)
     [x] Web `beforeunload` Protection: Register browser `beforeunload` event handler when any open tab has unsaved changes (`isDirty`) to prevent accidental browser tab close or refresh
+    [x] Android External Intent & File Associations: Added `.sarv` MIME/extension filters in AndroidManifest, `singleTask` launchMode, cold-start and warm-start (`onNewIntent`) intent routing via `FileOpenService`
+    [x] Android SAF Pre-Extension Collision Disambiguation (`NativeFileSaveService` & `MainActivity.kt`): Enforced explicit MIME types and post-create regex rename via `DocumentsContract.renameDocument` so duplicate numbers are placed before extensions (`name (1).pdf`, `name (1).sarv`)
+    [x] Cross-Platform File Naming Engine (`FileNaming` in `sarvmd_core`): Zero-dependency naming and collision disambiguation utility ensuring number suffixes are strictly positioned before extensions across all platforms
+    [x] Export Dialog Destination Folder Input & Path Normalization: Converted Destination Folder into an editable monospace text input with path normalization (`~` expansion, `file://` stripping, and slash cleanup), resolving Linux/KDE file picker ambiguity
+    [x] Touch Tab Switcher Dismissal Stability: Resolved `Dismissible` tree crash in `TouchTabSwitcherModal` and ensured closing/dismissing the sole tab automatically initializes a clean default manuscript session
     [ ] Canvas / Tab-Bar File Drag-and-Drop: Support dragging `.sarv` files from OS file manager directly onto the canvas or tab strip to open in a new tab
     [ ] Multi-Tab Session State Persistence: Persist open tab metadata and active tab index across app restarts via `SharedPreferences`
     [ ] Desktop CLI Launch Argument: Handle opening `.sarv` files directly via command-line arguments (`sarvmd <file.sarv>`)
