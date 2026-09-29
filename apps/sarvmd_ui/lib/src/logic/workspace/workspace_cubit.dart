@@ -124,17 +124,38 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
         ? p.basename(filePath)
         : (title != null && title.isNotEmpty && !title.startsWith('blob:') ? p.basename(title) : null);
 
-    // 1. Check if already open by filePath, filename/title match, or identical document content
+    final effectivePath = (filePath != null && !isBlobOrWebUri)
+        ? filePath
+        : (isBlobOrWebUri ? (title ?? effectiveTargetName) : null);
+
+    // 1. Check if already open by matching explicit file identity
     final existingIndex = state.sessions.indexWhere((s) {
-      if (!isBlobOrWebUri && filePath != null && filePath.isNotEmpty && s.filePath == filePath) {
+      final sessionPath = (s.filePath != null && !s.filePath!.startsWith('blob:')) ? s.filePath : null;
+      final sessionBase = sessionPath != null ? p.basename(sessionPath) : null;
+
+      // 1. If BOTH have explicit filenames or file paths:
+      // They must match. If they don't match (e.g. sample.sarv vs sample (1).sarv),
+      // they are distinct files and must NEVER be treated as the same document,
+      // even if their internal score content is identical.
+      if (effectiveTargetName != null && sessionBase != null) {
+        if (!kIsWeb && effectivePath != null && sessionPath != null &&
+            p.isAbsolute(effectivePath) && p.isAbsolute(sessionPath)) {
+          return p.normalize(effectivePath) == p.normalize(sessionPath);
+        }
+        return sessionBase == effectiveTargetName;
+      }
+
+      // 2. If one has an explicit file name matching the other's display title
+      if (effectiveTargetName != null && s.title == effectiveTargetName) {
         return true;
       }
-      if (effectiveTargetName != null) {
-        final sessionBase = (s.filePath != null && !s.filePath!.startsWith('blob:'))
-            ? p.basename(s.filePath!)
-            : null;
-        if (sessionBase == effectiveTargetName) return true;
-        if (s.title == effectiveTargetName) return true;
+      if (sessionBase != null && title != null && sessionBase == title) {
+        return true;
+      }
+
+      // 3. Fallback for untitled / in-memory documents without explicit file identity
+      if (title != null && title.isNotEmpty && s.title == title) {
+        return true;
       }
       if (s.document.hasSameContent(document)) {
         return true;
@@ -146,10 +167,6 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       switchTab(existingIndex);
       return state.sessions[existingIndex];
     }
-
-    final effectivePath = (filePath != null && !isBlobOrWebUri)
-        ? filePath
-        : (isBlobOrWebUri ? (title ?? effectiveTargetName) : null);
 
     // 2. Check if current active tab is a clean, untouched blank tab
     final current = state.activeSession;

@@ -80,6 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated codebase strictly around high-performance blank canvas manuscript design and vector engraving.
 
 ### Fixed
+- **Distinct File Deduplication for Copies & Identical Content (`WorkspaceCubit` & `AppShell`)**:
+  - Fixed issue where distinct files with identical score contents (e.g. `sample.sarv` and `sample (1).sarv` created via "Save As" or copy-paste) were erroneously treated as the same document and deduplicated into a single tab due to indiscriminate score title and content equality matching.
+  - Refined file deduplication criteria in `WorkspaceCubit.openDocumentTab` and `AppShell._handleDroppedFiles` to strictly require matching file identities (path or filename) when both documents have explicit file backings, reserving deep content equivalence matching (`hasSameContent`) strictly for untitled in-memory manuscripts.
 - **Web Blob URL Sanitization & Document Name Parity (`DocumentState`, `WorkspaceCubit`, & `AppShell`)**:
   - Resolved issue where opening or dropping files on Web displayed random UUID hashes (e.g. `9bf3e8d2-4521-4f1a-b678-0123456789ab`) as the document tab title and default save name instead of the actual file name.
   - Guarded `DocumentState.displayName`, `WorkspaceCubit.openDocumentTab`, `SarvFileService.openSarvFile`, and `RecentDocumentsService.addRecentDocument` against Web `blob:` and `http:` object URLs, strictly normalizing to the genuine file name (`file.name`).
