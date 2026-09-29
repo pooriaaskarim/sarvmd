@@ -9,6 +9,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../core/theme/sarv_display_context.dart';
 import '../../logic/document/document_cubit.dart';
@@ -219,34 +220,72 @@ class _AppShellState extends State<AppShell> {
           if (decoded is! Map) continue;
           final doc = core.SarvDocument.fromJson(decoded.cast<String, dynamic>());
           final workspace = context.read<WorkspaceCubit?>();
+          final effectiveFilePath = file.path.isNotEmpty ? file.path : fileName;
+
           if (workspace != null) {
-            await workspace.openDocumentTab(doc, title: fileName);
+            final wasAlreadyOpen = workspace.state.sessions.any(
+              (s) => (s.filePath != null && (s.filePath == effectiveFilePath || p.basename(s.filePath!) == fileName)) ||
+                     s.title == fileName ||
+                     s.document.hasSameContent(doc),
+            );
+            final session = await workspace.openDocumentTab(
+              doc,
+              filePath: effectiveFilePath,
+              title: fileName,
+            );
+            if (mounted) {
+              final l10n = AppLocalizations.of(context);
+              final title = session.cubit.state.document.metadata.title.trim().isNotEmpty
+                  ? session.cubit.state.document.metadata.title
+                  : fileName;
+              final message = wasAlreadyOpen
+                  ? (l10n?.fileSwitchedTab(title) ?? 'Switched to tab "$title"')
+                  : (l10n?.fileOpenedSuccess(title) ?? 'Opened "$title"');
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                  content: Row(
+                    children: [
+                      Icon(
+                        wasAlreadyOpen ? Icons.tab : Icons.description_outlined,
+                        color: Theme.of(context).colorScheme.onInverseSurface,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(message, overflow: TextOverflow.ellipsis)),
+                    ],
+                  ),
+                ),
+              );
+            }
           } else {
             final docCubit = context.read<DocumentCubit?>();
-            docCubit?.loadDocument(doc);
-          }
-          if (mounted) {
-            final l10n = AppLocalizations.of(context);
-            final title = doc.metadata.title.trim().isNotEmpty ? doc.metadata.title : fileName;
-            final message = l10n?.fileOpenedSuccess(title) ?? 'Opened "$title"';
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 2),
-                content: Row(
-                  children: [
-                    Icon(
-                      Icons.description_outlined,
-                      color: Theme.of(context).colorScheme.onInverseSurface,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(message, overflow: TextOverflow.ellipsis)),
-                  ],
+            docCubit?.loadDocument(doc, filePath: effectiveFilePath);
+            if (mounted) {
+              final l10n = AppLocalizations.of(context);
+              final title = doc.metadata.title.trim().isNotEmpty ? doc.metadata.title : fileName;
+              final message = l10n?.fileOpenedSuccess(title) ?? 'Opened "$title"';
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                  content: Row(
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        color: Theme.of(context).colorScheme.onInverseSurface,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(message, overflow: TextOverflow.ellipsis)),
+                    ],
+                  ),
                 ),
-              ),
-            );
+              );
+            }
           }
         } catch (e, st) {
           _log.error('Failed to parse dropped file: ${file.name}', error: e, stackTrace: st);

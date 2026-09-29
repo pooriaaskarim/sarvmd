@@ -168,6 +168,41 @@ void main() {
       ]);
       expect(workspaceCubit.state.activeIndex, 0);
     });
+
+    test('openDocumentTab deduplicates by title/filename and switches tabs without creating duplicates', () async {
+      const docA = core.SarvDocument(
+        score: core.Score(title: 'Concerto A'),
+        metadata: core.DocumentMetadata(title: 'Concerto A'),
+      );
+      const docB = core.SarvDocument(
+        score: core.Score(title: 'Sonata B'),
+        metadata: core.DocumentMetadata(title: 'Sonata B'),
+      );
+
+      // Replaces pristine blank tab
+      final sessionA = await workspaceCubit.openDocumentTab(docA, title: 'concerto.sarv');
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(sessionA.title, 'Concerto A');
+
+      // Opens docB in tab 1
+      final sessionB = await workspaceCubit.openDocumentTab(docB, title: 'sonata.sarv');
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(sessionB.title, 'Sonata B');
+
+      // Re-opening docA must switch to tab 0 and NOT create a third tab
+      final switchedA = await workspaceCubit.openDocumentTab(docA, title: 'concerto.sarv');
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(switchedA.id, sessionA.id);
+
+      // Re-opening docB must switch to tab 1 and NOT create a third tab
+      final switchedB = await workspaceCubit.openDocumentTab(docB, title: 'sonata.sarv');
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(switchedB.id, sessionB.id);
+    });
   });
 
   group('WorkspaceCubit Session Persistence', () {
