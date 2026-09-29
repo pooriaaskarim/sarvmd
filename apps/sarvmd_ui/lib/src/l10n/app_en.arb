@@ -452,6 +452,24 @@
   "fileSavedSuccess": "Document saved successfully.",
   "fileSaveFailed": "Failed to save document.",
   "fileOpenFailed": "Failed to open document. The file may be corrupt or not a valid .sarv manuscript.",
+  "fileOpenedSuccess": "Opened \"{title}\"",
+  "@fileOpenedSuccess": {
+    "description": "Transient notification shown when a document is opened from an external source or OS intent",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fileSwitchedTab": "Switched to tab \"{title}\"",
+  "@fileSwitchedTab": {
+    "description": "Transient notification shown when an external file intent targets an already open tab",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "menuOpenRecent": "Open Recent",
   "menuClearRecent": "Clear Recent Files",
   "menuNoRecentFiles": "No Recent Files",

@@ -1027,6 +1027,16 @@ class AppLocalizationsFa extends AppLocalizations {
       'خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است.';
 
   @override
+  String fileOpenedSuccess(String title) {
+    return '«$title» باز شد';
+  }
+
+  @override
+  String fileSwitchedTab(String title) {
+    return 'به برگه «$title» منتقل شد';
+  }
+
+  @override
   String get menuOpenRecent => 'باز کردن موارد اخیر';
 
   @override

@@ -18,6 +18,7 @@ import 'src/logic/locale/locale_state.dart';
 import 'src/core/theme/app_theme.dart';
 import 'src/core/theme/layout_policy.dart';
 import 'src/logic/services/recent_documents_service.dart';
+import 'src/logic/services/file_open_service.dart';
 import 'src/presentation/widgets/specialized/app_entry_point.dart';
 import 'src/presentation/widgets/common/language_transition_overlay.dart';
 
@@ -29,6 +30,8 @@ void main() {
       // 1. Initialize logging before anything else.
       AppLogger.init(isDev: kDebugMode);
       unawaited(RecentDocumentsService.init());
+      // Initialise Android file-intent bridge (no-op on other platforms).
+      unawaited(FileOpenService.init());
 
       // 2. Record session start — the anchor point for every log file.
       AppLogger.get('sarvmd').info('SarvMD starting', context: {

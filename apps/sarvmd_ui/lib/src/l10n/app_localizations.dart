@@ -2000,6 +2000,18 @@ abstract class AppLocalizations {
   /// **'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.'**
   String get fileOpenFailed;
 
+  /// Transient notification shown when a document is opened from an external source or OS intent
+  ///
+  /// In en, this message translates to:
+  /// **'Opened \"{title}\"'**
+  String fileOpenedSuccess(String title);
+
+  /// Transient notification shown when an external file intent targets an already open tab
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to tab \"{title}\"'**
+  String fileSwitchedTab(String title);
+
   /// No description provided for @menuOpenRecent.
   ///
   /// In en, this message translates to:

@@ -1027,6 +1027,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.';
 
   @override
+  String fileOpenedSuccess(String title) {
+    return 'Opened \"$title\"';
+  }
+
+  @override
+  String fileSwitchedTab(String title) {
+    return 'Switched to tab \"$title\"';
+  }
+
+  @override
   String get menuOpenRecent => 'Open Recent';
 
   @override

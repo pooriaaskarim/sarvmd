@@ -325,6 +325,8 @@
   "fileSavedSuccess": "سند با موفقیت ذخیره شد.",
   "fileSaveFailed": "خطا در ذخیره سند.",
   "fileOpenFailed": "خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است.",
+  "fileOpenedSuccess": "«{title}» باز شد",
+  "fileSwitchedTab": "به برگه «{title}» منتقل شد",
   "menuOpenRecent": "باز کردن موارد اخیر",
   "menuClearRecent": "پاک کردن موارد اخیر",
   "menuNoRecentFiles": "هیچ فایل اخیری وجود ندارد",

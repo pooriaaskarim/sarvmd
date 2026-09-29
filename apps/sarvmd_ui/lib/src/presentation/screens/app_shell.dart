@@ -1,18 +1,26 @@
 // Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/sarv_display_context.dart';
 import '../../logic/document/document_cubit.dart';
 import '../../logic/document/document_state.dart';
+import '../../logic/services/file_open_service.dart';
+import '../../logic/services/sarv_file_service.dart';
 import '../../logic/services/web_download/web_download.dart';
 import '../../logic/view/view_cubit.dart';
 import '../../logic/view/view_state.dart';
 import '../../logic/workspace/workspace_cubit.dart';
 import '../../logic/workspace/workspace_state.dart';
+import '../../core/utils/app_logger.dart';
+import '../../l10n/app_localizations.dart';
 import 'pointer_editor_screen.dart';
 import 'touch_editor_screen.dart';
+
+final _log = AppLogger.get('sarvmd.ui.shell');
 
 /// The root adaptive application shell.
 ///
@@ -27,6 +35,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
+  StreamSubscription<String>? _fileOpenSub;
 
   @override
   void initState() {
@@ -43,10 +52,124 @@ class _AppShellState extends State<AppShell> {
         }
       }
     });
+
+    // Subscribe to Android file-open intents (no-op stream on other platforms).
+    _fileOpenSub = FileOpenService.filePathStream.listen(_handleExternalFilePath);
+  }
+
+  /// Routes an externally-opened `.sarv` file path into the editor workspace.
+  Future<void> _handleExternalFilePath(String path) async {
+    if (!mounted) return;
+    _log.info('Opening externally triggered .sarv file', context: {'path': path});
+    final fileName = path.split(RegExp(r'[/\\]')).last;
+
+    try {
+      final workspace = context.read<WorkspaceCubit?>();
+      if (workspace != null) {
+        final wasAlreadyOpen = workspace.state.sessions.any((s) => s.filePath == path);
+        final session = await workspace.openFileTab(path);
+        if (mounted) {
+          final l10n = AppLocalizations.of(context);
+          final title = session.cubit.state.document.metadata.title.trim().isNotEmpty
+              ? session.cubit.state.document.metadata.title
+              : fileName;
+
+          final message = wasAlreadyOpen
+              ? (l10n?.fileSwitchedTab(title) ?? 'Switched to tab "$title"')
+              : (l10n?.fileOpenedSuccess(title) ?? 'Opened "$title"');
+
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              content: Row(
+                children: [
+                  Icon(
+                    wasAlreadyOpen ? Icons.tab : Icons.description_outlined,
+                    color: Theme.of(context).colorScheme.onInverseSurface,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      } else {
+        final doc = context.read<DocumentCubit?>();
+        if (doc != null) {
+          final service = SarvFileService();
+          await doc.loadFromPath(path, fileService: service);
+          if (mounted) {
+            final l10n = AppLocalizations.of(context);
+            final title = doc.state.document.metadata.title.trim().isNotEmpty
+                ? doc.state.document.metadata.title
+                : fileName;
+            final message = l10n?.fileOpenedSuccess(title) ?? 'Opened "$title"';
+
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+                content: Row(
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      color: Theme.of(context).colorScheme.onInverseSurface,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        message,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e, st) {
+      _log.error('Failed to open externally triggered file', error: e, stackTrace: st);
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(l10n?.fileOpenFailed ?? 'Could not open file: ${e.toString()}'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
+    _fileOpenSub?.cancel();
     setWebUnsavedChangesGuard(false);
     super.dispose();
   }
