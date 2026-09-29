@@ -36,6 +36,21 @@ Widget _buildTestShell({
   );
 }
 
+class _TestWebDropItem extends DropItem {
+  final String _name;
+  final Uint8List _bytes;
+  _TestWebDropItem(Uint8List bytes, {required String name, required String path})
+      : _name = name,
+        _bytes = bytes,
+        super(path, bytes: bytes);
+
+  @override
+  String get name => _name;
+
+  @override
+  Future<Uint8List> readAsBytes() async => _bytes;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -231,6 +246,71 @@ void main() {
       expect(workspaceCubit.state.activeIndex, 0);
       expect(workspaceCubit.state.activeSession.title, 'concerto.sarv');
       expect(find.text('Switched to tab "First Concerto"'), findsOneWidget);
+    });
+
+    testWidgets('web drag and drop with blob URLs and random UUID paths displays proper file name and deduplicates', (tester) async {
+      await tester.pumpWidget(_buildTestShell(
+        workspaceCubit: workspaceCubit,
+        viewCubit: viewCubit,
+        localeCubit: localeCubit,
+      ));
+      await tester.pumpAndSettle();
+
+      const doc = core.SarvDocument(
+        score: core.Score(title: 'Web Symphony'),
+        metadata: core.DocumentMetadata(title: 'Web Symphony'),
+      );
+      final bytes = Uint8List.fromList(utf8.encode(doc.toSarvJson()));
+      final dropTarget = tester.widget<DropTarget>(find.byType(DropTarget));
+
+      // 1. First drop on Web: browser provides a blob URL with a random UUID as path
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [
+              _TestWebDropItem(
+                bytes,
+                name: 'symphony.sarv',
+                path: 'blob:http://localhost:54321/9bf3e8d2-4521-4f1a-b678-0123456789ab',
+              ),
+            ],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+
+      expect(workspaceCubit.state.tabCount, 1);
+      final activeSession = workspaceCubit.state.activeSession;
+      expect(activeSession.title, equals('symphony.sarv'));
+      expect(activeSession.title, isNot(contains('9bf3e8d2')));
+      expect(activeSession.title, isNot(contains('blob:')));
+      expect(activeSession.filePath, equals('symphony.sarv'));
+
+      // 2. Second drop on Web with a different transient blob URL: must switch to existing tab
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [
+              _TestWebDropItem(
+                bytes,
+                name: 'symphony.sarv',
+                path: 'blob:http://localhost:54321/fedcba98-7654-3210-fedc-ba9876543210',
+              ),
+            ],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeSession.title, equals('symphony.sarv'));
+      expect(find.text('Switched to tab "Web Symphony"'), findsOneWidget);
     });
   });
 }

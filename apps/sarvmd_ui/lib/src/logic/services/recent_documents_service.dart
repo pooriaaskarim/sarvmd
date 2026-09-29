@@ -42,7 +42,13 @@ class RecentDocumentsService {
   /// Deduplicates existing entries and caps the list to [maxRecentDocuments].
   static Future<void> addRecentDocument(String filePath) async {
     final trimmed = filePath.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty ||
+        trimmed.startsWith('blob:') ||
+        trimmed.startsWith('http:') ||
+        trimmed.startsWith('https:') ||
+        trimmed.startsWith('data:')) {
+      return;
+    }
 
     final current = List<String>.from(recentDocumentsNotifier.value);
     current.remove(trimmed);

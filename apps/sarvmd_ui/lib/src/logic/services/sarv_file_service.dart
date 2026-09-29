@@ -89,7 +89,13 @@ class SarvFileService {
 
     final platformFile = result.files.first;
     final fileName = platformFile.name;
-    final filePath = platformFile.path ?? (kIsWeb ? platformFile.name : null);
+    final isBlobOrWeb = platformFile.path != null &&
+        (platformFile.path!.startsWith('blob:') ||
+            platformFile.path!.startsWith('http:') ||
+            platformFile.path!.startsWith('data:'));
+    final filePath = (!kIsWeb && !isBlobOrWeb && platformFile.path != null)
+        ? platformFile.path
+        : (kIsWeb ? platformFile.name : null);
 
     String jsonString;
     if (platformFile.bytes != null) {
