@@ -177,7 +177,13 @@ class _AppShellState extends State<AppShell> {
   /// Handles files dropped directly onto the workspace window.
   Future<void> _handleDroppedFiles(List<DropItem> files) async {
     final sarvFiles = files.where((f) {
-      final effectiveName = f.name.isNotEmpty ? f.name : f.path.split(RegExp(r'[/\\]')).last;
+      final isBlobOrUri = f.path.startsWith('blob:') ||
+          f.path.startsWith('http:') ||
+          f.path.startsWith('https:') ||
+          f.path.startsWith('data:');
+      final effectiveName = f.name.trim().isNotEmpty
+          ? f.name.trim()
+          : (!isBlobOrUri && f.path.isNotEmpty ? p.basename(f.path) : '');
       return effectiveName.toLowerCase().endsWith('.sarv');
     }).toList();
 
@@ -209,8 +215,15 @@ class _AppShellState extends State<AppShell> {
 
     for (final file in sarvFiles) {
       if (!mounted) break;
-      final fileName = file.name.isNotEmpty ? file.name : file.path.split(RegExp(r'[/\\]')).last;
-      if (!kIsWeb && file.path.isNotEmpty && File(file.path).existsSync()) {
+      final isBlobOrUri = file.path.startsWith('blob:') ||
+          file.path.startsWith('http:') ||
+          file.path.startsWith('https:') ||
+          file.path.startsWith('data:');
+      final fileName = file.name.trim().isNotEmpty
+          ? file.name.trim()
+          : (!isBlobOrUri && file.path.isNotEmpty ? p.basename(file.path) : 'document.sarv');
+
+      if (!kIsWeb && !isBlobOrUri && file.path.isNotEmpty && File(file.path).existsSync()) {
         await _handleExternalFilePath(file.path);
       } else {
         try {
@@ -220,11 +233,16 @@ class _AppShellState extends State<AppShell> {
           if (decoded is! Map) continue;
           final doc = core.SarvDocument.fromJson(decoded.cast<String, dynamic>());
           final workspace = context.read<WorkspaceCubit?>();
-          final effectiveFilePath = file.path.isNotEmpty ? file.path : fileName;
+          final effectiveFilePath = (!kIsWeb && !isBlobOrUri && file.path.isNotEmpty)
+              ? file.path
+              : fileName;
 
           if (workspace != null) {
             final wasAlreadyOpen = workspace.state.sessions.any(
-              (s) => (s.filePath != null && (s.filePath == effectiveFilePath || p.basename(s.filePath!) == fileName)) ||
+              (s) => (s.filePath != null &&
+                      (s.filePath == effectiveFilePath ||
+                       p.basename(s.filePath!) == fileName ||
+                       p.basename(s.filePath!) == p.basename(effectiveFilePath))) ||
                      s.title == fileName ||
                      s.document.hasSameContent(doc),
             );

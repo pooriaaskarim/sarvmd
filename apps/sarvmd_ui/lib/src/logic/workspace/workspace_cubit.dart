@@ -114,17 +114,25 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       await _restoreCompleter!.future;
     }
 
-    final effectiveTargetName = (filePath != null && filePath.isNotEmpty)
+    final isBlobOrWebUri = filePath != null &&
+        (filePath.startsWith('blob:') ||
+            filePath.startsWith('http:') ||
+            filePath.startsWith('https:') ||
+            filePath.startsWith('data:'));
+
+    final effectiveTargetName = (!isBlobOrWebUri && filePath != null && filePath.isNotEmpty)
         ? p.basename(filePath)
-        : (title != null && title.isNotEmpty ? p.basename(title) : null);
+        : (title != null && title.isNotEmpty && !title.startsWith('blob:') ? p.basename(title) : null);
 
     // 1. Check if already open by filePath, filename/title match, or identical document content
     final existingIndex = state.sessions.indexWhere((s) {
-      if (filePath != null && filePath.isNotEmpty && s.filePath == filePath) {
+      if (!isBlobOrWebUri && filePath != null && filePath.isNotEmpty && s.filePath == filePath) {
         return true;
       }
       if (effectiveTargetName != null) {
-        final sessionBase = s.filePath != null ? p.basename(s.filePath!) : null;
+        final sessionBase = (s.filePath != null && !s.filePath!.startsWith('blob:'))
+            ? p.basename(s.filePath!)
+            : null;
         if (sessionBase == effectiveTargetName) return true;
         if (s.title == effectiveTargetName) return true;
       }
@@ -139,7 +147,9 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       return state.sessions[existingIndex];
     }
 
-    final effectivePath = filePath ?? (kIsWeb ? title : null);
+    final effectivePath = (filePath != null && !isBlobOrWebUri)
+        ? filePath
+        : (isBlobOrWebUri ? (title ?? effectiveTargetName) : null);
 
     // 2. Check if current active tab is a clean, untouched blank tab
     final current = state.activeSession;
@@ -412,9 +422,17 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       final prefs = await SharedPreferences.getInstance();
       final tabsData = <Map<String, dynamic>>[];
       for (final s in state.sessions) {
+        final path = s.filePath;
+        final sanitizedPath = (path != null &&
+                !path.startsWith('blob:') &&
+                !path.startsWith('http:') &&
+                !path.startsWith('https:') &&
+                !path.startsWith('data:'))
+            ? path
+            : null;
         tabsData.add({
           'id': s.id,
-          'filePath': s.filePath,
+          'filePath': sanitizedPath,
           'document': s.document.toJson(),
         });
       }

@@ -80,6 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated codebase strictly around high-performance blank canvas manuscript design and vector engraving.
 
 ### Fixed
+- **Web Blob URL Sanitization & Document Name Parity (`DocumentState`, `WorkspaceCubit`, & `AppShell`)**:
+  - Resolved issue where opening or dropping files on Web displayed random UUID hashes (e.g. `9bf3e8d2-4521-4f1a-b678-0123456789ab`) as the document tab title and default save name instead of the actual file name.
+  - Guarded `DocumentState.displayName`, `WorkspaceCubit.openDocumentTab`, `SarvFileService.openSarvFile`, and `RecentDocumentsService.addRecentDocument` against Web `blob:` and `http:` object URLs, strictly normalizing to the genuine file name (`file.name`).
 - **Web & Desktop Document Tab Deduplication & Drag-and-Drop Parity (`WorkspaceCubit` & `AppShell`)**:
   - Resolved issue in Web where dragging or opening an already-open `.sarv` document created redundant duplicate tabs rather than switching to the existing open tab.
   - Added robust multi-criteria deduplication in `WorkspaceCubit.openDocumentTab` matching by exact file path, filename/basename, and document content equivalence across desktop and web.

@@ -56,7 +56,12 @@ class DocumentState {
   /// Display name of current document (file name if saved, score title, or layout description).
   String get displayName {
     if (filePath != null && filePath!.isNotEmpty) {
-      return p.basename(filePath!);
+      if (!filePath!.startsWith('blob:') &&
+          !filePath!.startsWith('http:') &&
+          !filePath!.startsWith('https:') &&
+          !filePath!.startsWith('data:')) {
+        return p.basename(filePath!);
+      }
     }
     if (document.score.title.trim().isNotEmpty) {
       return document.score.title.trim();

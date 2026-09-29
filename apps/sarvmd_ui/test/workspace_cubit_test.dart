@@ -203,6 +203,31 @@ void main() {
       expect(workspaceCubit.state.activeIndex, 1);
       expect(switchedB.id, sessionB.id);
     });
+
+    test('openDocumentTab with blob URL sanitizes path and displays title without exposing GUID', () async {
+      const doc = core.SarvDocument(
+        score: core.Score(title: 'Blob Sonata'),
+      );
+      final session = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'blob:http://localhost:54321/4a5b6c7d-8e9f-0123-4567-89abcdef0123',
+        title: 'myscore.sarv',
+      );
+
+      expect(session.title, equals('myscore.sarv'));
+      expect(session.title, isNot(contains('4a5b6c7d')));
+      expect(session.title, isNot(contains('blob:')));
+      expect(session.filePath, equals('myscore.sarv'));
+
+      // Re-opening with a different blob URL deduplicates and switches
+      final reopened = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'blob:http://localhost:54321/fedcba98-7654-3210-fedc-ba9876543210',
+        title: 'myscore.sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(reopened.id, equals(session.id));
+    });
   });
 
   group('WorkspaceCubit Session Persistence', () {
