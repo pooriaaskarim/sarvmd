@@ -12,10 +12,15 @@ import 'package:sarvmd_ui/src/logic/locale/locale_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/specialized/app_entry_point.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/specialized/sarv_splash_screen.dart';
+import 'package:sarvmd_ui/src/logic/services/changelog_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await ChangelogService.loadChangelog();
+  });
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});

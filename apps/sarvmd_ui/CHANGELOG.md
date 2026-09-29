@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-30
+
 ### Added
 - **Keyboard Shortcuts Cheat-Sheet Modal (`KeyboardShortcutsDialog`)**:
   - Comprehensive, categorized shortcut reference (File & Tabs, Edit & History, View & Navigation, Panels & Dialogs, General) accessible via `F1`, `Ctrl+?` (`⌘?` on macOS), and the Help top-bar menu.
