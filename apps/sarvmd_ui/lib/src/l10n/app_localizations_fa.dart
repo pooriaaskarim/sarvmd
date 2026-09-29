@@ -986,4 +986,256 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get exportFormatsSummary => 'خروجی PDF / TeX / SVG…';
+
+  @override
+  String get menuNew => 'جدید';
+
+  @override
+  String get menuOpen => 'باز کردن…';
+
+  @override
+  String get menuSave => 'ذخیره';
+
+  @override
+  String get menuSaveAs => 'ذخیره به نام…';
+
+  @override
+  String get unsavedChangesTitle => 'تغییرات ذخیره‌نشده';
+
+  @override
+  String unsavedChangesMessage(String documentName) {
+    return 'آیا می‌خواهید تغییرات «$documentName» را قبل از ادامه ذخیره کنید؟';
+  }
+
+  @override
+  String get actionSave => 'ذخیره';
+
+  @override
+  String get actionDiscard => 'ذخیره نشود';
+
+  @override
+  String get actionCancel => 'انصراف';
+
+  @override
+  String get fileSavedSuccess => 'سند با موفقیت ذخیره شد.';
+
+  @override
+  String get fileSaveFailed => 'خطا در ذخیره سند.';
+
+  @override
+  String get fileOpenFailed =>
+      'خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است.';
+
+  @override
+  String fileOpenedSuccess(String title) {
+    return '«$title» باز شد';
+  }
+
+  @override
+  String fileSwitchedTab(String title) {
+    return 'به برگه «$title» منتقل شد';
+  }
+
+  @override
+  String get menuOpenRecent => 'باز کردن موارد اخیر';
+
+  @override
+  String get menuClearRecent => 'پاک کردن موارد اخیر';
+
+  @override
+  String get menuNoRecentFiles => 'هیچ فایل اخیری وجود ندارد';
+
+  @override
+  String get menuDocumentProperties => 'ویژگی‌های سند…';
+
+  @override
+  String get documentPropertiesTitle => 'ویژگی‌های سند';
+
+  @override
+  String get metadataScoreTitle => 'عنوان';
+
+  @override
+  String get metadataSubtitle => 'زیرعنوان';
+
+  @override
+  String get metadataComposer => 'آهنگساز';
+
+  @override
+  String get metadataArranger => 'تنظیم‌کننده';
+
+  @override
+  String get metadataLyricist => 'ترانه‌سرا';
+
+  @override
+  String get metadataCopyright => 'کپی‌رایت / حق نشر';
+
+  @override
+  String get metadataCreatedAt => 'تاریخ ایجاد';
+
+  @override
+  String get metadataModifiedAt => 'آخرین ویرایش';
+
+  @override
+  String get metadataFilePath => 'محل فایل';
+
+  @override
+  String get metadataUnsaved => 'دست‌نویس ذخیره‌نشده';
+
+  @override
+  String get actionApply => 'اعمال';
+
+  @override
+  String get dragDropOverlayHint =>
+      'برای باز کردن، دست‌نوشتهٔ sarv. را اینجا رها کنید';
+
+  @override
+  String get welcomeTitle => 'سرو؛ طراح دست‌نویس موسیقی';
+
+  @override
+  String get welcomeSubtitle =>
+      'طراحی بی‌نقص کاغذهای نت موسیقی منطبق با استانداردهای گولد';
+
+  @override
+  String get startNewManuscript => 'شروع دست‌نویس جدید';
+
+  @override
+  String get recentManuscripts => 'دست‌نویس‌های اخیر';
+
+  @override
+  String get noRecentManuscripts => 'هنوز دست‌نویسی باز نشده است';
+
+  @override
+  String get browseAllTemplates => 'مشاهده همه الگوها…';
+
+  @override
+  String get openOtherFile => 'باز کردن فایل دیگر…';
+
+  @override
+  String get dropToOpenHint =>
+      'برای شروع ویرایش، فایل sarv. را در هر کجای صفحه رها کنید';
+
+  @override
+  String get shortcutNewHint => 'نت جدید Ctrl+N';
+
+  @override
+  String get shortcutOpenHint => 'باز کردن Ctrl+O';
+
+  @override
+  String get touchOpenExistingPrompt =>
+      'برای باز کردن دست‌نویس ذخیره‌شده اینجا ضربه بزنید';
+
+  @override
+  String get presetSoloTrebleTitle => 'تک‌خط حامل سل';
+
+  @override
+  String get presetSoloTrebleSubtitle => 'حامل ۵ خطی استاندارد کلاسیک';
+
+  @override
+  String get presetGrandStaffTitle => 'حامل پیانو (بزرگ)';
+
+  @override
+  String get presetGrandStaffSubtitle => 'سیستم پیانو با آکولاد و کلید سل/فا';
+
+  @override
+  String get presetGuitarTabTitle => 'گیتار و تبلچر';
+
+  @override
+  String get presetGuitarTabSubtitle => 'نت‌نگاری استاندارد همراه تبلچر ۶ سیم';
+
+  @override
+  String get presetChamberOrchestraTitle => 'ارکستر مجلسی';
+
+  @override
+  String get presetChamberOrchestraSubtitle => 'کوارتت زهی و سازهای بادی';
+
+  @override
+  String get keyboardShortcutsTitle => 'کلیدهای میانبر';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'تسریع کار با دست‌نویس با کلیدهای دسترسی سریع';
+
+  @override
+  String get keyboardShortcutsSearchPlaceholder => 'جستجوی میانبرها...';
+
+  @override
+  String get shortcutCategoryGeneral => 'عمومی و پنجره‌ها';
+
+  @override
+  String get shortcutCategoryFile => 'پرونده و زبانه‌ها';
+
+  @override
+  String get shortcutCategoryEdit => 'ویرایش و تاریخچه';
+
+  @override
+  String get shortcutCategoryCanvas => 'بوم و بزرگ‌نمایی';
+
+  @override
+  String get shortcutCategoryPanels => 'پنل‌ها و نما';
+
+  @override
+  String get shortcutNewDocument => 'دست‌نویس جدید';
+
+  @override
+  String get shortcutOpenDocument => 'باز کردن دست‌نویس';
+
+  @override
+  String get shortcutSaveDocument => 'ذخیره دست‌نویس';
+
+  @override
+  String get shortcutSaveAsDocument => 'ذخیره دست‌نویس به نام...';
+
+  @override
+  String get shortcutExport => 'صادرات نت (PDF، SVG، LaTeX)...';
+
+  @override
+  String get shortcutDocumentProperties => 'مشخصات و متادیتای دست‌نویس';
+
+  @override
+  String get shortcutNewTab => 'زبانه جدید';
+
+  @override
+  String get shortcutCloseTab => 'بستن زبانه جاری';
+
+  @override
+  String get shortcutNextTab => 'زبانه بعدی';
+
+  @override
+  String get shortcutPreviousTab => 'زبانه قبلی';
+
+  @override
+  String get shortcutUndo => 'واگرد آخرین اقدام';
+
+  @override
+  String get shortcutRedo => 'انجام مجدد اقدام';
+
+  @override
+  String get shortcutZoomIn => 'بزرگ‌نمایی';
+
+  @override
+  String get shortcutZoomOut => 'کوچک‌نمایی';
+
+  @override
+  String get shortcutZoomReset => 'اندازه واقعی (بزرگ‌نمایی ۱۰۰٪)';
+
+  @override
+  String get shortcutPanCanvas => 'پیمایش و جابجایی بوم';
+
+  @override
+  String get shortcutToggleSidebar => 'نمایش/نهفتن نوار ویژگی‌ها';
+
+  @override
+  String get shortcutToggleViewPanel => 'نمایش/نهفتن پنل نما و ابزار';
+
+  @override
+  String get shortcutToggleZenMode => 'حالت تمرکز (Zen) / تمام‌صفحه';
+
+  @override
+  String get shortcutHelp => 'نمایش راهنمای کلیدهای میانبر';
+
+  @override
+  String get shortcutCloseDialog => 'بستن پنجره / انصراف';
+
+  @override
+  String get noShortcutsFound => 'میانبری با این عبارت یافت نشد';
 }

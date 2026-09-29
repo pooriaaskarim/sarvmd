@@ -7,7 +7,6 @@
 /// Generates vector PDF document byte streams directly from manuscript layouts,
 /// running 100% in memory on Web, Desktop, and Mobile without requiring pdflatex.
 
-import 'dart:math' as math;
 import 'package:pdf/pdf.dart' as pdf;
 import 'package:pdf/widgets.dart' as pw;
 
@@ -15,9 +14,6 @@ import 'config.dart';
 import 'domain/clef.dart';
 import 'engraving_config.dart';
 import 'layout.dart';
-import 'domain/smufl.dart';
-import 'layout/positioned_element.dart';
-import 'layout/engraver.dart';
 
 const double _mmToPt = 72.0 / 25.4;
 
@@ -59,53 +55,6 @@ Future<List<int>> emitPdf(
   return pdfDoc.save();
 }
 
-/// Emit a complete PDF document byte stream for engraved page(s).
-Future<List<int>> emitCompiledPdf(
-  PageConfig config,
-  EngravingPage page,
-) async {
-  return emitCompiledPdfPages(config, [page]);
-}
-
-/// Emit a multi-page PDF document byte stream for a list of engraved pages.
-Future<List<int>> emitCompiledPdfPages(
-  PageConfig config,
-  List<EngravingPage> pages,
-) async {
-  final pdfDoc = pw.Document();
-  final wPt = config.effectiveWidth * _mmToPt;
-  final hPt = config.effectiveHeight * _mmToPt;
-  final pageFormat = pdf.PdfPageFormat(wPt, hPt, marginAll: 0);
-
-  final gap = config.staffConfig.lineGapMm;
-  final strokeMm = config.staffConfig.lineThicknessPt * 25.4 / 72.0;
-  final leftX = config.margins.left;
-  final rightX = config.effectiveWidth - config.margins.right;
-
-  for (final pageData in pages) {
-    pdfDoc.addPage(
-      pw.Page(
-        pageFormat: pageFormat,
-        build: (pw.Context context) {
-          return pw.CustomPaint(
-            size: pdf.PdfPoint(wPt, hPt),
-            painter: (pdf.PdfGraphics canvas, pdf.PdfPoint size) {
-              _drawSystemConnectors(canvas, config, pageData.pageLayout.systems, hPt);
-              _drawStaffLines(canvas, pageData.pageLayout.systems, leftX, rightX, gap, strokeMm, hPt);
-              _drawStaffLabels(canvas, pageData.pageLayout.systems, leftX, hPt, pdfDoc.document);
-
-              for (final elem in pageData.elements) {
-                _drawElement(canvas, elem, gap, config.engraving, hPt);
-              }
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  return pdfDoc.save();
-}
 
 void _drawStaffLines(
   pdf.PdfGraphics canvas,
@@ -430,214 +379,6 @@ void _drawSystemConnectors(
   }
 }
 
-void _drawElement(
-  pdf.PdfGraphics canvas,
-  PositionedElement elem,
-  double gap,
-  EngravingConfig config,
-  double hPt,
-) {
-  final scale = elem.scale;
-
-  if (elem is PositionedNote) {
-    final x = elem.x;
-    final y = elem.y;
-    final rxMm = 0.59 * gap * scale;
-    final ryMm = 0.40 * gap * scale;
-    final xPt = x * _mmToPt;
-    final yPt = hPt - (y * _mmToPt);
-    final rxPt = rxMm * _mmToPt;
-    final ryPt = ryMm * _mmToPt;
-
-    // Draw ledger lines
-    for (final ledgerY in elem.ledgerLineYs) {
-      final lenPt = gap * 1.6 * scale * _mmToPt;
-      final ledgerYPt = hPt - (ledgerY * _mmToPt);
-      canvas.setStrokeColor(pdf.PdfColors.black);
-      canvas.setLineWidth(0.12 * gap * _mmToPt);
-      canvas.drawLine(xPt - lenPt / 2, ledgerYPt, xPt + lenPt / 2, ledgerYPt);
-      canvas.strokePath();
-    }
-
-    // Draw notehead (rotated by -20 deg)
-    _drawRotatedEllipse(
-      canvas,
-      xPt,
-      yPt,
-      rxPt,
-      ryPt,
-      -20 * math.pi / 180.0,
-      fill: elem.glyph == SmuflGlyph.noteheadBlack,
-      strokeWidthPt: 0.18 * gap * _mmToPt,
-    );
-
-    // Draw stem
-    if (elem.hasStem) {
-      final stemLenPt = elem.stemLengthSp * gap * scale * _mmToPt;
-      final stemThicknessPt = 0.11 * gap * scale * _mmToPt;
-      final stemXPt = elem.stemUp ? xPt + rxPt * 0.95 : xPt - rxPt * 0.95;
-      final stemEndYPt = elem.stemUp ? yPt + stemLenPt : yPt - stemLenPt;
-
-      canvas.setStrokeColor(pdf.PdfColors.black);
-      canvas.setLineWidth(stemThicknessPt);
-      canvas.drawLine(stemXPt, yPt, stemXPt, stemEndYPt);
-      canvas.strokePath();
-
-      // Draw flag if present
-      if (elem.flagGlyph != null) {
-        final flagPath = (elem.flagGlyph == SmuflGlyph.flag8thUp || elem.flagGlyph == SmuflGlyph.flag8thDown)
-            ? _flag8thSvg
-            : _flag16thSvg;
-
-        final flagScale = gap * config.smuflGlyphScale * scale * _mmToPt;
-        final flagScaleY = elem.stemUp ? -flagScale : flagScale;
-
-        _drawSvgPathOnPdf(
-          canvas,
-          flagPath,
-          txPt: stemXPt,
-          tyPt: stemEndYPt,
-          scaleX: flagScale,
-          scaleY: flagScaleY,
-        );
-      }
-    }
-  } else if (elem is PositionedRest) {
-    final xPt = elem.x * _mmToPt;
-    final yPt = hPt - (elem.y * _mmToPt);
-    final gapPt = gap * scale * _mmToPt;
-
-    if (elem.glyph == SmuflGlyph.restWhole) {
-      canvas.setFillColor(pdf.PdfColors.black);
-      canvas.drawRect(xPt - 0.5 * gapPt, yPt - 0.6 * gapPt, 1.0 * gapPt, 0.6 * gapPt);
-      canvas.fillPath();
-    } else if (elem.glyph == SmuflGlyph.restHalf) {
-      canvas.setFillColor(pdf.PdfColors.black);
-      canvas.drawRect(xPt - 0.5 * gapPt, yPt, 1.0 * gapPt, 0.6 * gapPt);
-      canvas.fillPath();
-    } else {
-      final path = switch (elem.glyph) {
-        SmuflGlyph.restQuarter => _quarterRestSvg,
-        SmuflGlyph.restEighth => _eighthRestSvg,
-        _ => _sixteenthRestSvg,
-      };
-      final glyphScale = gap * config.smuflGlyphScale * scale * _mmToPt;
-      _drawSvgPathOnPdf(
-        canvas,
-        path,
-        txPt: xPt,
-        tyPt: yPt,
-        scaleX: glyphScale,
-        scaleY: glyphScale,
-      );
-    }
-  } else if (elem is PositionedBarline) {
-    final xPt = elem.x * _mmToPt;
-    final topYPt = hPt - (elem.topY * _mmToPt);
-    final bottomYPt = hPt - (elem.bottomY * _mmToPt);
-
-    canvas.setStrokeColor(pdf.PdfColors.black);
-    canvas.setLineWidth(elem.thicknessMm * _mmToPt);
-    canvas.drawLine(xPt, topYPt, xPt, bottomYPt);
-    canvas.strokePath();
-  } else if (elem is PositionedClef) {
-    final xPt = elem.x * _mmToPt;
-    final (String path, double glyphHeight, double displayGaps) = switch (elem.glyph) {
-      SmuflGlyph.gClef => (_gClefSvg, 1000.0, 4.0),
-      SmuflGlyph.cClef => (_cClefSvg, 1000.0, 4.0),
-      SmuflGlyph.fClef => (_fClefSvg, 1000.0, 4.0),
-      SmuflGlyph.tabClef => (_tabClef6Svg, 1512.0, 4.5),
-      SmuflGlyph.tabClefFour => (_tabClef4Svg, 1012.0, 2.7),
-      SmuflGlyph.percussionClef => (_percClefSvg, 1000.0, 4.0),
-      _ => (_gClefSvg, 1000.0, 4.0),
-    };
-
-    final svgScale = (gap * displayGaps * scale) / glyphHeight;
-    final anchorSp = switch (elem.glyph) {
-      SmuflGlyph.gClef => 0.876,
-      SmuflGlyph.cClef => 2.0,
-      SmuflGlyph.fClef => 2.578,
-      _ => 0.0,
-    };
-    final baselineY = elem.y + anchorSp * gap * scale;
-    final baselineYPt = hPt - (baselineY * _mmToPt);
-
-    _drawSvgPathOnPdf(
-      canvas,
-      path,
-      txPt: xPt,
-      tyPt: baselineYPt,
-      scaleX: svgScale * _mmToPt,
-      scaleY: svgScale * _mmToPt,
-    );
-  } else if (elem is PositionedKeySignature) {
-    var localX = elem.x;
-    for (final acc in elem.accidentals) {
-      final accPath = acc.glyph == SmuflGlyph.accidentalFlat ? _flatAccidentalSvg : _sharpAccidentalSvg;
-      final accScale = gap * config.smuflGlyphScale * scale * _mmToPt;
-      _drawSvgPathOnPdf(
-        canvas,
-        accPath,
-        txPt: localX * _mmToPt,
-        tyPt: hPt - (acc.y * _mmToPt),
-        scaleX: accScale,
-        scaleY: accScale,
-      );
-      localX += acc.glyph.widthSp * gap * config.keySignatureAccidentalSpacingSp * scale;
-    }
-  }
-}
-
-void _drawRotatedEllipse(
-  pdf.PdfGraphics canvas,
-  double cxPt,
-  double cyPt,
-  double rxPt,
-  double ryPt,
-  double angleRad, {
-  required bool fill,
-  required double strokeWidthPt,
-}) {
-  final cosA = math.cos(angleRad);
-  final sinA = math.sin(angleRad);
-  final k = 0.5522847498;
-
-  final unitPts = [
-    (1.0, 0.0, 1.0, k, k, 1.0, 0.0, 1.0),
-    (0.0, 1.0, -k, 1.0, -1.0, k, -1.0, 0.0),
-    (-1.0, 0.0, -1.0, -k, -k, -1.0, 0.0, -1.0),
-    (-1.0, 0.0, k, -1.0, 1.0, -k, 1.0, 0.0),
-  ];
-
-  (double, double) trans(double ux, double uy) {
-    final x = ux * rxPt;
-    final y = uy * ryPt;
-    final rx = cxPt + (x * cosA - y * sinA);
-    final ry = cyPt + (x * sinA + y * cosA);
-    return (rx, ry);
-  }
-
-  final (startPtX, startPtY) = trans(1.0, 0.0);
-  canvas.moveTo(startPtX, startPtY);
-
-  for (final seg in unitPts) {
-    final (c1x, c1y) = trans(seg.$3, seg.$4);
-    final (c2x, c2y) = trans(seg.$5, seg.$6);
-    final (ex, ey) = trans(seg.$7, seg.$8);
-    canvas.curveTo(c1x, c1y, c2x, c2y, ex, ey);
-  }
-
-  canvas.closePath();
-  if (fill) {
-    canvas.setFillColor(pdf.PdfColors.black);
-    canvas.fillPath();
-  } else {
-    canvas.setStrokeColor(pdf.PdfColors.black);
-    canvas.setLineWidth(strokeWidthPt);
-    canvas.strokePath();
-  }
-}
-
 /// Helper method to parse SVG path commands and render them to a PDF Graphics context.
 void _drawSvgPathOnPdf(
   pdf.PdfGraphics canvas,
@@ -741,19 +482,3 @@ const String _tabClef6Svg =
 const String _tabClef4Svg =
     'M 258.0,469.0 L 258.0,504.0 L 11.0,504.0 L 11.0,469.0 L 115.0,469.0 L 115.0,189.0 L 155.0,189.0 L 155.0,469.0 Z M 272.0,-160.0 L 162.0,155.0 L 110.0,155.0 L -3.0,-160.0 L 40.0,-160.0 L 73.0,-65.0 L 195.0,-65.0 L 227.0,-160.0 Z M 184.0,-32.0 L 83.0,-32.0 L 135.0,112.0 Z M 252.0,-418.0 C 252.0,-380.0 235.0,-357.0 195.0,-342.0 C 223.0,-328.0 238.0,-305.0 238.0,-273.0 C 238.0,-227.0 205.0,-193.0 145.0,-193.0 L 17.0,-193.0 L 17.0,-508.0 L 159.0,-508.0 C 216.0,-508.0 252.0,-470.0 252.0,-418.0 Z M 198.0,-279.0 C 198.0,-311.0 180.0,-329.0 135.0,-329.0 L 57.0,-329.0 L 57.0,-228.0 L 135.0,-228.0 C 180.0,-228.0 198.0,-247.0 198.0,-279.0 Z M 212.0,-418.0 C 212.0,-449.0 194.0,-472.0 156.0,-472.0 L 57.0,-472.0 L 57.0,-364.0 L 156.0,-364.0 C 194.0,-364.0 212.0,-388.0 212.0,-418.0 Z';
 
-const String _quarterRestSvg =
-    "M100 -250 C120 -180 150 -120 180 -70 C190 -40 180 -10 160 20 C130 50 80 100 40 150 C20 180 10 210 20 240 C30 270 60 300 90 320 L15 320 C-10 280 -20 230 -10 180 Q10 110 50 60 C80 20 110 -30 130 -80 Z";
-const String _eighthRestSvg =
-    "M50 180 C80 180 100 160 100 130 C100 90 70 60 30 60 C10 60 0 70 0 90 C0 120 20 150 50 180 Z M0 0 L80 150 H100 L20 0 Z";
-const String _sixteenthRestSvg =
-    "M50 180 C80 180 100 160 100 130 C100 90 70 60 30 60 C10 60 0 70 0 90 C0 120 20 150 50 180 Z M50 100 C80 100 100 80 100 50 C100 10 70 -20 30 -20 C10 -20 0 -10 0 10 C0 40 20 70 50 100 Z M0 -80 L80 180 H100 L20 -80 Z";
-
-const String _flatAccidentalSvg =
-    "M20 -150 V150 H30 V30 C50 60 80 70 100 40 C120 10 120 -30 100 -60 C80 -90 50 -80 30 -50 V-150 Z M30 -20 C45 -40 65 -45 80 -30 C95 -15 95 15 80 30 C65 45 45 40 30 20 Z";
-const String _sharpAccidentalSvg =
-    "M30 -100 V100 H45 V35 L75 55 V100 H90 V15 L45 -5 V-100 Z M75 -35 L45 -55 V-15 L75 5 V-35 Z";
-
-const String _flag8thSvg =
-    "M 0 0 C 15 -25 35 -35 55 -30 C 45 -45 25 -50 0 -45 C 5 -10 10 15 15 35 Q 25 15 0 0 Z";
-const String _flag16thSvg =
-    "M 0 0 C 15 -25 35 -35 55 -30 C 45 -45 25 -50 0 -45 Z M 0 -30 C 15 -55 35 -65 55 -60 C 45 -75 25 -80 0 -75 Z";

@@ -5,13 +5,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
+import '../../../../core/utils/app_logger.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../logic/document/document_cubit.dart';
 import '../../../../logic/document/document_state.dart';
 import '../../../../logic/locale/locale_cubit.dart';
+import '../../../../logic/services/sarv_file_service.dart';
 import '../../../../logic/view/view_cubit.dart';
+import '../../../../logic/workspace/workspace_cubit.dart';
 import '../../dialogs/about_dialog.dart';
+import '../../dialogs/document_properties_dialog.dart';
 import '../../dialogs/export_dialog.dart';
+import '../../dialogs/keyboard_shortcuts_dialog.dart';
 import '../../dialogs/staff_config_dialog.dart';
+import '../../dialogs/unsaved_changes_dialog.dart';
+
+final _log = AppLogger.get('sarvmd.ui.menu');
 
 /// Central dispatcher for all string-keyed menu actions across the top bar.
 ///
@@ -35,65 +44,28 @@ void handleTopBarMenuSelection(
     case 'add_staff':
     case 'add_staff_5line':
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Standard Treble Staff',
-        ),
-      ));
       break;
     case 'add_staff_5line_bass':
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Standard Bass Staff',
-        ),
-      ));
       break;
     case 'add_staff_grand':
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.treble));
       documentCubit.addStaff(def: const core.StaffDefinition(lines: 5, clef: core.Clef.bass));
-      final now = DateTime.now().microsecondsSinceEpoch;
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(id: 'part_${now}_1', name: 'Grand Staff Treble'),
-      ));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(id: 'part_${now}_2', name: 'Grand Staff Bass'),
-      ));
       break;
     case 'add_staff_tab':
       documentCubit.addStaff(
           def: const core.StaffDefinition(lines: 6, clef: core.Clef.tab, instrumentName: 'TAB'));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Guitar TAB',
-        ),
-      ));
       break;
     case 'add_staff_rhythm':
       documentCubit.addStaff(
           def: const core.StaffDefinition(
               lines: 1, clef: core.Clef.percussion, instrumentName: 'Rhythm'));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: 'Rhythm Staff',
-        ),
-      ));
       break;
     case 'add_staff_custom':
       final newStaff = documentCubit.addStaff(
           def: const core.StaffDefinition(
         lines: 5,
         clef: core.TrebleClef(),
-      ));
-      documentCubit.execute(core.AddPartCommand(
-        core.Part(
-          id: 'part_${DateTime.now().microsecondsSinceEpoch}',
-          name: '',
-        ),
       ));
       showStaffConfigDialog(
         context,
@@ -103,8 +75,33 @@ void handleTopBarMenuSelection(
       break;
 
     // ── File / Export ───────────────────────────────────────────────────────
+    case 'new_document':
+      final workspace = context.read<WorkspaceCubit?>();
+      if (workspace != null) {
+        workspace.openNewTab();
+      } else {
+        _handleNewDocument(context, documentCubit, documentState);
+      }
+      break;
+    case 'open_document':
+      final workspace = context.read<WorkspaceCubit?>();
+      if (workspace != null) {
+        _handleWorkspaceOpenDocument(context, workspace);
+      } else {
+        _handleOpenDocument(context, documentCubit, documentState);
+      }
+      break;
+    case 'save_document':
+      _handleSaveDocument(context, documentCubit, documentState);
+      break;
+    case 'save_as_document':
+      _handleSaveAsDocument(context, documentCubit, documentState);
+      break;
     case 'export':
       showExportDialog(context);
+      break;
+    case 'document_properties':
+      showDocumentPropertiesDialog(context);
       break;
 
     // ── View / Appearance ───────────────────────────────────────────────────
@@ -146,6 +143,9 @@ void handleTopBarMenuSelection(
       break;
 
     // ── Misc ────────────────────────────────────────────────────────────────
+    case 'keyboard_shortcuts':
+      showKeyboardShortcutsDialog(context);
+      break;
     case 'about':
       showSarvAboutDialog(context);
       break;
@@ -177,5 +177,160 @@ void handleTopBarMenuSelection(
         }
       }
       break;
+  }
+}
+
+Future<void> _handleNewDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  final liveState = cubit.state;
+  if (liveState.isDirty) {
+    final action = await showUnsavedChangesDialog(context, documentName: liveState.displayName);
+    if (action == UnsavedChangesAction.cancel) return;
+    if (action == UnsavedChangesAction.save) {
+      final saved = await cubit.save();
+      if (!saved) return;
+    }
+  }
+  cubit.newDocument();
+}
+
+Future<void> _handleOpenDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  final liveState = cubit.state;
+  if (liveState.isDirty) {
+    final action = await showUnsavedChangesDialog(context, documentName: liveState.displayName);
+    if (action == UnsavedChangesAction.cancel) return;
+    if (action == UnsavedChangesAction.save) {
+      final saved = await cubit.save();
+      if (!saved) return;
+    }
+  }
+  try {
+    await cubit.openFile();
+  } catch (e, st) {
+    _log.error('Failed to open document', error: e, stackTrace: st);
+    if (context.mounted) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileOpenFailed)),
+      );
+    }
+  }
+}
+
+Future<void> _handleSaveDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    final success = await cubit.save();
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSavedSuccess)),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSaveFailed)),
+      );
+    }
+  }
+}
+
+Future<void> _handleSaveAsDocument(BuildContext context, DocumentCubit cubit, DocumentState state) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    final success = await cubit.saveAs();
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSavedSuccess)),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileSaveFailed)),
+      );
+    }
+  }
+}
+
+Future<void> _handleWorkspaceOpenDocument(BuildContext context, WorkspaceCubit workspace) async {
+  try {
+    final result = await SarvFileService().openSarvFile();
+    if (result != null) {
+      await workspace.openDocumentTab(
+        result.document,
+        filePath: result.filePath,
+        title: result.fileName,
+      );
+    }
+  } catch (e, st) {
+    _log.error('Failed to open document in workspace', error: e, stackTrace: st);
+    if (context.mounted) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.fileOpenFailed)),
+      );
+    }
+  }
+}
+
+/// Handles opening a recent document file from its [filePath].
+Future<void> handleOpenRecentDocument(
+  BuildContext context,
+  String filePath,
+) async {
+  final fileService = SarvFileService();
+  final workspace = context.read<WorkspaceCubit?>();
+  final documentCubit = workspace == null ? context.read<DocumentCubit>() : null;
+
+  try {
+    if (workspace != null) {
+      // If already open in an existing session, switch to that tab
+      final existingIndex = workspace.state.sessions.indexWhere(
+        (s) => s.filePath == filePath,
+      );
+      if (existingIndex != -1) {
+        workspace.switchTab(existingIndex);
+        return;
+      }
+
+      final loadResult = await fileService.loadFileFromPath(filePath);
+      await workspace.openDocumentTab(
+        loadResult.document,
+        filePath: loadResult.filePath,
+        title: loadResult.fileName,
+      );
+    } else if (documentCubit != null) {
+      final documentState = documentCubit.state;
+      if (documentState.isDirty && context.mounted) {
+        final action = await showUnsavedChangesDialog(
+          context,
+          documentName: documentState.displayName,
+        );
+        if (action == UnsavedChangesAction.cancel) return;
+        if (action == UnsavedChangesAction.save) {
+          final saved = await documentCubit.save();
+          if (!saved) return;
+        }
+      }
+      final loadResult = await fileService.loadFileFromPath(filePath);
+      documentCubit.loadDocument(
+        loadResult.document,
+        filePath: loadResult.filePath,
+      );
+    }
+  } catch (e, st) {
+    _log.error('Failed to open recent document', error: e, stackTrace: st);
+    if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
+      if (l10n != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.fileOpenFailed),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }

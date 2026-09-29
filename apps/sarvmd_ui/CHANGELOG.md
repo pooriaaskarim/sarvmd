@@ -9,6 +9,143 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-30
+
+### Added
+- **Keyboard Shortcuts Cheat-Sheet Modal (`KeyboardShortcutsDialog`)**:
+  - Comprehensive, categorized shortcut reference (File & Tabs, Edit & History, View & Navigation, Panels & Dialogs, General) accessible via `F1`, `Ctrl+?` (`⌘?` on macOS), and the Help top-bar menu.
+  - Real-time search and category filtering with localized shortcut descriptions and keycap displays.
+  - Native platform keycaps (⌘, ⌥, ⇧ for macOS; Ctrl, Alt, Shift for Windows/Linux) with strict LTR isolation under RTL/Persian locales.
+- **Desktop Keyboard Shortcuts Suite & Gateway Expansion (`SarvShortcutGateway` & `PointerEditorScreen`)**:
+  - Canvas Zooming: Added `Ctrl+=` / `⌘=` (Zoom In), `Ctrl+-` / `⌘-` (Zoom Out), and `Ctrl+0` / `⌘0` (Reset to 100% / Actual Size) with viewport center focal anchoring.
+  - Panels & Layout Toggles: Added `Ctrl+B` / `⌘B` (Toggle Left Inspector/Sidebar), `Ctrl+\` / `⌘\` (Toggle Right View Panel), and `F11` (Toggle Zen Mode / Hide all sidebars).
+  - Connected `Ctrl+N` / `⌘N` and `Ctrl+T` / `⌘T` directly to `WorkspaceCubit.openNewTab()` for instant tab creation in multi-document workspace mode.
+  - Multi-entry Help Shortcuts: Bound `F1` and `Ctrl+?` / `⌘?` to open the Keyboard Shortcuts modal.
+- **Top Bar Help Menu Shortcuts Entry (`TopBarHelpMenu` & `TopBarMenuHandler`)**:
+  - Added "Keyboard Shortcuts" menu item with `F1` / `Ctrl+?` accelerator to the desktop Help menu and compact cascading menu.
+- **Zero-Document Empty Workspace & Welcome Hub (`EmptyWorkspaceView`)**:
+  - Seamless transition into a sleek, state-of-the-art "No Document / Welcome Hub" when all open tabs/manuscripts are closed (0 open sessions).
+  - Minimal top navigation bar enforced with strict LTR orientation across all locales (anchoring `SarvBrandHeader` on the left and `InputModeToggleButton`, `LanguageToggleButton`, and theme toggle on the right).
+  - Input-mode awareness: automatically suppresses desktop keyboard shortcut legends (`Ctrl+N`, `Ctrl+O`) when operating in Touch mode, and adapts the drop-target card prompt into a tap-to-open button ("Tap to open an existing .sarv manuscript").
+  - Fully bilingual localized starter presets (Solo Treble, Grand Staff, Guitar + TAB, Chamber Orchestra) in both English and Persian (`app_en.arb`, `app_fa.arb`) with custom-vector `MiniStaffPreview` staves.
+  - Interactive touch ergonomics: wrapped preset and history cards in Material `InkWell` ripples, mirrored forward chevrons in RTL layouts, allowed two-line subtitle wraps on mobile screens, and padded scrolling areas above OS navigation bars.
+  - Centered hero section featuring full `SarvBrandHeader` with handwriting logo and Gouldian engraving typography.
+  - "Browse all templates…" action launching `ProfilePicker` within an adaptive modal (`showSarvAdaptiveModal`).
+  - "Recent Manuscripts" history card consuming `RecentDocumentsService` with path tooltips, click-to-open, and history clearing.
+  - "Open other file…" primary action and full-window drag-and-drop landing prompt card with border highlighting.
+  - Responsive single-column (portrait/narrow) and two-column (wide/desktop) adaptive layouts with zero layout overflow.
+- **Desktop CLI Launch Argument Support (`FileOpenService`)**:
+  - Direct opening of `.sarv` files from terminal command line or desktop launcher invocation (`sarvmd <file.sarv>`).
+  - Integrated command-line argument passing from `main(List<String> args)` to `FileOpenService.init(launchArgs: args)`.
+- **Multi-Tab Session State Persistence & Restoration (`WorkspaceCubit`)**:
+  - Automatic persistence of multi-tab workspace sessions (all open tab document states, active tab index, and metadata) to `SharedPreferences` (`sarvmd_workspace_session`) with 500ms debouncing.
+  - Transparent workspace session restoration upon application cold-start with concurrency lock coordination.
+  - Added programmatic cache controls: `flushSessionSave()` and `clearSavedSession()`.
+- **Canvas & Tab Bar File Drag-and-Drop (`desktop_drop`)**:
+  - Native file drag-and-drop support across canvas and tab strip allowing users to drag `.sarv` files directly from OS file managers into the window to open in new tabs.
+  - Responsive visual feedback overlay with glowing accent border and localized drop prompt (`dragDropOverlayHint`).
+  - Resilient name/path resolution and error reporting for invalid or corrupted dropped files.
+- **Native `.sarv` Document Persistence & Schema Architecture (`packages/sarvmd_core`)**:
+  - Standardized native JSON document format (v1 schema) capturing complete manuscript layouts (`PageConfig`, nested `SystemLayout`, `Score`, and `DocumentMetadata`) with guaranteed zero data loss.
+  - Comprehensive document metadata domain model capturing `title`, `composer`, `subtitle`, `arranger`, `lyricist`, `copyright`, `license`, `creationDate`, and `modificationDate`.
+  - Resilient cross-platform deserialization supporting dynamic type coercion and UTF-8 Byte Order Mark (`\uFEFF`) detection and stripping.
+- **Cross-Platform Document Persistence Engine (`SarvFileService`)**:
+  - Direct file saving and opening for desktop platforms (Linux, macOS, Windows) and web browser integration via native file pickers and File System Access API.
+  - Automatic `.sarv` extension enforcement, schema validation, and structured error reporting.
+- **Transactional Persistence Lifecycle in `DocumentCubit`**:
+  - Added `newDocument`, `loadDocument`, `openFile`, `save`, and `saveAs` transactional methods.
+  - Intelligent dirty state tracking (`isDirty`) linked to command history clean marks (`CommandHistory.cleanMark`) and deep value-equality checking across undo and redo operations.
+- **UI Persistence Controls & Unsaved Changes Guard**:
+  - Sleek reactive dirty indicator dot (`●`) in `EditableScoreHeader` indicating unsaved changes.
+  - Responsive `UnsavedChangesDialog` guarding New, Open, and Close workflows with localized HIG actions (Save, Don't Save, Cancel).
+  - Top Bar File menu (`New`, `Open...`, `Save`, `Save As...`) and standard keyboard shortcuts (`Ctrl+N`, `Ctrl+O`, `Ctrl+S`, `Ctrl+Shift+S`).
+- **Multi-Document Tabbed Workspace (`WorkspaceCubit` & `DocumentSession`)**:
+  - Isolated multi-document state architecture managing independent `DocumentCubit` instances, file paths, and dirty state tracking without cross-tab interference.
+  - Complete tab lifecycle operations: `openNewTab`, `openFileTab`, `openDocumentTab`, `switchTab`, `closeTab`, `closeOtherTabs`, `nextTab`, `previousTab`, and `reorderTabs`.
+  - Dynamic facade in `AppShell` providing `activeCubit` to the entire widget tree with transparent fallback to ambient single-document setups.
+- **Portrait-Optimized Pointer Tab Bar (`PointerTabBar` & `PointerTabItem`)**:
+  - IDE-grade compact horizontal tab strip with dynamic sizing (30dp in portrait/narrow viewports, 32dp in landscape) and smooth horizontal scrolling with automatic scroll-to-active.
+  - Enhanced close accessibility: active tabs expose both dirty indicator dots and 1-click close buttons, eliminating hover friction on touch/pointer hybrid devices and narrow portrait screens.
+  - Tab overflow dropdown `[ ▾ ]` displaying a vertical tab picker with active checkmarks and dirty indicators when tabs exceed viewport width.
+  - Complete keyboard shortcut gateway integration: `Ctrl+T` (new tab), `Ctrl+W` (close tab), `Ctrl+Tab` / `Ctrl+PageDown` (next tab), and `Ctrl+Shift+Tab` / `Ctrl+PageUp` (previous tab).
+- **Touch Mode Zen Tab Switcher (`TouchTabSwitcherModal` & `TouchTopBar`)**:
+  - Minimalist Zen top bar tab count pill (`[ 📑 N ]`), automatically suppressed during inline title editing to prevent horizontal crowding.
+  - Frosted glassmorphic bottom sheet card switcher with drag handle, manuscript cards, staff count chips, dirty dots, swipe-to-dismiss closure, and "+ New Manuscript" button.
+- **Bilingual File & Workspace Localization**:
+  - Added comprehensive English (`app_en.arb`) and Persian (`app_fa.arb`) localization keys for all document management, file menus, unsaved changes dialogs, and tab actions.
+- **Recent Documents History & Menu Integration (`RecentDocumentsService`)**:
+  - Persistent recent documents history backed by `SharedPreferences` (`sarvmd_recent_documents`) capped at 10 items with deduplication, top promotion, and automatic pruning of non-existent files on native platforms.
+  - Cascading `Open Recent ▸` submenu in desktop wide mode, compact application menu, and touch file menus with path tooltips, ellipsis truncation, and "Clear Recent Files" action.
+  - Smart tab handling: opening a recent document that is already open focuses its existing tab rather than opening a duplicate session.
+- **Score Metadata / Document Properties Dialog (`DocumentPropertiesDialog`)**:
+  - Adaptive modal dialog (`showDocumentPropertiesDialog`) and bottom sheet on mobile for viewing and editing extended `.sarv` score metadata fields (`title`, `subtitle`, `composer`, `arranger`, `lyricist`, `copyright`).
+  - Read-only document properties card showing exact file location on disk, creation timestamp, and last modified timestamp.
+  - Transactional undo/redo integration with `DocumentCubit` via `core.SetMetadataCommand`, synchronized with `core.Score.title`.
+  - Dedicated `Ctrl+I` / `Cmd+I` global keyboard shortcut and File menu item (`Document Properties…`).
+- **Web `beforeunload` Unsaved Changes Protection**:
+  - Registered browser-native `beforeunload` event handler via Dart JS-interop in `web_download_web.dart` triggered dynamically whenever any open tab has unsaved changes (`hasDirtyTabs`) to protect against accidental browser tab close or refresh data loss.
+- **Cross-Platform Pre-Extension File Disambiguation Engine (`packages/sarvmd_core`)**:
+  - Introduced zero-dependency `FileNaming` utility module (`appendSuffix`, `appendIndex`, `stripExtension`, `getExtension`, `disambiguateFileName`, `ensureUniquePath`).
+  - Standardized collision disambiguation across platforms to strictly insert numeric indices immediately before file extensions (e.g. `Score (1).pdf` or `Score_1.pdf`) rather than trailing after the extension.
+- **Editable Destination Folder & Path Normalization in Export Dialog (`ExportDialog` & `ExportDirectoryService`)**:
+  - Upgraded the Destination Folder field to an interactive monospace text input supporting direct typing, path pasting, focus management, and automatic normalization.
+  - Implemented `ExportDirectoryService.normalizeExportPath` with user tilde (`~`) expansion to home directory, stripping of `file://` URI schemes, redundant and trailing slash cleanup, and Windows drive letter path support, resolving file picker ambiguity on Linux desktop environments.
+- **Comprehensive Persistence & Workspace Test Suites**:
+  - Added end-to-end unit and widget test suites covering document serialization, file service operations, persistence cubit workflows, dirty state tracking, pointer tab bar interactions, touch tab switcher modal flows, recent documents service and UI integration, export directory path normalization, native Android SAF save contract, and document properties dialog workflows (`document_persistence_test.dart`, `sarv_file_service_test.dart`, `file_ui_components_test.dart`, `workspace_cubit_test.dart`, `pointer_tab_bar_test.dart`, `touch_tab_switcher_test.dart`, `recent_documents_test.dart`, `export_directory_service_test.dart`, `native_file_save_service_test.dart`, `document_properties_dialog_test.dart`).
+
+### Changed
+- **Document Model Decoupling**:
+  - Decoupled `DocumentCubit` and `DocumentState` to carry file path and dirty state directly alongside `PageConfig`.
+  - Streamlined `ScoreCommand` architecture to support non-mutating clean marks on document saving.
+
+### Removed
+- **Obsolete Notation AST & Experimental Composer**:
+  - Purged legacy, incomplete music notation AST types (`clef.dart`, `pitch.dart`, `duration.dart`, `measure.dart`, `musical_event.dart`, `signature.dart`, `engraver.dart`, `spacing_spindle.dart`) and retired the experimental `sarvmd_composer` package.
+  - Consolidated codebase strictly around high-performance blank canvas manuscript design and vector engraving.
+
+### Fixed
+- **Center-Focal Touch HUD Zoom (`FloatingHud`)**:
+  - Fixed issue where touch HUD stepper zoom buttons (`+` and `-`) and scrubbable scale chips (`_CollapsedScrubbableChip`, `_ScrubbableZoomChip`) scaled the canvas from the world-space top-left origin `(0, 0)`.
+  - Replaced naive translation retention with center-anchored affine transformation (`_applyScaleAtCenter`) using `MediaQuery.sizeOf(context)` to zoom smoothly into the viewport center.
+- **Affine Scale Vector Component Sizing (`PointerEditorScreen`)**:
+  - Corrected `scaleByDouble` invocation in `PointerEditorScreen._zoomBy` by supplying 4 positional vector parameters (`targetScale, targetScale, 1.0, 1.0`), resolving static analysis errors.
+- **Zero-Document Action Safety (`SarvShortcutGateway`)**:
+  - Guarded document shortcut callback handlers (`UndoIntent`, `RedoIntent`, `SaveDocumentIntent`, `SaveAsDocumentIntent`, `ExportIntent`, `DocumentPropertiesIntent`) against null `DocumentCubit` when operating within the zero-document empty workspace state.
+- **Distinct File Deduplication for Copies & Identical Content (`WorkspaceCubit` & `AppShell`)**:
+  - Fixed issue where distinct files with identical score contents (e.g. `sample.sarv` and `sample (1).sarv` created via "Save As" or copy-paste) were erroneously treated as the same document and deduplicated into a single tab due to indiscriminate score title and content equality matching.
+  - Refined file deduplication criteria in `WorkspaceCubit.openDocumentTab` and `AppShell._handleDroppedFiles` to strictly require matching file identities (path or filename) when both documents have explicit file backings, reserving deep content equivalence matching (`hasSameContent`) strictly for untitled in-memory manuscripts.
+- **Web Blob URL Sanitization & Document Name Parity (`DocumentState`, `WorkspaceCubit`, & `AppShell`)**:
+  - Resolved issue where opening or dropping files on Web displayed random UUID hashes (e.g. `9bf3e8d2-4521-4f1a-b678-0123456789ab`) as the document tab title and default save name instead of the actual file name.
+  - Guarded `DocumentState.displayName`, `WorkspaceCubit.openDocumentTab`, `SarvFileService.openSarvFile`, and `RecentDocumentsService.addRecentDocument` against Web `blob:` and `http:` object URLs, strictly normalizing to the genuine file name (`file.name`).
+- **Web & Desktop Document Tab Deduplication & Drag-and-Drop Parity (`WorkspaceCubit` & `AppShell`)**:
+  - Resolved issue in Web where dragging or opening an already-open `.sarv` document created redundant duplicate tabs rather than switching to the existing open tab.
+  - Added robust multi-criteria deduplication in `WorkspaceCubit.openDocumentTab` matching by exact file path, filename/basename, and document content equivalence across desktop and web.
+  - Ensured Web dropped files and opened files retain their file identity (`filePath: fileName`) so loaded documents are never mistaken for blank placeholder tabs or duplicated upon subsequent drag-and-drop operations.
+  - Added "Switched to tab" visual feedback and icon indicator parity when dragging already-open documents on Web.
+- **Android SAF Pre-Extension Duplicate Numbering (`NativeFileSaveService` & `MainActivity.kt`)**:
+  - Resolved Android Storage Access Framework (SAF) issue where filename collision numbers were placed after the extension (e.g. `Treble_A4_Portrait.pdf (1)` or `Treble_A4_Portrait.sarv (1)`).
+  - Implemented `NativeFileSaveService` bridging to native Android `ACTION_CREATE_DOCUMENT` with explicit MIME types (`application/pdf`, `image/svg+xml`, `text/plain`, `application/octet-stream`).
+  - Added native post-creation regex inspection and `DocumentsContract.renameDocument` handling in `MainActivity.kt` to ensure collision indices are strictly positioned immediately before the extension (`Treble_A4_Portrait (1).pdf` and `Treble_A4_Portrait (1).sarv`).
+- **Touch Tab Switcher Synchronous Dismissal & Empty Workspace Recovery (`TouchTabSwitcherModal` & `WorkspaceCubit`)**:
+  - Fixed Flutter framework crash `A dismissed Dismissible widget is still part of the tree` in `TouchTabSwitcherModal` by synchronously removing dismissed items from local state prior to awaiting asynchronous tab closure operations.
+  - Hardened `WorkspaceCubit` when dismissing or closing the final active tab, automatically initializing a fresh default manuscript session (`createDefaultSession`) rather than corrupting state or leaving an empty workspace.
+- **Web Build File Saving & Destination Selection (`saveFileWeb`)**:
+  - Upgraded Web file saving to utilize the modern File System Access API (`window.showSaveFilePicker`), prompting users with the native OS file picker to select a destination directory and customize or confirm the file name.
+  - Automatically populated the save dialog with the document's intelligent default display name (`ScoreTitle.sarv` or `Untitled Manuscript.sarv`).
+  - Fixed premature `URL.revokeObjectURL` invocation in `downloadFileWeb`, eliminating browser download truncation to 0 bytes and loss of default filenames during browser downloads.
+- **Web Build `.sarv` Document Loading & Parity (`openFileWeb`)**:
+  - Resolved issue where loading `.sarv` documents in Web failed with corrupt file errors by bypassing `file_picker`'s web `JSArrayBuffer` casting limitation in favor of direct `window.showOpenFilePicker` and `FileReader.readAsText`.
+  - Added automatic UTF-8 BOM (`\uFEFF`) stripping and dynamic Map deserialization resilience to guarantee full cross-platform compatibility with documents created on Linux or Windows.
+  - Added `WorkspaceCubit.openDocumentTab` to mount parsed documents into tabs directly without attempting unsupported direct filesystem reads on Web.
+- **Recent Documents Menu Activation & Deactivated Ancestor Error (`TopBarFileMenu`)**:
+  - Fixed a crash (`Looking up a deactivated widget's ancestor is unsafe`) when opening a document from the Open Recent submenu caused by `BuildContext` shadowing inside `RecentDocumentsService`'s `ValueListenableBuilder`.
+- **Android File Picker Extension Filter & Storage Resilience (`SarvFileService`)**:
+  - Resolved `PlatformException(FilePicker, Unsupported filter...)` on Android caused by Android OS `MimeTypeMap` failing to resolve unregistered custom `.sarv` file extensions.
+  - Configured `FileType.any` on Android and mobile platforms, paired with graceful `PlatformException` recovery and strict JSON/schema content validation.
+  - Hardened `saveAsSarvFile` against Storage Access Framework (SAF) direct file write exceptions.
+  - Re-routed `handleOpenRecentDocument` to bind to the persistent top bar widget's `BuildContext` instead of the transient menu popup overlay element tree that is deactivated upon item tap.
+  - Hardened cubit resolution in `top_bar_menu_handler.dart` by resolving `WorkspaceCubit` and `DocumentCubit` synchronously before asynchronous suspension points, and guarded UI dialog and snackbar feedback with `context.mounted`.
+
 ## [0.10.0] - 2026-09-27
 
 ### Changed

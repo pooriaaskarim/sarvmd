@@ -432,5 +432,108 @@
   "newScore": "New Score",
   "appMenuTooltip": "App Menu",
   "exportOptionsTooltip": "Export Options",
-  "exportFormatsSummary": "Export PDF / TeX / SVG…"
+  "exportFormatsSummary": "Export PDF / TeX / SVG…",
+  "menuNew": "New",
+  "menuOpen": "Open…",
+  "menuSave": "Save",
+  "menuSaveAs": "Save As…",
+  "unsavedChangesTitle": "Unsaved Changes",
+  "unsavedChangesMessage": "Do you want to save changes to \"{documentName}\" before continuing?",
+  "@unsavedChangesMessage": {
+    "placeholders": {
+      "documentName": {
+        "type": "String"
+      }
+    }
+  },
+  "actionSave": "Save",
+  "actionDiscard": "Don't Save",
+  "actionCancel": "Cancel",
+  "fileSavedSuccess": "Document saved successfully.",
+  "fileSaveFailed": "Failed to save document.",
+  "fileOpenFailed": "Failed to open document. The file may be corrupt or not a valid .sarv manuscript.",
+  "fileOpenedSuccess": "Opened \"{title}\"",
+  "@fileOpenedSuccess": {
+    "description": "Transient notification shown when a document is opened from an external source or OS intent",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "fileSwitchedTab": "Switched to tab \"{title}\"",
+  "@fileSwitchedTab": {
+    "description": "Transient notification shown when an external file intent targets an already open tab",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "menuOpenRecent": "Open Recent",
+  "menuClearRecent": "Clear Recent Files",
+  "menuNoRecentFiles": "No Recent Files",
+  "menuDocumentProperties": "Document Properties…",
+  "documentPropertiesTitle": "Document Properties",
+  "metadataScoreTitle": "Title",
+  "metadataSubtitle": "Subtitle",
+  "metadataComposer": "Composer",
+  "metadataArranger": "Arranger",
+  "metadataLyricist": "Lyricist",
+  "metadataCopyright": "Copyright",
+  "metadataCreatedAt": "Created",
+  "metadataModifiedAt": "Modified",
+  "metadataFilePath": "File Location",
+  "metadataUnsaved": "Unsaved Manuscript",
+  "actionApply": "Apply",
+  "dragDropOverlayHint": "Drop .sarv manuscript to open",
+  "welcomeTitle": "Sarv Manuscript Designer",
+  "welcomeSubtitle": "Zero-compromise Gouldian music manuscript creation",
+  "startNewManuscript": "Start New Manuscript",
+  "recentManuscripts": "Recent Manuscripts",
+  "noRecentManuscripts": "No recent manuscripts yet",
+  "browseAllTemplates": "Browse all templates…",
+  "openOtherFile": "Open other file…",
+  "dropToOpenHint": "Drag and drop a .sarv manuscript anywhere to start editing",
+  "shortcutNewHint": "Ctrl+N New",
+  "shortcutOpenHint": "Ctrl+O Open",
+  "touchOpenExistingPrompt": "Tap to open an existing .sarv manuscript",
+  "presetSoloTrebleTitle": "Solo Treble",
+  "presetSoloTrebleSubtitle": "Standard 5-line classical staff",
+  "presetGrandStaffTitle": "Grand Staff",
+  "presetGrandStaffSubtitle": "Piano system with brace & treble/bass",
+  "presetGuitarTabTitle": "Guitar + TAB",
+  "presetGuitarTabSubtitle": "Standard notation with 6-string TAB",
+  "presetChamberOrchestraTitle": "Chamber Orchestra",
+  "presetChamberOrchestraSubtitle": "String quartet & winds hierarchy",
+  "keyboardShortcutsTitle": "Keyboard Shortcuts",
+  "keyboardShortcutsSubtitle": "Boost your workflow with speed entry shortcuts",
+  "keyboardShortcutsSearchPlaceholder": "Filter shortcuts...",
+  "shortcutCategoryGeneral": "General & Dialogs",
+  "shortcutCategoryFile": "File & Tabs",
+  "shortcutCategoryEdit": "Edit & History",
+  "shortcutCategoryCanvas": "Canvas Navigation & Zoom",
+  "shortcutCategoryPanels": "Panels & View",
+  "shortcutNewDocument": "New document",
+  "shortcutOpenDocument": "Open document",
+  "shortcutSaveDocument": "Save document",
+  "shortcutSaveAsDocument": "Save document as...",
+  "shortcutExport": "Export score (PDF, SVG, LaTeX)...",
+  "shortcutDocumentProperties": "Document properties & metadata",
+  "shortcutNewTab": "New tab",
+  "shortcutCloseTab": "Close active tab",
+  "shortcutNextTab": "Next tab",
+  "shortcutPreviousTab": "Previous tab",
+  "shortcutUndo": "Undo last action",
+  "shortcutRedo": "Redo action",
+  "shortcutZoomIn": "Zoom in",
+  "shortcutZoomOut": "Zoom out",
+  "shortcutZoomReset": "Actual size (100% zoom)",
+  "shortcutPanCanvas": "Pan canvas",
+  "shortcutToggleSidebar": "Toggle properties sidebar",
+  "shortcutToggleViewPanel": "Toggle view & layout panel",
+  "shortcutToggleZenMode": "Toggle Zen / distraction-free mode",
+  "shortcutHelp": "Show keyboard shortcuts",
+  "shortcutCloseDialog": "Close dialog / dismiss",
+  "noShortcutsFound": "No matching shortcuts found"
 }

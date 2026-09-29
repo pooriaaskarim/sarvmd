@@ -1,8 +1,38 @@
 1. [x] Mobile View.
 2. [x] Mobile APK.
-3. [ ] Enabling user to work on several Documents, save and load them into/out of a standard file format.
-    This would some need research on whether there is a standard file format for saving and loading music documents.
-4. [ ] Standard shorcuts with a help cheat-sheet to enable user keyboard speed entry.
+3. [x] Enabling user to work on several Documents, save and load them into/out of a standard file format.
+    [x] Standardized `.sarv` native JSON document schema (v1) capturing complete manuscript layout (PageConfig, nested SystemLayout, Score, DocumentMetadata) with zero data loss
+    [x] Built cross-platform `SarvFileService` supporting desktop direct save, system saveAs dialogs, web downloads, and strict format validation
+    [x] Integrated transactional persistence lifecycle in `DocumentCubit` (`newDocument`, `loadDocument`, `openFile`, `save`, `saveAs`)
+    [x] Added dynamic `isDirty` state tracking with undo/redo value-equality sync and visual dirty indicator dot in `EditableScoreHeader`
+    [x] Standardized `TopBarFileMenu` and `SarvShortcutGateway` keybindings (Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Shift+S)
+    [x] Added responsive `UnsavedChangesDialog` guarding new/open workflows with localized HIG actions (Save, Don't Save, Cancel)
+    [x] Multi-document tabbed workspace architecture (`WorkspaceCubit`, `DocumentSession`) supporting concurrent open manuscripts without cross-document state interference
+    [x] Pointer Tab Bar (`PointerTabBar`) with interactive tab switching, close guards, dirty indicators, and scrollable tab strip
+    [x] Touch Tab Switcher (`TouchTabSwitcherModal` & `TouchTopBar` tab badge) optimized for compact screens and portrait/landscape friction reduction
+    [x] Web-native File System Access API integration (`showSaveFilePicker`, `showOpenFilePicker`, `FileReader` fallback) with resilient JSON deserialization
+    [x] Implemented comprehensive unit and widget test suites (`sarv_file_service_test.dart`, `document_persistence_test.dart`, `file_ui_components_test.dart`, `workspace_cubit_test.dart`, `pointer_tab_bar_test.dart`, `touch_tab_switcher_test.dart`)
+    [x] Recent Documents List ("Open Recent ▸"): Persist recently opened `.sarv` file paths in `SharedPreferences` and expose under `File > Open Recent` menu with clear history action
+    [x] Score Metadata / Document Properties Dialog: UI dialog to view and edit extended `.sarv` metadata fields (`composer`, `subtitle`, `arranger`, `lyricist`, `copyright`)
+    [x] Web `beforeunload` Protection: Register browser `beforeunload` event handler when any open tab has unsaved changes (`isDirty`) to prevent accidental browser tab close or refresh
+    [x] Android External Intent & File Associations: Added `.sarv` MIME/extension filters in AndroidManifest, `singleTask` launchMode, cold-start and warm-start (`onNewIntent`) intent routing via `FileOpenService`
+    [x] Android SAF Pre-Extension Collision Disambiguation (`NativeFileSaveService` & `MainActivity.kt`): Enforced explicit MIME types and post-create regex rename via `DocumentsContract.renameDocument` so duplicate numbers are placed before extensions (`name (1).pdf`, `name (1).sarv`)
+    [x] Cross-Platform File Naming Engine (`FileNaming` in `sarvmd_core`): Zero-dependency naming and collision disambiguation utility ensuring number suffixes are strictly positioned before extensions across all platforms
+    [x] Export Dialog Destination Folder Input & Path Normalization: Converted Destination Folder into an editable monospace text input with path normalization (`~` expansion, `file://` stripping, and slash cleanup), resolving Linux/KDE file picker ambiguity
+    [x] Touch Tab Switcher Dismissal Stability: Resolved `Dismissible` tree crash in `TouchTabSwitcherModal` and ensured closing/dismissing the sole tab automatically initializes a clean default manuscript session
+    [x] Canvas / Tab-Bar File Drag-and-Drop: Support dragging `.sarv` files from OS file manager directly onto the canvas or tab strip to open in a new tab, with Web deduplication and tab-switching parity
+    [x] Multi-Tab Session State Persistence: Persist open tab metadata and active tab index across app restarts via `SharedPreferences`
+    [x] Desktop CLI Launch Argument: Handle opening `.sarv` files directly via command-line arguments (`sarvmd <file.sarv>`)
+    [x] Distinct File Deduplication for File Copies: Refined tab deduplication in `WorkspaceCubit` and `AppShell` so distinct files (e.g. `sample.sarv` vs `sample (1).sarv`) open in separate tabs regardless of identical score titles or manuscript contents
+    [x] Zero-Document Empty Workspace & Welcome Hub (`EmptyWorkspaceView`): Replaced automatic default document reset on sole tab closure with sleek No Document Welcome Hub featuring starter presets, vector mini-staves, recent files history, template browser, and drag-and-drop prompt
+    [x] Empty Workspace Hub Maturation: Enforced LTR top navigation bar in Persian RTL mode, suppressed desktop shortcuts in touch mode, adapted drop zone prompt into touch tap-to-open, localized all starter presets in English and Persian, added Material InkWell touch ripples, and mirrored navigation chevrons in RTL
+4. [x] Standard shortcuts with a help cheat-sheet to enable user keyboard speed entry.
+    [x] Built comprehensive Keyboard Shortcuts Cheat-Sheet modal (`KeyboardShortcutsDialog`) organized across 5 categories (File & Tabs, Edit & History, View & Navigation, Panels & Dialogs, General)
+    [x] Interactive search & filtering with real-time query matching across localized shortcut names and keycaps
+    [x] Platform-aware keycap typography (`_KeyCap` badges) supporting macOS modifiers (⌘, ⌥, ⇧) and Windows/Linux modifiers (Ctrl, Alt, Shift) with strict LTR isolation in RTL/Persian locales
+    [x] Multi-entry trigger bindings: F1, Ctrl+?, Help menu item ("Keyboard Shortcuts"), and compact menu integration
+    [x] Center-focal zooming for touch HUD controls (`FloatingHud` zoom steppers and scrub chip) eliminating jarring top-left affine drift
+    [x] Linter resolution and test verification across all shortcut gateways and UI interactions
 5. [x] Unified look and font and feel for SarvMD logo across the codebase (e.g. splash, about dialog, etc. )
 6. [x] Code standardization across the codebase (e.g. adding comprehensive documentation and comments, Modularizing Big Ass files, etc.)
 7. [x] CRITICAL: Exporting seems to not work properly; on mobile it rendered some irrelevant symbols when exporting Guitar + Tab. Needs mode examincation on mobile and web and linux! and probably more profiles.

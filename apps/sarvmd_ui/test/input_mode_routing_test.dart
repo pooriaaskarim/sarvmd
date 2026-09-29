@@ -12,12 +12,17 @@ import 'package:sarvmd_ui/src/logic/view/view_state.dart';
 import 'package:sarvmd_ui/src/presentation/screens/app_shell.dart';
 import 'package:sarvmd_ui/src/presentation/screens/pointer_editor_screen.dart';
 import 'package:sarvmd_ui/src/presentation/screens/touch_editor_screen.dart';
+import 'package:sarvmd_ui/src/logic/services/changelog_service.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/common/input_mode_toggle_button.dart';
 import 'package:sarvmd_ui/src/presentation/widgets/specialized/app_entry_point.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await ChangelogService.loadChangelog();
+  });
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -89,6 +94,7 @@ void main() {
         ),
       );
 
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 

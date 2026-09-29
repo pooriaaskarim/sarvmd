@@ -298,7 +298,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(documentCubit.state.config.staffCount, equals(initialStaffCount + 1));
-    expect(documentCubit.state.lastUndoLabel, equals('Add Part'));
+    expect(documentCubit.state.lastUndoLabel, equals('Add Staff'));
 
     documentCubit.close();
   });

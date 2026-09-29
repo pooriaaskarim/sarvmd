@@ -1927,6 +1927,486 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export PDF / TeX / SVG…'**
   String get exportFormatsSummary;
+
+  /// No description provided for @menuNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get menuNew;
+
+  /// No description provided for @menuOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open…'**
+  String get menuOpen;
+
+  /// No description provided for @menuSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get menuSave;
+
+  /// No description provided for @menuSaveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save As…'**
+  String get menuSaveAs;
+
+  /// No description provided for @unsavedChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved Changes'**
+  String get unsavedChangesTitle;
+
+  /// No description provided for @unsavedChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to save changes to \"{documentName}\" before continuing?'**
+  String unsavedChangesMessage(String documentName);
+
+  /// No description provided for @actionSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get actionSave;
+
+  /// No description provided for @actionDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t Save'**
+  String get actionDiscard;
+
+  /// No description provided for @actionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get actionCancel;
+
+  /// No description provided for @fileSavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Document saved successfully.'**
+  String get fileSavedSuccess;
+
+  /// No description provided for @fileSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save document.'**
+  String get fileSaveFailed;
+
+  /// No description provided for @fileOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.'**
+  String get fileOpenFailed;
+
+  /// Transient notification shown when a document is opened from an external source or OS intent
+  ///
+  /// In en, this message translates to:
+  /// **'Opened \"{title}\"'**
+  String fileOpenedSuccess(String title);
+
+  /// Transient notification shown when an external file intent targets an already open tab
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to tab \"{title}\"'**
+  String fileSwitchedTab(String title);
+
+  /// No description provided for @menuOpenRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Recent'**
+  String get menuOpenRecent;
+
+  /// No description provided for @menuClearRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Recent Files'**
+  String get menuClearRecent;
+
+  /// No description provided for @menuNoRecentFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No Recent Files'**
+  String get menuNoRecentFiles;
+
+  /// No description provided for @menuDocumentProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Properties…'**
+  String get menuDocumentProperties;
+
+  /// No description provided for @documentPropertiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Properties'**
+  String get documentPropertiesTitle;
+
+  /// No description provided for @metadataScoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get metadataScoreTitle;
+
+  /// No description provided for @metadataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitle'**
+  String get metadataSubtitle;
+
+  /// No description provided for @metadataComposer.
+  ///
+  /// In en, this message translates to:
+  /// **'Composer'**
+  String get metadataComposer;
+
+  /// No description provided for @metadataArranger.
+  ///
+  /// In en, this message translates to:
+  /// **'Arranger'**
+  String get metadataArranger;
+
+  /// No description provided for @metadataLyricist.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyricist'**
+  String get metadataLyricist;
+
+  /// No description provided for @metadataCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright'**
+  String get metadataCopyright;
+
+  /// No description provided for @metadataCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get metadataCreatedAt;
+
+  /// No description provided for @metadataModifiedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get metadataModifiedAt;
+
+  /// No description provided for @metadataFilePath.
+  ///
+  /// In en, this message translates to:
+  /// **'File Location'**
+  String get metadataFilePath;
+
+  /// No description provided for @metadataUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved Manuscript'**
+  String get metadataUnsaved;
+
+  /// No description provided for @actionApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get actionApply;
+
+  /// No description provided for @dragDropOverlayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop .sarv manuscript to open'**
+  String get dragDropOverlayHint;
+
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sarv Manuscript Designer'**
+  String get welcomeTitle;
+
+  /// No description provided for @welcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero-compromise Gouldian music manuscript creation'**
+  String get welcomeSubtitle;
+
+  /// No description provided for @startNewManuscript.
+  ///
+  /// In en, this message translates to:
+  /// **'Start New Manuscript'**
+  String get startNewManuscript;
+
+  /// No description provided for @recentManuscripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Manuscripts'**
+  String get recentManuscripts;
+
+  /// No description provided for @noRecentManuscripts.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent manuscripts yet'**
+  String get noRecentManuscripts;
+
+  /// No description provided for @browseAllTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse all templates…'**
+  String get browseAllTemplates;
+
+  /// No description provided for @openOtherFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open other file…'**
+  String get openOtherFile;
+
+  /// No description provided for @dropToOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag and drop a .sarv manuscript anywhere to start editing'**
+  String get dropToOpenHint;
+
+  /// No description provided for @shortcutNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+N New'**
+  String get shortcutNewHint;
+
+  /// No description provided for @shortcutOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+O Open'**
+  String get shortcutOpenHint;
+
+  /// No description provided for @touchOpenExistingPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open an existing .sarv manuscript'**
+  String get touchOpenExistingPrompt;
+
+  /// No description provided for @presetSoloTrebleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Solo Treble'**
+  String get presetSoloTrebleTitle;
+
+  /// No description provided for @presetSoloTrebleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard 5-line classical staff'**
+  String get presetSoloTrebleSubtitle;
+
+  /// No description provided for @presetGrandStaffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Staff'**
+  String get presetGrandStaffTitle;
+
+  /// No description provided for @presetGrandStaffSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Piano system with brace & treble/bass'**
+  String get presetGrandStaffSubtitle;
+
+  /// No description provided for @presetGuitarTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Guitar + TAB'**
+  String get presetGuitarTabTitle;
+
+  /// No description provided for @presetGuitarTabSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard notation with 6-string TAB'**
+  String get presetGuitarTabSubtitle;
+
+  /// No description provided for @presetChamberOrchestraTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chamber Orchestra'**
+  String get presetChamberOrchestraTitle;
+
+  /// No description provided for @presetChamberOrchestraSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'String quartet & winds hierarchy'**
+  String get presetChamberOrchestraSubtitle;
+
+  /// No description provided for @keyboardShortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard Shortcuts'**
+  String get keyboardShortcutsTitle;
+
+  /// No description provided for @keyboardShortcutsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost your workflow with speed entry shortcuts'**
+  String get keyboardShortcutsSubtitle;
+
+  /// No description provided for @keyboardShortcutsSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter shortcuts...'**
+  String get keyboardShortcutsSearchPlaceholder;
+
+  /// No description provided for @shortcutCategoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General & Dialogs'**
+  String get shortcutCategoryGeneral;
+
+  /// No description provided for @shortcutCategoryFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File & Tabs'**
+  String get shortcutCategoryFile;
+
+  /// No description provided for @shortcutCategoryEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit & History'**
+  String get shortcutCategoryEdit;
+
+  /// No description provided for @shortcutCategoryCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Canvas Navigation & Zoom'**
+  String get shortcutCategoryCanvas;
+
+  /// No description provided for @shortcutCategoryPanels.
+  ///
+  /// In en, this message translates to:
+  /// **'Panels & View'**
+  String get shortcutCategoryPanels;
+
+  /// No description provided for @shortcutNewDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'New document'**
+  String get shortcutNewDocument;
+
+  /// No description provided for @shortcutOpenDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Open document'**
+  String get shortcutOpenDocument;
+
+  /// No description provided for @shortcutSaveDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Save document'**
+  String get shortcutSaveDocument;
+
+  /// No description provided for @shortcutSaveAsDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Save document as...'**
+  String get shortcutSaveAsDocument;
+
+  /// No description provided for @shortcutExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export score (PDF, SVG, LaTeX)...'**
+  String get shortcutExport;
+
+  /// No description provided for @shortcutDocumentProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Document properties & metadata'**
+  String get shortcutDocumentProperties;
+
+  /// No description provided for @shortcutNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'New tab'**
+  String get shortcutNewTab;
+
+  /// No description provided for @shortcutCloseTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Close active tab'**
+  String get shortcutCloseTab;
+
+  /// No description provided for @shortcutNextTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Next tab'**
+  String get shortcutNextTab;
+
+  /// No description provided for @shortcutPreviousTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous tab'**
+  String get shortcutPreviousTab;
+
+  /// No description provided for @shortcutUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo last action'**
+  String get shortcutUndo;
+
+  /// No description provided for @shortcutRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo action'**
+  String get shortcutRedo;
+
+  /// No description provided for @shortcutZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get shortcutZoomIn;
+
+  /// No description provided for @shortcutZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get shortcutZoomOut;
+
+  /// No description provided for @shortcutZoomReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual size (100% zoom)'**
+  String get shortcutZoomReset;
+
+  /// No description provided for @shortcutPanCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Pan canvas'**
+  String get shortcutPanCanvas;
+
+  /// No description provided for @shortcutToggleSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle properties sidebar'**
+  String get shortcutToggleSidebar;
+
+  /// No description provided for @shortcutToggleViewPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle view & layout panel'**
+  String get shortcutToggleViewPanel;
+
+  /// No description provided for @shortcutToggleZenMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Zen / distraction-free mode'**
+  String get shortcutToggleZenMode;
+
+  /// No description provided for @shortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Show keyboard shortcuts'**
+  String get shortcutHelp;
+
+  /// No description provided for @shortcutCloseDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close dialog / dismiss'**
+  String get shortcutCloseDialog;
+
+  /// No description provided for @noShortcutsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching shortcuts found'**
+  String get noShortcutsFound;
 }
 
 class _AppLocalizationsDelegate

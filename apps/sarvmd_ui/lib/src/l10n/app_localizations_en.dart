@@ -986,4 +986,257 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportFormatsSummary => 'Export PDF / TeX / SVG…';
+
+  @override
+  String get menuNew => 'New';
+
+  @override
+  String get menuOpen => 'Open…';
+
+  @override
+  String get menuSave => 'Save';
+
+  @override
+  String get menuSaveAs => 'Save As…';
+
+  @override
+  String get unsavedChangesTitle => 'Unsaved Changes';
+
+  @override
+  String unsavedChangesMessage(String documentName) {
+    return 'Do you want to save changes to \"$documentName\" before continuing?';
+  }
+
+  @override
+  String get actionSave => 'Save';
+
+  @override
+  String get actionDiscard => 'Don\'t Save';
+
+  @override
+  String get actionCancel => 'Cancel';
+
+  @override
+  String get fileSavedSuccess => 'Document saved successfully.';
+
+  @override
+  String get fileSaveFailed => 'Failed to save document.';
+
+  @override
+  String get fileOpenFailed =>
+      'Failed to open document. The file may be corrupt or not a valid .sarv manuscript.';
+
+  @override
+  String fileOpenedSuccess(String title) {
+    return 'Opened \"$title\"';
+  }
+
+  @override
+  String fileSwitchedTab(String title) {
+    return 'Switched to tab \"$title\"';
+  }
+
+  @override
+  String get menuOpenRecent => 'Open Recent';
+
+  @override
+  String get menuClearRecent => 'Clear Recent Files';
+
+  @override
+  String get menuNoRecentFiles => 'No Recent Files';
+
+  @override
+  String get menuDocumentProperties => 'Document Properties…';
+
+  @override
+  String get documentPropertiesTitle => 'Document Properties';
+
+  @override
+  String get metadataScoreTitle => 'Title';
+
+  @override
+  String get metadataSubtitle => 'Subtitle';
+
+  @override
+  String get metadataComposer => 'Composer';
+
+  @override
+  String get metadataArranger => 'Arranger';
+
+  @override
+  String get metadataLyricist => 'Lyricist';
+
+  @override
+  String get metadataCopyright => 'Copyright';
+
+  @override
+  String get metadataCreatedAt => 'Created';
+
+  @override
+  String get metadataModifiedAt => 'Modified';
+
+  @override
+  String get metadataFilePath => 'File Location';
+
+  @override
+  String get metadataUnsaved => 'Unsaved Manuscript';
+
+  @override
+  String get actionApply => 'Apply';
+
+  @override
+  String get dragDropOverlayHint => 'Drop .sarv manuscript to open';
+
+  @override
+  String get welcomeTitle => 'Sarv Manuscript Designer';
+
+  @override
+  String get welcomeSubtitle =>
+      'Zero-compromise Gouldian music manuscript creation';
+
+  @override
+  String get startNewManuscript => 'Start New Manuscript';
+
+  @override
+  String get recentManuscripts => 'Recent Manuscripts';
+
+  @override
+  String get noRecentManuscripts => 'No recent manuscripts yet';
+
+  @override
+  String get browseAllTemplates => 'Browse all templates…';
+
+  @override
+  String get openOtherFile => 'Open other file…';
+
+  @override
+  String get dropToOpenHint =>
+      'Drag and drop a .sarv manuscript anywhere to start editing';
+
+  @override
+  String get shortcutNewHint => 'Ctrl+N New';
+
+  @override
+  String get shortcutOpenHint => 'Ctrl+O Open';
+
+  @override
+  String get touchOpenExistingPrompt =>
+      'Tap to open an existing .sarv manuscript';
+
+  @override
+  String get presetSoloTrebleTitle => 'Solo Treble';
+
+  @override
+  String get presetSoloTrebleSubtitle => 'Standard 5-line classical staff';
+
+  @override
+  String get presetGrandStaffTitle => 'Grand Staff';
+
+  @override
+  String get presetGrandStaffSubtitle =>
+      'Piano system with brace & treble/bass';
+
+  @override
+  String get presetGuitarTabTitle => 'Guitar + TAB';
+
+  @override
+  String get presetGuitarTabSubtitle => 'Standard notation with 6-string TAB';
+
+  @override
+  String get presetChamberOrchestraTitle => 'Chamber Orchestra';
+
+  @override
+  String get presetChamberOrchestraSubtitle =>
+      'String quartet & winds hierarchy';
+
+  @override
+  String get keyboardShortcutsTitle => 'Keyboard Shortcuts';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'Boost your workflow with speed entry shortcuts';
+
+  @override
+  String get keyboardShortcutsSearchPlaceholder => 'Filter shortcuts...';
+
+  @override
+  String get shortcutCategoryGeneral => 'General & Dialogs';
+
+  @override
+  String get shortcutCategoryFile => 'File & Tabs';
+
+  @override
+  String get shortcutCategoryEdit => 'Edit & History';
+
+  @override
+  String get shortcutCategoryCanvas => 'Canvas Navigation & Zoom';
+
+  @override
+  String get shortcutCategoryPanels => 'Panels & View';
+
+  @override
+  String get shortcutNewDocument => 'New document';
+
+  @override
+  String get shortcutOpenDocument => 'Open document';
+
+  @override
+  String get shortcutSaveDocument => 'Save document';
+
+  @override
+  String get shortcutSaveAsDocument => 'Save document as...';
+
+  @override
+  String get shortcutExport => 'Export score (PDF, SVG, LaTeX)...';
+
+  @override
+  String get shortcutDocumentProperties => 'Document properties & metadata';
+
+  @override
+  String get shortcutNewTab => 'New tab';
+
+  @override
+  String get shortcutCloseTab => 'Close active tab';
+
+  @override
+  String get shortcutNextTab => 'Next tab';
+
+  @override
+  String get shortcutPreviousTab => 'Previous tab';
+
+  @override
+  String get shortcutUndo => 'Undo last action';
+
+  @override
+  String get shortcutRedo => 'Redo action';
+
+  @override
+  String get shortcutZoomIn => 'Zoom in';
+
+  @override
+  String get shortcutZoomOut => 'Zoom out';
+
+  @override
+  String get shortcutZoomReset => 'Actual size (100% zoom)';
+
+  @override
+  String get shortcutPanCanvas => 'Pan canvas';
+
+  @override
+  String get shortcutToggleSidebar => 'Toggle properties sidebar';
+
+  @override
+  String get shortcutToggleViewPanel => 'Toggle view & layout panel';
+
+  @override
+  String get shortcutToggleZenMode => 'Toggle Zen / distraction-free mode';
+
+  @override
+  String get shortcutHelp => 'Show keyboard shortcuts';
+
+  @override
+  String get shortcutCloseDialog => 'Close dialog / dismiss';
+
+  @override
+  String get noShortcutsFound => 'No matching shortcuts found';
 }

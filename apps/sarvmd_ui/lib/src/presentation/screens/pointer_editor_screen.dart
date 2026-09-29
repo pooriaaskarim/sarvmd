@@ -12,6 +12,7 @@ import '../../core/theme/app_metrics.dart';
 import '../../core/theme/layout_policy.dart';
 import '../widgets/staff/staff_spacing_group.dart';
 import '../widgets/layout/pointer_top_bar.dart';
+import '../widgets/workspace/pointer_tab_bar.dart';
 
 import '../widgets/common/shortcut_gateway.dart';
 import '../../l10n/app_localizations.dart';
@@ -808,6 +809,30 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
     _transformationController.value = transform.matrix;
   }
 
+  void _zoomIn() => _zoomBy(1.2);
+  void _zoomOut() => _zoomBy(1.0 / 1.2);
+
+  void _zoomBy(double factor) {
+    final constraints = _lastConstraints;
+    final currentMatrix = _transformationController.value;
+    final currentScale = currentMatrix.row0[0];
+    final targetScale = (currentScale * factor).clamp(0.1, 8.0);
+    final scaleRatio = targetScale / currentScale;
+
+    if (constraints != null) {
+      final focalPoint = Offset(constraints.maxWidth / 2, constraints.maxHeight / 2);
+      final translation = currentMatrix.getTranslation();
+      final newTx = focalPoint.dx - (focalPoint.dx - translation.x) * scaleRatio;
+      final newTy = focalPoint.dy - (focalPoint.dy - translation.y) * scaleRatio;
+      _transformationController.value = Matrix4.translationValues(newTx, newTy, 0.0)
+        ..scaleByDouble(targetScale, targetScale, 1.0, 1.0);
+    } else {
+      final t = currentMatrix.getTranslation();
+      _transformationController.value = Matrix4.translationValues(t.x, t.y, 0.0)
+        ..scaleByDouble(targetScale, targetScale, 1.0, 1.0);
+    }
+  }
+
   @override
   void dispose() {
     _sidebarScrollController.dispose();
@@ -841,9 +866,31 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
               return Scaffold(
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 body: SarvShortcutGateway(
+                  onZoomIn: _zoomIn,
+                  onZoomOut: _zoomOut,
+                  onZoomReset: () => _applyZoomPreset(ZoomPreset.actualSize),
+                  onToggleSidebar: () => _toggleLeftSidebar(canDockLeft, canDockRight),
+                  onToggleViewPanel: () {
+                    setState(() {
+                      _viewPanelCollapsed = !_viewPanelCollapsed;
+                    });
+                  },
+                  onToggleZenMode: () {
+                    setState(() {
+                      final isZen = _sidebarCollapsed && _viewPanelCollapsed;
+                      if (isZen) {
+                        _sidebarCollapsed = false;
+                        _viewPanelCollapsed = false;
+                      } else {
+                        _sidebarCollapsed = true;
+                        _viewPanelCollapsed = true;
+                      }
+                    });
+                  },
                   child: Column(
                     children: [
                       const PointerTopBar(),
+                      const PointerTabBar(),
                       Expanded(
                         child: Directionality(
                           textDirection: TextDirection.ltr,

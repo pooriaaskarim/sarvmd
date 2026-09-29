@@ -1,6 +1,9 @@
 // Copyright (c) 2026 Pooria Askari Moqaddam. All rights reserved.
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -53,6 +56,7 @@ class _ExportDialogState extends State<ExportDialog> {
   late ExportFormat _selectedFormat;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _pageController = TextEditingController();
+  final TextEditingController _dirController = TextEditingController();
   int _pageCount = 1;
   core.SvgLayeringMode _svgMode = core.SvgLayeringMode.flatByCategory;
   bool _isCustomName = false;
@@ -68,23 +72,42 @@ class _ExportDialogState extends State<ExportDialog> {
     _selectedFormat = widget.initialFormat;
     final docCubit = context.read<DocumentCubit>();
     final config = docCubit.state.config;
-    final defaultName = ExportService.getDefaultFileName(config);
+    final docDisplayName = docCubit.state.displayName;
+    final stripped = core.FileNaming.stripExtension(docDisplayName);
+    final defaultName = stripped.isNotEmpty ? stripped : ExportService.getDefaultFileName(config);
     _nameController.text = defaultName;
     _pageController.text = '1';
+    _dirController.text = _outputDir;
     _loadOutputDir();
   }
 
   Future<void> _loadOutputDir() async {
     final dir = await ExportDirectoryService.getExportDirectory();
     if (mounted) {
-      setState(() => _outputDir = dir);
+      setState(() {
+        _outputDir = dir;
+        _dirController.text = dir;
+      });
     }
   }
 
   Future<void> _changeOutputDir() async {
-    final chosen = await ExportDirectoryService.pickDirectory();
+    final chosen = await ExportDirectoryService.pickDirectory(
+      initialDirectory: _outputDir,
+    );
     if (chosen != null && mounted) {
-      setState(() => _outputDir = chosen);
+      setState(() {
+        _outputDir = chosen;
+        _dirController.text = chosen;
+      });
+    }
+  }
+
+  void _onDirChanged(String val) {
+    final normalized = ExportDirectoryService.normalizeDirectoryPath(val);
+    _outputDir = normalized;
+    if (normalized.isNotEmpty && !ExportDirectoryService.isWeb) {
+      ExportDirectoryService.saveExportDirectory(normalized);
     }
   }
 
@@ -92,6 +115,7 @@ class _ExportDialogState extends State<ExportDialog> {
   void dispose() {
     _nameController.dispose();
     _pageController.dispose();
+    _dirController.dispose();
     super.dispose();
   }
 
@@ -110,9 +134,12 @@ class _ExportDialogState extends State<ExportDialog> {
     if (score.title.isNotEmpty) {
       docCubit.execute(core.SetTitleCommand('', score.title));
     }
+    final docDisplayName = docCubit.state.displayName;
+    final stripped = core.FileNaming.stripExtension(docDisplayName);
+    final defaultName = stripped.isNotEmpty ? stripped : ExportService.getDefaultFileName(config);
     setState(() {
       _isCustomName = false;
-      _nameController.text = ExportService.getDefaultFileName(config);
+      _nameController.text = defaultName;
     });
   }
 
@@ -389,60 +416,125 @@ class _ExportDialogState extends State<ExportDialog> {
                   const SizedBox(height: 18),
 
                   // Section 4: Export Output Location
-                  Text(
-                    'Destination Folder',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: cs.outline.withValues(alpha: 0.25)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.folder_outlined,
-                            size: 16, color: cs.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _outputDir,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontFamily: 'monospace',
-                              color: cs.onSurface.withValues(alpha: 0.85),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Destination Folder',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
                         ),
-                        const SizedBox(width: 8),
+                      ),
+                      if (!kIsWeb &&
+                          !(Platform.isAndroid || Platform.isIOS) &&
+                          _outputDir != ExportDirectoryService.getDefaultDirectory())
                         InkWell(
-                          onTap: _changeOutputDir,
+                          onTap: () {
+                            final def = ExportDirectoryService.getDefaultDirectory();
+                            setState(() {
+                              _outputDir = def;
+                              _dirController.text = def;
+                            });
+                            ExportDirectoryService.saveExportDirectory(def);
+                          },
                           borderRadius: BorderRadius.circular(4),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             child: Text(
-                              l10n.changeOutputDir,
+                              l10n.resetToDefault,
                               style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
                                 color: cs.primary,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      children: [
+                        Icon(Icons.folder_outlined, size: 16, color: cs.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: (kIsWeb || (!kIsWeb && (Platform.isAndroid || Platform.isIOS)))
+                              ? Text(
+                                  _outputDir,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontFamily: 'monospace',
+                                    color: cs.onSurface.withValues(alpha: 0.85),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : TextField(
+                                  controller: _dirController,
+                                  onChanged: _onDirChanged,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontFamily: 'monospace',
+                                  ),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    border: InputBorder.none,
+                                    hintText: 'Enter destination directory path...',
+                                    hintStyle: TextStyle(
+                                      fontSize: 11.5,
+                                      color: cs.onSurface.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                ),
+                        ),
+                        if (!kIsWeb && !(Platform.isAndroid || Platform.isIOS)) ...[
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: _changeOutputDir,
+                            borderRadius: BorderRadius.circular(4),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.folder_open_outlined, size: 14, color: cs.primary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    l10n.changeOutputDir,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: cs.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
+                  if (!kIsWeb && !(Platform.isAndroid || Platform.isIOS)) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tip: Type/paste any folder path directly, or click Change to browse. In KDE/Qt dialogs, click "Open" inside a folder to select it.',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
 
                   // Section 5: Results Feedback / Errors
                   if (_errorMessage != null) ...[

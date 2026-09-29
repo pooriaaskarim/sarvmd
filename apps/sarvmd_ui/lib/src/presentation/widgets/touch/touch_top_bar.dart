@@ -8,9 +8,11 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../l10n/app_localizations.dart';
 import '../../../logic/document/document_cubit.dart';
 import '../../../logic/document/document_state.dart';
-import '../layout/top_bar/top_bar_menu_handler.dart';
+import '../../../logic/workspace/workspace_cubit.dart';
+import '../layout/top_bar/menus/file_menu.dart';
 import '../layout/top_bar/widgets/editable_score_header.dart';
 import '../common/input_mode_toggle_button.dart';
+import 'touch_tab_switcher_modal.dart';
 
 /// Adaptive Dynamic Header for SarvMD Touch Mode ("Zen Top Bar").
 ///
@@ -59,6 +61,52 @@ class _TouchTopBarState extends State<TouchTopBar> {
       });
     }
     widget.onTitleEditingChanged?.call(isEditing);
+  }
+
+  Widget _buildTabBadgeButton(BuildContext context, ColorScheme cs, {required String keyName}) {
+    final workspaceCubit = context.watch<WorkspaceCubit?>();
+    if (workspaceCubit == null) return const SizedBox.shrink();
+    final count = workspaceCubit.state.tabCount;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+      child: Tooltip(
+        message: 'Manuscripts ($count)',
+        child: InkWell(
+          key: ValueKey(keyName),
+          borderRadius: BorderRadius.circular(10.0),
+          onTap: () => showTouchTabSwitcher(context),
+          child: Container(
+            height: 28.0,
+            padding: const EdgeInsets.symmetric(horizontal: 7.0),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.4),
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.layers_outlined, size: 14.0, color: cs.primary),
+                const SizedBox(width: 4.0),
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildCompactPill(
@@ -133,6 +181,63 @@ class _TouchTopBarState extends State<TouchTopBar> {
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                           ),
+                        ),
+                        if (docState.isDirty) ...[
+                          const SizedBox(width: 5.0),
+                          Tooltip(
+                            message: l10n.unsavedChangesTitle,
+                            child: Container(
+                              key: const ValueKey('touch_compact_pill_dirty_dot'),
+                              width: 7.0,
+                              height: 7.0,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: cs.primary,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: cs.primary.withValues(alpha: 0.6),
+                                    blurRadius: 4.0,
+                                    spreadRadius: 1.0,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                        Builder(
+                          builder: (c) {
+                            final workspaceCubit = c.watch<WorkspaceCubit?>();
+                            final tabCount = workspaceCubit?.state.tabCount ?? 1;
+                            if (workspaceCubit == null || tabCount <= 1) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 6.0),
+                              child: Container(
+                                key: const ValueKey('touch_compact_pill_tab_badge'),
+                                padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: cs.primary.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.layers_outlined, size: 10.0, color: cs.primary),
+                                    const SizedBox(width: 2.0),
+                                    Text(
+                                      '$tabCount',
+                                      style: TextStyle(
+                                        fontSize: 10.0,
+                                        fontWeight: FontWeight.w700,
+                                        color: cs.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -257,14 +362,28 @@ class _TouchTopBarState extends State<TouchTopBar> {
                       onPressed: widget.onToggleCompact,
                     ),
 
-                  // 5. Input Mode Toggle & Export Quick Action
+                  // 5. Tab Badge & Switcher Button
+                  _buildTabBadgeButton(context, cs, keyName: 'touch_floating_bar_tab_button'),
+
+                  // 6. Input Mode Toggle & File Menu Quick Action
                   const InputModeToggleButton(),
-                  IconButton(
-                    icon: const Icon(Icons.ios_share, size: 19),
-                    tooltip: l10n.exportManuscriptTitle,
-                    padding: const EdgeInsets.all(4.0),
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => handleTopBarMenuSelection(context, 'export', docState),
+                  MenuAnchor(
+                    builder: (context, controller, child) {
+                      return IconButton(
+                        icon: const Icon(Icons.folder_open_outlined, size: 19),
+                        tooltip: l10n.menuFile,
+                        padding: const EdgeInsets.all(4.0),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        onPressed: () {
+                          if (controller.isOpen) {
+                            controller.close();
+                          } else {
+                            controller.open();
+                          }
+                        },
+                      );
+                    },
+                    menuChildren: TopBarFileMenu.buildChildren(context, docState),
                   ),
                 ],
               ],
@@ -357,12 +476,28 @@ class _TouchTopBarState extends State<TouchTopBar> {
                 onPressed: widget.onTogglePin,
               ),
 
-            // Right Zone: Mode Toggle & Export Quick Action
+            // Tab Badge & Switcher Button
+            _buildTabBadgeButton(context, cs, keyName: 'touch_pinned_bar_tab_button'),
+
+            // Right Zone: Mode Toggle & File Menu Quick Action
             const InputModeToggleButton(),
-            IconButton(
-              icon: const Icon(Icons.ios_share, size: 19),
-              tooltip: l10n.exportManuscriptTitle,
-              onPressed: () => handleTopBarMenuSelection(context, 'export', docState),
+            MenuAnchor(
+              builder: (context, controller, child) {
+                return IconButton(
+                  icon: const Icon(Icons.folder_open_outlined, size: 19),
+                  tooltip: l10n.menuFile,
+                  padding: const EdgeInsets.all(4.0),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () {
+                    if (controller.isOpen) {
+                      controller.close();
+                    } else {
+                      controller.open();
+                    }
+                  },
+                );
+              },
+              menuChildren: TopBarFileMenu.buildChildren(context, docState),
             ),
           ],
         ],

@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file in the root of this project.
 
 import '../config.dart';
-import 'pitch.dart';
 
 /// Represents a musical clef with anchoring rules and octave shifts.
 ///
@@ -42,8 +41,6 @@ sealed class Clef {
   /// The octave displacement multiplier (+1 for 8va, -1 for 8vb, 0 for standard).
   final int octaveShift;
 
-  /// The standard reference pitch centered on this clef's [anchorLine].
-  Pitch get referencePitch;
 
   /// User-friendly display name of the clef (e.g. 'Treble', 'Bass', 'TAB').
   String get displayName;
@@ -151,9 +148,6 @@ class TrebleClef extends Clef {
       : super(anchorLine: anchorLine, octaveShift: octaveShift);
 
   @override
-  Pitch get referencePitch => Pitch(NoteName.g, octave: 4 + octaveShift);
-
-  @override
   String get displayName => 'Treble';
 }
 
@@ -166,9 +160,6 @@ class BassClef extends Clef {
   /// * [octaveShift]: Octave shift (+1 for 8va, -1 for 8vb, 0 for standard).
   const BassClef({int anchorLine = 4, int octaveShift = 0})
       : super(anchorLine: anchorLine, octaveShift: octaveShift);
-
-  @override
-  Pitch get referencePitch => Pitch(NoteName.f, octave: 3 + octaveShift);
 
   @override
   String get displayName => 'Bass';
@@ -185,9 +176,6 @@ class AltoClef extends Clef {
       : super(anchorLine: anchorLine, octaveShift: octaveShift);
 
   @override
-  Pitch get referencePitch => Pitch(NoteName.c, octave: 4 + octaveShift);
-
-  @override
   String get displayName => 'Alto';
 }
 
@@ -200,9 +188,6 @@ class TenorClef extends Clef {
   /// * [octaveShift]: Octave shift (+1 for 8va, -1 for 8vb, 0 for standard).
   const TenorClef({int anchorLine = 4, int octaveShift = 0})
       : super(anchorLine: anchorLine, octaveShift: octaveShift);
-
-  @override
-  Pitch get referencePitch => Pitch(NoteName.c, octave: 4 + octaveShift);
 
   @override
   String get displayName => 'Tenor';
@@ -218,9 +203,6 @@ class PercussionClef extends Clef {
       : super(anchorLine: anchorLine, octaveShift: 0);
 
   @override
-  Pitch get referencePitch => const Pitch(NoteName.c, octave: 4); // Middle C as standard default
-
-  @override
   String get displayName => 'Percussion';
 }
 
@@ -232,9 +214,6 @@ class TabClef extends Clef {
   /// * [anchorLine]: Staff line on which the "TAB" text centers (defaults to 3).
   const TabClef({int anchorLine = 3})
       : super(anchorLine: anchorLine, octaveShift: 0);
-
-  @override
-  Pitch get referencePitch => const Pitch(NoteName.c, octave: 4); // Middle C as standard default
 
   @override
   String get displayName => 'TAB';

@@ -1,0 +1,336 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
+import 'package:sarvmd_ui/src/logic/workspace/workspace_cubit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('WorkspaceCubit Multi-Document Lifecycle', () {
+    late WorkspaceCubit workspaceCubit;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      final docCubit = DocumentCubit(null, null, false);
+      workspaceCubit = WorkspaceCubit(initialCubit: docCubit);
+    });
+
+    tearDown(() async {
+      await workspaceCubit.close();
+    });
+
+    test('initial state contains exactly one active session', () {
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(workspaceCubit.state.hasMultipleTabs, isFalse);
+      expect(workspaceCubit.state.activeSession.id, 'tab_0');
+      expect(workspaceCubit.state.activeSession.title, 'Treble_A4_Portrait');
+    });
+
+    test('openNewTab disambiguates duplicate titles placing number before extension/end', () {
+      expect(workspaceCubit.state.sessions[0].title, 'Treble_A4_Portrait');
+
+      final tab2 = workspaceCubit.openNewTab();
+      expect(tab2.title, 'Treble_A4_Portrait_1');
+
+      final tab3 = workspaceCubit.openNewTab();
+      expect(tab3.title, 'Treble_A4_Portrait_2');
+
+      final pianoTab = workspaceCubit.openNewTab(profile: core.StaffProfiles.piano);
+      expect(pianoTab.title, 'Piano_A4_Portrait');
+
+      final pianoTab2 = workspaceCubit.openNewTab(profile: core.StaffProfiles.piano);
+      expect(pianoTab2.title, 'Piano_A4_Portrait_1');
+    });
+
+    test('openNewTab creates and focuses secondary tab', () {
+      final newSession = workspaceCubit.openNewTab(profile: core.StaffProfiles.piano);
+
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(workspaceCubit.state.hasMultipleTabs, isTrue);
+      expect(workspaceCubit.state.activeSession.id, newSession.id);
+      expect(newSession.cubit.state.staffCount, 2); // Piano has 2 staves
+    });
+
+    test('switchTab changes active session without modifying sessions list', () {
+      final tab2 = workspaceCubit.openNewTab();
+      expect(workspaceCubit.state.activeIndex, 1);
+
+      workspaceCubit.switchTab(0);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(workspaceCubit.state.activeSession.id, 'tab_0');
+
+      workspaceCubit.switchTab(1);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(workspaceCubit.state.activeSession.id, tab2.id);
+    });
+
+    test('nextTab and previousTab cycle sequentially across tabs', () {
+      workspaceCubit.openNewTab();
+      workspaceCubit.openNewTab();
+      expect(workspaceCubit.state.tabCount, 3);
+      expect(workspaceCubit.state.activeIndex, 2);
+
+      workspaceCubit.nextTab();
+      expect(workspaceCubit.state.activeIndex, 0);
+
+      workspaceCubit.previousTab();
+      expect(workspaceCubit.state.activeIndex, 2);
+
+      workspaceCubit.previousTab();
+      expect(workspaceCubit.state.activeIndex, 1);
+    });
+
+    test('editing a document marks session as dirty and updates title reactively', () async {
+      final initialTitle = workspaceCubit.state.activeSession.title;
+      expect(workspaceCubit.state.activeSession.isDirty, isFalse);
+
+      workspaceCubit.state.activeCubit.setTitle('Symphony No. 5');
+      await pumpEventQueue();
+
+      expect(workspaceCubit.state.activeSession.title, 'Symphony No. 5');
+      expect(workspaceCubit.state.activeSession.title, isNot(initialTitle));
+      expect(workspaceCubit.state.activeSession.isDirty, isTrue);
+    });
+
+    test('closeTab with unsaved changes respects guard cancellation', () async {
+      workspaceCubit.openNewTab();
+      workspaceCubit.state.activeCubit.setTitle('Unsaved Opus');
+      await pumpEventQueue();
+      expect(workspaceCubit.state.activeSession.isDirty, isTrue);
+
+      bool guardCalled = false;
+      final closed = await workspaceCubit.closeTab(1, unsavedGuard: (session) async {
+        guardCalled = true;
+        return false; // User clicked "Cancel"
+      });
+
+      expect(guardCalled, isTrue);
+      expect(closed, isFalse);
+      expect(workspaceCubit.state.tabCount, 2);
+    });
+
+    test('closeTab closes session and adjusts activeIndex', () async {
+      final tab2 = workspaceCubit.openNewTab();
+      workspaceCubit.openNewTab();
+
+      expect(workspaceCubit.state.tabCount, 3);
+      expect(workspaceCubit.state.activeIndex, 2);
+
+      // Close the currently active tab (tab3)
+      final closed = await workspaceCubit.closeTab(2);
+      expect(closed, isTrue);
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(workspaceCubit.state.activeSession.id, tab2.id);
+
+      // Close first tab (tab1)
+      final closedFirst = await workspaceCubit.closeTab(0);
+      expect(closedFirst, isTrue);
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(workspaceCubit.state.activeSession.id, tab2.id);
+    });
+
+    test('closing the sole tab transitions to empty workspace (0 tabs)', () async {
+      expect(workspaceCubit.state.tabCount, 1);
+      workspaceCubit.state.activeCubit.setTitle('Single Document');
+      await pumpEventQueue();
+      expect(workspaceCubit.state.activeSession.isDirty, isTrue);
+
+      final closed = await workspaceCubit.closeTab(0);
+      expect(closed, isTrue);
+      expect(workspaceCubit.state.tabCount, 0);
+      expect(workspaceCubit.state.sessions, isEmpty);
+      expect(workspaceCubit.state.hasActiveSession, isFalse);
+      expect(workspaceCubit.state.activeSessionOrNull, isNull);
+      expect(workspaceCubit.state.activeCubitOrNull, isNull);
+
+      // Opening a new tab from empty state works seamlessly
+      final newTab = workspaceCubit.openNewTab();
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.hasActiveSession, isTrue);
+      expect(workspaceCubit.state.activeSession.id, newTab.id);
+    });
+
+    test('reorderTabs moves tab to new position', () {
+      final tab1 = workspaceCubit.state.activeSession;
+      final tab2 = workspaceCubit.openNewTab();
+      final tab3 = workspaceCubit.openNewTab();
+
+      expect(workspaceCubit.state.sessions.map((s) => s.id).toList(), [
+        tab1.id,
+        tab2.id,
+        tab3.id,
+      ]);
+
+      // Move tab3 (index 2) to start (index 0)
+      workspaceCubit.reorderTabs(2, 0);
+
+      expect(workspaceCubit.state.sessions.map((s) => s.id).toList(), [
+        tab3.id,
+        tab1.id,
+        tab2.id,
+      ]);
+      expect(workspaceCubit.state.activeIndex, 0);
+    });
+
+    test('openDocumentTab deduplicates by title/filename and switches tabs without creating duplicates', () async {
+      const docA = core.SarvDocument(
+        score: core.Score(title: 'Concerto A'),
+        metadata: core.DocumentMetadata(title: 'Concerto A'),
+      );
+      const docB = core.SarvDocument(
+        score: core.Score(title: 'Sonata B'),
+        metadata: core.DocumentMetadata(title: 'Sonata B'),
+      );
+
+      // Replaces pristine blank tab
+      final sessionA = await workspaceCubit.openDocumentTab(docA, title: 'concerto.sarv');
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(sessionA.title, 'Concerto A');
+
+      // Opens docB in tab 1
+      final sessionB = await workspaceCubit.openDocumentTab(docB, title: 'sonata.sarv');
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(sessionB.title, 'Sonata B');
+
+      // Re-opening docA must switch to tab 0 and NOT create a third tab
+      final switchedA = await workspaceCubit.openDocumentTab(docA, title: 'concerto.sarv');
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(switchedA.id, sessionA.id);
+
+      // Re-opening docB must switch to tab 1 and NOT create a third tab
+      final switchedB = await workspaceCubit.openDocumentTab(docB, title: 'sonata.sarv');
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(switchedB.id, sessionB.id);
+    });
+
+    test('openDocumentTab with blob URL sanitizes path and displays title without exposing GUID', () async {
+      const doc = core.SarvDocument(
+        score: core.Score(title: 'Blob Sonata'),
+      );
+      final session = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'blob:http://localhost:54321/4a5b6c7d-8e9f-0123-4567-89abcdef0123',
+        title: 'myscore.sarv',
+      );
+
+      expect(session.title, equals('myscore.sarv'));
+      expect(session.title, isNot(contains('4a5b6c7d')));
+      expect(session.title, isNot(contains('blob:')));
+      expect(session.filePath, equals('myscore.sarv'));
+
+      // Re-opening with a different blob URL deduplicates and switches
+      final reopened = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'blob:http://localhost:54321/fedcba98-7654-3210-fedc-ba9876543210',
+        title: 'myscore.sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(reopened.id, equals(session.id));
+    });
+
+    test('openDocumentTab with identical content but distinct filenames opens separate tabs', () async {
+      const doc = core.SarvDocument(
+        score: core.Score(title: 'sample'),
+        metadata: core.DocumentMetadata(title: 'sample'),
+      );
+
+      // 1. Open original sample.sarv
+      final session1 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample.sarv',
+        title: 'sample.sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(session1.title, equals('sample.sarv'));
+
+      // 2. Open Save As copy sample (1).sarv with EXACT SAME content
+      final session2 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample (1).sarv',
+        title: 'sample (1).sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(session2.id, isNot(equals(session1.id)));
+      expect(session2.title, equals('sample (1).sarv'));
+
+      // 3. Dropping sample.sarv again switches back to tab 0
+      final switched1 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample.sarv',
+        title: 'sample.sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(switched1.id, equals(session1.id));
+
+      // 4. Dropping sample (1).sarv switches to tab 1
+      final switched2 = await workspaceCubit.openDocumentTab(
+        doc,
+        filePath: 'sample (1).sarv',
+        title: 'sample (1).sarv',
+      );
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(switched2.id, equals(session2.id));
+    });
+  });
+
+  group('WorkspaceCubit Session Persistence', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test('flushes session state to SharedPreferences and restores upon initialization', () async {
+      final initialCubit = WorkspaceCubit(autoRestoreSession: false);
+      final tab2 = initialCubit.openNewTab(profile: core.StaffProfiles.piano);
+      initialCubit.state.activeCubit.setTitle('Persisted Piano Piece');
+      await pumpEventQueue();
+
+      await initialCubit.flushSessionSave();
+      await initialCubit.close();
+
+      final prefs = await SharedPreferences.getInstance();
+      final savedJson = prefs.getString(WorkspaceCubit.prefSessionKey);
+      expect(savedJson, isNotNull);
+      expect(savedJson, contains('Persisted Piano Piece'));
+
+      // Now create a new WorkspaceCubit with autoRestoreSession: true
+      final restoredCubit = WorkspaceCubit(autoRestoreSession: true);
+      // Wait for async session restoration
+      await pumpEventQueue();
+
+      expect(restoredCubit.state.tabCount, 2);
+      expect(restoredCubit.state.activeIndex, 1);
+      expect(restoredCubit.state.sessions[1].id, tab2.id);
+      expect(restoredCubit.state.activeSession.title, 'Persisted Piano Piece');
+
+      await restoredCubit.close();
+    });
+
+    test('clearSavedSession removes persisted session from SharedPreferences', () async {
+      final cubit = WorkspaceCubit(autoRestoreSession: false);
+      cubit.openNewTab();
+      await cubit.flushSessionSave();
+
+      var prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(WorkspaceCubit.prefSessionKey), isTrue);
+
+      await WorkspaceCubit.clearSavedSession();
+      prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(WorkspaceCubit.prefSessionKey), isFalse);
+
+      await cubit.close();
+    });
+  });
+}
+

@@ -28,39 +28,6 @@ void main() {
       expect(header, equals('%PDF'));
     });
 
-    test('emitCompiledPdf generates non-empty PDF bytes for engraved page', () async {
-      final config = const PageConfig();
-      final score = Part(
-        id: 'v1',
-        name: 'Violin',
-        measures: [
-          Measure(
-            number: 1,
-            clef: Clef.treble,
-            timeSignature: const TimeSignature(4, 4),
-            voices: {
-              'v1': Voice(
-                id: 'v1',
-                events: [
-                  const NoteEvent(
-                    Pitch(NoteName.c, octave: 4),
-                    RhythmicDuration.quarter,
-                  ),
-                ],
-              ),
-            },
-          ),
-        ],
-      );
-      final scoreObj = Score(title: 'Test Score', parts: [score]);
-      final engravedLayout = Engraver.compile(scoreObj, config);
-      expect(engravedLayout.pages, isNotEmpty);
 
-      final pdfBytes = await emitCompiledPdf(config, engravedLayout.pages.first);
-
-      expect(pdfBytes, isNotEmpty);
-      final header = String.fromCharCodes(pdfBytes.take(4));
-      expect(header, equals('%PDF'));
-    });
   });
 }

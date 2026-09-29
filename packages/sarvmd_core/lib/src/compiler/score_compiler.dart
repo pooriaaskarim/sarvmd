@@ -12,6 +12,7 @@ import '../layout.dart';
 import '../pdf_emitter.dart' as pdf_emitter;
 import '../profiles.dart';
 import '../svg_emitter.dart' as svg_emitter;
+import 'file_naming.dart';
 
 /// High-level compilation & code generation engine for SarvMD manuscript scores.
 abstract final class ScoreCompiler {
@@ -74,13 +75,13 @@ abstract final class ScoreCompiler {
     if (trimmed.isEmpty) {
       trimmed = getDefaultFileName(config);
     }
-    if (trimmed.endsWith('.tex') || trimmed.endsWith('.pdf') || trimmed.endsWith('.svg')) {
-      final lastDot = trimmed.lastIndexOf('.');
-      if (lastDot != -1) {
-        trimmed = trimmed.substring(0, lastDot);
-      }
-    }
+    trimmed = FileNaming.stripExtension(trimmed);
     return trimmed.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+  }
+
+  /// Appends an integer numeric [index] immediately before the file extension.
+  static String appendIndex(String fileName, int index, {String separator = '_'}) {
+    return FileNaming.appendIndex(fileName, index, separator: separator);
   }
 
   /// Compiles the score layout configuration to LaTeX source code (`.tex`).

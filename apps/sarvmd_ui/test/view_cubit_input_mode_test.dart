@@ -27,7 +27,7 @@ void main() {
 
     test('ViewState copyWith preserves inputMode when omitted', () {
       const state = ViewState(inputMode: InputMode.touch);
-      final updated = state.copyWith(showNotation: true);
+      final updated = state.copyWith(calibrationFactor: 2.0);
       expect(updated.inputMode, equals(InputMode.touch));
     });
   });

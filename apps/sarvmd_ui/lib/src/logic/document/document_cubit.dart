@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/app_logger.dart';
+import '../services/sarv_file_service.dart';
 import 'document_state.dart';
 
 final _log = AppLogger.score;
@@ -15,61 +16,102 @@ final _log = AppLogger.score;
 /// and transactional undo/redo execution history.
 class DocumentCubit extends Cubit<DocumentState> {
   final core.CommandHistory _history;
+  final SarvFileService _fileService;
+  final bool _enablePersistence;
   Timer? _saveTimer;
 
-  static const _prefKey = 'sarvmd_config';
+  static const _prefDocKey = 'sarvmd_document';
+  static const _prefLegacyKey = 'sarvmd_config';
+  static const _prefFilePathKey = 'sarvmd_file_path';
 
-  DocumentCubit([core.CommandHistory? history])
-      : this._internal(
+  DocumentCubit([
+    core.CommandHistory? history,
+    SarvFileService? fileService,
+    bool autoLoadFromPrefs = true,
+  ]) : this._internal(
           history ??
               core.CommandHistory(
                 initialDocument: core.SarvDocument(
+                  score: const core.Score(title: ''),
                   config: core.StaffProfiles.treble.applyTo(const core.PageConfig()),
+                  metadata: const core.DocumentMetadata(title: ''),
                 ),
               ),
+          fileService ?? SarvFileService(),
+          autoLoadFromPrefs: autoLoadFromPrefs,
         );
 
-  DocumentCubit._internal(core.CommandHistory history)
-      : _history = history,
+  DocumentCubit._internal(
+    core.CommandHistory history,
+    SarvFileService fileService, {
+    bool autoLoadFromPrefs = true,
+  })  : _history = history,
+        _fileService = fileService,
+        _enablePersistence = autoLoadFromPrefs,
         super(DocumentState(
           document: history.document,
           undoStack: history.undoStack,
           redoStack: history.redoStack,
+          lastSavedDocument: history.document,
         )) {
-    _loadFromPrefs();
+    if (autoLoadFromPrefs) {
+      _loadFromPrefs();
+    }
   }
 
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString(_prefKey);
+
+    // 1. Try restoring full SarvDocument
+    final docJsonStr = prefs.getString(_prefDocKey);
+    final savedFilePath = prefs.getString(_prefFilePathKey);
+    if (docJsonStr != null) {
+      try {
+        final jsonMap = jsonDecode(docJsonStr) as Map<String, dynamic>;
+        final loadedDoc = core.SarvDocument.fromJson(jsonMap);
+        _history.setDocument(loadedDoc, clearHistory: true);
+        emit(DocumentState(
+          document: loadedDoc,
+          undoStack: const [],
+          redoStack: const [],
+          filePath: savedFilePath,
+          lastSavedDocument: loadedDoc,
+        ));
+        _log.debug('SarvDocument restored from SharedPreferences');
+        return;
+      } catch (e, st) {
+        _log.error('Failed to deserialize document from SharedPreferences',
+            error: e, stackTrace: st);
+      }
+    }
+
+    // 2. Fall back to legacy config if present
+    final jsonStr = prefs.getString(_prefLegacyKey);
     if (jsonStr != null) {
       try {
         final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
         final loadedConfig = core.PageConfig.fromJson(jsonMap);
-        _history.execute(core.SetSystemLayoutCommand(
-          loadedConfig.systemLayout,
-          'Restore Saved Config',
-        ));
-        // Reset undo history from restored prefs
-        _history.clear();
+        final restoredDoc = _history.document.copyWith(config: loadedConfig);
+        _history.setDocument(restoredDoc, clearHistory: true);
         _syncState();
-        _log.debug('Config restored from SharedPreferences');
+        _log.debug('Legacy config restored from SharedPreferences');
       } catch (e, st) {
-        _log.error('Failed to deserialize config from SharedPreferences',
+        _log.error('Failed to deserialize legacy config from SharedPreferences',
             error: e, stackTrace: st);
       }
     }
   }
 
   void _save() {
+    if (!_enablePersistence) return;
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 500), () async {
       try {
         final prefs = await SharedPreferences.getInstance();
-        final jsonStr = jsonEncode(state.config.toJson());
-        await prefs.setString(_prefKey, jsonStr);
+        final docJson = jsonEncode(state.document.toJson());
+        await prefs.setString(_prefDocKey, docJson);
       } catch (e, st) {
-        _log.error('Failed to persist config to SharedPreferences',
+        _log.error('Failed to persist document to SharedPreferences',
             error: e, stackTrace: st);
       }
     });
@@ -82,6 +124,137 @@ class DocumentCubit extends Cubit<DocumentState> {
       redoStack: _history.redoStack,
     ));
     _save();
+  }
+
+  // --- Document Lifecycle & File Persistence Operations ---
+
+  /// Creates a clean, new document initialized with [profile] (or treble solo).
+  void newDocument([core.StaffProfile? profile, String? title]) {
+    final prof = profile ?? core.StaffProfiles.treble;
+    final initialTitle = title ?? '';
+    final newDoc = core.SarvDocument(
+      score: core.Score(title: initialTitle),
+      config: prof.applyTo(const core.PageConfig()),
+      metadata: core.DocumentMetadata(title: initialTitle),
+    );
+    _history.setDocument(newDoc, clearHistory: true);
+    emit(DocumentState(
+      document: newDoc,
+      undoStack: const [],
+      redoStack: const [],
+      filePath: null,
+      lastSavedDocument: newDoc,
+    ));
+    _save();
+    SharedPreferences.getInstance().then((p) => p.remove(_prefFilePathKey));
+    _log.info('New document created with profile: ${prof.id}');
+  }
+
+  /// Sets the title of the score/document with undo/redo support.
+  void setTitle(String title) {
+    execute(core.SetTitleCommand(title, state.score.title, state.metadata.title));
+  }
+
+  /// Updates the metadata of the document with undo/redo support.
+  void updateMetadata(core.DocumentMetadata metadata) {
+    execute(core.SetMetadataCommand(metadata));
+  }
+
+  /// Loads an external [document] into the editor session.
+  void loadDocument(core.SarvDocument document, {String? filePath}) {
+    _history.setDocument(document, clearHistory: true);
+    emit(DocumentState(
+      document: document,
+      undoStack: const [],
+      redoStack: const [],
+      filePath: filePath,
+      lastSavedDocument: document,
+    ));
+    _save();
+    SharedPreferences.getInstance().then((p) {
+      if (filePath != null) {
+        p.setString(_prefFilePathKey, filePath);
+      } else {
+        p.remove(_prefFilePathKey);
+      }
+    });
+    _log.info('Document loaded into editor session', context: {
+      'filePath': filePath ?? 'unsaved',
+      'title': document.metadata.title,
+    });
+  }
+
+  /// Saves the current document. If [filePath] is already set, writes directly;
+  /// otherwise prompts the system save dialog (Save As).
+  ///
+  /// Returns `true` on successful save, `false` if cancelled.
+  Future<bool> save({SarvFileService? fileService}) async {
+    final service = fileService ?? _fileService;
+    final savedPath = await service.saveSarvFile(
+      document: state.document,
+      filePath: state.filePath,
+      defaultFileName: state.displayName,
+    );
+    if (savedPath != null) {
+      emit(state.copyWith(
+        filePath: savedPath,
+        lastSavedDocument: state.document,
+      ));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefFilePathKey, savedPath);
+      return true;
+    }
+    return false;
+  }
+
+  /// Always prompts the system save dialog to save the current document to a new location.
+  ///
+  /// Returns `true` on successful save, `false` if cancelled.
+  Future<bool> saveAs({SarvFileService? fileService}) async {
+    final service = fileService ?? _fileService;
+    final savedPath = await service.saveAsSarvFile(
+      document: state.document,
+      defaultFileName: state.displayName,
+    );
+    if (savedPath != null) {
+      emit(state.copyWith(
+        filePath: savedPath,
+        lastSavedDocument: state.document,
+      ));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefFilePathKey, savedPath);
+      return true;
+    }
+    return false;
+  }
+
+  /// Prompts the system file picker to select a `.sarv` file, then loads it into the editor session.
+  ///
+  /// Returns `true` on successful load, `false` if cancelled.
+  Future<bool> openFile({SarvFileService? fileService}) async {
+    final service = fileService ?? _fileService;
+    final result = await service.openSarvFile();
+    if (result != null) {
+      loadDocument(result.document, filePath: result.filePath);
+      return true;
+    }
+    return false;
+  }
+
+  /// Directly loads a `.sarv` file from [path] into the editor session.
+  Future<bool> loadFromPath(String path, {SarvFileService? fileService}) async {
+    final service = fileService ?? _fileService;
+    final result = await service.loadFileFromPath(path);
+    loadDocument(result.document, filePath: result.filePath);
+    return true;
+  }
+
+  /// Marks the current state as clean / saved.
+  void markSaved({String? filePath}) {
+    emit(state.copyWith(
+      filePath: filePath,
+      lastSavedDocument: state.document,
+    ));
   }
 
   @override
