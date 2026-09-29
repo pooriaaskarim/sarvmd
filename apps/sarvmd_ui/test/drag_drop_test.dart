@@ -128,8 +128,8 @@ void main() {
       });
       await tester.pump();
 
-      // Verify new tab was opened with dropped document title
-      expect(workspaceCubit.state.activeSession.title, 'Dropped Concerto');
+      // Verify new tab was opened with dropped document filename
+      expect(workspaceCubit.state.activeSession.title, 'concerto.sarv');
     });
 
     testWidgets('displays warning notification when non-.sarv file is dropped', (tester) async {
@@ -160,6 +160,77 @@ void main() {
       await tester.pump();
 
       expect(find.byType(SnackBar), findsOneWidget);
+    });
+
+    testWidgets('dragging the same doc after dragging another switches tabs and avoids duplicates', (tester) async {
+      await tester.pumpWidget(_buildTestShell(
+        workspaceCubit: workspaceCubit,
+        viewCubit: viewCubit,
+        localeCubit: localeCubit,
+      ));
+      await tester.pumpAndSettle();
+
+      const doc1 = core.SarvDocument(
+        score: core.Score(title: 'First Concerto'),
+        metadata: core.DocumentMetadata(title: 'First Concerto'),
+      );
+      final bytes1 = Uint8List.fromList(utf8.encode(doc1.toSarvJson()));
+
+      const doc2 = core.SarvDocument(
+        score: core.Score(title: 'Second Sonata'),
+        metadata: core.DocumentMetadata(title: 'Second Sonata'),
+      );
+      final bytes2 = Uint8List.fromList(utf8.encode(doc2.toSarvJson()));
+
+      final dropTarget = tester.widget<DropTarget>(find.byType(DropTarget));
+
+      // 1. Drop doc 1 -> loads into tab
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [DropItemFile.fromData(bytes1, name: 'concerto.sarv', path: 'concerto.sarv')],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeSession.title, 'concerto.sarv');
+
+      // 2. Drop doc 2 -> opens new tab 2
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [DropItemFile.fromData(bytes2, name: 'sonata.sarv', path: 'sonata.sarv')],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 1);
+      expect(workspaceCubit.state.activeSession.title, 'sonata.sarv');
+
+      // 3. Drop doc 1 again -> switches back to tab 0 and DOES NOT open tab 3!
+      await tester.runAsync(() async {
+        dropTarget.onDragDone?.call(
+          DropDoneDetails(
+            files: [DropItemFile.fromData(bytes1, name: 'concerto.sarv', path: 'concerto.sarv')],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      expect(workspaceCubit.state.tabCount, 2);
+      expect(workspaceCubit.state.activeIndex, 0);
+      expect(workspaceCubit.state.activeSession.title, 'concerto.sarv');
+      expect(find.text('Switched to tab "First Concerto"'), findsOneWidget);
     });
   });
 }

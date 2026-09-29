@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logd/logd.dart';
+import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/app_logger.dart';
@@ -101,7 +102,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
 
   /// Opens a [core.SarvDocument] into a tab.
   ///
-  /// If the document's [filePath] is already open in another tab, focuses that tab.
+  /// If the document (or a file with matching path/name/content) is already open, focuses that tab.
   /// If the current active tab is completely pristine and untitled, replaces it.
   /// Otherwise, opens in a new tab.
   Future<DocumentSession> openDocumentTab(
@@ -113,14 +114,32 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       await _restoreCompleter!.future;
     }
 
-    // 1. Check if already open by filePath
-    if (filePath != null && filePath.isNotEmpty) {
-      final existingIndex = state.sessions.indexWhere((s) => s.filePath == filePath);
-      if (existingIndex != -1) {
-        switchTab(existingIndex);
-        return state.sessions[existingIndex];
+    final effectiveTargetName = (filePath != null && filePath.isNotEmpty)
+        ? p.basename(filePath)
+        : (title != null && title.isNotEmpty ? p.basename(title) : null);
+
+    // 1. Check if already open by filePath, filename/title match, or identical document content
+    final existingIndex = state.sessions.indexWhere((s) {
+      if (filePath != null && filePath.isNotEmpty && s.filePath == filePath) {
+        return true;
       }
+      if (effectiveTargetName != null) {
+        final sessionBase = s.filePath != null ? p.basename(s.filePath!) : null;
+        if (sessionBase == effectiveTargetName) return true;
+        if (s.title == effectiveTargetName) return true;
+      }
+      if (s.document.hasSameContent(document)) {
+        return true;
+      }
+      return false;
+    });
+
+    if (existingIndex != -1) {
+      switchTab(existingIndex);
+      return state.sessions[existingIndex];
     }
+
+    final effectivePath = filePath ?? (kIsWeb ? title : null);
 
     // 2. Check if current active tab is a clean, untouched blank tab
     final current = state.activeSession;
@@ -130,7 +149,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
         current.cubit.state.undoStack.isEmpty;
 
     if (isPristineBlank) {
-      current.cubit.loadDocument(document, filePath: filePath);
+      current.cubit.loadDocument(document, filePath: effectivePath);
       emit(state.copyWith());
       _debouncedSaveSession();
       return current;
@@ -138,7 +157,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
 
     // 3. Otherwise, open in a new tab
     final newCubit = DocumentCubit(null, null, false);
-    newCubit.loadDocument(document, filePath: filePath);
+    newCubit.loadDocument(document, filePath: effectivePath);
     final session = DocumentSession(
       id: _nextTabId(),
       cubit: newCubit,
@@ -153,7 +172,7 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       activeIndex: newIndex,
     ));
     _debouncedSaveSession();
-    _log.info('Opened document tab: ${session.id} -> ${title ?? filePath ?? document.metadata.title}');
+    _log.info('Opened document tab: ${session.id} -> ${title ?? effectivePath ?? document.metadata.title}');
     return session;
   }
 

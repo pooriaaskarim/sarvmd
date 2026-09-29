@@ -80,6 +80,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated codebase strictly around high-performance blank canvas manuscript design and vector engraving.
 
 ### Fixed
+- **Web & Desktop Document Tab Deduplication & Drag-and-Drop Parity (`WorkspaceCubit` & `AppShell`)**:
+  - Resolved issue in Web where dragging or opening an already-open `.sarv` document created redundant duplicate tabs rather than switching to the existing open tab.
+  - Added robust multi-criteria deduplication in `WorkspaceCubit.openDocumentTab` matching by exact file path, filename/basename, and document content equivalence across desktop and web.
+  - Ensured Web dropped files and opened files retain their file identity (`filePath: fileName`) so loaded documents are never mistaken for blank placeholder tabs or duplicated upon subsequent drag-and-drop operations.
+  - Added "Switched to tab" visual feedback and icon indicator parity when dragging already-open documents on Web.
 - **Android SAF Pre-Extension Duplicate Numbering (`NativeFileSaveService` & `MainActivity.kt`)**:
   - Resolved Android Storage Access Framework (SAF) issue where filename collision numbers were placed after the extension (e.g. `Treble_A4_Portrait.pdf (1)` or `Treble_A4_Portrait.sarv (1)`).
   - Implemented `NativeFileSaveService` bridging to native Android `ACTION_CREATE_DOCUMENT` with explicit MIME types (`application/pdf`, `image/svg+xml`, `text/plain`, `application/octet-stream`).

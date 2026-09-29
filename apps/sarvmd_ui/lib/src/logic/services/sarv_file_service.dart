@@ -51,7 +51,11 @@ class SarvFileService {
         _log.debug('Web file picking cancelled by user');
         return null;
       }
-      return _parseJsonDocument(webResult.content, fileName: webResult.fileName);
+      return _parseJsonDocument(
+        webResult.content,
+        fileName: webResult.fileName,
+        filePath: webResult.fileName,
+      );
     }
 
     final bool isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
@@ -85,7 +89,7 @@ class SarvFileService {
 
     final platformFile = result.files.first;
     final fileName = platformFile.name;
-    final filePath = platformFile.path;
+    final filePath = platformFile.path ?? (kIsWeb ? platformFile.name : null);
 
     String jsonString;
     if (platformFile.bytes != null) {
