@@ -10,7 +10,7 @@ void main() {
 
     setUp(() {
       history = CommandHistory(
-        initialScore: const Score(title: 'Initial Title', parts: []),
+        initialScore: const Score(title: 'Initial Title'),
       );
     });
 
@@ -35,45 +35,6 @@ void main() {
       expect(history.score.title, equals('Symphony No. 5'));
     });
 
-    test('AddPartCommand and RemovePartCommand mutate parts list transactionally', () {
-      const part1 = Part(id: 'vln1', name: 'Violin I');
-      const part2 = Part(id: 'vln2', name: 'Violin II');
-
-      history.execute(const AddPartCommand(part1));
-      history.execute(const AddPartCommand(part2));
-      expect(history.score.parts.length, equals(2));
-      expect(history.score.parts[0].id, equals('vln1'));
-
-      history.execute(RemovePartCommand('vln1'));
-      expect(history.score.parts.length, equals(1));
-      expect(history.score.parts.first.id, equals('vln2'));
-
-      history.undo();
-      expect(history.score.parts.length, equals(2));
-      expect(history.score.parts[0].id, equals('vln1'));
-    });
-
-    test('AddMeasureCommand and RemoveMeasureCommand mutate measures transactionally', () {
-      const part = Part(id: 'flute', name: 'Flute');
-      history.execute(const AddPartCommand(part));
-
-      const m1 = Measure(number: 1);
-      const m2 = Measure(number: 2);
-
-      history.execute(const AddMeasureCommand('flute', m1));
-      history.execute(const AddMeasureCommand('flute', m2));
-
-      expect(history.score.parts.first.measures.length, equals(2));
-
-      history.execute(RemoveMeasureCommand('flute', 1));
-      expect(history.score.parts.first.measures.length, equals(1));
-      expect(history.score.parts.first.measures.first.number, equals(2));
-
-      history.undo();
-      expect(history.score.parts.first.measures.length, equals(2));
-      expect(history.score.parts.first.measures.first.number, equals(1));
-    });
-
     test('Executing new command clears redo history', () {
       history.execute(SetTitleCommand('Version 1', 'Initial Title'));
       history.undo();
@@ -86,7 +47,7 @@ void main() {
 
     test('Max depth truncates oldest undo command', () {
       final boundedHistory = CommandHistory(
-        initialScore: const Score(title: 'Base', parts: []),
+        initialScore: const Score(title: 'Base'),
         maxDepth: 2,
         coalesceThreshold: Duration.zero,
       );
@@ -141,7 +102,7 @@ void main() {
 
     test('Command coalescing merges consecutive commands within threshold', () {
       final coalesceHistory = CommandHistory(
-        initialScore: const Score(title: 'Base', parts: []),
+        initialScore: const Score(title: 'Base'),
         coalesceThreshold: const Duration(milliseconds: 500),
       );
 
@@ -203,7 +164,7 @@ void main() {
 
     test('UpdateGroupInitialBarlineCommand modifies initialBarline and undoes cleanly', () {
       final configHistory = CommandHistory(
-        initialScore: const Score(title: 'Base', parts: []),
+        initialScore: const Score(title: 'Base'),
       );
       expect(configHistory.config.systemLayout.rootGroup.initialBarline, isTrue);
 
@@ -220,7 +181,7 @@ void main() {
 
     test('RemoveStaffCommand removes targeted staff from nested group without deleting the whole group', () {
       final configHistory = CommandHistory(
-        initialScore: const Score(title: 'Chamber Score', parts: []),
+        initialScore: const Score(title: 'Chamber Score'),
       );
       configHistory.execute(ApplyProfileCommand(StaffProfiles.chamberOrchestra));
 
@@ -269,7 +230,7 @@ void main() {
       );
 
       final configHistory = CommandHistory(
-        initialScore: const Score(title: 'Score', parts: []),
+        initialScore: const Score(title: 'Score'),
       );
       configHistory.execute(SetSystemLayoutCommand(layout));
       expect(configHistory.config.staffCount, equals(3));

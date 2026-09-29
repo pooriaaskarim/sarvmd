@@ -24,7 +24,7 @@ class CommandHistory {
     this.onDocumentChanged,
   }) : _document = initialDocument ??
             SarvDocument(
-              score: initialScore ?? const Score(title: '', parts: []),
+              score: initialScore ?? const Score(title: ''),
             );
 
   /// Current logical document state.
@@ -109,5 +109,14 @@ class CommandHistory {
   void clear() {
     _undoStack.clear();
     _redoStack.clear();
+  }
+
+  /// Sets a new document state and optionally clears undo and redo history.
+  void setDocument(SarvDocument doc, {bool clearHistory = true}) {
+    _document = doc;
+    if (clearHistory) {
+      clear();
+    }
+    onDocumentChanged?.call(_document);
   }
 }

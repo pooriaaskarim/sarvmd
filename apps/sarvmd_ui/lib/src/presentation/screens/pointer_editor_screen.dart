@@ -12,6 +12,7 @@ import '../../core/theme/app_metrics.dart';
 import '../../core/theme/layout_policy.dart';
 import '../widgets/staff/staff_spacing_group.dart';
 import '../widgets/layout/pointer_top_bar.dart';
+import '../widgets/workspace/pointer_tab_bar.dart';
 
 import '../widgets/common/shortcut_gateway.dart';
 import '../../l10n/app_localizations.dart';
@@ -844,6 +845,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                   child: Column(
                     children: [
                       const PointerTopBar(),
+                      const PointerTabBar(),
                       Expanded(
                         child: Directionality(
                           textDirection: TextDirection.ltr,

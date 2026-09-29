@@ -36,7 +36,6 @@ class ViewState {
   final SarvAccent accent;
   final double calibrationFactor;
   final Set<GuideType> activeGuides;
-  final bool showNotation;
   final String? activeScrubbingMargin;
   final InputMode inputMode;
   final SettingsSection activeTouchSection;
@@ -50,7 +49,6 @@ class ViewState {
     this.accent = SarvAccent.sky,
     this.calibrationFactor = 1.0,
     this.activeGuides = const {GuideType.paperEdges, GuideType.rulerWings},
-    this.showNotation = false,
     this.activeScrubbingMargin,
     this.inputMode = InputMode.pointer,
     this.activeTouchSection = SettingsSection.mainMenu,
@@ -71,7 +69,6 @@ class ViewState {
     SarvAccent? accent,
     double? calibrationFactor,
     Set<GuideType>? activeGuides,
-    bool? showNotation,
     String? activeScrubbingMargin,
     bool clearScrubbingMargin = false,
     InputMode? inputMode,
@@ -87,7 +84,6 @@ class ViewState {
       accent: accent ?? this.accent,
       calibrationFactor: calibrationFactor ?? this.calibrationFactor,
       activeGuides: activeGuides ?? this.activeGuides,
-      showNotation: showNotation ?? this.showNotation,
       activeScrubbingMargin: clearScrubbingMargin
           ? null
           : (activeScrubbingMargin ?? this.activeScrubbingMargin),

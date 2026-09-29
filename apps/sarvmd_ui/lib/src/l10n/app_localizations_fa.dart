@@ -986,4 +986,101 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get exportFormatsSummary => 'خروجی PDF / TeX / SVG…';
+
+  @override
+  String get menuNew => 'جدید';
+
+  @override
+  String get menuOpen => 'باز کردن…';
+
+  @override
+  String get menuSave => 'ذخیره';
+
+  @override
+  String get menuSaveAs => 'ذخیره به نام…';
+
+  @override
+  String get unsavedChangesTitle => 'تغییرات ذخیره‌نشده';
+
+  @override
+  String unsavedChangesMessage(String documentName) {
+    return 'آیا می‌خواهید تغییرات «$documentName» را قبل از ادامه ذخیره کنید؟';
+  }
+
+  @override
+  String get actionSave => 'ذخیره';
+
+  @override
+  String get actionDiscard => 'ذخیره نشود';
+
+  @override
+  String get actionCancel => 'انصراف';
+
+  @override
+  String get fileSavedSuccess => 'سند با موفقیت ذخیره شد.';
+
+  @override
+  String get fileSaveFailed => 'خطا در ذخیره سند.';
+
+  @override
+  String get fileOpenFailed =>
+      'خطا در باز کردن سند. فایل نامعتبر یا ناسازگار است.';
+
+  @override
+  String fileOpenedSuccess(String title) {
+    return '«$title» باز شد';
+  }
+
+  @override
+  String fileSwitchedTab(String title) {
+    return 'به برگه «$title» منتقل شد';
+  }
+
+  @override
+  String get menuOpenRecent => 'باز کردن موارد اخیر';
+
+  @override
+  String get menuClearRecent => 'پاک کردن موارد اخیر';
+
+  @override
+  String get menuNoRecentFiles => 'هیچ فایل اخیری وجود ندارد';
+
+  @override
+  String get menuDocumentProperties => 'ویژگی‌های سند…';
+
+  @override
+  String get documentPropertiesTitle => 'ویژگی‌های سند';
+
+  @override
+  String get metadataScoreTitle => 'عنوان';
+
+  @override
+  String get metadataSubtitle => 'زیرعنوان';
+
+  @override
+  String get metadataComposer => 'آهنگساز';
+
+  @override
+  String get metadataArranger => 'تنظیم‌کننده';
+
+  @override
+  String get metadataLyricist => 'ترانه‌سرا';
+
+  @override
+  String get metadataCopyright => 'کپی‌رایت / حق نشر';
+
+  @override
+  String get metadataCreatedAt => 'تاریخ ایجاد';
+
+  @override
+  String get metadataModifiedAt => 'آخرین ویرایش';
+
+  @override
+  String get metadataFilePath => 'محل فایل';
+
+  @override
+  String get metadataUnsaved => 'دست‌نویس ذخیره‌نشده';
+
+  @override
+  String get actionApply => 'اعمال';
 }

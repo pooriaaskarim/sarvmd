@@ -2,6 +2,7 @@
 // Licensed under the Business Source License 1.1 (BUSL-1.1).
 
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:meta/meta.dart';
 import '../../core/constants/app_version.dart';
 import '../../core/utils/app_logger.dart';
 
@@ -47,8 +48,15 @@ class ChangelogService {
     } catch (e, st) {
       _log.error('Failed to load dynamic CHANGELOG.md asset',
           error: e, stackTrace: st);
-      return [];
+      _cachedEntries = const [];
+      return const [];
     }
+  }
+
+  /// Clears in-memory cached entries (primarily for testing).
+  @visibleForTesting
+  static void resetCache() {
+    _cachedEntries = null;
   }
 
   /// Returns the latest parsed version string from [CHANGELOG.md], or [AppVersion.version].

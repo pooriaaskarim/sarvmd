@@ -20,7 +20,6 @@ class ViewCubit extends Cubit<ViewState> {
   static const String _keyThemeMode = 'view_theme_mode';
   static const String _keyAccent = 'view_accent';
   static const String _keyCalibration = 'view_calibration_factor';
-  static const String _keyShowNotation = 'view_show_notation';
   static const String _keyInputMode = 'view_input_mode';
   static const String _keyExpandedPointerSections =
       'view_expanded_pointer_sections';
@@ -70,9 +69,6 @@ class ViewCubit extends Cubit<ViewState> {
       }
     }
 
-    // Load Notation Preview
-    final showNotation = prefs.getBool(_keyShowNotation) ?? false;
-
     // Load Input Mode
     InputMode inputMode = state.inputMode;
     final inputModeIndex = prefs.getInt(_keyInputMode);
@@ -118,7 +114,6 @@ class ViewCubit extends Cubit<ViewState> {
       themeMode: themeMode,
       accent: accent,
       calibrationFactor: calibrationFactor,
-      showNotation: showNotation,
       inputMode: inputMode,
       expandedPointerSections: expandedPointerSections,
     ));
@@ -190,12 +185,6 @@ class ViewCubit extends Cubit<ViewState> {
     }
   }
 
-  void toggleShowNotation() async {
-    final nextShow = !state.showNotation;
-    emit(state.copyWith(showNotation: nextShow));
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyShowNotation, nextShow);
-  }
 
   void setInputMode(InputMode mode) async {
     _log.debug('Input mode updated', context: {'inputMode': mode.name});
