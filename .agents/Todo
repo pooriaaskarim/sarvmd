@@ -20,7 +20,7 @@
     [x] Cross-Platform File Naming Engine (`FileNaming` in `sarvmd_core`): Zero-dependency naming and collision disambiguation utility ensuring number suffixes are strictly positioned before extensions across all platforms
     [x] Export Dialog Destination Folder Input & Path Normalization: Converted Destination Folder into an editable monospace text input with path normalization (`~` expansion, `file://` stripping, and slash cleanup), resolving Linux/KDE file picker ambiguity
     [x] Touch Tab Switcher Dismissal Stability: Resolved `Dismissible` tree crash in `TouchTabSwitcherModal` and ensured closing/dismissing the sole tab automatically initializes a clean default manuscript session
-    [x] Canvas / Tab-Bar File Drag-and-Drop: Support dragging `.sarv` files from OS file manager directly onto the canvas or tab strip to open in a new tab
+    [x] Canvas / Tab-Bar File Drag-and-Drop: Support dragging `.sarv` files from OS file manager directly onto the canvas or tab strip to open in a new tab, with Web deduplication and tab-switching parity
     [x] Multi-Tab Session State Persistence: Persist open tab metadata and active tab index across app restarts via `SharedPreferences`
     [x] Desktop CLI Launch Argument: Handle opening `.sarv` files directly via command-line arguments (`sarvmd <file.sarv>`)
 4. [ ] Standard shorcuts with a help cheat-sheet to enable user keyboard speed entry.
