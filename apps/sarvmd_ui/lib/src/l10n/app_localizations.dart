@@ -2227,6 +2227,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'String quartet & winds hierarchy'**
   String get presetChamberOrchestraSubtitle;
+
+  /// No description provided for @keyboardShortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard Shortcuts'**
+  String get keyboardShortcutsTitle;
+
+  /// No description provided for @keyboardShortcutsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost your workflow with speed entry shortcuts'**
+  String get keyboardShortcutsSubtitle;
+
+  /// No description provided for @keyboardShortcutsSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter shortcuts...'**
+  String get keyboardShortcutsSearchPlaceholder;
+
+  /// No description provided for @shortcutCategoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General & Dialogs'**
+  String get shortcutCategoryGeneral;
+
+  /// No description provided for @shortcutCategoryFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File & Tabs'**
+  String get shortcutCategoryFile;
+
+  /// No description provided for @shortcutCategoryEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit & History'**
+  String get shortcutCategoryEdit;
+
+  /// No description provided for @shortcutCategoryCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Canvas Navigation & Zoom'**
+  String get shortcutCategoryCanvas;
+
+  /// No description provided for @shortcutCategoryPanels.
+  ///
+  /// In en, this message translates to:
+  /// **'Panels & View'**
+  String get shortcutCategoryPanels;
+
+  /// No description provided for @shortcutNewDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'New document'**
+  String get shortcutNewDocument;
+
+  /// No description provided for @shortcutOpenDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Open document'**
+  String get shortcutOpenDocument;
+
+  /// No description provided for @shortcutSaveDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Save document'**
+  String get shortcutSaveDocument;
+
+  /// No description provided for @shortcutSaveAsDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Save document as...'**
+  String get shortcutSaveAsDocument;
+
+  /// No description provided for @shortcutExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export score (PDF, SVG, LaTeX)...'**
+  String get shortcutExport;
+
+  /// No description provided for @shortcutDocumentProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Document properties & metadata'**
+  String get shortcutDocumentProperties;
+
+  /// No description provided for @shortcutNewTab.
+  ///
+  /// In en, this message translates to:
+  /// **'New tab'**
+  String get shortcutNewTab;
+
+  /// No description provided for @shortcutCloseTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Close active tab'**
+  String get shortcutCloseTab;
+
+  /// No description provided for @shortcutNextTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Next tab'**
+  String get shortcutNextTab;
+
+  /// No description provided for @shortcutPreviousTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous tab'**
+  String get shortcutPreviousTab;
+
+  /// No description provided for @shortcutUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo last action'**
+  String get shortcutUndo;
+
+  /// No description provided for @shortcutRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo action'**
+  String get shortcutRedo;
+
+  /// No description provided for @shortcutZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get shortcutZoomIn;
+
+  /// No description provided for @shortcutZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get shortcutZoomOut;
+
+  /// No description provided for @shortcutZoomReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual size (100% zoom)'**
+  String get shortcutZoomReset;
+
+  /// No description provided for @shortcutPanCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'Pan canvas'**
+  String get shortcutPanCanvas;
+
+  /// No description provided for @shortcutToggleSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle properties sidebar'**
+  String get shortcutToggleSidebar;
+
+  /// No description provided for @shortcutToggleViewPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle view & layout panel'**
+  String get shortcutToggleViewPanel;
+
+  /// No description provided for @shortcutToggleZenMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Zen / distraction-free mode'**
+  String get shortcutToggleZenMode;
+
+  /// No description provided for @shortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Show keyboard shortcuts'**
+  String get shortcutHelp;
+
+  /// No description provided for @shortcutCloseDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close dialog / dismiss'**
+  String get shortcutCloseDialog;
+
+  /// No description provided for @noShortcutsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching shortcuts found'**
+  String get noShortcutsFound;
 }
 
 class _AppLocalizationsDelegate

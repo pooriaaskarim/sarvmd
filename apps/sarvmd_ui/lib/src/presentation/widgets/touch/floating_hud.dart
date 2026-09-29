@@ -171,31 +171,43 @@ class _FloatingHudState extends State<FloatingHud> {
     super.dispose();
   }
 
+  /// Scales the canvas by [factor] while keeping the viewport center stationary.
   void _stepZoom(double factor) {
     _resetRightIdleTimer();
     final matrix = widget.transformationController.value.clone();
     final currentScale = matrix.row0[0];
-    final targetScale = (currentScale * factor)
-        .clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
-    final translation = matrix.getTranslation();
-
-    widget.transformationController.value =
-        Matrix4.translationValues(translation.x, translation.y, 0.0)
-          ..multiply(Matrix4.diagonal3Values(targetScale, targetScale, 1.0));
+    final targetScale =
+        (currentScale * factor).clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
+    _applyScaleAtCenter(currentScale, targetScale);
   }
 
+  /// Sets the canvas to an absolute [targetScale] while keeping the viewport center stationary.
   void _setScale(double targetScale) {
     _resetRightIdleTimer();
     final matrix = widget.transformationController.value.clone();
-    final translation = matrix.getTranslation();
+    final currentScale = matrix.row0[0];
+    final clampedTarget =
+        targetScale.clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom);
+    _applyScaleAtCenter(currentScale, clampedTarget);
+  }
+
+  /// Applies a new absolute scale while keeping the viewport center as the focal point.
+  ///
+  /// This prevents the jarring "zoom-to-top-left" effect that occurs when translation
+  /// is naively preserved across a scale change.
+  void _applyScaleAtCenter(double currentScale, double newScale) {
+    if (currentScale == newScale) return;
+    final size = MediaQuery.sizeOf(context);
+    final focal = Offset(size.width / 2, size.height / 2);
+    final scaleRatio = newScale / currentScale;
+    final translation =
+        widget.transformationController.value.clone().getTranslation();
+    final newTx = focal.dx - (focal.dx - translation.x) * scaleRatio;
+    final newTy = focal.dy - (focal.dy - translation.y) * scaleRatio;
 
     widget.transformationController.value =
-        Matrix4.translationValues(translation.x, translation.y, 0.0)
-          ..multiply(Matrix4.diagonal3Values(
-            targetScale.clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom),
-            targetScale.clamp(ScaleMetrics.minZoom, ScaleMetrics.maxZoom),
-            1.0,
-          ));
+        Matrix4.translationValues(newTx, newTy, 0.0)
+          ..multiply(Matrix4.diagonal3Values(newScale, newScale, 1.0));
   }
 
   void _showGuidesSheet(BuildContext context) {

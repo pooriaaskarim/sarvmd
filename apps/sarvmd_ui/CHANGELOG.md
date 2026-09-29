@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Keyboard Shortcuts Cheat-Sheet Modal (`KeyboardShortcutsDialog`)**:
+  - Comprehensive, categorized shortcut reference (File & Tabs, Edit & History, View & Navigation, Panels & Dialogs, General) accessible via `F1`, `Ctrl+?` (`⌘?` on macOS), and the Help top-bar menu.
+  - Real-time search and category filtering with localized shortcut descriptions and keycap displays.
+  - Native platform keycaps (⌘, ⌥, ⇧ for macOS; Ctrl, Alt, Shift for Windows/Linux) with strict LTR isolation under RTL/Persian locales.
+- **Desktop Keyboard Shortcuts Suite & Gateway Expansion (`SarvShortcutGateway` & `PointerEditorScreen`)**:
+  - Canvas Zooming: Added `Ctrl+=` / `⌘=` (Zoom In), `Ctrl+-` / `⌘-` (Zoom Out), and `Ctrl+0` / `⌘0` (Reset to 100% / Actual Size) with viewport center focal anchoring.
+  - Panels & Layout Toggles: Added `Ctrl+B` / `⌘B` (Toggle Left Inspector/Sidebar), `Ctrl+\` / `⌘\` (Toggle Right View Panel), and `F11` (Toggle Zen Mode / Hide all sidebars).
+  - Connected `Ctrl+N` / `⌘N` and `Ctrl+T` / `⌘T` directly to `WorkspaceCubit.openNewTab()` for instant tab creation in multi-document workspace mode.
+  - Multi-entry Help Shortcuts: Bound `F1` and `Ctrl+?` / `⌘?` to open the Keyboard Shortcuts modal.
+- **Top Bar Help Menu Shortcuts Entry (`TopBarHelpMenu` & `TopBarMenuHandler`)**:
+  - Added "Keyboard Shortcuts" menu item with `F1` / `Ctrl+?` accelerator to the desktop Help menu and compact cascading menu.
 - **Zero-Document Empty Workspace & Welcome Hub (`EmptyWorkspaceView`)**:
   - Seamless transition into a sleek, state-of-the-art "No Document / Welcome Hub" when all open tabs/manuscripts are closed (0 open sessions).
   - Minimal top navigation bar enforced with strict LTR orientation across all locales (anchoring `SarvBrandHeader` on the left and `InputModeToggleButton`, `LanguageToggleButton`, and theme toggle on the right).
@@ -91,6 +102,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated codebase strictly around high-performance blank canvas manuscript design and vector engraving.
 
 ### Fixed
+- **Center-Focal Touch HUD Zoom (`FloatingHud`)**:
+  - Fixed issue where touch HUD stepper zoom buttons (`+` and `-`) and scrubbable scale chips (`_CollapsedScrubbableChip`, `_ScrubbableZoomChip`) scaled the canvas from the world-space top-left origin `(0, 0)`.
+  - Replaced naive translation retention with center-anchored affine transformation (`_applyScaleAtCenter`) using `MediaQuery.sizeOf(context)` to zoom smoothly into the viewport center.
+- **Affine Scale Vector Component Sizing (`PointerEditorScreen`)**:
+  - Corrected `scaleByDouble` invocation in `PointerEditorScreen._zoomBy` by supplying 4 positional vector parameters (`targetScale, targetScale, 1.0, 1.0`), resolving static analysis errors.
+- **Zero-Document Action Safety (`SarvShortcutGateway`)**:
+  - Guarded document shortcut callback handlers (`UndoIntent`, `RedoIntent`, `SaveDocumentIntent`, `SaveAsDocumentIntent`, `ExportIntent`, `DocumentPropertiesIntent`) against null `DocumentCubit` when operating within the zero-document empty workspace state.
 - **Distinct File Deduplication for Copies & Identical Content (`WorkspaceCubit` & `AppShell`)**:
   - Fixed issue where distinct files with identical score contents (e.g. `sample.sarv` and `sample (1).sarv` created via "Save As" or copy-paste) were erroneously treated as the same document and deduplicated into a single tab due to indiscriminate score title and content equality matching.
   - Refined file deduplication criteria in `WorkspaceCubit.openDocumentTab` and `AppShell._handleDroppedFiles` to strictly require matching file identities (path or filename) when both documents have explicit file backings, reserving deep content equivalence matching (`hasSameContent`) strictly for untitled in-memory manuscripts.

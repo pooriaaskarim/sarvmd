@@ -1147,4 +1147,95 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get presetChamberOrchestraSubtitle => 'کوارتت زهی و سازهای بادی';
+
+  @override
+  String get keyboardShortcutsTitle => 'کلیدهای میانبر';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'تسریع کار با دست‌نویس با کلیدهای دسترسی سریع';
+
+  @override
+  String get keyboardShortcutsSearchPlaceholder => 'جستجوی میانبرها...';
+
+  @override
+  String get shortcutCategoryGeneral => 'عمومی و پنجره‌ها';
+
+  @override
+  String get shortcutCategoryFile => 'پرونده و زبانه‌ها';
+
+  @override
+  String get shortcutCategoryEdit => 'ویرایش و تاریخچه';
+
+  @override
+  String get shortcutCategoryCanvas => 'بوم و بزرگ‌نمایی';
+
+  @override
+  String get shortcutCategoryPanels => 'پنل‌ها و نما';
+
+  @override
+  String get shortcutNewDocument => 'دست‌نویس جدید';
+
+  @override
+  String get shortcutOpenDocument => 'باز کردن دست‌نویس';
+
+  @override
+  String get shortcutSaveDocument => 'ذخیره دست‌نویس';
+
+  @override
+  String get shortcutSaveAsDocument => 'ذخیره دست‌نویس به نام...';
+
+  @override
+  String get shortcutExport => 'صادرات نت (PDF، SVG، LaTeX)...';
+
+  @override
+  String get shortcutDocumentProperties => 'مشخصات و متادیتای دست‌نویس';
+
+  @override
+  String get shortcutNewTab => 'زبانه جدید';
+
+  @override
+  String get shortcutCloseTab => 'بستن زبانه جاری';
+
+  @override
+  String get shortcutNextTab => 'زبانه بعدی';
+
+  @override
+  String get shortcutPreviousTab => 'زبانه قبلی';
+
+  @override
+  String get shortcutUndo => 'واگرد آخرین اقدام';
+
+  @override
+  String get shortcutRedo => 'انجام مجدد اقدام';
+
+  @override
+  String get shortcutZoomIn => 'بزرگ‌نمایی';
+
+  @override
+  String get shortcutZoomOut => 'کوچک‌نمایی';
+
+  @override
+  String get shortcutZoomReset => 'اندازه واقعی (بزرگ‌نمایی ۱۰۰٪)';
+
+  @override
+  String get shortcutPanCanvas => 'پیمایش و جابجایی بوم';
+
+  @override
+  String get shortcutToggleSidebar => 'نمایش/نهفتن نوار ویژگی‌ها';
+
+  @override
+  String get shortcutToggleViewPanel => 'نمایش/نهفتن پنل نما و ابزار';
+
+  @override
+  String get shortcutToggleZenMode => 'حالت تمرکز (Zen) / تمام‌صفحه';
+
+  @override
+  String get shortcutHelp => 'نمایش راهنمای کلیدهای میانبر';
+
+  @override
+  String get shortcutCloseDialog => 'بستن پنجره / انصراف';
+
+  @override
+  String get noShortcutsFound => 'میانبری با این عبارت یافت نشد';
 }

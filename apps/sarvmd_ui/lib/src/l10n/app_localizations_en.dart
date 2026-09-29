@@ -1148,4 +1148,95 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get presetChamberOrchestraSubtitle =>
       'String quartet & winds hierarchy';
+
+  @override
+  String get keyboardShortcutsTitle => 'Keyboard Shortcuts';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'Boost your workflow with speed entry shortcuts';
+
+  @override
+  String get keyboardShortcutsSearchPlaceholder => 'Filter shortcuts...';
+
+  @override
+  String get shortcutCategoryGeneral => 'General & Dialogs';
+
+  @override
+  String get shortcutCategoryFile => 'File & Tabs';
+
+  @override
+  String get shortcutCategoryEdit => 'Edit & History';
+
+  @override
+  String get shortcutCategoryCanvas => 'Canvas Navigation & Zoom';
+
+  @override
+  String get shortcutCategoryPanels => 'Panels & View';
+
+  @override
+  String get shortcutNewDocument => 'New document';
+
+  @override
+  String get shortcutOpenDocument => 'Open document';
+
+  @override
+  String get shortcutSaveDocument => 'Save document';
+
+  @override
+  String get shortcutSaveAsDocument => 'Save document as...';
+
+  @override
+  String get shortcutExport => 'Export score (PDF, SVG, LaTeX)...';
+
+  @override
+  String get shortcutDocumentProperties => 'Document properties & metadata';
+
+  @override
+  String get shortcutNewTab => 'New tab';
+
+  @override
+  String get shortcutCloseTab => 'Close active tab';
+
+  @override
+  String get shortcutNextTab => 'Next tab';
+
+  @override
+  String get shortcutPreviousTab => 'Previous tab';
+
+  @override
+  String get shortcutUndo => 'Undo last action';
+
+  @override
+  String get shortcutRedo => 'Redo action';
+
+  @override
+  String get shortcutZoomIn => 'Zoom in';
+
+  @override
+  String get shortcutZoomOut => 'Zoom out';
+
+  @override
+  String get shortcutZoomReset => 'Actual size (100% zoom)';
+
+  @override
+  String get shortcutPanCanvas => 'Pan canvas';
+
+  @override
+  String get shortcutToggleSidebar => 'Toggle properties sidebar';
+
+  @override
+  String get shortcutToggleViewPanel => 'Toggle view & layout panel';
+
+  @override
+  String get shortcutToggleZenMode => 'Toggle Zen / distraction-free mode';
+
+  @override
+  String get shortcutHelp => 'Show keyboard shortcuts';
+
+  @override
+  String get shortcutCloseDialog => 'Close dialog / dismiss';
+
+  @override
+  String get noShortcutsFound => 'No matching shortcuts found';
 }

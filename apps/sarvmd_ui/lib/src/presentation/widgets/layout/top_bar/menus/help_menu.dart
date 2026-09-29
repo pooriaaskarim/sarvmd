@@ -23,6 +23,13 @@ class TopBarHelpMenu extends StatelessWidget {
 
     return [
       MenuItemButton(
+        leadingIcon: Icon(Icons.keyboard_outlined, size: 17, color: cs.onSurface),
+        trailingIcon: Text('F1', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+        onPressed: () => handleTopBarMenuSelection(context, 'keyboard_shortcuts', documentState),
+        child: Text(l10n.keyboardShortcutsTitle),
+      ),
+      const Divider(),
+      MenuItemButton(
         leadingIcon: Icon(Icons.info_outline, size: 17, color: cs.onSurface),
         onPressed: () => handleTopBarMenuSelection(context, 'about', documentState),
         child: Text(l10n.aboutSarvMD),
