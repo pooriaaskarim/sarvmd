@@ -2107,6 +2107,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply'**
   String get actionApply;
+
+  /// No description provided for @dragDropOverlayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop .sarv manuscript to open'**
+  String get dragDropOverlayHint;
 }
 
 class _AppLocalizationsDelegate

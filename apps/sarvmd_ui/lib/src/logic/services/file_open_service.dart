@@ -60,11 +60,25 @@ class FileOpenService {
 
   static bool get _isAndroid => debugPlatformOverride ?? (!kIsWeb && Platform.isAndroid);
 
-  /// Initialises the service: registers the warm-start push handler and
-  /// retrieves any cold-start path that arrived before Flutter was ready.
+  /// Initialises the service: registers the warm-start push handler,
+  /// retrieves any cold-start path on Android, and processes desktop CLI launch arguments.
   ///
-  /// Safe to call on all platforms — emits nothing on non-Android platforms.
-  static Future<void> init() async {
+  /// Safe to call on all platforms.
+  static Future<void> init({List<String> launchArgs = const []}) async {
+    // 1. Process desktop CLI launch arguments on Linux, macOS, and Windows.
+    if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
+      for (final arg in launchArgs) {
+        final trimmed = arg.trim();
+        if (trimmed.isEmpty || trimmed.startsWith('-')) continue;
+        if (trimmed.toLowerCase().endsWith('.sarv') || File(trimmed).existsSync()) {
+          final absPath = File(trimmed).absolute.path;
+          _log.info('Received desktop CLI launch argument', context: {'path': absPath});
+          _emitOrQueuePath(absPath);
+          break;
+        }
+      }
+    }
+
     if (!_isAndroid) return;
 
     // Register handler for warm-start pushes (app already running).

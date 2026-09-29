@@ -342,5 +342,6 @@
   "metadataModifiedAt": "آخرین ویرایش",
   "metadataFilePath": "محل فایل",
   "metadataUnsaved": "دست‌نویس ذخیره‌نشده",
-  "actionApply": "اعمال"
+  "actionApply": "اعمال",
+  "dragDropOverlayHint": "برای باز کردن، دست‌نوشتهٔ sarv. را اینجا رها کنید"
 }

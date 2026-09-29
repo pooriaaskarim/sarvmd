@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Desktop CLI Launch Argument Support (`FileOpenService`)**:
+  - Direct opening of `.sarv` files from terminal command line or desktop launcher invocation (`sarvmd <file.sarv>`).
+  - Integrated command-line argument passing from `main(List<String> args)` to `FileOpenService.init(launchArgs: args)`.
+- **Multi-Tab Session State Persistence & Restoration (`WorkspaceCubit`)**:
+  - Automatic persistence of multi-tab workspace sessions (all open tab document states, active tab index, and metadata) to `SharedPreferences` (`sarvmd_workspace_session`) with 500ms debouncing.
+  - Transparent workspace session restoration upon application cold-start with concurrency lock coordination.
+  - Added programmatic cache controls: `flushSessionSave()` and `clearSavedSession()`.
+- **Canvas & Tab Bar File Drag-and-Drop (`desktop_drop`)**:
+  - Native file drag-and-drop support across canvas and tab strip allowing users to drag `.sarv` files directly from OS file managers into the window to open in new tabs.
+  - Responsive visual feedback overlay with glowing accent border and localized drop prompt (`dragDropOverlayHint`).
+  - Resilient name/path resolution and error reporting for invalid or corrupted dropped files.
 - **Native `.sarv` Document Persistence & Schema Architecture (`packages/sarvmd_core`)**:
   - Standardized native JSON document format (v1 schema) capturing complete manuscript layouts (`PageConfig`, nested `SystemLayout`, `Score`, and `DocumentMetadata`) with guaranteed zero data loss.
   - Comprehensive document metadata domain model capturing `title`, `composer`, `subtitle`, `arranger`, `lyricist`, `copyright`, `license`, `creationDate`, and `modificationDate`.

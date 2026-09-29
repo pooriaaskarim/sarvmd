@@ -118,5 +118,24 @@ void main() {
       expect(receivedPaths, isEmpty);
       await sub.cancel();
     });
+
+    test('parses desktop CLI launch arguments and delivers .sarv path', () async {
+      FileOpenService.debugPlatformOverride = false;
+
+      final receivedPaths = <String>[];
+      final completer = Completer<void>();
+
+      final sub = FileOpenService.filePathStream.listen((path) {
+        receivedPaths.add(path);
+        if (!completer.isCompleted) completer.complete();
+      });
+
+      await FileOpenService.init(launchArgs: ['--fullscreen', 'myscore.sarv']);
+      await completer.future.timeout(const Duration(seconds: 1));
+
+      expect(receivedPaths, isNotEmpty);
+      expect(receivedPaths.first, endsWith('myscore.sarv'));
+      await sub.cancel();
+    });
   });
 }
