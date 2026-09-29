@@ -70,7 +70,7 @@ void main() {
       expect(find.byType(TouchTabSwitcherModal), findsOneWidget);
       expect(find.text('Manuscripts (1)'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
-      expect(find.text('Untitled Manuscript'), findsOneWidget);
+      expect(find.text('Treble_A4_Portrait'), findsOneWidget);
     });
 
     testWidgets('tapping new button opens new tab and dismisses modal', (tester) async {
@@ -128,6 +128,47 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(workspaceCubit.state.tabCount, 1);
+    });
+
+    testWidgets('dismissing the sole tab resets to new document and closes modal without Dismissible error', (tester) async {
+      await tester.pumpWidget(_buildTouchApp(workspaceCubit: workspaceCubit));
+      await tester.pumpAndSettle();
+
+      expect(workspaceCubit.state.tabCount, 1);
+      final soleTabId = workspaceCubit.state.activeSession.id;
+
+      await tester.tap(find.byKey(const ValueKey('open_switcher_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TouchTabSwitcherModal), findsOneWidget);
+
+      // Swipe right-to-left to dismiss the sole tab
+      await tester.drag(find.byKey(ValueKey('dismiss_tab_$soleTabId')), const Offset(-500.0, 0.0));
+      await tester.pumpAndSettle();
+
+      // Modal should be dismissed
+      expect(find.byType(TouchTabSwitcherModal), findsNothing);
+      // Workspace still has 1 tab, but with a fresh session id and untitled state
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeSession.id, isNot(equals(soleTabId)));
+      expect(workspaceCubit.state.activeSession.title, 'Treble_A4_Portrait');
+    });
+
+    testWidgets('tapping close on the sole tab closes modal and resets to fresh document', (tester) async {
+      await tester.pumpWidget(_buildTouchApp(workspaceCubit: workspaceCubit));
+      await tester.pumpAndSettle();
+
+      final soleTabId = workspaceCubit.state.activeSession.id;
+
+      await tester.tap(find.byKey(const ValueKey('open_switcher_button')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(ValueKey('touch_tab_close_$soleTabId')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TouchTabSwitcherModal), findsNothing);
+      expect(workspaceCubit.state.tabCount, 1);
+      expect(workspaceCubit.state.activeSession.id, isNot(equals(soleTabId)));
     });
   });
 }

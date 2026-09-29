@@ -53,7 +53,7 @@ class DocumentState {
     return undoStack.isNotEmpty;
   }
 
-  /// Display name of current document (file name if saved, or score title, or "Untitled").
+  /// Display name of current document (file name if saved, score title, or layout description).
   String get displayName {
     if (filePath != null && filePath!.isNotEmpty) {
       return p.basename(filePath!);
@@ -64,7 +64,7 @@ class DocumentState {
     if (document.metadata.title.trim().isNotEmpty) {
       return document.metadata.title.trim();
     }
-    return 'Untitled Manuscript';
+    return core.ScoreCompiler.getEffectiveTitle(document.score, document.config);
   }
 
   /// Returns a modified copy of this state with updated properties.

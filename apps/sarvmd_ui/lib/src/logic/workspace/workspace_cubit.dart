@@ -52,10 +52,20 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
 
   /// Opens a brand-new manuscript tab initialized with [profile].
   DocumentSession openNewTab({core.StaffProfile? profile}) {
+    final prof = profile ?? core.StaffProfiles.treble;
+    final dummyDoc = core.SarvDocument(
+      score: const core.Score(title: ''),
+      config: prof.applyTo(const core.PageConfig()),
+    );
+    final baseTitle = core.ScoreCompiler.getEffectiveTitle(dummyDoc.score, dummyDoc.config);
+    final existingTitles = state.sessions.map((s) => s.title).toList();
+    final effectiveTitle = existingTitles.contains(baseTitle)
+        ? core.FileNaming.disambiguateFileName(baseTitle, existingTitles)
+        : null;
+
     final newCubit = DocumentCubit(null, null, false);
-    if (profile != null) {
-      newCubit.newDocument(profile);
-    }
+    newCubit.newDocument(prof, effectiveTitle);
+
     final session = DocumentSession(
       id: _nextTabId(),
       cubit: newCubit,
@@ -174,10 +184,23 @@ class WorkspaceCubit extends Cubit<WorkspaceState> {
       if (!canClose) return false;
     }
 
-    // If closing the sole tab, reset it to an untitled blank score rather than leaving 0 tabs
+    // If closing the sole tab, replace it with a fresh untitled blank session rather than leaving 0 tabs
     if (state.sessions.length == 1) {
-      targetSession.cubit.newDocument();
-      emit(state.copyWith());
+      _subscriptions[targetSession.id]?.cancel();
+      _subscriptions.remove(targetSession.id);
+      unawaited(targetSession.dispose());
+
+      final freshSession = DocumentSession(
+        id: _nextTabId(),
+        cubit: DocumentCubit(null, null, false),
+      );
+      _subscribeSession(freshSession);
+
+      emit(state.copyWith(
+        sessions: [freshSession],
+        activeIndex: 0,
+      ));
+      _log.info('Reset sole tab to fresh untitled session: ${freshSession.id}');
       return true;
     }
 

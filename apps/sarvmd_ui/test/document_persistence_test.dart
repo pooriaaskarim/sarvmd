@@ -84,7 +84,7 @@ void main() {
     test('Initial document starts not dirty and with default displayName', () {
       expect(cubit.state.isDirty, isFalse);
       expect(cubit.state.filePath, isNull);
-      expect(cubit.state.displayName, equals('Untitled Manuscript'));
+      expect(cubit.state.displayName, equals('Treble_A4_Portrait'));
     });
 
     test('Mutating score or config marks document as dirty', () {

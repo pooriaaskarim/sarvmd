@@ -129,12 +129,13 @@ class DocumentCubit extends Cubit<DocumentState> {
   // --- Document Lifecycle & File Persistence Operations ---
 
   /// Creates a clean, new document initialized with [profile] (or treble solo).
-  void newDocument([core.StaffProfile? profile]) {
+  void newDocument([core.StaffProfile? profile, String? title]) {
     final prof = profile ?? core.StaffProfiles.treble;
+    final initialTitle = title ?? '';
     final newDoc = core.SarvDocument(
-      score: const core.Score(title: ''),
+      score: core.Score(title: initialTitle),
       config: prof.applyTo(const core.PageConfig()),
-      metadata: const core.DocumentMetadata(title: ''),
+      metadata: core.DocumentMetadata(title: initialTitle),
     );
     _history.setDocument(newDoc, clearHistory: true);
     emit(DocumentState(

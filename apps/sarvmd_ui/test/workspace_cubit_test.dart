@@ -25,7 +25,23 @@ void main() {
       expect(workspaceCubit.state.activeIndex, 0);
       expect(workspaceCubit.state.hasMultipleTabs, isFalse);
       expect(workspaceCubit.state.activeSession.id, 'tab_0');
-      expect(workspaceCubit.state.activeSession.title, 'Untitled Manuscript');
+      expect(workspaceCubit.state.activeSession.title, 'Treble_A4_Portrait');
+    });
+
+    test('openNewTab disambiguates duplicate titles placing number before extension/end', () {
+      expect(workspaceCubit.state.sessions[0].title, 'Treble_A4_Portrait');
+
+      final tab2 = workspaceCubit.openNewTab();
+      expect(tab2.title, 'Treble_A4_Portrait_1');
+
+      final tab3 = workspaceCubit.openNewTab();
+      expect(tab3.title, 'Treble_A4_Portrait_2');
+
+      final pianoTab = workspaceCubit.openNewTab(profile: core.StaffProfiles.piano);
+      expect(pianoTab.title, 'Piano_A4_Portrait');
+
+      final pianoTab2 = workspaceCubit.openNewTab(profile: core.StaffProfiles.piano);
+      expect(pianoTab2.title, 'Piano_A4_Portrait_1');
     });
 
     test('openNewTab creates and focuses secondary tab', () {
@@ -127,7 +143,7 @@ void main() {
       final closed = await workspaceCubit.closeTab(0);
       expect(closed, isTrue);
       expect(workspaceCubit.state.tabCount, 1);
-      expect(workspaceCubit.state.activeSession.title, 'Untitled Manuscript');
+      expect(workspaceCubit.state.activeSession.title, 'Treble_A4_Portrait');
       expect(workspaceCubit.state.activeSession.isDirty, isFalse);
     });
 

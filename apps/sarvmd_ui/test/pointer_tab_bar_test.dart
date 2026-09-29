@@ -55,11 +55,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(PointerTabBar), findsOneWidget);
-      expect(find.text('Untitled Manuscript'), findsOneWidget);
+      expect(find.text('Treble_A4_Portrait'), findsOneWidget);
       expect(find.byKey(const ValueKey('tab_bar_add_button')), findsOneWidget);
     });
 
-    testWidgets('plus button adds a new tab and focuses it', (tester) async {
+    testWidgets('plus button adds a new tab and focuses it with disambiguated title', (tester) async {
       await tester.pumpWidget(_buildTestApp(workspaceCubit: workspaceCubit));
       await tester.pumpAndSettle();
 
@@ -68,8 +68,9 @@ void main() {
 
       expect(workspaceCubit.state.tabCount, 2);
       expect(workspaceCubit.state.activeIndex, 1);
-      // Both tabs are visible
-      expect(find.text('Untitled Manuscript'), findsNWidgets(2));
+      // Both tabs are visible with disambiguated numeric suffix
+      expect(find.text('Treble_A4_Portrait'), findsOneWidget);
+      expect(find.text('Treble_A4_Portrait_1'), findsOneWidget);
     });
 
     testWidgets('switching tabs updates active session', (tester) async {
@@ -131,8 +132,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('tab_bar_overflow_menu')));
       await tester.pumpAndSettle();
 
-      // In the popup menu, find "Untitled Manuscript" and tap it
-      await tester.tap(find.text('Untitled Manuscript').last);
+      // In the popup menu, find "Treble_A4_Portrait" and tap it
+      await tester.tap(find.text('Treble_A4_Portrait').last);
       await tester.pumpAndSettle();
 
       expect(workspaceCubit.state.activeIndex, 0);

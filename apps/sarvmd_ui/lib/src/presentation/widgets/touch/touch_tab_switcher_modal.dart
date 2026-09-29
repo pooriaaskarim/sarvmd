@@ -146,7 +146,14 @@ class TouchTabSwitcherModal extends StatelessWidget {
                     direction: DismissDirection.endToStart,
                     confirmDismiss: (_) => _confirmClose(context, session),
                     onDismissed: (_) {
-                      workspaceCubit.closeTab(index);
+                      final isSoleTab = state.tabCount <= 1;
+                      final sessionIndex = workspaceCubit.state.sessions.indexWhere((s) => s.id == session.id);
+                      if (sessionIndex != -1) {
+                        workspaceCubit.closeTab(sessionIndex);
+                      }
+                      if (isSoleTab && context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                     },
                     background: Container(
                       alignment: Alignment.centerRight,
@@ -294,7 +301,14 @@ class TouchTabSwitcherModal extends StatelessWidget {
                                 onPressed: () async {
                                   final canClose = await _confirmClose(context, session);
                                   if (canClose) {
-                                    await workspaceCubit.closeTab(index);
+                                    final isSoleTab = state.tabCount <= 1;
+                                    final sessionIndex = workspaceCubit.state.sessions.indexWhere((s) => s.id == session.id);
+                                    if (sessionIndex != -1) {
+                                      await workspaceCubit.closeTab(sessionIndex);
+                                    }
+                                    if (isSoleTab && context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
                                   }
                                 },
                               ),
