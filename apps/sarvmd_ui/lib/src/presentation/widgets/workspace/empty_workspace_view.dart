@@ -14,7 +14,9 @@ import '../../../logic/view/view_state.dart';
 import '../../../logic/workspace/workspace_cubit.dart';
 import '../common/input_mode_toggle_button.dart';
 import '../common/language_switch_control.dart';
+import '../common/shortcut_gateway.dart';
 import '../dialogs/adaptive_dialog_helper.dart';
+import '../dialogs/keyboard_shortcuts_dialog.dart';
 import '../layout/sarv_brand_header.dart';
 import '../staff/mini_staff_preview.dart';
 import '../staff/profile_picker.dart';
@@ -60,51 +62,60 @@ class EmptyWorkspaceView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // ── Minimalist Top Navigation Header (Enforced LTR Layout) ──
-            Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha: 0.75),
-                border: Border(
-                  bottom: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+      body: SarvShortcutGateway(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // ── Minimalist Top Navigation Header (Enforced LTR Layout) ──
+              Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.75),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ),
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Row(
+                    children: [
+                      const SarvBrandHeader(
+                        mode: SarvBrandHeaderMode.reactive,
+                        scaleFactor: 0.9,
+                        enableInteractiveAbout: true,
+                      ),
+                      const Spacer(),
+                      if (!isTouch) ...[
+                        IconButton(
+                          tooltip: l10n?.keyboardShortcutsTitle ?? 'Keyboard Shortcuts',
+                          icon: const Icon(Icons.keyboard_outlined, size: 18),
+                          onPressed: () => showKeyboardShortcutsDialog(context),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      const InputModeToggleButton(),
+                      const SizedBox(width: 8),
+                      const LanguageToggleButton(),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: isDark ? 'Light Theme' : 'Dark Theme',
+                        icon: Icon(
+                          isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
+                          viewCubit.updateThemeMode(newMode);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
-              child: Directionality(
-                textDirection: TextDirection.ltr,
-                child: Row(
-                  children: [
-                    const SarvBrandHeader(
-                      mode: SarvBrandHeaderMode.reactive,
-                      scaleFactor: 0.9,
-                      enableInteractiveAbout: true,
-                    ),
-                    const Spacer(),
-                    const InputModeToggleButton(),
-                    const SizedBox(width: 8),
-                    const LanguageToggleButton(),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: isDark ? 'Light Theme' : 'Dark Theme',
-                      icon: Icon(
-                        isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
-                        viewCubit.updateThemeMode(newMode);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
             // ── Scrollable Welcome Hub ──
             Expanded(
@@ -217,8 +228,9 @@ class EmptyWorkspaceView extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ── "Start New Manuscript" Card ──
   Widget _buildNewManuscriptCard(

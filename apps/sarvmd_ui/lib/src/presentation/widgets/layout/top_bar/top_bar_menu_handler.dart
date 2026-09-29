@@ -16,6 +16,7 @@ import '../../../../logic/workspace/workspace_cubit.dart';
 import '../../dialogs/about_dialog.dart';
 import '../../dialogs/document_properties_dialog.dart';
 import '../../dialogs/export_dialog.dart';
+import '../../dialogs/keyboard_shortcuts_dialog.dart';
 import '../../dialogs/staff_config_dialog.dart';
 import '../../dialogs/unsaved_changes_dialog.dart';
 
@@ -142,6 +143,9 @@ void handleTopBarMenuSelection(
       break;
 
     // ── Misc ────────────────────────────────────────────────────────────────
+    case 'keyboard_shortcuts':
+      showKeyboardShortcutsDialog(context);
+      break;
     case 'about':
       showSarvAboutDialog(context);
       break;
