@@ -39,4 +39,5 @@ export 'src/registry/instrument_registry.dart';
 
 // Compiler Engine
 export 'src/compiler/score_compiler.dart';
+export 'src/compiler/file_naming.dart';
 
