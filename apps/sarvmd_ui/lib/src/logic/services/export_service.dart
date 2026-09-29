@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../core/utils/app_logger.dart';
 import 'export_directory_service.dart';
+import 'native_file_save_service.dart';
 import 'web_download/web_download.dart';
 
 final _log = AppLogger.export;
@@ -61,13 +62,25 @@ class ExportService {
     required String? outputDir,
     required int elapsedMs,
     required String dialogTitle,
+    String? mimeType,
   }) async {
     final bool isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
     final bool usePicker = isMobile || outputDir == null || outputDir.isEmpty || outputDir == 'System File Picker';
 
     String filePath;
 
-    if (usePicker) {
+    if (!kIsWeb && Platform.isAndroid && usePicker) {
+      final savedPath = await NativeFileSaveService.saveFile(
+        fileName: fileName,
+        bytes: bytes,
+        mimeType: mimeType,
+      );
+
+      if (savedPath == null) {
+        throw Exception('Export cancelled by user');
+      }
+      filePath = savedPath;
+    } else if (usePicker) {
       final savedPath = await FilePicker.platform.saveFile(
         dialogTitle: dialogTitle,
         fileName: fileName,
@@ -79,8 +92,12 @@ class ExportService {
       }
       filePath = savedPath;
     } else {
-      filePath = p.join(outputDir, fileName);
       await Directory(outputDir).create(recursive: true);
+      final initialPath = p.join(outputDir, fileName);
+      filePath = core.FileNaming.ensureUniquePath(
+        initialPath,
+        exists: (path) => File(path).existsSync(),
+      );
       final file = File(filePath);
       await file.writeAsBytes(bytes);
     }
@@ -132,6 +149,7 @@ class ExportService {
         outputDir: outputDir,
         elapsedMs: sw.elapsedMilliseconds,
         dialogTitle: 'Save LaTeX Source',
+        mimeType: 'text/plain',
       );
 
       _log.debug('TeX written', context: {'path': result.filePath, 'size': result.fileSizeBytes});
@@ -181,6 +199,7 @@ class ExportService {
           outputDir: outputDir,
           elapsedMs: sw.elapsedMilliseconds,
           dialogTitle: 'Save PDF Manuscript',
+          mimeType: 'application/pdf',
         );
 
         _log.info('PDF export complete (native vector)', context: {
@@ -261,6 +280,7 @@ class ExportService {
         outputDir: outputDir,
         elapsedMs: sw.elapsedMilliseconds,
         dialogTitle: 'Save SVG Manuscript',
+        mimeType: 'image/svg+xml',
       );
 
       _log.debug('SVG written', context: {'path': result.filePath, 'size': result.fileSizeBytes});

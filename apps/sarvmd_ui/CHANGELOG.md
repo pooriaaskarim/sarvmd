@@ -49,8 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dedicated `Ctrl+I` / `Cmd+I` global keyboard shortcut and File menu item (`Document Properties…`).
 - **Web `beforeunload` Unsaved Changes Protection**:
   - Registered browser-native `beforeunload` event handler via Dart JS-interop in `web_download_web.dart` triggered dynamically whenever any open tab has unsaved changes (`hasDirtyTabs`) to protect against accidental browser tab close or refresh data loss.
+- **Cross-Platform Pre-Extension File Disambiguation Engine (`packages/sarvmd_core`)**:
+  - Introduced zero-dependency `FileNaming` utility module (`appendSuffix`, `appendIndex`, `stripExtension`, `getExtension`, `disambiguateFileName`, `ensureUniquePath`).
+  - Standardized collision disambiguation across platforms to strictly insert numeric indices immediately before file extensions (e.g. `Score (1).pdf` or `Score_1.pdf`) rather than trailing after the extension.
+- **Editable Destination Folder & Path Normalization in Export Dialog (`ExportDialog` & `ExportDirectoryService`)**:
+  - Upgraded the Destination Folder field to an interactive monospace text input supporting direct typing, path pasting, focus management, and automatic normalization.
+  - Implemented `ExportDirectoryService.normalizeExportPath` with user tilde (`~`) expansion to home directory, stripping of `file://` URI schemes, redundant and trailing slash cleanup, and Windows drive letter path support, resolving file picker ambiguity on Linux desktop environments.
 - **Comprehensive Persistence & Workspace Test Suites**:
-  - Added end-to-end unit and widget test suites covering document serialization, file service operations, persistence cubit workflows, dirty state tracking, pointer tab bar interactions, touch tab switcher modal flows, recent documents service and UI integration, and document properties dialog workflows (`document_persistence_test.dart`, `sarv_file_service_test.dart`, `file_ui_components_test.dart`, `workspace_cubit_test.dart`, `pointer_tab_bar_test.dart`, `touch_tab_switcher_test.dart`, `recent_documents_test.dart`, `document_properties_dialog_test.dart`).
+  - Added end-to-end unit and widget test suites covering document serialization, file service operations, persistence cubit workflows, dirty state tracking, pointer tab bar interactions, touch tab switcher modal flows, recent documents service and UI integration, export directory path normalization, native Android SAF save contract, and document properties dialog workflows (`document_persistence_test.dart`, `sarv_file_service_test.dart`, `file_ui_components_test.dart`, `workspace_cubit_test.dart`, `pointer_tab_bar_test.dart`, `touch_tab_switcher_test.dart`, `recent_documents_test.dart`, `export_directory_service_test.dart`, `native_file_save_service_test.dart`, `document_properties_dialog_test.dart`).
 
 ### Changed
 - **Document Model Decoupling**:
@@ -63,6 +69,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated codebase strictly around high-performance blank canvas manuscript design and vector engraving.
 
 ### Fixed
+- **Android SAF Pre-Extension Duplicate Numbering (`NativeFileSaveService` & `MainActivity.kt`)**:
+  - Resolved Android Storage Access Framework (SAF) issue where filename collision numbers were placed after the extension (e.g. `Treble_A4_Portrait.pdf (1)` or `Treble_A4_Portrait.sarv (1)`).
+  - Implemented `NativeFileSaveService` bridging to native Android `ACTION_CREATE_DOCUMENT` with explicit MIME types (`application/pdf`, `image/svg+xml`, `text/plain`, `application/octet-stream`).
+  - Added native post-creation regex inspection and `DocumentsContract.renameDocument` handling in `MainActivity.kt` to ensure collision indices are strictly positioned immediately before the extension (`Treble_A4_Portrait (1).pdf` and `Treble_A4_Portrait (1).sarv`).
+- **Touch Tab Switcher Synchronous Dismissal & Empty Workspace Recovery (`TouchTabSwitcherModal` & `WorkspaceCubit`)**:
+  - Fixed Flutter framework crash `A dismissed Dismissible widget is still part of the tree` in `TouchTabSwitcherModal` by synchronously removing dismissed items from local state prior to awaiting asynchronous tab closure operations.
+  - Hardened `WorkspaceCubit` when dismissing or closing the final active tab, automatically initializing a fresh default manuscript session (`createDefaultSession`) rather than corrupting state or leaving an empty workspace.
 - **Web Build File Saving & Destination Selection (`saveFileWeb`)**:
   - Upgraded Web file saving to utilize the modern File System Access API (`window.showSaveFilePicker`), prompting users with the native OS file picker to select a destination directory and customize or confirm the file name.
   - Automatically populated the save dialog with the document's intelligent default display name (`ScoreTitle.sarv` or `Untitled Manuscript.sarv`).

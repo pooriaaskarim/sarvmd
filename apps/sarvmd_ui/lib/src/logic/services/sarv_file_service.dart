@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../core/utils/app_logger.dart';
+import 'native_file_save_service.dart';
 import 'recent_documents_service.dart';
 import 'web_download/web_download.dart';
 
@@ -211,6 +212,22 @@ class SarvFileService {
       return savedName;
     }
 
+    if (!kIsWeb && Platform.isAndroid && _customPicker == null) {
+      final chosenPath = await NativeFileSaveService.saveFile(
+        fileName: sanitizedName,
+        bytes: bytes,
+        mimeType: 'application/octet-stream',
+      );
+      if (chosenPath == null) {
+        _log.debug('Save As cancelled by user');
+        return null;
+      }
+      final effectivePath = _normalizeExtension(chosenPath);
+      RecentDocumentsService.addRecentDocument(effectivePath);
+      _log.info('Successfully saved .sarv document via native Android SAF', context: {'filePath': effectivePath});
+      return effectivePath;
+    }
+
     final bool isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
     String? chosenPath;
 
@@ -255,7 +272,8 @@ class SarvFileService {
   static String _normalizeExtension(String name) {
     if (name.trim().isEmpty) return 'Untitled Manuscript.sarv';
     if (!name.toLowerCase().endsWith('.sarv')) {
-      return '$name.sarv';
+      final base = core.FileNaming.stripExtension(name);
+      return '$base.sarv';
     }
     return name;
   }
