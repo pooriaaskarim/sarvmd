@@ -2113,6 +2113,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop .sarv manuscript to open'**
   String get dragDropOverlayHint;
+
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sarv Manuscript Designer'**
+  String get welcomeTitle;
+
+  /// No description provided for @welcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero-compromise Gouldian music manuscript creation'**
+  String get welcomeSubtitle;
+
+  /// No description provided for @startNewManuscript.
+  ///
+  /// In en, this message translates to:
+  /// **'Start New Manuscript'**
+  String get startNewManuscript;
+
+  /// No description provided for @recentManuscripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Manuscripts'**
+  String get recentManuscripts;
+
+  /// No description provided for @noRecentManuscripts.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent manuscripts yet'**
+  String get noRecentManuscripts;
+
+  /// No description provided for @browseAllTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse all templates…'**
+  String get browseAllTemplates;
+
+  /// No description provided for @openOtherFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open other file…'**
+  String get openOtherFile;
+
+  /// No description provided for @dropToOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag and drop a .sarv manuscript anywhere to start editing'**
+  String get dropToOpenHint;
+
+  /// No description provided for @shortcutNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+N New'**
+  String get shortcutNewHint;
+
+  /// No description provided for @shortcutOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+O Open'**
+  String get shortcutOpenHint;
 }
 
 class _AppLocalizationsDelegate

@@ -1087,4 +1087,36 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get dragDropOverlayHint =>
       'برای باز کردن، دست‌نوشتهٔ sarv. را اینجا رها کنید';
+
+  @override
+  String get welcomeTitle => 'سرو؛ طراح دست‌نویس موسیقی';
+
+  @override
+  String get welcomeSubtitle =>
+      'طراحی بی‌نقص کاغذهای نت موسیقی منطبق با استانداردهای گولد';
+
+  @override
+  String get startNewManuscript => 'شروع دست‌نویس جدید';
+
+  @override
+  String get recentManuscripts => 'دست‌نویس‌های اخیر';
+
+  @override
+  String get noRecentManuscripts => 'هنوز دست‌نویسی باز نشده است';
+
+  @override
+  String get browseAllTemplates => 'مشاهده همه الگوها…';
+
+  @override
+  String get openOtherFile => 'باز کردن فایل دیگر…';
+
+  @override
+  String get dropToOpenHint =>
+      'برای شروع ویرایش، فایل sarv. را در هر کجای صفحه رها کنید';
+
+  @override
+  String get shortcutNewHint => 'نت جدید Ctrl+N';
+
+  @override
+  String get shortcutOpenHint => 'باز کردن Ctrl+O';
 }

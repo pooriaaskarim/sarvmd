@@ -486,5 +486,15 @@
   "metadataFilePath": "File Location",
   "metadataUnsaved": "Unsaved Manuscript",
   "actionApply": "Apply",
-  "dragDropOverlayHint": "Drop .sarv manuscript to open"
+  "dragDropOverlayHint": "Drop .sarv manuscript to open",
+  "welcomeTitle": "Sarv Manuscript Designer",
+  "welcomeSubtitle": "Zero-compromise Gouldian music manuscript creation",
+  "startNewManuscript": "Start New Manuscript",
+  "recentManuscripts": "Recent Manuscripts",
+  "noRecentManuscripts": "No recent manuscripts yet",
+  "browseAllTemplates": "Browse all templates…",
+  "openOtherFile": "Open other file…",
+  "dropToOpenHint": "Drag and drop a .sarv manuscript anywhere to start editing",
+  "shortcutNewHint": "Ctrl+N New",
+  "shortcutOpenHint": "Ctrl+O Open"
 }

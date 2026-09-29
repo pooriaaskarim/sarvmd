@@ -1086,4 +1086,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dragDropOverlayHint => 'Drop .sarv manuscript to open';
+
+  @override
+  String get welcomeTitle => 'Sarv Manuscript Designer';
+
+  @override
+  String get welcomeSubtitle =>
+      'Zero-compromise Gouldian music manuscript creation';
+
+  @override
+  String get startNewManuscript => 'Start New Manuscript';
+
+  @override
+  String get recentManuscripts => 'Recent Manuscripts';
+
+  @override
+  String get noRecentManuscripts => 'No recent manuscripts yet';
+
+  @override
+  String get browseAllTemplates => 'Browse all templates…';
+
+  @override
+  String get openOtherFile => 'Open other file…';
+
+  @override
+  String get dropToOpenHint =>
+      'Drag and drop a .sarv manuscript anywhere to start editing';
+
+  @override
+  String get shortcutNewHint => 'Ctrl+N New';
+
+  @override
+  String get shortcutOpenHint => 'Ctrl+O Open';
 }
