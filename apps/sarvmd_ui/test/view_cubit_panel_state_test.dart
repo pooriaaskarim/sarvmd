@@ -92,13 +92,17 @@ void main() {
       cubit.close();
     });
 
-    test('jumpToSection preserves collapsed state and sets jumpTargetSection', () {
+    test('jumpToSection expands target section if collapsed and sets jumpTargetSection', () {
       final cubit = ViewCubit();
       cubit.collapseAllPointerSections();
       expect(cubit.state.isPointerSectionExpanded(SettingsSection.margins), isFalse);
+      expect(cubit.state.isPointerSectionExpanded(SettingsSection.staffSpacing), isFalse);
 
       cubit.jumpToSection(SettingsSection.margins);
-      expect(cubit.state.isPointerSectionExpanded(SettingsSection.margins), isFalse);
+      // Target section should be expanded
+      expect(cubit.state.isPointerSectionExpanded(SettingsSection.margins), isTrue);
+      // Other sections remain collapsed
+      expect(cubit.state.isPointerSectionExpanded(SettingsSection.staffSpacing), isFalse);
       expect(cubit.state.jumpTargetSection, equals(SettingsSection.margins));
 
       cubit.clearJumpTarget();
