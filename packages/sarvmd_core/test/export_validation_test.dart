@@ -129,7 +129,8 @@ void main() {
       final tick = tickMatches.firstWhere((m) => m.group(2) == m.group(4) && m.group(1) != m.group(3));
       final connStartX = double.parse(tick.group(1)!);
       final connTickEndX = double.parse(tick.group(3)!);
-      expect(connTickEndX - connStartX, closeTo(2.0, 0.01));
+      expect(connTickEndX - connStartX,
+          closeTo(GroupPlacementMetrics.bracketTickLengthMm, 0.01));
 
       // PDF verification
       final pdfBytes = await emitPdf(config, layout);

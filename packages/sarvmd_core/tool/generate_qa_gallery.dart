@@ -14,7 +14,7 @@ void main(List<String> args) async {
   );
 
   final artifactDir = Directory(
-    '/home/ono/.gemini/antigravity-ide/brain/ea1eed8f-dfa4-49f6-aee6-2153a64044b5/qa_gallery',
+    '/home/ono/.gemini/antigravity-ide/brain/a9a22bb5-6850-4869-88fc-7a909f8d8332/qa_gallery',
   );
 
   if (!primaryOutputDir.existsSync()) {
@@ -44,16 +44,23 @@ void main(List<String> args) async {
   }) async {
     final svgFileName = '$id.svg';
     final pdfFileName = '$id.pdf';
+    final texFileName = '$id.tex';
+
+    final texContent = ScoreCompiler.compileToTex(config, layout);
 
     final primarySvgPath = p.join(primaryOutputDir.path, svgFileName);
     final primaryPdfPath = p.join(primaryOutputDir.path, pdfFileName);
+    final primaryTexPath = p.join(primaryOutputDir.path, texFileName);
     File(primarySvgPath).writeAsStringSync(svgContent);
     File(primaryPdfPath).writeAsBytesSync(pdfBytes);
+    File(primaryTexPath).writeAsStringSync(texContent);
 
     final artifactSvgPath = p.join(artifactDir.path, svgFileName);
     final artifactPdfPath = p.join(artifactDir.path, pdfFileName);
+    final artifactTexPath = p.join(artifactDir.path, texFileName);
     File(artifactSvgPath).writeAsStringSync(svgContent);
     File(artifactPdfPath).writeAsBytesSync(pdfBytes);
+    File(artifactTexPath).writeAsStringSync(texContent);
 
     final firstSys = layout.systems.isNotEmpty ? layout.systems.first : null;
     final leftIndent = firstSys?.leftIndentMm ?? 0.0;
@@ -68,6 +75,7 @@ void main(List<String> args) async {
       'standardsNote': standardsNote,
       'svgFileName': svgFileName,
       'pdfFileName': pdfFileName,
+      'texFileName': texFileName,
       'pageSize': '${config.pageSize.name.toUpperCase()} ${config.orientation.name}',
       'dimensions': '${config.effectiveWidth.toStringAsFixed(1)} × ${config.effectiveHeight.toStringAsFixed(1)} mm',
       'systemCount': layout.systemCount,
@@ -76,6 +84,7 @@ void main(List<String> args) async {
       'maxInnerWidthMm': maxInnerWidth.toStringAsFixed(2),
       'svgSizeBytes': svgContent.length,
       'pdfSizeBytes': pdfBytes.length,
+      'texSizeBytes': texContent.length,
     });
 
     stdout.write('.');
