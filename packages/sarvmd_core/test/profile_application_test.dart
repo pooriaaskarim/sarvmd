@@ -28,10 +28,15 @@ void main() {
       expect(pianoConfig.systemLayout.rootGroup.connector, equals(SystemConnector.brace));
     });
 
-    test('String Quartet profile generates 4 staves with bracket connector', () {
+    test('String Quartet profile generates 4 staves with bracket connector and unique UIDs', () {
       final config = StaffProfiles.stringQuartet.applyTo(const PageConfig());
       expect(config.staffCount, equals(4));
       expect(config.systemLayout.rootGroup.connector, equals(SystemConnector.bracket));
+
+      final uids = config.allStaves.map((s) => s.uid).toList();
+      expect(uids.every((uid) => uid.isNotEmpty), isTrue);
+      expect(uids.toSet().length, equals(4), reason: 'Every staff must have a distinct unique UID');
+      expect(StaffProfiles.stringQuartet.matches(config), isTrue);
     });
 
     test('Guitar TAB profile generates 6-line staff', () {

@@ -100,8 +100,10 @@ class _StaffItemWidgetState extends State<StaffItemWidget> {
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          final isShift = HardwareKeyboard.instance.isShiftPressed;
-          scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+          if (widget.staff.uid.isNotEmpty) {
+            final isShift = HardwareKeyboard.instance.isShiftPressed;
+            scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
+          }
         },
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
@@ -215,7 +217,8 @@ class _StaffItemWidgetState extends State<StaffItemWidget> {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final scope = HierarchySelectionScope.of(context);
-    final isSelected = scope?.selectedUids.contains(widget.staff.uid) ?? false;
+    final isSelected = widget.staff.uid.isNotEmpty &&
+        (scope?.selectedUids.contains(widget.staff.uid) ?? false);
     final isSelectionMode = scope?.selectedUids.isNotEmpty ?? false;
 
     final String displayName =
@@ -1182,7 +1185,7 @@ class _StaffItemWidgetState extends State<StaffItemWidget> {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
-              if (_isEditingName) return;
+              if (_isEditingName || widget.staff.uid.isEmpty) return;
               final isShift = HardwareKeyboard.instance.isShiftPressed;
               scope?.onToggleSelection(widget.staff.uid, isShift: isShift);
             },

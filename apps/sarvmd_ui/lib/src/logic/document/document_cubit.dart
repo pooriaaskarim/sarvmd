@@ -35,7 +35,7 @@ class DocumentCubit extends Cubit<DocumentState> {
                   score: const core.Score(title: ''),
                   config: core.StaffProfiles.treble.applyTo(const core.PageConfig()),
                   metadata: const core.DocumentMetadata(title: ''),
-                ),
+                ).ensureUniqueUids(),
               ),
           fileService ?? SarvFileService(),
           autoLoadFromPrefs: autoLoadFromPrefs,
@@ -49,10 +49,10 @@ class DocumentCubit extends Cubit<DocumentState> {
         _fileService = fileService,
         _enablePersistence = autoLoadFromPrefs,
         super(DocumentState(
-          document: history.document,
+          document: history.document.ensureUniqueUids(),
           undoStack: history.undoStack,
           redoStack: history.redoStack,
-          lastSavedDocument: history.document,
+          lastSavedDocument: history.document.ensureUniqueUids(),
         )) {
     if (autoLoadFromPrefs) {
       _loadFromPrefs();
@@ -68,7 +68,7 @@ class DocumentCubit extends Cubit<DocumentState> {
     if (docJsonStr != null) {
       try {
         final jsonMap = jsonDecode(docJsonStr) as Map<String, dynamic>;
-        final loadedDoc = core.SarvDocument.fromJson(jsonMap);
+        final loadedDoc = core.SarvDocument.fromJson(jsonMap).ensureUniqueUids();
         _history.setDocument(loadedDoc, clearHistory: true);
         emit(DocumentState(
           document: loadedDoc,
@@ -90,7 +90,7 @@ class DocumentCubit extends Cubit<DocumentState> {
     if (jsonStr != null) {
       try {
         final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
-        final loadedConfig = core.PageConfig.fromJson(jsonMap);
+        final loadedConfig = core.PageConfig.fromJson(jsonMap).ensureUniqueUids();
         final restoredDoc = _history.document.copyWith(config: loadedConfig);
         _history.setDocument(restoredDoc, clearHistory: true);
         _syncState();
@@ -136,7 +136,7 @@ class DocumentCubit extends Cubit<DocumentState> {
       score: core.Score(title: initialTitle),
       config: prof.applyTo(const core.PageConfig()),
       metadata: core.DocumentMetadata(title: initialTitle),
-    );
+    ).ensureUniqueUids();
     _history.setDocument(newDoc, clearHistory: true);
     emit(DocumentState(
       document: newDoc,
@@ -162,13 +162,14 @@ class DocumentCubit extends Cubit<DocumentState> {
 
   /// Loads an external [document] into the editor session.
   void loadDocument(core.SarvDocument document, {String? filePath}) {
-    _history.setDocument(document, clearHistory: true);
+    final sanitizedDoc = document.ensureUniqueUids();
+    _history.setDocument(sanitizedDoc, clearHistory: true);
     emit(DocumentState(
-      document: document,
+      document: sanitizedDoc,
       undoStack: const [],
       redoStack: const [],
       filePath: filePath,
-      lastSavedDocument: document,
+      lastSavedDocument: sanitizedDoc,
     ));
     _save();
     SharedPreferences.getInstance().then((p) {
@@ -298,7 +299,7 @@ class DocumentCubit extends Cubit<DocumentState> {
 
   core.StaffProfile? get activeProfile {
     for (final p in core.StaffProfiles.all) {
-      if (p.systemLayout == state.config.systemLayout) {
+      if (p.matches(state.config)) {
         return p;
       }
     }

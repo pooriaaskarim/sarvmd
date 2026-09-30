@@ -171,5 +171,29 @@ void main() {
       expect(updatedStaves[1].instrumentName, equals('2'));
       expect(updatedStaves[2].instrumentName, equals('3'));
     });
+
+    test('newDocument with String Quartet stamps distinct UIDs and edits are isolated to single staff', () {
+      cubit.newDocument(core.StaffProfiles.stringQuartet);
+
+      final staves = cubit.allStaves;
+      expect(staves.length, equals(4));
+
+      final uids = staves.map((s) => s.uid).toList();
+      expect(uids.every((uid) => uid.isNotEmpty), isTrue);
+      expect(uids.toSet().length, equals(4), reason: 'All staves must have distinct UIDs');
+
+      // Renaming staff 0 should ONLY affect staff 0
+      final targetUid = staves[0].uid;
+      cubit.updateStaffInstrumentName(targetUid, 'Violin I');
+
+      final updatedStaves = cubit.allStaves;
+      expect(updatedStaves[0].instrumentName, equals('Violin I'));
+      expect(updatedStaves[1].instrumentName, isNull);
+      expect(updatedStaves[2].instrumentName, isNull);
+      expect(updatedStaves[3].instrumentName, isNull);
+
+      // Verify activeProfile still accurately matches String Quartet
+      expect(cubit.activeProfile?.id, equals('stringQuartet'));
+    });
   });
 }
