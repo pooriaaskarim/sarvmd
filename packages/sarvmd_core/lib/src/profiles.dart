@@ -68,9 +68,24 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.brace,
+        label: 'Piano',
+        abbreviation: 'Pno.',
+        labelVisible: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Treble',
+            instrumentAbbreviation: 'Tr.',
+            labelVisible: false,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Bass',
+            instrumentAbbreviation: 'B.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -85,7 +100,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Treble',
+            instrumentAbbreviation: 'Tr.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -100,7 +121,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Bass',
+            instrumentAbbreviation: 'B.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -115,7 +142,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.alto),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.alto,
+            instrumentName: 'Viola',
+            instrumentAbbreviation: 'Vla.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -129,7 +162,13 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(lines: 6, clef: Clef.tab),
+          StaffDefinition(
+            lines: 6,
+            clef: Clef.tab,
+            instrumentName: 'Guitar TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -147,9 +186,24 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.bracket,
+        label: 'Guitar',
+        abbreviation: 'Gtr.',
+        labelVisible: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 6, clef: Clef.tab),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Guitar',
+            instrumentAbbreviation: 'Gtr.',
+            labelVisible: false,
+          ),
+          StaffDefinition(
+            lines: 6,
+            clef: Clef.tab,
+            instrumentName: 'TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -167,7 +221,13 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(lines: 4, clef: Clef.tab),
+          StaffDefinition(
+            lines: 4,
+            clef: Clef.tab,
+            instrumentName: 'Bass TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -185,7 +245,13 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(lines: 5, clef: Clef.tab),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.tab,
+            instrumentName: 'Banjo TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -204,7 +270,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.percussion),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.percussion,
+            instrumentName: 'Drum Set',
+            instrumentAbbreviation: 'D.S.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -220,7 +292,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 1, clef: Clef.percussion),
+          StaffDefinition(
+            lines: 1,
+            clef: Clef.percussion,
+            instrumentName: 'Percussion',
+            instrumentAbbreviation: 'Perc.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -236,7 +314,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 3, clef: Clef.percussion),
+          StaffDefinition(
+            lines: 3,
+            clef: Clef.percussion,
+            instrumentName: 'Percussion',
+            instrumentAbbreviation: 'Perc.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -252,10 +336,30 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.bracket,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 5, clef: Clef.alto),
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Violin 1',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Violin 2',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.alto,
+            instrumentName: 'Viola',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Violoncello',
+            labelVisible: true,
+          ),
         ],
       ),
     ),
@@ -278,13 +382,37 @@ abstract final class StaffProfiles {
           // Violin I + II grouped with a sub-bracket
           StaffNodeGroup(
             connector: SystemConnector.subBracket,
+            label: 'Violins',
+            abbreviation: 'Vln.',
+            numberingStyle: GroupNumberingStyle.arabic,
+            labelVisible: true,
             children: [
-              StaffDefinition(lines: 5, clef: Clef.treble),
-              StaffDefinition(lines: 5, clef: Clef.treble),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                labelVisible: true,
+              ),
             ],
           ),
-          StaffDefinition(lines: 5, clef: Clef.alto),
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.alto,
+            instrumentName: 'Viola',
+            instrumentAbbreviation: 'Vla.',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Violoncello',
+            instrumentAbbreviation: 'Vc.',
+            labelVisible: true,
+          ),
         ],
       ),
     ),
@@ -301,7 +429,7 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5),
+          StaffDefinition(lines: 5, labelVisible: false),
         ],
       ),
     ),

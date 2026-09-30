@@ -63,5 +63,45 @@ void main() {
       expect(hints.systemGapLabel, equals('System Gap'));
       expect(hints.interStaffGapLabel, equals('Inter-staff Gap'));
     });
+
+    test('StaffProfiles have standard labels, with visibility restricted to ensembles', () {
+      // Solo & Standard profiles have hidden labels
+      expect(StaffProfiles.piano.systemLayout.rootGroup.labelVisible, isFalse);
+      expect(StaffProfiles.piano.systemLayout.rootGroup.label, equals('Piano'));
+      expect(StaffProfiles.piano.systemLayout.rootGroup.allStaves.every((s) => !s.labelVisible), isTrue);
+
+      expect(StaffProfiles.treble.systemLayout.rootGroup.allStaves.first.labelVisible, isFalse);
+      expect(StaffProfiles.treble.systemLayout.rootGroup.allStaves.first.instrumentName, equals('Treble'));
+
+      expect(StaffProfiles.bass.systemLayout.rootGroup.allStaves.first.labelVisible, isFalse);
+      expect(StaffProfiles.bass.systemLayout.rootGroup.allStaves.first.instrumentName, equals('Bass'));
+
+      expect(StaffProfiles.alto.systemLayout.rootGroup.allStaves.first.labelVisible, isFalse);
+      expect(StaffProfiles.alto.systemLayout.rootGroup.allStaves.first.instrumentName, equals('Viola'));
+
+      expect(StaffProfiles.guitarTab.systemLayout.rootGroup.allStaves.first.labelVisible, isFalse);
+      expect(StaffProfiles.guitarTab.systemLayout.rootGroup.allStaves.first.instrumentName, equals('Guitar TAB'));
+
+      expect(StaffProfiles.guitarGrand.systemLayout.rootGroup.labelVisible, isFalse);
+      expect(StaffProfiles.guitarGrand.systemLayout.rootGroup.allStaves.every((s) => !s.labelVisible), isTrue);
+
+      expect(StaffProfiles.drumSet.systemLayout.rootGroup.allStaves.first.labelVisible, isFalse);
+      expect(StaffProfiles.drumSet.systemLayout.rootGroup.allStaves.first.instrumentName, equals('Drum Set'));
+
+      // String Quartet: single-tier group (no outer label), staves visible
+      expect(StaffProfiles.stringQuartet.systemLayout.rootGroup.label.isEmpty, isTrue);
+      final sqStaves = StaffProfiles.stringQuartet.systemLayout.rootGroup.allStaves;
+      expect(sqStaves.map((s) => s.instrumentName).toList(), equals(['Violin 1', 'Violin 2', 'Viola', 'Violoncello']));
+      expect(sqStaves.every((s) => s.labelVisible), isTrue);
+
+      // Chamber Orchestra: single-tier root (no outer label), violins sub-group with Model B Arabic numbering
+      expect(StaffProfiles.chamberOrchestra.systemLayout.rootGroup.label.isEmpty, isTrue);
+      final subGroup = StaffProfiles.chamberOrchestra.systemLayout.rootGroup.children.first as StaffNodeGroup;
+      expect(subGroup.label, equals('Violins'));
+      expect(subGroup.labelVisible, isTrue);
+      expect(subGroup.numberingStyle, equals(GroupNumberingStyle.arabic));
+      final coStaves = StaffProfiles.chamberOrchestra.systemLayout.rootGroup.allStaves;
+      expect(coStaves.every((s) => s.labelVisible), isTrue);
+    });
   });
 }

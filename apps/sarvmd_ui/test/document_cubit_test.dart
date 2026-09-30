@@ -182,15 +182,22 @@ void main() {
       expect(uids.every((uid) => uid.isNotEmpty), isTrue);
       expect(uids.toSet().length, equals(4), reason: 'All staves must have distinct UIDs');
 
+      // Verify initial standard names
+      expect(staves[0].instrumentName, equals('Violin 1'));
+      expect(staves[1].instrumentName, equals('Violin 2'));
+      expect(staves[2].instrumentName, equals('Viola'));
+      expect(staves[3].instrumentName, equals('Violoncello'));
+      expect(staves.every((s) => s.labelVisible), isTrue);
+
       // Renaming staff 0 should ONLY affect staff 0
       final targetUid = staves[0].uid;
-      cubit.updateStaffInstrumentName(targetUid, 'Violin I');
+      cubit.updateStaffInstrumentName(targetUid, 'Violin Solo');
 
       final updatedStaves = cubit.allStaves;
-      expect(updatedStaves[0].instrumentName, equals('Violin I'));
-      expect(updatedStaves[1].instrumentName, isNull);
-      expect(updatedStaves[2].instrumentName, isNull);
-      expect(updatedStaves[3].instrumentName, isNull);
+      expect(updatedStaves[0].instrumentName, equals('Violin Solo'));
+      expect(updatedStaves[1].instrumentName, equals('Violin 2'));
+      expect(updatedStaves[2].instrumentName, equals('Viola'));
+      expect(updatedStaves[3].instrumentName, equals('Violoncello'));
 
       // Verify activeProfile still accurately matches String Quartet
       expect(cubit.activeProfile?.id, equals('stringQuartet'));
