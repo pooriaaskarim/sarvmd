@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Full structural parity with Flutter Canvas, PDF, and SVG emitters: traverses all `SystemGroupPlacement` nodes in `system.groupPlacements` instead of only the root group.
   - Generates authentic bracket backbones, sub-brackets (without serif ticks), piano braces, and initial barlines with precise SMuFL offsets.
   - Integrated standard LaTeX zero-dependency `picture` text environment (`\put(x, -y){\makebox(0,0)[r]{...}}`) placing right-aligned group labels and staff instrument names/abbreviations with exact micrometer coordinates, Helvetica typography, and multi-line (`\shortstack[r]`) support.
+- **Engraving Standards Research & 32-Scenario QA Visual Validation Gallery**:
+  - Conducted comparative music engraving research (`standard_score_examples_and_subgroup_labeling.md`) benchmarking master publisher editions (Bärenreiter Urtext, Breitkopf & Härtel, Boosey & Hawkes, Durand, Gould) for sub-group space conservation (Model A flat inline, Model B centered names with inner numbers, and Model C section headers above staves).
+  - Built an automated 32-scenario QA visual validation test generator (`tool/generate_qa_gallery.dart`) outputting side-by-side SVG, PDF, TeX, and an interactive HTML comparison gallery (`export_gallery.html`) covering all 14 presets, paper sizes (A3, A4, A5, Letter), orientations, layering modes, and complex hierarchical groupings.
 
 ### Changed
 - **Gouldian Space-Efficient Hierarchical Labeling Architecture (`sarvmd_core` & `sarvmd_ui`)**:
