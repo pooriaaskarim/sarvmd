@@ -679,6 +679,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get italicizeLabelDesc => 'Use standard italics for score titles';
 
   @override
+  String get boldLabelHeader => 'Bold Label';
+
+  @override
+  String get boldLabelDesc => 'Use heavy weight for prominent score titles';
+
+  @override
   String get alignmentOffsetsHeader => 'Fine Alignment & Offsets';
 
   @override

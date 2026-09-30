@@ -506,6 +506,38 @@ void main(List<String> args) async {
     );
   }
 
+  // 1.12 Continental European Style: Flush Bracket with Descriptors Outside (Bärenreiter / Breitkopf / Henle)
+  {
+    final f1 = const StaffDefinition(uid: 'f1', instrumentName: '1', instrumentAbbreviation: '1');
+    final f2 = const StaffDefinition(uid: 'f2', instrumentName: '2', instrumentAbbreviation: '2');
+    final flutes = StaffNodeGroup(
+      connector: SystemConnector.bracket,
+      continuousBarlines: true,
+      label: 'Flöten',
+      abbreviation: 'Fl.',
+      descriptorPlacement: DescriptorPlacement.outsideConnector,
+      children: [f1, f2],
+    );
+
+    final config = PageConfig(systemLayout: SystemLayout(rootGroup: flutes));
+    final layout = computeLayout(config);
+    final svg = ScoreCompiler.compileToSvg(config, layout);
+    final pdf = await ScoreCompiler.compileToPdf(config, layout);
+
+    await saveArtifacts(
+      id: 'hierarchical_continental_outside',
+      title: 'Continental European: Flush Bracket with Descriptors Outside (Bärenreiter)',
+      category: 'hierarchical',
+      categoryLabel: 'Hierarchical Labeling',
+      description: 'Continental European engraving convention: the system bracket is placed flush against the starting barline, while descriptors ("1", "2") and the section title ("Flöten") are rendered to the left in an outer column.',
+      standardsNote: 'Bärenreiter / Breitkopf & Härtel / Henle standard: Bracket is never displaced outward for inner descriptors; descriptors sit outside connector.',
+      config: config,
+      layout: layout,
+      svgContent: svg,
+      pdfBytes: pdf,
+    );
+  }
+
   // =========================================================================
   // 2. ALL 14 BUILT-IN PRESETS (Blank Manuscript Layouts)
   // =========================================================================

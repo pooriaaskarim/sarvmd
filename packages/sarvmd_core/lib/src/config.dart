@@ -122,6 +122,51 @@ String toRomanNumeral(int number) {
   return result;
 }
 
+/// Placement of inner staff descriptors relative to the group's system connector.
+enum DescriptorPlacement {
+  /// Anglo-American style (Gould/Boosey & Hawkes):
+  /// Connector displaced outward; descriptors sit between connector and barline.
+  enclosedByConnector,
+
+  /// Continental European style (Bärenreiter/Breitkopf/Henle):
+  /// Connector flush at barline; descriptors sit left of connector (outer zone).
+  outsideConnector;
+
+  String get label => switch (this) {
+        DescriptorPlacement.enclosedByConnector =>
+          'Enclosed by Connector (Anglo-American)',
+        DescriptorPlacement.outsideConnector =>
+          'Outside Connector (Continental)',
+      };
+}
+
+/// Controls lifecycle visibility for section headers positioned above staves (Model C).
+enum GroupHeaderVisibility {
+  /// Shown only on the first system of the score (Gould / MOLA default).
+  firstSystemOnly,
+
+  /// Shown on the first system of each page (Bärenreiter / classical house style).
+  firstSystemOfPage,
+
+  /// Shown on every system.
+  always;
+
+  String get label => switch (this) {
+        GroupHeaderVisibility.firstSystemOnly => 'First System Only',
+        GroupHeaderVisibility.firstSystemOfPage => 'Top of Each Page',
+        GroupHeaderVisibility.always => 'Every System',
+      };
+
+  String get description => switch (this) {
+        GroupHeaderVisibility.firstSystemOnly =>
+          'Renders section header once at the start of the score (Gould/MOLA standard).',
+        GroupHeaderVisibility.firstSystemOfPage =>
+          'Renders section header at the top of every page (Bärenreiter standard).',
+        GroupHeaderVisibility.always =>
+          'Renders section header above staves on all systems.',
+      };
+}
+
 /// Sealed base class representing a node in the staff layout hierarchy tree.
 sealed class StaffNode {
   const StaffNode();
@@ -144,6 +189,103 @@ sealed class StaffNode {
   }
 }
 
+/// Typographic and positional styling for staff instrument labels.
+class StaffLabelStyle {
+  const StaffLabelStyle({
+    this.fontFamily = 'serif',
+    this.fontSizePt = 11.0,
+    this.isItalic = true,
+    this.isBold = false,
+    this.horizontalOffsetMm = 0.0,
+    this.verticalOffsetMm = 0.0,
+  });
+
+  /// Font family (e.g. 'serif', 'Noto Serif', 'Roboto').
+  final String fontFamily;
+
+  /// Font size in typographic points (pt).
+  final double fontSizePt;
+
+  /// Whether text is styled in italics (classical Gould standard for instrument names).
+  final bool isItalic;
+
+  /// Whether text is styled in boldface (e.g. soloist or principal callouts).
+  final bool isBold;
+
+  /// Fine-tuning horizontal offset in mm (positive moves right, negative moves left).
+  final double horizontalOffsetMm;
+
+  /// Fine-tuning vertical offset in mm (positive moves down, negative moves up).
+  final double verticalOffsetMm;
+
+  /// Default classical engraving style (italic serif, 11pt, zero offset).
+  static const StaffLabelStyle defaultStaff = StaffLabelStyle();
+
+  /// Upright bold style for featured callouts or auxiliary sections.
+  static const StaffLabelStyle boldUpright =
+      StaffLabelStyle(isItalic: false, isBold: true);
+
+  StaffLabelStyle copyWith({
+    String? fontFamily,
+    double? fontSizePt,
+    bool? isItalic,
+    bool? isBold,
+    double? horizontalOffsetMm,
+    double? verticalOffsetMm,
+  }) =>
+      StaffLabelStyle(
+        fontFamily: fontFamily ?? this.fontFamily,
+        fontSizePt: fontSizePt ?? this.fontSizePt,
+        isItalic: isItalic ?? this.isItalic,
+        isBold: isBold ?? this.isBold,
+        horizontalOffsetMm: horizontalOffsetMm ?? this.horizontalOffsetMm,
+        verticalOffsetMm: verticalOffsetMm ?? this.verticalOffsetMm,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'fontFamily': fontFamily,
+        'fontSizePt': fontSizePt,
+        'isItalic': isItalic,
+        'isBold': isBold,
+        'horizontalOffsetMm': horizontalOffsetMm,
+        'verticalOffsetMm': verticalOffsetMm,
+      };
+
+  factory StaffLabelStyle.fromJson(Map<String, dynamic> json) =>
+      StaffLabelStyle(
+        fontFamily: json['fontFamily'] as String? ?? 'serif',
+        fontSizePt: (json['fontSizePt'] as num?)?.toDouble() ?? 11.0,
+        isItalic: json['isItalic'] as bool? ?? true,
+        isBold: json['isBold'] as bool? ?? false,
+        horizontalOffsetMm:
+            (json['horizontalOffsetMm'] as num?)?.toDouble() ?? 0.0,
+        verticalOffsetMm:
+            (json['verticalOffsetMm'] as num?)?.toDouble() ?? 0.0,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StaffLabelStyle &&
+          runtimeType == other.runtimeType &&
+          fontFamily == other.fontFamily &&
+          fontSizePt == other.fontSizePt &&
+          isItalic == other.isItalic &&
+          isBold == other.isBold &&
+          horizontalOffsetMm == other.horizontalOffsetMm &&
+          verticalOffsetMm == other.verticalOffsetMm;
+
+  @override
+  int get hashCode => Object.hash(
+        fontFamily,
+        fontSizePt,
+        isItalic,
+        isBold,
+        horizontalOffsetMm,
+        verticalOffsetMm,
+      );
+}
+
 /// Represents a single physical staff leaf node on the page.
 class StaffDefinition extends StaffNode {
   const StaffDefinition({
@@ -154,11 +296,7 @@ class StaffDefinition extends StaffNode {
     this.instrumentName,
     this.instrumentAbbreviation,
     this.labelVisible = true,
-    this.labelHorizontalOffset = 0.0,
-    this.labelVerticalOffset = 0.0,
-    this.labelFontFamily = 'serif',
-    this.labelFontSize = 11.0,
-    this.labelItalic = true,
+    this.labelStyle = StaffLabelStyle.defaultStaff,
     this.barlineStyle = BarlineStyle.standard,
   });
 
@@ -169,12 +307,16 @@ class StaffDefinition extends StaffNode {
   final String? instrumentName;
   final String? instrumentAbbreviation;
   final bool labelVisible;
-  final double labelHorizontalOffset;
-  final double labelVerticalOffset;
-  final String labelFontFamily;
-  final double labelFontSize;
-  final bool labelItalic;
+  final StaffLabelStyle labelStyle;
   final BarlineStyle barlineStyle;
+
+  /// Backward-compatible accessors delegating to [labelStyle]:
+  double get labelHorizontalOffset => labelStyle.horizontalOffsetMm;
+  double get labelVerticalOffset => labelStyle.verticalOffsetMm;
+  String get labelFontFamily => labelStyle.fontFamily;
+  double get labelFontSize => labelStyle.fontSizePt;
+  bool get labelItalic => labelStyle.isItalic;
+  bool get labelBold => labelStyle.isBold;
 
   StaffDefinition copyWith({
     String? uid,
@@ -184,32 +326,46 @@ class StaffDefinition extends StaffNode {
     String? Function()? instrumentName,
     String? Function()? instrumentAbbreviation,
     bool? labelVisible,
+    StaffLabelStyle? labelStyle,
     double? labelHorizontalOffset,
     double? labelVerticalOffset,
     String? labelFontFamily,
     double? labelFontSize,
     bool? labelItalic,
+    bool? labelBold,
     BarlineStyle? barlineStyle,
-  }) =>
-      StaffDefinition(
-        uid: uid ?? this.uid,
-        lines: lines ?? this.lines,
-        clef: clef != null ? clef() : this.clef,
-        scale: scale ?? this.scale,
-        instrumentName:
-            instrumentName != null ? instrumentName() : this.instrumentName,
-        instrumentAbbreviation: instrumentAbbreviation != null
-            ? instrumentAbbreviation()
-            : this.instrumentAbbreviation,
-        labelVisible: labelVisible ?? this.labelVisible,
-        labelHorizontalOffset:
-            labelHorizontalOffset ?? this.labelHorizontalOffset,
-        labelVerticalOffset: labelVerticalOffset ?? this.labelVerticalOffset,
-        labelFontFamily: labelFontFamily ?? this.labelFontFamily,
-        labelFontSize: labelFontSize ?? this.labelFontSize,
-        labelItalic: labelItalic ?? this.labelItalic,
-        barlineStyle: barlineStyle ?? this.barlineStyle,
+  }) {
+    var effectiveStyle = labelStyle ?? this.labelStyle;
+    if (labelFontFamily != null ||
+        labelFontSize != null ||
+        labelItalic != null ||
+        labelBold != null ||
+        labelHorizontalOffset != null ||
+        labelVerticalOffset != null) {
+      effectiveStyle = effectiveStyle.copyWith(
+        fontFamily: labelFontFamily,
+        fontSizePt: labelFontSize,
+        isItalic: labelItalic,
+        isBold: labelBold,
+        horizontalOffsetMm: labelHorizontalOffset,
+        verticalOffsetMm: labelVerticalOffset,
       );
+    }
+    return StaffDefinition(
+      uid: uid ?? this.uid,
+      lines: lines ?? this.lines,
+      clef: clef != null ? clef() : this.clef,
+      scale: scale ?? this.scale,
+      instrumentName:
+          instrumentName != null ? instrumentName() : this.instrumentName,
+      instrumentAbbreviation: instrumentAbbreviation != null
+          ? instrumentAbbreviation()
+          : this.instrumentAbbreviation,
+      labelVisible: labelVisible ?? this.labelVisible,
+      labelStyle: effectiveStyle,
+      barlineStyle: barlineStyle ?? this.barlineStyle,
+    );
+  }
 
   @override
   Map<String, dynamic> toJson() => {
@@ -220,11 +376,12 @@ class StaffDefinition extends StaffNode {
         'instrumentName': instrumentName,
         'instrumentAbbreviation': instrumentAbbreviation,
         'labelVisible': labelVisible,
-        'labelHorizontalOffset': labelHorizontalOffset,
-        'labelVerticalOffset': labelVerticalOffset,
-        'labelFontFamily': labelFontFamily,
-        'labelFontSize': labelFontSize,
-        'labelItalic': labelItalic,
+        'labelStyle': labelStyle.toJson(),
+        'labelHorizontalOffset': labelStyle.horizontalOffsetMm,
+        'labelVerticalOffset': labelStyle.verticalOffsetMm,
+        'labelFontFamily': labelStyle.fontFamily,
+        'labelFontSize': labelStyle.fontSizePt,
+        'labelItalic': labelStyle.isItalic,
         'barlineStyle': barlineStyle.name,
       };
 
@@ -232,6 +389,23 @@ class StaffDefinition extends StaffNode {
     final map = json.containsKey('data') && json['data'] is Map<String, dynamic>
         ? json['data'] as Map<String, dynamic>
         : json;
+
+    final StaffLabelStyle style;
+    if (map['labelStyle'] != null && map['labelStyle'] is Map<String, dynamic>) {
+      style =
+          StaffLabelStyle.fromJson(map['labelStyle'] as Map<String, dynamic>);
+    } else {
+      style = StaffLabelStyle(
+        fontFamily: map['labelFontFamily'] as String? ?? 'serif',
+        fontSizePt: (map['labelFontSize'] as num?)?.toDouble() ?? 11.0,
+        isItalic: map['labelItalic'] as bool? ?? true,
+        horizontalOffsetMm:
+            (map['labelHorizontalOffset'] as num?)?.toDouble() ?? 0.0,
+        verticalOffsetMm:
+            (map['labelVerticalOffset'] as num?)?.toDouble() ?? 0.0,
+      );
+    }
+
     return StaffDefinition(
       uid: map['uid'] as String? ??
           DateTime.now().microsecondsSinceEpoch.toString(),
@@ -243,13 +417,7 @@ class StaffDefinition extends StaffNode {
       instrumentName: map['instrumentName'] as String?,
       instrumentAbbreviation: map['instrumentAbbreviation'] as String?,
       labelVisible: map['labelVisible'] as bool? ?? true,
-      labelHorizontalOffset:
-          (map['labelHorizontalOffset'] as num?)?.toDouble() ?? 0.0,
-      labelVerticalOffset:
-          (map['labelVerticalOffset'] as num?)?.toDouble() ?? 0.0,
-      labelFontFamily: map['labelFontFamily'] as String? ?? 'serif',
-      labelFontSize: (map['labelFontSize'] as num?)?.toDouble() ?? 11.0,
-      labelItalic: map['labelItalic'] as bool? ?? true,
+      labelStyle: style,
       barlineStyle: map['barlineStyle'] != null
           ? BarlineStyle.values.byName(map['barlineStyle'] as String)
           : BarlineStyle.standard,
@@ -261,34 +429,28 @@ class StaffDefinition extends StaffNode {
       identical(this, other) ||
       other is StaffDefinition &&
           runtimeType == other.runtimeType &&
+          uid == other.uid &&
           lines == other.lines &&
           clef == other.clef &&
           scale == other.scale &&
           instrumentName == other.instrumentName &&
           instrumentAbbreviation == other.instrumentAbbreviation &&
           labelVisible == other.labelVisible &&
-          labelHorizontalOffset == other.labelHorizontalOffset &&
-          labelVerticalOffset == other.labelVerticalOffset &&
-          labelFontFamily == other.labelFontFamily &&
-          labelFontSize == other.labelFontSize &&
-          labelItalic == other.labelItalic &&
+          labelStyle == other.labelStyle &&
           barlineStyle == other.barlineStyle;
 
   @override
-  int get hashCode =>
-      uid.hashCode ^
-      lines.hashCode ^
-      clef.hashCode ^
-      scale.hashCode ^
-      instrumentName.hashCode ^
-      instrumentAbbreviation.hashCode ^
-      labelVisible.hashCode ^
-      labelHorizontalOffset.hashCode ^
-      labelVerticalOffset.hashCode ^
-      labelFontFamily.hashCode ^
-      labelFontSize.hashCode ^
-      labelItalic.hashCode ^
-      barlineStyle.hashCode;
+  int get hashCode => Object.hash(
+        uid,
+        lines,
+        clef,
+        scale,
+        instrumentName,
+        instrumentAbbreviation,
+        labelVisible,
+        labelStyle,
+        barlineStyle,
+      );
 }
 
 /// A hierarchical grouping of staves in a system layout tree.
@@ -303,6 +465,8 @@ class StaffNodeGroup extends StaffNode {
     this.labelVisible = true,
     this.labelPlacement = GroupLabelPlacement.margin,
     this.numberingStyle = GroupNumberingStyle.none,
+    this.descriptorPlacement = DescriptorPlacement.enclosedByConnector,
+    this.headerVisibility = GroupHeaderVisibility.firstSystemOnly,
   });
 
   final SystemConnector connector;
@@ -316,6 +480,10 @@ class StaffNodeGroup extends StaffNode {
   final bool labelVisible;
   final GroupLabelPlacement labelPlacement;
   final GroupNumberingStyle numberingStyle;
+  final DescriptorPlacement descriptorPlacement;
+
+  /// Lifecycle visibility control for above-staff headers (Model C).
+  final GroupHeaderVisibility headerVisibility;
 
   StaffNodeGroup copyWith({
     SystemConnector? connector,
@@ -327,6 +495,8 @@ class StaffNodeGroup extends StaffNode {
     bool? labelVisible,
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
+    DescriptorPlacement? descriptorPlacement,
+    GroupHeaderVisibility? headerVisibility,
   }) =>
       StaffNodeGroup(
         connector: connector ?? this.connector,
@@ -338,6 +508,8 @@ class StaffNodeGroup extends StaffNode {
         labelVisible: labelVisible ?? this.labelVisible,
         labelPlacement: labelPlacement ?? this.labelPlacement,
         numberingStyle: numberingStyle ?? this.numberingStyle,
+        descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
+        headerVisibility: headerVisibility ?? this.headerVisibility,
       );
 
   @override
@@ -359,6 +531,8 @@ class StaffNodeGroup extends StaffNode {
         'labelVisible': labelVisible,
         'labelPlacement': labelPlacement.name,
         'numberingStyle': numberingStyle.name,
+        'descriptorPlacement': descriptorPlacement.name,
+        'headerVisibility': headerVisibility.name,
       };
 
   factory StaffNodeGroup.fromJson(Map<String, dynamic> json) {
@@ -384,6 +558,14 @@ class StaffNodeGroup extends StaffNode {
           ? GroupNumberingStyle.values
               .byName(data['numberingStyle'] as String)
           : GroupNumberingStyle.none,
+      descriptorPlacement: data['descriptorPlacement'] != null
+          ? DescriptorPlacement.values
+              .byName(data['descriptorPlacement'] as String)
+          : DescriptorPlacement.enclosedByConnector,
+      headerVisibility: data['headerVisibility'] != null
+          ? GroupHeaderVisibility.values
+              .byName(data['headerVisibility'] as String)
+          : GroupHeaderVisibility.firstSystemOnly,
     );
   }
 
@@ -400,6 +582,8 @@ class StaffNodeGroup extends StaffNode {
         labelVisible != other.labelVisible ||
         labelPlacement != other.labelPlacement ||
         numberingStyle != other.numberingStyle ||
+        descriptorPlacement != other.descriptorPlacement ||
+        headerVisibility != other.headerVisibility ||
         children.length != other.children.length) {
       return false;
     }
@@ -420,6 +604,8 @@ class StaffNodeGroup extends StaffNode {
         labelVisible,
         labelPlacement,
         numberingStyle,
+        descriptorPlacement,
+        headerVisibility,
       );
 }
 
@@ -475,6 +661,8 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     bool? labelVisible,
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
+    DescriptorPlacement? descriptorPlacement,
+    GroupHeaderVisibility? headerVisibility,
   }) {
     if (identical(this, targetGroup) || hashCode == targetGroup.hashCode) {
       return copyWith(
@@ -485,6 +673,8 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
         labelVisible: labelVisible ?? this.labelVisible,
         labelPlacement: labelPlacement ?? this.labelPlacement,
         numberingStyle: numberingStyle ?? this.numberingStyle,
+        descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
+        headerVisibility: headerVisibility ?? this.headerVisibility,
       );
     }
     return copyWith(
@@ -499,6 +689,8 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
             labelVisible: labelVisible,
             labelPlacement: labelPlacement,
             numberingStyle: numberingStyle,
+            descriptorPlacement: descriptorPlacement,
+            headerVisibility: headerVisibility,
           );
         }
         return child;
@@ -624,6 +816,15 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     }
     return result;
   }
+
+  /// All descendant groups (including self) flattened across this group and sub-groups.
+  List<StaffNodeGroup> get allGroups {
+    final result = <StaffNodeGroup>[this];
+    for (final child in children) {
+      if (child is StaffNodeGroup) result.addAll(child.allGroups);
+    }
+    return result;
+  }
 }
 
 /// Centralized engraving constants for system connectors and barlines.
@@ -669,6 +870,13 @@ abstract final class GroupPlacementMetrics {
   /// Horizontal clearance between group label and connector in mm.
   /// (Gould p. 513: 2.0 mm)
   static const double groupLabelClearanceMm = 2.0;
+
+  /// Vertical offset in mm between the topmost staff line and the baseline of an above-staff section header.
+  static const double aboveStaffHeaderOffsetMm = 2.5;
+
+  /// Gould and MOLA standard headroom clearance reserved between systems
+  /// when section headers (e.g. choir or brass group labels) are placed above staff.
+  static const double aboveStaffHeaderClearanceMm = 5.5;
 }
 
 /// The type of clef symbol.

@@ -145,9 +145,11 @@ void _drawStaffLabels(
     // 1. Group labels (Outer tier or section header above staff)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
-      final String label = isFirstSystem
-          ? group.label.trim()
-          : group.abbreviation.trim();
+      final String label = group.labelPlacement == GroupLabelPlacement.aboveStaff
+          ? (group.isAboveStaffVisible ? group.label.trim() : '')
+          : (isFirstSystem
+              ? group.label.trim()
+              : group.abbreviation.trim());
       if (label.isEmpty) continue;
 
       final groupStaves =
@@ -160,7 +162,8 @@ void _drawStaffLabels(
 
       if (group.labelPlacement == GroupLabelPlacement.aboveStaff) {
         const fontPt = 10.0;
-        final headerYMm = topY - 2.5;
+        final headerYMm =
+            topY - GroupPlacementMetrics.aboveStaffHeaderOffsetMm;
         final headerXPt = leftX * _mmToPt;
         final headerYPt = hPt - (headerYMm * _mmToPt);
 
@@ -181,6 +184,10 @@ void _drawStaffLabels(
         final double labelOffset = group.labelOffsetMm > 0.0
             ? group.labelOffsetMm
             : group.connectorOffsetMm +
+                (group.outerDescriptorWidthMm > 0.0
+                    ? group.outerDescriptorWidthMm +
+                        GroupPlacementMetrics.staffLabelClearanceMm
+                    : 0.0) +
                 GroupPlacementMetrics.groupLabelClearanceMm;
         final double labelX = leftX - labelOffset;
 
@@ -205,15 +212,7 @@ void _drawStaffLabels(
     }
 
     // 2. Identify which staves sit inside a displaced connector (offset > 0)
-    final Set<int> innerStaffIndices = {};
-    for (final group in system.groupPlacements) {
-      if (group.connector != SystemConnector.none &&
-          group.innerStaffLabelWidthMm > 0.0) {
-        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
-          innerStaffIndices.add(s);
-        }
-      }
-    }
+    final Set<int> innerStaffIndices = system.innerStaffIndices;
 
     // 3. Staff labels (Inner tier when grouped; outer tier when standalone)
     for (int sIdx = 0; sIdx < system.staves.length; sIdx++) {
@@ -229,12 +228,13 @@ void _drawStaffLabels(
                     : def.instrumentName));
 
         if (label != null && label.trim().isNotEmpty) {
+          final style = staff.resolvedLabelStyle ?? def.labelStyle;
           final double labelX;
           if (innerStaffIndices.contains(sIdx)) {
             // Inner staff label: sits right-aligned between connector and starting barline
             labelX = leftX -
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                def.labelHorizontalOffset;
+                style.horizontalOffsetMm;
           } else {
             // Standalone / Single-Tier staff: sits to the left of its connector
             double maxConnectorOffset = 0.0;
@@ -249,19 +249,23 @@ void _drawStaffLabels(
             labelX = leftX -
                 maxConnectorOffset -
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                def.labelHorizontalOffset;
+                style.horizontalOffsetMm;
           }
 
           final labelY =
-              staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
+              staff.topY + (staff.height / 2.0) + style.verticalOffsetMm;
           final labelXPt = labelX * _mmToPt;
           final labelYPt = hPt - (labelY * _mmToPt);
-          final fontPt = def.labelFontSize;
+          final fontPt = style.fontSizePt;
 
           canvas.saveContext();
-          final font = def.labelItalic
-              ? pdf.PdfFont.helveticaOblique(doc)
-              : pdf.PdfFont.helvetica(doc);
+          final font = style.isBold
+              ? (style.isItalic
+                  ? pdf.PdfFont.helveticaBoldOblique(doc)
+                  : pdf.PdfFont.helveticaBold(doc))
+              : (style.isItalic
+                  ? pdf.PdfFont.helveticaOblique(doc)
+                  : pdf.PdfFont.helvetica(doc));
           canvas.setFillColor(pdf.PdfColors.black);
 
           _drawRightAlignedText(

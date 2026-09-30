@@ -191,15 +191,7 @@ class _ManuscriptPainter extends CustomPainter {
       final bool isFirstSystem = sysIdx == 0;
 
       // Identify which staves sit inside a displaced connector (offset > 0)
-      final Set<int> innerStaffIndices = {};
-      for (final group in system.groupPlacements) {
-        if (group.connector != core.SystemConnector.none &&
-            group.innerStaffLabelWidthMm > 0.0) {
-          for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
-            innerStaffIndices.add(s);
-          }
-        }
-      }
+      final Set<int> innerStaffIndices = system.innerStaffIndices;
 
       for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
         final staff = system.staves[sIdx];
@@ -263,20 +255,21 @@ class _ManuscriptPainter extends CustomPainter {
           if (name != null && name.isNotEmpty) {
             final double ptScale =
                 scale / (96 / 25.4); // Points conversion scale
-            final double fontSize =
-                (staff.definition?.labelFontSize ?? 11.0) * ptScale;
-            final bool italic = staff.definition?.labelItalic ?? true;
+            final style = staff.resolvedLabelStyle ??
+                staff.definition?.labelStyle ??
+                const core.StaffLabelStyle();
+            final double fontSize = style.fontSizePt * ptScale;
+            final bool italic = style.isItalic;
+            final bool bold = style.isBold;
             final String fontFamily =
-                staff.definition?.labelFontFamily == 'serif'
-                    ? 'Noto Serif'
-                    : 'Roboto';
+                style.fontFamily == 'serif' ? 'Noto Serif' : 'Roboto';
 
             final namePainter = TextPainter(
               text: TextSpan(
                 text: name,
                 style: TextStyle(
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w600,
                   color: inkColor.withValues(alpha: 0.8),
                   fontFamily: fontFamily,
                   fontStyle: italic ? FontStyle.italic : FontStyle.normal,
@@ -319,10 +312,8 @@ class _ManuscriptPainter extends CustomPainter {
             }
 
             // Apply custom offsets
-            final double hOffset =
-                (staff.definition?.labelHorizontalOffset ?? 0.0) * ptScale;
-            final double vOffset =
-                (staff.definition?.labelVerticalOffset ?? 0.0) * ptScale;
+            final double hOffset = style.horizontalOffsetMm * ptScale;
+            final double vOffset = style.verticalOffsetMm * ptScale;
 
             final nameY = staffMidY - namePainter.height / 2;
             namePainter.paint(canvas, Offset(nameX + hOffset, nameY + vOffset));
@@ -333,9 +324,12 @@ class _ManuscriptPainter extends CustomPainter {
       // ── Draw Group Labels ────────────────────────────────
       for (final group in system.groupPlacements) {
         if (!group.labelVisible) continue;
-        final String label = isFirstSystem
-            ? group.label.trim()
-            : group.abbreviation.trim();
+        final String label =
+            group.labelPlacement == core.GroupLabelPlacement.aboveStaff
+                ? (group.isAboveStaffVisible ? group.label.trim() : '')
+                : (isFirstSystem
+                    ? group.label.trim()
+                    : group.abbreviation.trim());
 
         if (label.isNotEmpty) {
           final staves =
@@ -367,13 +361,20 @@ class _ManuscriptPainter extends CustomPainter {
             )..layout();
 
             final double headerX = systemLeftPx;
-            final double headerY =
-                (topY - (2.5 * scale) - headerPainter.height).roundToDouble();
+            final double headerY = (topY -
+                    (core.GroupPlacementMetrics.aboveStaffHeaderOffsetMm *
+                        scale) -
+                    headerPainter.height)
+                .roundToDouble();
             headerPainter.paint(canvas, Offset(headerX, headerY));
           } else {
             final double labelOffsetMm = group.labelOffsetMm > 0.0
                 ? group.labelOffsetMm
                 : group.connectorOffsetMm +
+                    (group.outerDescriptorWidthMm > 0.0
+                        ? group.outerDescriptorWidthMm +
+                            core.GroupPlacementMetrics.staffLabelClearanceMm
+                        : 0.0) +
                     core.GroupPlacementMetrics.groupLabelClearanceMm;
             final double rightAnchorX =
                 systemLeftPx - (labelOffsetMm * scale);

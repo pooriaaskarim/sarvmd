@@ -11,11 +11,13 @@ class FineTuningTab extends StatelessWidget {
   final String fontFamily;
   final double fontSize;
   final bool italic;
+  final bool bold;
   final double horizontalOffset;
   final double verticalOffset;
   final ValueChanged<String> onFontFamilyChanged;
   final ValueChanged<double> onFontSizeChanged;
   final ValueChanged<bool> onItalicChanged;
+  final ValueChanged<bool> onBoldChanged;
   final ValueChanged<double> onHorizontalOffsetChanged;
   final ValueChanged<double> onVerticalOffsetChanged;
 
@@ -24,11 +26,13 @@ class FineTuningTab extends StatelessWidget {
     required this.fontFamily,
     required this.fontSize,
     required this.italic,
+    this.bold = false,
     required this.horizontalOffset,
     required this.verticalOffset,
     required this.onFontFamilyChanged,
     required this.onFontSizeChanged,
     required this.onItalicChanged,
+    required this.onBoldChanged,
     required this.onHorizontalOffsetChanged,
     required this.onVerticalOffsetChanged,
   });
@@ -151,6 +155,43 @@ class FineTuningTab extends StatelessWidget {
                     child: Switch(
                       value: italic,
                       onChanged: onItalicChanged,
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Divider(height: 1),
+              ),
+              // Bold Toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.boldLabelHeader,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold, color: cs.onSurface),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.boldLabelDesc,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.9,
+                    child: Switch(
+                      value: bold,
+                      onChanged: onBoldChanged,
                     ),
                   ),
                 ],

@@ -100,8 +100,10 @@ void main() {
         instrumentName: 'Electric Guitar',
         instrumentAbbreviation: 'E.Gtr',
         labelVisible: true,
-        labelHorizontalOffset: -5.0,
-        labelVerticalOffset: 2.0,
+        labelStyle: StaffLabelStyle(
+          horizontalOffsetMm: -5.0,
+          verticalOffsetMm: 2.0,
+        ),
         barlineStyle: BarlineStyle.dashed,
       );
 
@@ -113,8 +115,78 @@ void main() {
       expect(restored.scale, equals(1.2));
       expect(restored.instrumentName, equals('Electric Guitar'));
       expect(restored.instrumentAbbreviation, equals('E.Gtr'));
+      expect(restored.labelStyle.horizontalOffsetMm, equals(-5.0));
+      expect(restored.labelStyle.verticalOffsetMm, equals(2.0));
       expect(restored.labelHorizontalOffset, equals(-5.0));
+      expect(restored.labelVerticalOffset, equals(2.0));
       expect(restored.barlineStyle, equals(BarlineStyle.dashed));
+    });
+
+    test('StaffDefinition.fromJson parses legacy 5-field JSON seamlessly', () {
+      final legacyJson = {
+        'uid': 'stf-legacy',
+        'lines': 5,
+        'instrumentName': 'Clarinet',
+        'instrumentAbbreviation': 'Cl.',
+        'labelVisible': true,
+        'labelHorizontalOffset': -3.0,
+        'labelVerticalOffset': 1.5,
+        'labelFontFamily': 'Roboto',
+        'labelFontSize': 12.0,
+        'labelItalic': false,
+        'barlineStyle': 'standard',
+      };
+
+      final restored = StaffDefinition.fromJson(legacyJson);
+      expect(restored.uid, equals('stf-legacy'));
+      expect(restored.labelStyle.horizontalOffsetMm, equals(-3.0));
+      expect(restored.labelStyle.verticalOffsetMm, equals(1.5));
+      expect(restored.labelStyle.fontFamily, equals('Roboto'));
+      expect(restored.labelStyle.fontSizePt, equals(12.0));
+      expect(restored.labelStyle.isItalic, isFalse);
+      expect(restored.labelHorizontalOffset, equals(-3.0));
+      expect(restored.labelFontSize, equals(12.0));
+    });
+
+    test('StaffNodeGroup serialization preserves DescriptorPlacement', () {
+      final group = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Woodwinds',
+        descriptorPlacement: DescriptorPlacement.outsideConnector,
+      );
+
+      final json = group.toJson();
+      expect(json['descriptorPlacement'], equals('outsideConnector'));
+
+      final restored = StaffNodeGroup.fromJson(json);
+      expect(restored.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+
+      // Defaults to enclosedByConnector when key is absent
+      final defaultRestored = StaffNodeGroup.fromJson({});
+      expect(defaultRestored.descriptorPlacement,
+          equals(DescriptorPlacement.enclosedByConnector));
+    });
+
+    test('StaffNodeGroup serialization preserves GroupHeaderVisibility', () {
+      final group = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Woodwinds',
+        labelPlacement: GroupLabelPlacement.aboveStaff,
+        headerVisibility: GroupHeaderVisibility.firstSystemOfPage,
+      );
+
+      final json = group.toJson();
+      expect(json['headerVisibility'], equals('firstSystemOfPage'));
+
+      final restored = StaffNodeGroup.fromJson(json);
+      expect(restored.headerVisibility,
+          equals(GroupHeaderVisibility.firstSystemOfPage));
+
+      // Defaults to firstSystemOnly when key is absent
+      final defaultRestored = StaffNodeGroup.fromJson({});
+      expect(defaultRestored.headerVisibility,
+          equals(GroupHeaderVisibility.firstSystemOnly));
     });
   });
 }

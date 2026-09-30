@@ -701,6 +701,281 @@ void main() {
       expect(pdfBytes, isNotEmpty);
       expect(pdfBytes.length, greaterThan(1000));
     });
+
+    test('StaffNodeGroup.allGroups flattens hierarchy in traversal order', () {
+      final s1 = StaffDefinition(uid: 's1');
+      final s2 = StaffDefinition(uid: 's2');
+      final sub = StaffNodeGroup(label: 'Sub', children: [s1]);
+      final root = StaffNodeGroup(label: 'Root', children: [sub, s2]);
+
+      final all = root.allGroups;
+      expect(all.length, equals(2));
+      expect(all[0].label, equals('Root'));
+      expect(all[1].label, equals('Sub'));
+    });
+
+    test('Model C reserves vertical headroom and suppresses headers on subsequent systems', () {
+      final s1 = StaffDefinition(uid: 's1', instrumentName: 'Violin 1', instrumentAbbreviation: 'Vln. 1');
+      final s2 = StaffDefinition(uid: 's2', instrumentName: 'Violin 2', instrumentAbbreviation: 'Vln. 2');
+
+      final standardGroup = StaffNodeGroup(
+        label: 'STRINGS',
+        abbreviation: 'Str.',
+        labelPlacement: GroupLabelPlacement.margin,
+        children: [s1, s2],
+      );
+      final aboveGroup = StaffNodeGroup(
+        label: 'STRINGS',
+        abbreviation: 'Str.',
+        labelPlacement: GroupLabelPlacement.aboveStaff,
+        children: [s1, s2],
+      );
+
+      final standardConfig = PageConfig(
+        systemLayout: SystemLayout(rootGroup: standardGroup),
+        pageSize: PageSize.a4,
+        orientation: PageOrientation.portrait,
+      );
+      final aboveConfig = PageConfig(
+        systemLayout: SystemLayout(rootGroup: aboveGroup),
+        pageSize: PageSize.a4,
+        orientation: PageOrientation.portrait,
+      );
+
+      final standardLayout = computeLayout(standardConfig);
+      final aboveLayout = computeLayout(aboveConfig);
+
+      expect(aboveLayout.systems.length, greaterThan(1),
+          reason: 'A4 portrait with 2-staff system fits multiple systems');
+
+      // The distance between consecutive systems in aboveLayout must include aboveStaffHeaderClearanceMm
+      final standardSysGap = standardLayout.systems[1].staves.first.topY -
+          (standardLayout.systems[0].staves.last.topY + standardLayout.systems[0].staves.last.height);
+      final aboveSysGap = aboveLayout.systems[1].staves.first.topY -
+          (aboveLayout.systems[0].staves.last.topY + aboveLayout.systems[0].staves.last.height);
+
+      expect(aboveSysGap, greaterThanOrEqualTo(standardSysGap + GroupPlacementMetrics.aboveStaffHeaderClearanceMm - 0.01));
+
+      // Group label resolution in layout: empty on system 2+
+      // In SVG: "STRINGS" text must only appear once (on System 1), NOT twice
+      final svg = ScoreCompiler.compileToSvg(aboveConfig, aboveLayout);
+      final stringsMatches = RegExp(r'>STRINGS<').allMatches(svg).length;
+      expect(stringsMatches, equals(1),
+          reason: 'Above-staff header must only appear on System 1, suppressed on System 2+');
+
+      // In LaTeX: \textbf{STRINGS} must only appear once
+      final tex = ScoreCompiler.compileToTex(aboveConfig, aboveLayout);
+      final texMatches = RegExp(r'\\textbf\{STRINGS\}').allMatches(tex).length;
+      expect(texMatches, equals(1),
+          reason: 'LaTeX above-staff header must only appear on System 1');
+    });
+
+    test('GroupHeaderVisibility controls header lifecycle across systems and pages', () {
+      final s1 = StaffDefinition(uid: 's1', instrumentName: 'Violin I');
+      final s2 = StaffDefinition(uid: 's2', instrumentName: 'Violin II');
+
+      PageConfig makeConfig(GroupHeaderVisibility visibility) => PageConfig(
+            systemLayout: SystemLayout(
+              rootGroup: StaffNodeGroup(
+                label: 'VIOLINS',
+                labelPlacement: GroupLabelPlacement.aboveStaff,
+                headerVisibility: visibility,
+                children: [s1, s2],
+              ),
+            ),
+            pageSize: PageSize.a4,
+            orientation: PageOrientation.portrait,
+          );
+
+      // 1. firstSystemOnly
+      final cfgFirstOnly = makeConfig(GroupHeaderVisibility.firstSystemOnly);
+      final layoutPage0 = computeLayout(cfgFirstOnly, pageIndex: 0);
+      final layoutPage1 = computeLayout(cfgFirstOnly, pageIndex: 1);
+
+      expect(layoutPage0.systems.length, greaterThanOrEqualTo(2));
+      expect(layoutPage0.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage0.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+      expect(layoutPage1.systems[0].groupPlacements.first.isAboveStaffVisible, isFalse);
+      expect(layoutPage1.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+
+      // 2. firstSystemOfPage
+      final cfgPageTop = makeConfig(GroupHeaderVisibility.firstSystemOfPage);
+      final layoutPage0Top = computeLayout(cfgPageTop, pageIndex: 0);
+      final layoutPage1Top = computeLayout(cfgPageTop, pageIndex: 1);
+
+      expect(layoutPage0Top.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage0Top.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+      expect(layoutPage1Top.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage1Top.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+
+      // 3. always
+      final cfgAlways = makeConfig(GroupHeaderVisibility.always);
+      final layoutPage0Always = computeLayout(cfgAlways, pageIndex: 0);
+      final layoutPage1Always = computeLayout(cfgAlways, pageIndex: 1);
+
+      expect(layoutPage0Always.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage0Always.systems[1].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage1Always.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage1Always.systems[1].groupPlacements.first.isAboveStaffVisible, isTrue);
+
+      // Verify SVG emitter with 'always' outputs VIOLINS on every system of the page
+      final svgAlways = ScoreCompiler.compileToSvg(cfgAlways, layoutPage0Always);
+      final countAlways = RegExp(r'>VIOLINS<').allMatches(svgAlways).length;
+      expect(countAlways, equals(layoutPage0Always.systems.length));
+    });
+
+    test('StaffLabelStyle bold and upright styling propagates to emitters', () {
+      final soloVln = StaffDefinition(
+        uid: 'solo',
+        instrumentName: 'Solo Violin',
+        labelStyle: StaffLabelStyle.boldUpright,
+      );
+      final config = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [soloVln]),
+        ),
+      );
+      final layout = computeLayout(config);
+
+      // Verify resolvedLabelStyle propagated to StaffPosition
+      expect(layout.systems.first.staves.first.resolvedLabelStyle,
+          equals(StaffLabelStyle.boldUpright));
+
+      // SVG emitter: must output font-weight="bold" without font-style="italic"
+      final svg = ScoreCompiler.compileToSvg(config, layout);
+      expect(svg, contains('Solo Violin'));
+      expect(svg, contains('font-weight="bold"'));
+      expect(svg, isNot(contains('font-style="italic"')));
+
+      // LaTeX emitter: must wrap text with \textbf without \textit
+      final tex = ScoreCompiler.compileToTex(config, layout);
+      expect(tex, contains(r'\textbf{Solo Violin}'));
+      expect(tex, isNot(contains(r'\textit{Solo Violin}')));
+    });
+
+    test(
+        'DescriptorPlacement: Anglo-American (enclosed) vs Continental (outside/flush)',
+        () {
+      final s1 = StaffDefinition(
+        uid: 'fl-1',
+        instrumentName: 'Flute 1',
+        instrumentAbbreviation: '1',
+      );
+      final s2 = StaffDefinition(
+        uid: 'fl-2',
+        instrumentName: 'Flute 2',
+        instrumentAbbreviation: '2',
+      );
+
+      // 1. Anglo-American: enclosedByConnector (Gould / Boosey & Hawkes)
+      final angloGroup = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Flutes',
+        descriptorPlacement: DescriptorPlacement.enclosedByConnector,
+        children: [s1, s2],
+      );
+      final angloConfig = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [angloGroup]),
+        ),
+      );
+      final angloLayout = computeLayout(angloConfig);
+      final angloSystem = angloLayout.systems.first;
+      final angloPlacement = angloSystem.groupPlacements.firstWhere(
+        (g) => g.connector == SystemConnector.bracket,
+      );
+
+      expect(angloPlacement.descriptorPlacement,
+          equals(DescriptorPlacement.enclosedByConnector));
+      // Bracket is displaced outward to enclose descriptors
+      expect(angloPlacement.connectorOffsetMm, greaterThan(0.0));
+      expect(angloPlacement.innerStaffLabelWidthMm, greaterThan(0.0));
+      expect(angloPlacement.outerDescriptorWidthMm, equals(0.0));
+      expect(angloSystem.innerStaffIndices, containsAll([0, 1]));
+
+      // 2. Continental European: outsideConnector (Bärenreiter / Breitkopf / Henle)
+      final continentalGroup = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Flöten',
+        descriptorPlacement: DescriptorPlacement.outsideConnector,
+        children: [s1, s2],
+      );
+      final continentalConfig = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [continentalGroup]),
+        ),
+      );
+      final continentalLayout = computeLayout(continentalConfig);
+      final continentalSystem = continentalLayout.systems.first;
+      final continentalPlacement = continentalSystem.groupPlacements.firstWhere(
+        (g) => g.connector == SystemConnector.bracket,
+      );
+
+      expect(continentalPlacement.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+      // Bracket is flush at barline
+      expect(continentalPlacement.connectorOffsetMm, equals(0.0));
+      expect(continentalPlacement.innerStaffLabelWidthMm, equals(0.0));
+      expect(continentalPlacement.outerDescriptorWidthMm, greaterThan(0.0));
+      // Staves are NOT inner (they sit to the left of the flush connector)
+      expect(continentalSystem.innerStaffIndices, isEmpty);
+
+      // Group label "Flöten" sits outside the descriptors
+      expect(
+        continentalPlacement.labelOffsetMm,
+        greaterThanOrEqualTo(
+          continentalPlacement.outerDescriptorWidthMm +
+              GroupPlacementMetrics.staffLabelClearanceMm,
+        ),
+      );
+      // System left indent accommodates both descriptors and group label
+      expect(
+        continentalSystem.leftIndentMm,
+        greaterThanOrEqualTo(
+          continentalPlacement.labelOffsetMm +
+              continentalPlacement.groupLabelWidthMm,
+        ),
+      );
+    });
+
+    test(
+        'Universal Brace Rule: SystemConnector.brace always forces DescriptorPlacement.outsideConnector',
+        () {
+      final s1 = StaffDefinition(
+        uid: 'pno-rh',
+        instrumentName: 'Piano',
+        instrumentAbbreviation: 'Pno.',
+      );
+      final s2 = StaffDefinition(
+        uid: 'pno-lh',
+        instrumentName: 'Piano',
+        instrumentAbbreviation: 'Pno.',
+      );
+
+      // Even if enclosedByConnector is explicitly configured, brace forces outsideConnector
+      final pianoGroup = StaffNodeGroup(
+        connector: SystemConnector.brace,
+        label: 'Piano',
+        descriptorPlacement: DescriptorPlacement.enclosedByConnector,
+        children: [s1, s2],
+      );
+      final config = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [pianoGroup]),
+        ),
+      );
+      final layout = computeLayout(config);
+      final system = layout.systems.first;
+      final bracePlacement = system.groupPlacements.firstWhere(
+        (g) => g.connector == SystemConnector.brace,
+      );
+
+      expect(bracePlacement.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+      expect(bracePlacement.connectorOffsetMm, equals(0.0));
+      expect(bracePlacement.innerStaffLabelWidthMm, equals(0.0));
+      expect(system.innerStaffIndices, isEmpty);
+    });
   });
 }
 

@@ -22,6 +22,7 @@ class LiveStaffPreview extends StatelessWidget {
   final String fontFamily;
   final double fontSize;
   final bool italic;
+  final bool bold;
 
   /// Callback triggered when a staff line is tapped to change the anchor line.
   /// If null, interactive line tapping is disabled.
@@ -43,6 +44,7 @@ class LiveStaffPreview extends StatelessWidget {
     required this.fontFamily,
     required this.fontSize,
     required this.italic,
+    this.bold = false,
     this.onAnchorLineChanged,
     this.height = 140.0,
   });
@@ -122,6 +124,7 @@ class LiveStaffPreview extends StatelessWidget {
                     fontFamily: fontFamily,
                     fontSize: fontSize,
                     italic: italic,
+                    bold: bold,
                     primaryColor: theme.colorScheme.primary,
                     onSurfaceColor: theme.colorScheme.onSurface,
                     theme: theme,
@@ -150,6 +153,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
   final String fontFamily;
   final double fontSize;
   final bool italic;
+  final bool bold;
 
   final Color primaryColor;
   final Color onSurfaceColor;
@@ -167,6 +171,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
     required this.fontFamily,
     required this.fontSize,
     required this.italic,
+    required this.bold,
     required this.primaryColor,
     required this.onSurfaceColor,
     required this.theme,
@@ -305,7 +310,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
         fontFamily: fontFamily == 'serif' ? 'Noto Serif' : 'Roboto',
         fontSize: fontSize,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal,
-        fontWeight: FontWeight.w600,
+        fontWeight: bold ? FontWeight.w800 : (italic ? FontWeight.w500 : FontWeight.w600),
         color: inkColor,
       );
 
@@ -482,6 +487,7 @@ class _LiveStaffPreviewPainter extends CustomPainter {
         oldDelegate.fontFamily != fontFamily ||
         oldDelegate.fontSize != fontSize ||
         oldDelegate.italic != italic ||
+        oldDelegate.bold != bold ||
         oldDelegate.primaryColor != primaryColor ||
         oldDelegate.onSurfaceColor != onSurfaceColor;
   }

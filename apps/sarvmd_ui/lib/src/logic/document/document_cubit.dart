@@ -515,6 +515,8 @@ class DocumentCubit extends Cubit<DocumentState> {
     String? fontFamily,
     double? fontSize,
     bool? italic,
+    bool? bold,
+    core.StaffLabelStyle? labelStyle,
   }) {
     execute(core.UpdateStaffByUidCommand(
       uid,
@@ -524,11 +526,13 @@ class DocumentCubit extends Cubit<DocumentState> {
         labelVisible: visible,
         lines: lines,
         clef: clef,
+        labelStyle: labelStyle,
         labelHorizontalOffset: horizontalOffset,
         labelVerticalOffset: verticalOffset,
         labelFontFamily: fontFamily,
         labelFontSize: fontSize,
         labelItalic: italic,
+        labelBold: bold,
       ),
       'Update Staff Details',
     ));
@@ -554,6 +558,8 @@ class DocumentCubit extends Cubit<DocumentState> {
     bool? labelVisible,
     core.GroupLabelPlacement? labelPlacement,
     core.GroupNumberingStyle? numberingStyle,
+    core.DescriptorPlacement? descriptorPlacement,
+    core.GroupHeaderVisibility? headerVisibility,
   }) {
     execute(core.UpdateGroupDetailsCommand(
       groupHash: groupHash,
@@ -562,6 +568,8 @@ class DocumentCubit extends Cubit<DocumentState> {
       labelVisible: labelVisible,
       labelPlacement: labelPlacement,
       numberingStyle: numberingStyle,
+      descriptorPlacement: descriptorPlacement,
+      headerVisibility: headerVisibility,
     ));
   }
 

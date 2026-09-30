@@ -572,7 +572,7 @@ class UpdateGroupInitialBarlineCommand extends PageConfigCommand {
   }
 }
 
-/// Command to update system group details (label, abbreviation, labelVisible, labelPlacement, numberingStyle).
+/// Command to update system group details (label, abbreviation, labelVisible, labelPlacement, numberingStyle, descriptorPlacement, headerVisibility).
 class UpdateGroupDetailsCommand extends PageConfigCommand {
   final int? groupHash;
   final String? labelText;
@@ -580,6 +580,8 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
   final bool? labelVisible;
   final GroupLabelPlacement? labelPlacement;
   final GroupNumberingStyle? numberingStyle;
+  final DescriptorPlacement? descriptorPlacement;
+  final GroupHeaderVisibility? headerVisibility;
 
   UpdateGroupDetailsCommand({
     this.groupHash,
@@ -588,6 +590,8 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
     this.labelVisible,
     this.labelPlacement,
     this.numberingStyle,
+    this.descriptorPlacement,
+    this.headerVisibility,
   });
 
   @override
@@ -605,6 +609,9 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
             labelVisible: labelVisible ?? root.labelVisible,
             labelPlacement: labelPlacement ?? root.labelPlacement,
             numberingStyle: numberingStyle ?? root.numberingStyle,
+            descriptorPlacement:
+                descriptorPlacement ?? root.descriptorPlacement,
+            headerVisibility: headerVisibility ?? root.headerVisibility,
           ),
         ),
       );
@@ -619,6 +626,9 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
             labelVisible: labelVisible ?? node.labelVisible,
             labelPlacement: labelPlacement ?? node.labelPlacement,
             numberingStyle: numberingStyle ?? node.numberingStyle,
+            descriptorPlacement:
+                descriptorPlacement ?? node.descriptorPlacement,
+            headerVisibility: headerVisibility ?? node.headerVisibility,
           );
         }
         return node.copyWith(

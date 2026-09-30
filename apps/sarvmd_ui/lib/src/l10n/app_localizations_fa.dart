@@ -682,6 +682,12 @@ class AppLocalizationsFa extends AppLocalizations {
       'استفاده از حالت ایتالیک استاندارد برای نام ساز';
 
   @override
+  String get boldLabelHeader => 'برجسته‌سازی (بولد) نام';
+
+  @override
+  String get boldLabelDesc => 'استفاده از وزن ضخیم برای برجسته‌تر کردن نام ساز';
+
+  @override
   String get alignmentOffsetsHeader => 'تراز و جابه‌جایی‌های دقیق';
 
   @override

@@ -241,6 +241,8 @@
   "labelFontSizeLabel": "Label Font Size",
   "italicizeLabelHeader": "Italicize Label",
   "italicizeLabelDesc": "Use standard italics for score titles",
+  "boldLabelHeader": "Bold Label",
+  "boldLabelDesc": "Use heavy weight for prominent score titles",
   "alignmentOffsetsHeader": "Fine Alignment & Offsets",
   "horizontalOffsetLabel": "Horizontal Offset",
   "verticalOffsetLabel": "Vertical Offset",
