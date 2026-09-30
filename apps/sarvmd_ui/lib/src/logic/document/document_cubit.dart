@@ -552,12 +552,16 @@ class DocumentCubit extends Cubit<DocumentState> {
     String? label,
     String? abbreviation,
     bool? labelVisible,
+    core.GroupLabelPlacement? labelPlacement,
+    core.GroupNumberingStyle? numberingStyle,
   }) {
     execute(core.UpdateGroupDetailsCommand(
       groupHash: groupHash,
       labelText: label,
       abbreviation: abbreviation,
       labelVisible: labelVisible,
+      labelPlacement: labelPlacement,
+      numberingStyle: numberingStyle,
     ));
   }
 

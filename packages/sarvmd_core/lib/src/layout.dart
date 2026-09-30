@@ -10,10 +10,15 @@ class StaffPosition {
     required this.lineGapMm,
     this.scale = 1.0,
     this.definition,
+    this.resolvedLabel,
   });
 
   /// The original definition this position was generated from.
   final StaffDefinition? definition;
+
+  /// The dynamically resolved label for this staff in the system
+  /// (considering Gould hierarchical rules and group numbering style).
+  final String? resolvedLabel;
 
   /// Y-coordinate of the topmost line of this staff, measured from page top
   /// edge in mm.
@@ -30,6 +35,24 @@ class StaffPosition {
 
   /// Total height of this staff in mm.
   double get height => lines > 0 ? (lines - 1) * lineGapMm * scale : 0;
+
+  StaffPosition copyWith({
+    double? topY,
+    int? lines,
+    double? lineGapMm,
+    double? scale,
+    StaffDefinition? definition,
+    String? resolvedLabel,
+  }) {
+    return StaffPosition(
+      topY: topY ?? this.topY,
+      lines: lines ?? this.lines,
+      lineGapMm: lineGapMm ?? this.lineGapMm,
+      scale: scale ?? this.scale,
+      definition: definition ?? this.definition,
+      resolvedLabel: resolvedLabel ?? this.resolvedLabel,
+    );
+  }
 }
 
 /// Physical placement and properties of a staff group in a system.
@@ -44,6 +67,8 @@ class GroupPlacement {
     this.label = '',
     this.abbreviation = '',
     this.labelVisible = true,
+    this.labelPlacement = GroupLabelPlacement.margin,
+    this.numberingStyle = GroupNumberingStyle.none,
     this.innerStaffLabelWidthMm = 0.0,
     this.groupLabelWidthMm = 0.0,
     this.connectorOffsetMm = 0.0,
@@ -77,6 +102,12 @@ class GroupPlacement {
   /// Whether the group label should be rendered.
   final bool labelVisible;
 
+  /// Visual placement for the group label (margin vs above topmost staff).
+  final GroupLabelPlacement labelPlacement;
+
+  /// Automatic numbering scheme for child staves.
+  final GroupNumberingStyle numberingStyle;
+
   /// Maximum width of inner staff labels within this group (in mm).
   final double innerStaffLabelWidthMm;
 
@@ -100,6 +131,8 @@ class GroupPlacement {
     String? label,
     String? abbreviation,
     bool? labelVisible,
+    GroupLabelPlacement? labelPlacement,
+    GroupNumberingStyle? numberingStyle,
     double? innerStaffLabelWidthMm,
     double? groupLabelWidthMm,
     double? connectorOffsetMm,
@@ -115,6 +148,8 @@ class GroupPlacement {
       label: label ?? this.label,
       abbreviation: abbreviation ?? this.abbreviation,
       labelVisible: labelVisible ?? this.labelVisible,
+      labelPlacement: labelPlacement ?? this.labelPlacement,
+      numberingStyle: numberingStyle ?? this.numberingStyle,
       innerStaffLabelWidthMm:
           innerStaffLabelWidthMm ?? this.innerStaffLabelWidthMm,
       groupLabelWidthMm: groupLabelWidthMm ?? this.groupLabelWidthMm,
@@ -164,6 +199,123 @@ class PageLayout {
 
   /// Number of systems that fit on the page.
   int get systemCount => systems.length;
+}
+
+/// Checks whether a given string is a valid Roman numeral (e.g. "I", "II", "IV", "VII").
+bool isRomanNumeral(String s) {
+  final trimmed = s.trim().replaceAll(RegExp(r'\.+$'), '');
+  if (trimmed.isEmpty) return false;
+  return RegExp(r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI)$',
+          caseSensitive: false)
+      .hasMatch(trimmed);
+}
+
+/// Checks whether an instrument name is generic or auto-generated, matching either
+/// a number, or the group label (singular or plural), or empty.
+bool isGenericStaffLabel(String name, String groupLabel) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) return true;
+  final withoutDot = trimmed.replaceAll(RegExp(r'\.+$'), '');
+  if (int.tryParse(withoutDot) != null) return true;
+  if (isRomanNumeral(withoutDot)) return true;
+
+  final cleanName = trimmed.toLowerCase();
+  if (cleanName == 'staff' || cleanName.startsWith('staff ')) {
+    return true;
+  }
+
+  // Extract primary instrument stem from group label
+  // e.g. "Horns in F" -> "Horns", "Violins I" -> "Violins", "Flutes (1, 2)" -> "Flutes"
+  final baseGroup = groupLabel
+      .split(RegExp(r'\s+(in|\(|\b(I|II|III|IV|V|VI|VII|VIII)\b)',
+          caseSensitive: false))
+      .first
+      .trim();
+
+  final cleanGroup =
+      baseGroup.toLowerCase().replaceAll(RegExp(r's$'), '').trim();
+
+  if (cleanGroup.isNotEmpty) {
+    if (cleanName == cleanGroup ||
+        cleanName == '${cleanGroup}s' ||
+        cleanName.startsWith('$cleanGroup ') ||
+        cleanName.startsWith('${cleanGroup}s ') ||
+        cleanName.startsWith('$cleanGroup-')) {
+      return true;
+    }
+  }
+
+  final fullCleanGroup =
+      groupLabel.toLowerCase().replaceAll(RegExp(r's$'), '').trim();
+  if (fullCleanGroup.isNotEmpty && fullCleanGroup != cleanGroup) {
+    if (cleanName == fullCleanGroup ||
+        cleanName == '${fullCleanGroup}s' ||
+        cleanName.startsWith('$fullCleanGroup ') ||
+        cleanName.startsWith('${fullCleanGroup}s ') ||
+        cleanName.startsWith('$fullCleanGroup-')) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/// Resolves the effective display label for a staff within a system.
+///
+/// Takes into account whether this is the first system (full name vs abbreviation),
+/// the hierarchical group context, and any [GroupNumberingStyle] assigned to
+/// enclosing groups (Model B).
+String resolveStaffLabel({
+  required StaffDefinition def,
+  required int staffIndex,
+  required List<GroupPlacement> groupPlacements,
+  required bool isFirstSystem,
+}) {
+  if (!def.labelVisible) return '';
+
+  // Find enclosing groups for this staff
+  final enclosingGroups = groupPlacements
+      .where((g) =>
+          staffIndex >= g.startStaffIdx && staffIndex <= g.endStaffIdx)
+      .toList();
+
+  // Find innermost group with an active numberingStyle
+  GroupPlacement? numberingGroup;
+  for (final g in enclosingGroups) {
+    if (g.numberingStyle != GroupNumberingStyle.none) {
+      if (numberingGroup == null ||
+          (g.endStaffIdx - g.startStaffIdx) <
+              (numberingGroup.endStaffIdx - numberingGroup.startStaffIdx)) {
+        numberingGroup = g;
+      }
+    }
+  }
+
+  if (numberingGroup != null) {
+    final indexInGroup = staffIndex - numberingGroup.startStaffIdx;
+    final generatedNum =
+        formatGroupStaffNumber(indexInGroup, numberingGroup.numberingStyle);
+    final rawName = isFirstSystem
+        ? (def.instrumentName ?? '')
+        : ((def.instrumentAbbreviation != null &&
+                def.instrumentAbbreviation!.trim().isNotEmpty)
+            ? def.instrumentAbbreviation!
+            : (def.instrumentName ?? ''));
+
+    if (rawName.isEmpty || isGenericStaffLabel(rawName, numberingGroup.label)) {
+      return generatedNum;
+    }
+    // If user provided a specific non-generic name (e.g. "Piccolo"), keep it.
+    return rawName;
+  }
+
+  // Classical resolution
+  return isFirstSystem
+      ? (def.instrumentName ?? '')
+      : ((def.instrumentAbbreviation != null &&
+              def.instrumentAbbreviation!.trim().isNotEmpty)
+          ? def.instrumentAbbreviation!
+          : (def.instrumentName ?? ''));
 }
 
 /// Compute the layout for a given page configuration.
@@ -257,6 +409,8 @@ PageLayout computeLayout(PageConfig config) {
           label: group.label,
           abbreviation: group.abbreviation,
           labelVisible: group.labelVisible,
+          labelPlacement: group.labelPlacement,
+          numberingStyle: group.numberingStyle,
         ));
       }
     }
@@ -265,6 +419,20 @@ PageLayout computeLayout(PageConfig config) {
 
     // Implement Gould/MOLA two-tier hierarchical space-aware indentation
     final bool isFirstSystem = i == 0;
+
+    // Resolve effective staff labels for this system (Model B & Gould non-redundancy)
+    for (int s = 0; s < staves.length; s++) {
+      final def = staves[s].definition;
+      if (def != null) {
+        final resolved = resolveStaffLabel(
+          def: def,
+          staffIndex: s,
+          groupPlacements: placements,
+          isFirstSystem: isFirstSystem,
+        );
+        staves[s] = staves[s].copyWith(resolvedLabel: resolved);
+      }
+    }
 
     // 1. Resolve effective group labels per system
     // Gould (p. 515): Top-level / family names (e.g. Woodwinds, Strings) appear only on System 1.
@@ -284,7 +452,9 @@ PageLayout computeLayout(PageConfig config) {
       final gLabel = resolveGroupLabel(group);
       final bool hasGroupLabel = gLabel.isNotEmpty;
       final bool hasConnector = group.connector != SystemConnector.none;
-      final double gWidthMm = hasGroupLabel
+      final bool isAboveStaff =
+          group.labelPlacement == GroupLabelPlacement.aboveStaff;
+      final double gWidthMm = (hasGroupLabel && !isAboveStaff)
           ? estimateLabelWidthMm(gLabel, fontSizePt: 11.0, isGroup: true)
           : 0.0;
 
@@ -308,12 +478,13 @@ PageLayout computeLayout(PageConfig config) {
           if (s < staves.length) {
             final def = staves[s].definition;
             if (def != null && def.labelVisible) {
-              final sLabel = isFirstSystem
-                  ? (def.instrumentName ?? '')
-                  : ((def.instrumentAbbreviation != null &&
-                          def.instrumentAbbreviation!.trim().isNotEmpty)
-                      ? def.instrumentAbbreviation!
-                      : (def.instrumentName ?? ''));
+              final sLabel = staves[s].resolvedLabel ??
+                  (isFirstSystem
+                      ? (def.instrumentName ?? '')
+                      : ((def.instrumentAbbreviation != null &&
+                              def.instrumentAbbreviation!.trim().isNotEmpty)
+                          ? def.instrumentAbbreviation!
+                          : (def.instrumentName ?? '')));
               if (sLabel.trim().isNotEmpty) {
                 final w = estimateLabelWidthMm(sLabel,
                     fontSizePt: def.labelFontSize);
@@ -394,7 +565,8 @@ PageLayout computeLayout(PageConfig config) {
     // its label sits further to the left outside the child group labels.
     for (final idx in groupIndicesByLevel) {
       final g = updatedPlacements[idx];
-      if (g.groupLabelWidthMm == 0.0) {
+      if (g.groupLabelWidthMm == 0.0 ||
+          g.labelPlacement == GroupLabelPlacement.aboveStaff) {
         updatedPlacements[idx] = g.copyWith(labelOffsetMm: 0.0);
         continue;
       }
@@ -471,12 +643,13 @@ PageLayout computeLayout(PageConfig config) {
     for (int s = 0; s < staves.length; s++) {
       final def = staves[s].definition;
       if (def != null && def.labelVisible) {
-        final sLabel = isFirstSystem
-            ? (def.instrumentName ?? '')
-            : ((def.instrumentAbbreviation != null &&
-                    def.instrumentAbbreviation!.trim().isNotEmpty)
-                ? def.instrumentAbbreviation!
-                : (def.instrumentName ?? ''));
+        final sLabel = staves[s].resolvedLabel ??
+            (isFirstSystem
+                ? (def.instrumentName ?? '')
+                : ((def.instrumentAbbreviation != null &&
+                        def.instrumentAbbreviation!.trim().isNotEmpty)
+                    ? def.instrumentAbbreviation!
+                    : (def.instrumentName ?? '')));
         if (sLabel.trim().isNotEmpty) {
           final w = estimateLabelWidthMm(sLabel, fontSizePt: def.labelFontSize);
           if (!innerStaffIndices.contains(s)) {

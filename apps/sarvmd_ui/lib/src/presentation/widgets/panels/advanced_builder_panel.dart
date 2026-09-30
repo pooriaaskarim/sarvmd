@@ -890,11 +890,25 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                     title: 'Edit Group Label',
                     initialName: widget.group.label,
                     initialAbbreviation: widget.group.abbreviation,
+                    initialLabelPlacement: widget.group.labelPlacement,
+                    initialNumberingStyle: widget.group.numberingStyle,
                     childStaves: widget.group.allStaves,
                     onAutoNumberChildStaves: () {
                       final childUids =
                           widget.group.allStaves.map((s) => s.uid).toList();
                       widget.notifier.batchRenumberStaves(childUids);
+                    },
+                    onSaveGroup: (name, abbrev, placement, numberingStyle) {
+                      setState(() {
+                        _isEditingName = false;
+                      });
+                      widget.notifier.updateGroupDetails(
+                        groupHash: widget.group.hashCode,
+                        label: name,
+                        abbreviation: abbrev,
+                        labelPlacement: placement,
+                        numberingStyle: numberingStyle,
+                      );
                     },
                     onSave: (name, abbrev) {
                       setState(() {
@@ -2639,6 +2653,9 @@ class _QuickLabelingCard extends StatefulWidget {
     required this.onCancel,
     this.childStaves,
     this.onAutoNumberChildStaves,
+    this.initialLabelPlacement,
+    this.initialNumberingStyle,
+    this.onSaveGroup,
   });
 
   final String title;
@@ -2648,6 +2665,14 @@ class _QuickLabelingCard extends StatefulWidget {
   final VoidCallback onCancel;
   final List<core.StaffDefinition>? childStaves;
   final VoidCallback? onAutoNumberChildStaves;
+  final core.GroupLabelPlacement? initialLabelPlacement;
+  final core.GroupNumberingStyle? initialNumberingStyle;
+  final void Function(
+    String name,
+    String abbreviation,
+    core.GroupLabelPlacement labelPlacement,
+    core.GroupNumberingStyle numberingStyle,
+  )? onSaveGroup;
 
   @override
   State<_QuickLabelingCard> createState() => _QuickLabelingCardState();
@@ -2658,6 +2683,8 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
   late TextEditingController _abbrevController;
   late FocusNode _nameFocusNode;
   late FocusNode _abbrevFocusNode;
+  late core.GroupLabelPlacement _labelPlacement;
+  late core.GroupNumberingStyle _numberingStyle;
   String _suggestedAbbrev = '';
   bool _submitted = false;
   bool _hasAutoNumbered = false;
@@ -2669,6 +2696,10 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
     _abbrevController = TextEditingController(text: widget.initialAbbreviation);
     _nameFocusNode = FocusNode();
     _abbrevFocusNode = FocusNode();
+    _labelPlacement =
+        widget.initialLabelPlacement ?? core.GroupLabelPlacement.margin;
+    _numberingStyle =
+        widget.initialNumberingStyle ?? core.GroupNumberingStyle.none;
 
     _updateSuggestion(_nameController.text);
 
@@ -2715,7 +2746,11 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
     if (abbrev.isEmpty && _suggestedAbbrev.isNotEmpty) {
       abbrev = _suggestedAbbrev;
     }
-    widget.onSave(name, abbrev);
+    if (widget.onSaveGroup != null) {
+      widget.onSaveGroup!(name, abbrev, _labelPlacement, _numberingStyle);
+    } else {
+      widget.onSave(name, abbrev);
+    }
   }
 
   void _cancel() {
@@ -3006,6 +3041,184 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                     );
                   },
                 ),
+                if (widget.initialLabelPlacement != null ||
+                    widget.onSaveGroup != null) ...[
+                  const SizedBox(height: 12),
+                  // Placement Control (Model C)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.vertical_align_top_rounded,
+                              size: 13, color: cs.primary),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Group Label Placement',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<core.GroupLabelPlacement>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment(
+                              value: core.GroupLabelPlacement.margin,
+                              label: Text('Margin (Left)',
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                            ButtonSegment(
+                              value: core.GroupLabelPlacement.aboveStaff,
+                              label: Text('Above Staff (Header)',
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                          selected: {_labelPlacement},
+                          onSelectionChanged: (set) {
+                            setState(() {
+                              _labelPlacement = set.first;
+                            });
+                          },
+                          style: SegmentedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                      if (_labelPlacement ==
+                          core.GroupLabelPlacement.aboveStaff) ...[
+                        const SizedBox(height: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: cs.tertiaryContainer.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: cs.tertiary.withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.bolt, size: 12, color: cs.tertiary),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  'Model C: Header above staff eliminates left margin waste, saving 25–35mm printable score width.',
+                                  style: TextStyle(
+                                      fontSize: 9.5,
+                                      color: cs.onTertiaryContainer),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Numbering Style Control (Model B)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.format_list_numbered_rounded,
+                              size: 13, color: cs.primary),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Child Staff Numbering',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<core.GroupNumberingStyle>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment(
+                              value: core.GroupNumberingStyle.none,
+                              label: Text('None',
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                            ButtonSegment(
+                              value: core.GroupNumberingStyle.arabic,
+                              label: Text('Arabic (1, 2)',
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                            ButtonSegment(
+                              value: core.GroupNumberingStyle.roman,
+                              label: Text('Roman (I, II)',
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                          selected: {_numberingStyle},
+                          onSelectionChanged: (set) {
+                            setState(() {
+                              _numberingStyle = set.first;
+                            });
+                          },
+                          style: SegmentedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                      if (_numberingStyle !=
+                          core.GroupNumberingStyle.none) ...[
+                        const SizedBox(height: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                cs.secondaryContainer.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: cs.secondary.withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle_outline,
+                                  size: 12, color: cs.secondary),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  'Model B: Auto-numbers child staves with compact numerals (~2.8mm), pulling sub-bracket flush to staves.',
+                                  style: TextStyle(
+                                      fontSize: 9.5,
+                                      color: cs.onSecondaryContainer),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
                 if (widget.childStaves != null &&
                     widget.childStaves!.length >= 2) ...[
                   const SizedBox(height: 10),

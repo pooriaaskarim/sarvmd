@@ -51,6 +51,77 @@ enum SystemConnector {
 /// Style of barlines drawn through or between staves.
 enum BarlineStyle { standard, dashed, none }
 
+/// Placement of a group label relative to the score system.
+enum GroupLabelPlacement {
+  /// Standard engraving: vertically centered in the left margin outside bracket(s).
+  margin,
+
+  /// MOLA / Modern orchestral score: placed as a bold section header above the topmost staff of the group.
+  aboveStaff;
+
+  String get label => switch (this) {
+        GroupLabelPlacement.margin => 'Margin (Left)',
+        GroupLabelPlacement.aboveStaff => 'Above Staff (Header)',
+      };
+}
+
+/// Automatic numbering scheme for child staves within a group.
+enum GroupNumberingStyle {
+  /// No automatic numbering; uses explicit staff instrument names.
+  none,
+
+  /// Inner staves automatically numbered with Arabic numerals (1, 2, 3, ...).
+  arabic,
+
+  /// Inner staves automatically numbered with Roman numerals (I, II, III, IV, ...).
+  roman;
+
+  String get label => switch (this) {
+        GroupNumberingStyle.none => 'None',
+        GroupNumberingStyle.arabic => 'Arabic (1, 2)',
+        GroupNumberingStyle.roman => 'Roman (I, II)',
+      };
+}
+
+/// Formats a 0-based staff index inside a group according to [style].
+String formatGroupStaffNumber(int index, GroupNumberingStyle style) {
+  final num = index + 1;
+  return switch (style) {
+    GroupNumberingStyle.none => '',
+    GroupNumberingStyle.arabic => '$num',
+    GroupNumberingStyle.roman => toRomanNumeral(num),
+  };
+}
+
+/// Converts a positive integer [number] to Roman numerals (e.g. 1 -> I, 4 -> IV).
+String toRomanNumeral(int number) {
+  if (number <= 0) return '$number';
+  const romanLookup = [
+    (1000, 'M'),
+    (900, 'CM'),
+    (500, 'D'),
+    (400, 'CD'),
+    (100, 'C'),
+    (90, 'XC'),
+    (50, 'L'),
+    (40, 'XL'),
+    (10, 'X'),
+    (9, 'IX'),
+    (5, 'V'),
+    (4, 'IV'),
+    (1, 'I'),
+  ];
+  var result = '';
+  var rem = number;
+  for (final pair in romanLookup) {
+    while (rem >= pair.$1) {
+      result += pair.$2;
+      rem -= pair.$1;
+    }
+  }
+  return result;
+}
+
 /// Sealed base class representing a node in the staff layout hierarchy tree.
 sealed class StaffNode {
   const StaffNode();
@@ -230,6 +301,8 @@ class StaffNodeGroup extends StaffNode {
     this.label = '',
     this.abbreviation = '',
     this.labelVisible = true,
+    this.labelPlacement = GroupLabelPlacement.margin,
+    this.numberingStyle = GroupNumberingStyle.none,
   });
 
   final SystemConnector connector;
@@ -241,6 +314,8 @@ class StaffNodeGroup extends StaffNode {
   final String label;
   final String abbreviation;
   final bool labelVisible;
+  final GroupLabelPlacement labelPlacement;
+  final GroupNumberingStyle numberingStyle;
 
   StaffNodeGroup copyWith({
     SystemConnector? connector,
@@ -250,6 +325,8 @@ class StaffNodeGroup extends StaffNode {
     String? label,
     String? abbreviation,
     bool? labelVisible,
+    GroupLabelPlacement? labelPlacement,
+    GroupNumberingStyle? numberingStyle,
   }) =>
       StaffNodeGroup(
         connector: connector ?? this.connector,
@@ -259,6 +336,8 @@ class StaffNodeGroup extends StaffNode {
         label: label ?? this.label,
         abbreviation: abbreviation ?? this.abbreviation,
         labelVisible: labelVisible ?? this.labelVisible,
+        labelPlacement: labelPlacement ?? this.labelPlacement,
+        numberingStyle: numberingStyle ?? this.numberingStyle,
       );
 
   @override
@@ -278,6 +357,8 @@ class StaffNodeGroup extends StaffNode {
         'label': label,
         'abbreviation': abbreviation,
         'labelVisible': labelVisible,
+        'labelPlacement': labelPlacement.name,
+        'numberingStyle': numberingStyle.name,
       };
 
   factory StaffNodeGroup.fromJson(Map<String, dynamic> json) {
@@ -295,6 +376,14 @@ class StaffNodeGroup extends StaffNode {
       label: data['label'] as String? ?? '',
       abbreviation: data['abbreviation'] as String? ?? '',
       labelVisible: data['labelVisible'] as bool? ?? true,
+      labelPlacement: data['labelPlacement'] != null
+          ? GroupLabelPlacement.values
+              .byName(data['labelPlacement'] as String)
+          : GroupLabelPlacement.margin,
+      numberingStyle: data['numberingStyle'] != null
+          ? GroupNumberingStyle.values
+              .byName(data['numberingStyle'] as String)
+          : GroupNumberingStyle.none,
     );
   }
 
@@ -309,6 +398,8 @@ class StaffNodeGroup extends StaffNode {
         label != other.label ||
         abbreviation != other.abbreviation ||
         labelVisible != other.labelVisible ||
+        labelPlacement != other.labelPlacement ||
+        numberingStyle != other.numberingStyle ||
         children.length != other.children.length) {
       return false;
     }
@@ -327,6 +418,8 @@ class StaffNodeGroup extends StaffNode {
         label,
         abbreviation,
         labelVisible,
+        labelPlacement,
+        numberingStyle,
       );
 }
 
@@ -380,6 +473,8 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     String? label,
     String? abbreviation,
     bool? labelVisible,
+    GroupLabelPlacement? labelPlacement,
+    GroupNumberingStyle? numberingStyle,
   }) {
     if (identical(this, targetGroup) || hashCode == targetGroup.hashCode) {
       return copyWith(
@@ -388,6 +483,8 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
         label: label ?? this.label,
         abbreviation: abbreviation ?? this.abbreviation,
         labelVisible: labelVisible ?? this.labelVisible,
+        labelPlacement: labelPlacement ?? this.labelPlacement,
+        numberingStyle: numberingStyle ?? this.numberingStyle,
       );
     }
     return copyWith(
@@ -400,6 +497,8 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
             label: label,
             abbreviation: abbreviation,
             labelVisible: labelVisible,
+            labelPlacement: labelPlacement,
+            numberingStyle: numberingStyle,
           );
         }
         return child;

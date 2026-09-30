@@ -185,7 +185,7 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
     final staffLeftMm = config.margins.left + system.leftIndentMm;
     final bool isFirstSystem = sysIdx == 0;
 
-    // 1. Group labels (Outer tier)
+    // 1. Group labels (Outer tier or section header above staff)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
       final String label = isFirstSystem
@@ -201,22 +201,35 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
       final midY = (topY + bottomY) / 2.0;
 
-      final double labelOffset = group.labelOffsetMm > 0.0
-          ? group.labelOffsetMm
-          : group.connectorOffsetMm +
-              GroupPlacementMetrics.groupLabelClearanceMm;
-      final double labelX = staffLeftMm - labelOffset;
+      if (group.labelPlacement == GroupLabelPlacement.aboveStaff) {
+        final styledText = _formatLatexLabel(
+          label,
+          isBold: true,
+          isItalic: false,
+          fontPt: 10.0,
+        );
 
-      final styledText = _formatLatexLabel(
-        label,
-        isBold: true,
-        isItalic: false,
-        fontPt: 11.0,
-      );
+        textBuf.writeln(
+          '  \\put(${_f(staffLeftMm)}, -${_f(topY - 2.5)}){\\makebox(0,0)[bl]{$styledText}}%',
+        );
+      } else {
+        final double labelOffset = group.labelOffsetMm > 0.0
+            ? group.labelOffsetMm
+            : group.connectorOffsetMm +
+                GroupPlacementMetrics.groupLabelClearanceMm;
+        final double labelX = staffLeftMm - labelOffset;
 
-      textBuf.writeln(
-        '  \\put(${_f(labelX)}, -${_f(midY)}){\\makebox(0,0)[r]{$styledText}}%',
-      );
+        final styledText = _formatLatexLabel(
+          label,
+          isBold: true,
+          isItalic: false,
+          fontPt: 11.0,
+        );
+
+        textBuf.writeln(
+          '  \\put(${_f(labelX)}, -${_f(midY)}){\\makebox(0,0)[r]{$styledText}}%',
+        );
+      }
     }
 
     // 2. Identify which staves sit inside a displaced connector (offset > 0)
@@ -235,12 +248,13 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
       final staff = system.staves[sIdx];
       final def = staff.definition;
       if (def != null && def.labelVisible) {
-        final String? label = isFirstSystem
-            ? def.instrumentName
-            : ((def.instrumentAbbreviation != null &&
-                    def.instrumentAbbreviation!.trim().isNotEmpty)
-                ? def.instrumentAbbreviation
-                : def.instrumentName);
+        final String? label = staff.resolvedLabel ??
+            (isFirstSystem
+                ? def.instrumentName
+                : ((def.instrumentAbbreviation != null &&
+                        def.instrumentAbbreviation!.trim().isNotEmpty)
+                    ? def.instrumentAbbreviation
+                    : def.instrumentName));
 
         if (label != null && label.trim().isNotEmpty) {
           final double labelX;
@@ -318,7 +332,10 @@ String _escapeLatex(String text) {
       .replaceAll('#', r'\#')
       .replaceAll('_', r'\_')
       .replaceAll('~', r'\textasciitilde{}')
-      .replaceAll('^', r'\textasciicircum{}');
+      .replaceAll('^', r'\textasciicircum{}')
+      .replaceAll('♭', r'$\flat$')
+      .replaceAll('♯', r'$\sharp$')
+      .replaceAll('♮', r'$\natural$');
 }
 
 String _formatLatexLabel(

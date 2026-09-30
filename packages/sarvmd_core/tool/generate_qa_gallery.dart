@@ -412,6 +412,100 @@ void main(List<String> args) async {
     );
   }
 
+  // 1.10 Model B: Centered Group Label with Roman & Arabic Inner Numerals
+  {
+    final ob1 = const StaffDefinition(uid: 'ob1', instrumentName: 'Oboe');
+    final ob2 = const StaffDefinition(uid: 'ob2', instrumentName: 'Oboe');
+    final oboes = StaffNodeGroup(
+      connector: SystemConnector.subBracket,
+      label: 'Oboes',
+      abbreviation: 'Ob.',
+      numberingStyle: GroupNumberingStyle.arabic,
+      children: [ob1, ob2],
+    );
+
+    final cl1 = const StaffDefinition(uid: 'cl1', instrumentName: 'Clarinet');
+    final cl2 = const StaffDefinition(uid: 'cl2', instrumentName: 'Clarinet');
+    final clarinets = StaffNodeGroup(
+      connector: SystemConnector.subBracket,
+      label: 'Clarinets in B♭',
+      abbreviation: 'Cl. (B♭)',
+      numberingStyle: GroupNumberingStyle.roman,
+      children: [cl1, cl2],
+    );
+
+    final woodwinds = StaffNodeGroup(
+      connector: SystemConnector.bracket,
+      label: 'Woodwinds',
+      abbreviation: 'W.W.',
+      children: [oboes, clarinets],
+    );
+
+    final config = PageConfig(systemLayout: SystemLayout(rootGroup: woodwinds));
+    final layout = computeLayout(config);
+    final svg = ScoreCompiler.compileToSvg(config, layout);
+    final pdf = await ScoreCompiler.compileToPdf(config, layout);
+
+    await saveArtifacts(
+      id: 'hierarchical_model_b_numbering',
+      title: 'Model B: Centered Group Label + Arabic/Roman Inner Numerals',
+      category: 'hierarchical',
+      categoryLabel: 'Hierarchical Labeling',
+      description: 'Model B auto-numbers homogeneous staves (1, 2 for Oboes; I, II for Clarinets) while keeping group brackets flush. Inner descriptor margin is minimized to ~2.6mm.',
+      standardsNote: 'Gould (p. 515): Like instruments in an ensemble share centered group label while staves receive compact numbers.',
+      config: config,
+      layout: layout,
+      svgContent: svg,
+      pdfBytes: pdf,
+    );
+  }
+
+  // 1.11 Model C: Section Headers Above Staves (Zero Indent Expansion)
+  {
+    final fl1 = const StaffDefinition(uid: 'fl1', instrumentName: '1', instrumentAbbreviation: '1');
+    final fl2 = const StaffDefinition(uid: 'fl2', instrumentName: '2', instrumentAbbreviation: '2');
+    final flutes = StaffNodeGroup(
+      connector: SystemConnector.subBracket,
+      label: 'Flutes',
+      abbreviation: 'Fl.',
+      children: [fl1, fl2],
+    );
+
+    final ob1 = const StaffDefinition(uid: 'ob1', instrumentName: '1', instrumentAbbreviation: '1');
+    final ob2 = const StaffDefinition(uid: 'ob2', instrumentName: '2', instrumentAbbreviation: '2');
+    final oboes = StaffNodeGroup(
+      connector: SystemConnector.subBracket,
+      label: 'Oboes',
+      abbreviation: 'Ob.',
+      children: [ob1, ob2],
+    );
+
+    final woodwinds = StaffNodeGroup(
+      connector: SystemConnector.bracket,
+      label: 'WOODWINDS',
+      labelPlacement: GroupLabelPlacement.aboveStaff,
+      children: [flutes, oboes],
+    );
+
+    final config = PageConfig(systemLayout: SystemLayout(rootGroup: woodwinds));
+    final layout = computeLayout(config);
+    final svg = ScoreCompiler.compileToSvg(config, layout);
+    final pdf = await ScoreCompiler.compileToPdf(config, layout);
+
+    await saveArtifacts(
+      id: 'hierarchical_model_c_above_staff',
+      title: 'Model C: Section Header Above Staff (Zero Margin Expansion)',
+      category: 'hierarchical',
+      categoryLabel: 'Hierarchical Labeling',
+      description: 'Section header "WOODWINDS" is rendered directly above the top staff of the section, freeing 25mm–35mm of horizontal margin space on the page.',
+      standardsNote: 'Gardner Read (p. 444): Section titles can be placed above the topmost staff of the group to avoid consuming excessive left margin.',
+      config: config,
+      layout: layout,
+      svgContent: svg,
+      pdfBytes: pdf,
+    );
+  }
+
   // =========================================================================
   // 2. ALL 14 BUILT-IN PRESETS (Blank Manuscript Layouts)
   // =========================================================================
