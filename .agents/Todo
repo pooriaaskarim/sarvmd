@@ -80,6 +80,7 @@
     [x] Built "The Section Spine" (`SectionSpine`): unified scroll rail with section anchor beads, slender constant rail with bulked grab handle on hover, translucent hit testing, state-aware height priors for unmounted slivers, and click-to-jump-and-expand navigation
     [x] Wrapped root app layout in `PageStorage` bucket and assigned persistent `PageStorageKey`s to pointer and touch panel scroll views
     [x] Synchronized `SystemHierarchyPanel` group expansion/selection state with `ViewCubit` while retaining standalone fallback
+    [x] Stabilized `SectionSpine` scroll & jump state: decoupled viewport scrolling from section expansion mutations (scrolling preserves collapsed state) while custom scrollbar bead clicks smoothly expand and jump to target section
     [x] Documented architectural guidelines in `.agents/knowledge/ui_state_preservation_and_panel_architecture.md` and added comprehensive unit and widget tests
 14. [x] there is a problem with removing grouped staff lines from the top bar, I tried it once and it caused the entire group to be deleted.
     [x] Replaced root-index removal with UID-targeted staff removal (`removeStaffByUid`) in desktop Edit menu and compact menu
