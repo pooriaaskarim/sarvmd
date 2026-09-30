@@ -770,6 +770,60 @@ void main() {
           reason: 'LaTeX above-staff header must only appear on System 1');
     });
 
+    test('GroupHeaderVisibility controls header lifecycle across systems and pages', () {
+      final s1 = StaffDefinition(uid: 's1', instrumentName: 'Violin I');
+      final s2 = StaffDefinition(uid: 's2', instrumentName: 'Violin II');
+
+      PageConfig makeConfig(GroupHeaderVisibility visibility) => PageConfig(
+            systemLayout: SystemLayout(
+              rootGroup: StaffNodeGroup(
+                label: 'VIOLINS',
+                labelPlacement: GroupLabelPlacement.aboveStaff,
+                headerVisibility: visibility,
+                children: [s1, s2],
+              ),
+            ),
+            pageSize: PageSize.a4,
+            orientation: PageOrientation.portrait,
+          );
+
+      // 1. firstSystemOnly
+      final cfgFirstOnly = makeConfig(GroupHeaderVisibility.firstSystemOnly);
+      final layoutPage0 = computeLayout(cfgFirstOnly, pageIndex: 0);
+      final layoutPage1 = computeLayout(cfgFirstOnly, pageIndex: 1);
+
+      expect(layoutPage0.systems.length, greaterThanOrEqualTo(2));
+      expect(layoutPage0.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage0.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+      expect(layoutPage1.systems[0].groupPlacements.first.isAboveStaffVisible, isFalse);
+      expect(layoutPage1.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+
+      // 2. firstSystemOfPage
+      final cfgPageTop = makeConfig(GroupHeaderVisibility.firstSystemOfPage);
+      final layoutPage0Top = computeLayout(cfgPageTop, pageIndex: 0);
+      final layoutPage1Top = computeLayout(cfgPageTop, pageIndex: 1);
+
+      expect(layoutPage0Top.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage0Top.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+      expect(layoutPage1Top.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage1Top.systems[1].groupPlacements.first.isAboveStaffVisible, isFalse);
+
+      // 3. always
+      final cfgAlways = makeConfig(GroupHeaderVisibility.always);
+      final layoutPage0Always = computeLayout(cfgAlways, pageIndex: 0);
+      final layoutPage1Always = computeLayout(cfgAlways, pageIndex: 1);
+
+      expect(layoutPage0Always.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage0Always.systems[1].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage1Always.systems[0].groupPlacements.first.isAboveStaffVisible, isTrue);
+      expect(layoutPage1Always.systems[1].groupPlacements.first.isAboveStaffVisible, isTrue);
+
+      // Verify SVG emitter with 'always' outputs VIOLINS on every system of the page
+      final svgAlways = ScoreCompiler.compileToSvg(cfgAlways, layoutPage0Always);
+      final countAlways = RegExp(r'>VIOLINS<').allMatches(svgAlways).length;
+      expect(countAlways, equals(layoutPage0Always.systems.length));
+    });
+
     test('StaffLabelStyle bold and upright styling propagates to emitters', () {
       final soloVln = StaffDefinition(
         uid: 'solo',

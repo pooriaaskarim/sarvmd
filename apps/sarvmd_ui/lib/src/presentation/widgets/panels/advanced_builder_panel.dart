@@ -893,13 +893,14 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                     initialLabelPlacement: widget.group.labelPlacement,
                     initialNumberingStyle: widget.group.numberingStyle,
                     initialDescriptorPlacement: widget.group.descriptorPlacement,
+                    initialHeaderVisibility: widget.group.headerVisibility,
                     childStaves: widget.group.allStaves,
                     onAutoNumberChildStaves: () {
                       final childUids =
                           widget.group.allStaves.map((s) => s.uid).toList();
                       widget.notifier.batchRenumberStaves(childUids);
                     },
-                    onSaveGroup: (name, abbrev, placement, numberingStyle, descriptorPlacement) {
+                    onSaveGroup: (name, abbrev, placement, numberingStyle, descriptorPlacement, headerVisibility) {
                       setState(() {
                         _isEditingName = false;
                       });
@@ -910,6 +911,7 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         labelPlacement: placement,
                         numberingStyle: numberingStyle,
                         descriptorPlacement: descriptorPlacement,
+                        headerVisibility: headerVisibility,
                       );
                     },
                     onSave: (name, abbrev) {
@@ -1932,6 +1934,13 @@ class _StaffItemState extends State<_StaffItem> {
                     initialName: widget.staff.instrumentName ?? '',
                     initialAbbreviation:
                         widget.staff.instrumentAbbreviation ?? '',
+                    initialLabelStyle: widget.staff.labelStyle,
+                    onSaveStaffStyle: (style) {
+                      widget.notifier.updateStaffConfigDetails(
+                        widget.staff.uid,
+                        labelStyle: style,
+                      );
+                    },
                     onSave: (name, abbrev) {
                       setState(() {
                         _isEditingName = false;
@@ -1987,6 +1996,26 @@ class _StaffItemState extends State<_StaffItem> {
                                     ),
                                   ),
                                 ),
+                                if (widget.staff.labelVisible &&
+                                    (widget.staff.instrumentAbbreviation ==
+                                            null ||
+                                        widget.staff.instrumentAbbreviation!
+                                            .trim()
+                                            .isEmpty)) ...[
+                                  const SizedBox(width: 4),
+                                  Tooltip(
+                                    message:
+                                        'Missing abbreviation (subsequent systems will fall back to full name)',
+                                    child: Container(
+                                      width: 7,
+                                      height: 7,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.amber,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(width: 4),
                                 IconButton(
                                   onPressed: _startEditingName,
@@ -2364,6 +2393,33 @@ class _StaffItemState extends State<_StaffItem> {
                                     child: _buildBadge(context, l10n.hidden,
                                         color: cs.error),
                                   ),
+
+                                // P5.2 Resolved Engraving Label Preview Chip
+                                Builder(
+                                  builder: (context) {
+                                    final resolvedPos = widget
+                                        .notifier.layout.systems.firstOrNull?.staves
+                                        .where((s) =>
+                                            s.definition?.uid ==
+                                            widget.staff.uid)
+                                        .firstOrNull;
+                                    final resolved = resolvedPos?.resolvedLabel;
+                                    if (resolved == null ||
+                                        resolved.isEmpty ||
+                                        resolved == labelText) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Tooltip(
+                                      message:
+                                          'Resolved Engraving Label: "$resolved"',
+                                      child: _buildBadge(
+                                        context,
+                                        'Label: $resolved',
+                                        color: cs.secondary,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ],
@@ -2658,7 +2714,10 @@ class _QuickLabelingCard extends StatefulWidget {
     this.initialLabelPlacement,
     this.initialNumberingStyle,
     this.initialDescriptorPlacement,
+    this.initialHeaderVisibility,
+    this.initialLabelStyle,
     this.onSaveGroup,
+    this.onSaveStaffStyle,
   });
 
   final String title;
@@ -2671,12 +2730,16 @@ class _QuickLabelingCard extends StatefulWidget {
   final core.GroupLabelPlacement? initialLabelPlacement;
   final core.GroupNumberingStyle? initialNumberingStyle;
   final core.DescriptorPlacement? initialDescriptorPlacement;
+  final core.GroupHeaderVisibility? initialHeaderVisibility;
+  final core.StaffLabelStyle? initialLabelStyle;
+  final void Function(core.StaffLabelStyle style)? onSaveStaffStyle;
   final void Function(
     String name,
     String abbreviation,
     core.GroupLabelPlacement labelPlacement,
     core.GroupNumberingStyle numberingStyle,
     core.DescriptorPlacement descriptorPlacement,
+    core.GroupHeaderVisibility headerVisibility,
   )? onSaveGroup;
 
   @override
@@ -2691,6 +2754,8 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
   late core.GroupLabelPlacement _labelPlacement;
   late core.GroupNumberingStyle _numberingStyle;
   late core.DescriptorPlacement _descriptorPlacement;
+  late core.GroupHeaderVisibility _headerVisibility;
+  core.StaffLabelStyle? _staffStyle;
   String _suggestedAbbrev = '';
   bool _submitted = false;
   bool _hasAutoNumbered = false;
@@ -2708,6 +2773,9 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
         widget.initialNumberingStyle ?? core.GroupNumberingStyle.none;
     _descriptorPlacement = widget.initialDescriptorPlacement ??
         core.DescriptorPlacement.enclosedByConnector;
+    _headerVisibility = widget.initialHeaderVisibility ??
+        core.GroupHeaderVisibility.firstSystemOnly;
+    _staffStyle = widget.initialLabelStyle;
 
     _updateSuggestion(_nameController.text);
 
@@ -2761,9 +2829,13 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
         _labelPlacement,
         _numberingStyle,
         _descriptorPlacement,
+        _headerVisibility,
       );
     } else {
       widget.onSave(name, abbrev);
+      if (widget.onSaveStaffStyle != null && _staffStyle != null) {
+        widget.onSaveStaffStyle!(_staffStyle!);
+      }
     }
   }
 
@@ -3137,6 +3209,77 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        // Header Visibility Control
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.visibility_outlined,
+                                    size: 13, color: cs.primary),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Header Visibility',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              width: double.infinity,
+                              child: SegmentedButton<core.GroupHeaderVisibility>(
+                                showSelectedIcon: false,
+                                segments: const [
+                                  ButtonSegment(
+                                    value: core.GroupHeaderVisibility.firstSystemOnly,
+                                    label: Text('1st System',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600)),
+                                  ),
+                                  ButtonSegment(
+                                    value: core.GroupHeaderVisibility.firstSystemOfPage,
+                                    label: Text('Top of Page',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600)),
+                                  ),
+                                  ButtonSegment(
+                                    value: core.GroupHeaderVisibility.always,
+                                    label: Text('All Systems',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600)),
+                                  ),
+                                ],
+                                selected: {_headerVisibility},
+                                onSelectionChanged: (set) {
+                                  setState(() {
+                                    _headerVisibility = set.first;
+                                  });
+                                },
+                                style: SegmentedButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _headerVisibility.description,
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontStyle: FontStyle.italic,
+                                color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ],
                   ),
@@ -3403,6 +3546,118 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                ],
+                if (widget.initialLabelStyle != null && _staffStyle != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: cs.outlineVariant.withValues(alpha: 0.3),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.text_fields_rounded, size: 13, color: cs.primary),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Style',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(
+                            Icons.format_italic,
+                            size: 15,
+                            color: _staffStyle!.isItalic ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                          isSelected: _staffStyle!.isItalic,
+                          onPressed: () => setState(() => _staffStyle = _staffStyle!.copyWith(isItalic: !_staffStyle!.isItalic)),
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Italic',
+                          style: IconButton.styleFrom(
+                            backgroundColor: _staffStyle!.isItalic ? cs.primaryContainer.withValues(alpha: 0.5) : null,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: Icon(
+                            Icons.format_bold,
+                            size: 15,
+                            color: _staffStyle!.isBold ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                          isSelected: _staffStyle!.isBold,
+                          onPressed: () => setState(() => _staffStyle = _staffStyle!.copyWith(isBold: !_staffStyle!.isBold)),
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Bold',
+                          style: IconButton.styleFrom(
+                            backgroundColor: _staffStyle!.isBold ? cs.primaryContainer.withValues(alpha: 0.5) : null,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        InkWell(
+                          onTap: () => setState(() {
+                            final next = _staffStyle!.fontFamily == 'serif' ? 'sans' : 'serif';
+                            _staffStyle = _staffStyle!.copyWith(fontFamily: next);
+                          }),
+                          borderRadius: BorderRadius.circular(4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              _staffStyle!.fontFamily == 'serif' ? 'Serif' : 'Sans',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.remove, size: 12),
+                          onPressed: _staffStyle!.fontSizePt > 7
+                              ? () => setState(() => _staffStyle = _staffStyle!.copyWith(fontSizePt: _staffStyle!.fontSizePt - 0.5))
+                              : null,
+                          constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Smaller Font',
+                        ),
+                        Text(
+                          '${_staffStyle!.fontSizePt.toStringAsFixed(1)} pt',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, size: 12),
+                          onPressed: _staffStyle!.fontSizePt < 22
+                              ? () => setState(() => _staffStyle = _staffStyle!.copyWith(fontSizePt: _staffStyle!.fontSizePt + 0.5))
+                              : null,
+                          constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Larger Font',
+                        ),
+                      ],
                     ),
                   ),
                 ],

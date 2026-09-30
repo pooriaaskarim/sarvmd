@@ -76,6 +76,8 @@ class GroupPlacement {
     this.labelPlacement = GroupLabelPlacement.margin,
     this.numberingStyle = GroupNumberingStyle.none,
     this.descriptorPlacement = DescriptorPlacement.enclosedByConnector,
+    this.headerVisibility = GroupHeaderVisibility.firstSystemOnly,
+    this.isAboveStaffVisible = false,
     this.innerStaffLabelWidthMm = 0.0,
     this.outerDescriptorWidthMm = 0.0,
     this.groupLabelWidthMm = 0.0,
@@ -119,6 +121,12 @@ class GroupPlacement {
   /// Placement of inner staff descriptors relative to the connector.
   final DescriptorPlacement descriptorPlacement;
 
+  /// Lifecycle visibility control for section headers above staves.
+  final GroupHeaderVisibility headerVisibility;
+
+  /// Whether the section header is visible on this specific system.
+  final bool isAboveStaffVisible;
+
   /// Maximum width of inner staff labels within this group (in mm).
   final double innerStaffLabelWidthMm;
 
@@ -148,6 +156,8 @@ class GroupPlacement {
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
     DescriptorPlacement? descriptorPlacement,
+    GroupHeaderVisibility? headerVisibility,
+    bool? isAboveStaffVisible,
     double? innerStaffLabelWidthMm,
     double? outerDescriptorWidthMm,
     double? groupLabelWidthMm,
@@ -167,6 +177,8 @@ class GroupPlacement {
       labelPlacement: labelPlacement ?? this.labelPlacement,
       numberingStyle: numberingStyle ?? this.numberingStyle,
       descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
+      headerVisibility: headerVisibility ?? this.headerVisibility,
+      isAboveStaffVisible: isAboveStaffVisible ?? this.isAboveStaffVisible,
       innerStaffLabelWidthMm:
           innerStaffLabelWidthMm ?? this.innerStaffLabelWidthMm,
       outerDescriptorWidthMm:
@@ -346,7 +358,7 @@ String resolveStaffLabel({
 /// Places as many systems as will fit vertically within the usable area,
 /// evenly distributing any remaining space by expanding the gap between
 /// systems.
-PageLayout computeLayout(PageConfig config) {
+PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
   final systemH = config.systemHeight;
   final usableH = config.usableHeight;
   final gap = config.staffConfig.systemGapMm;
@@ -380,6 +392,10 @@ PageLayout computeLayout(PageConfig config) {
     final systemTopY = config.margins.top + i * (systemH + adjustedGap);
     final staves = <StaffPosition>[];
     final placements = <GroupPlacement>[];
+
+    final bool isFirstSystemOfScore = pageIndex == 0 && i == 0;
+    final bool isFirstSystemOfPage = i == 0;
+    final bool isFirstSystem = isFirstSystemOfScore;
 
     double currentTopY = systemTopY;
 
@@ -435,6 +451,23 @@ PageLayout computeLayout(PageConfig config) {
             ? DescriptorPlacement.outsideConnector
             : group.descriptorPlacement;
 
+        final bool isAboveStaffVisible;
+        if (group.labelPlacement == GroupLabelPlacement.aboveStaff) {
+          switch (group.headerVisibility) {
+            case GroupHeaderVisibility.firstSystemOnly:
+              isAboveStaffVisible = isFirstSystemOfScore;
+              break;
+            case GroupHeaderVisibility.firstSystemOfPage:
+              isAboveStaffVisible = isFirstSystemOfPage;
+              break;
+            case GroupHeaderVisibility.always:
+              isAboveStaffVisible = true;
+              break;
+          }
+        } else {
+          isAboveStaffVisible = false;
+        }
+
         placements.add(GroupPlacement(
           startStaffIdx: startIdx,
           endStaffIdx: endIdx,
@@ -448,14 +481,13 @@ PageLayout computeLayout(PageConfig config) {
           labelPlacement: group.labelPlacement,
           numberingStyle: group.numberingStyle,
           descriptorPlacement: effectivePlacement,
+          headerVisibility: group.headerVisibility,
+          isAboveStaffVisible: isAboveStaffVisible,
         ));
       }
     }
 
     traverse(config.systemLayout.rootGroup);
-
-    // Implement Gould/MOLA two-tier hierarchical space-aware indentation
-    final bool isFirstSystem = i == 0;
 
     // Resolve effective staff labels for this system (Model B & Gould non-redundancy)
     for (int s = 0; s < staves.length; s++) {
@@ -477,13 +509,13 @@ PageLayout computeLayout(PageConfig config) {
     // 1. Resolve effective group labels per system
     // Gould (p. 515): Top-level / family names (e.g. Woodwinds, Strings) appear only on System 1.
     // On subsequent systems, if an explicit abbreviation exists, use it; otherwise omit family name.
-    // Above-staff headers (Model C) appear only on System 1 (Gould / MOLA standards).
+    // Above-staff headers (Model C) appear based on group.headerVisibility.
     String resolveGroupLabel(GroupPlacement g) {
       if (!g.labelVisible) return '';
       if (g.labelPlacement == GroupLabelPlacement.aboveStaff) {
-        return isFirstSystem ? g.label.trim() : '';
+        return g.isAboveStaffVisible ? g.label.trim() : '';
       }
-      if (isFirstSystem) return g.label.trim();
+      if (isFirstSystemOfScore) return g.label.trim();
       return g.abbreviation.trim();
     }
 

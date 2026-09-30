@@ -128,5 +128,15 @@
         [x] Promoted `innerStaffIndices` to `StaffSystem` property, resolving architectural gaps L3 and E2 across layout and all 4 emitters.
         [x] Added responsive UI controls in `AdvancedBuilderPanel` (`_QuickLabelingCard`) with visual helper cards.
         [x] Added unit tests, serialization tests, and 35th QA gallery scenario (`hierarchical_continental_outside`). All 95 core tests and 247 UI tests passing.
-    [ ] Phase 4: GroupHeaderVisibility Enum (Model C Lifecycle Control)
-    [ ] Phase 5: UI Maturation (Abbreviation Indicators & Resolved Label Previews)
+    [x] Phase 4: GroupHeaderVisibility Enum (Model C Lifecycle Control):
+        [x] Added `GroupHeaderVisibility` enum (`firstSystemOnly`, `firstSystemOfPage`, `always`) to `StaffNodeGroup` and `GroupPlacement`.
+        [x] Updated `computeLayout` with optional `pageIndex` parameter, cleanly decoupling score-start from page-start to support classical publishing traditions (Bärenreiter/Breitkopf section headings re-printed at the top of each page) while defaulting to Gould/MOLA first-system suppression.
+        [x] Added precomputed `isAboveStaffVisible` on `GroupPlacement` and unified all 4 emitters (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`).
+        [x] Added responsive `SegmentedButton` controls to `_QuickLabelingCard` in `AdvancedBuilderPanel` with real-time description tooltips.
+        [x] Added serialization and multi-system/multi-page lifecycle tests in `config_serialization_test.dart` and `hierarchical_labeling_test.dart`.
+    [x] Phase 5: UI Maturation (Abbreviation Indicators & Resolved Label Previews):
+        [x] Added amber dot indicator with tooltip in `_StaffRow` (`advanced_builder_panel.dart`) for staves with visible labels but missing abbreviations.
+        [x] Added `resolvedLabel` preview chip badge (`[Label: $resolved]`) in `_StaffRow` displaying dynamic hierarchical resolution (e.g. Model B automatic numbering).
+        [x] Added Quick Typography Styling Bar directly in `_QuickLabelingCard` (inline bold/italic toggles, Serif/Sans switcher, and font size adjustment) allowing immediate styling tweaks without opening the modal dialog.
+        [x] Added `bold` font weight support (`FontWeight.w800`) to `LiveStaffPreview`, `FineTuningTab`, and `StaffConfigDialog` with full English and Persian localization (`boldLabelHeader`, `boldLabelDesc`).
+        [x] Added comprehensive regression tests in `advanced_builder_panel_test.dart` validating amber dot indicators and resolved label badges.

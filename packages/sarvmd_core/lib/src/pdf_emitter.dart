@@ -146,7 +146,7 @@ void _drawStaffLabels(
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
       final String label = group.labelPlacement == GroupLabelPlacement.aboveStaff
-          ? (isFirstSystem ? group.label.trim() : '')
+          ? (group.isAboveStaffVisible ? group.label.trim() : '')
           : (isFirstSystem
               ? group.label.trim()
               : group.abbreviation.trim());

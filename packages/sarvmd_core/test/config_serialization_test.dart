@@ -167,5 +167,26 @@ void main() {
       expect(defaultRestored.descriptorPlacement,
           equals(DescriptorPlacement.enclosedByConnector));
     });
+
+    test('StaffNodeGroup serialization preserves GroupHeaderVisibility', () {
+      final group = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Woodwinds',
+        labelPlacement: GroupLabelPlacement.aboveStaff,
+        headerVisibility: GroupHeaderVisibility.firstSystemOfPage,
+      );
+
+      final json = group.toJson();
+      expect(json['headerVisibility'], equals('firstSystemOfPage'));
+
+      final restored = StaffNodeGroup.fromJson(json);
+      expect(restored.headerVisibility,
+          equals(GroupHeaderVisibility.firstSystemOfPage));
+
+      // Defaults to firstSystemOnly when key is absent
+      final defaultRestored = StaffNodeGroup.fromJson({});
+      expect(defaultRestored.headerVisibility,
+          equals(GroupHeaderVisibility.firstSystemOnly));
+    });
   });
 }

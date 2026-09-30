@@ -757,5 +757,90 @@ void main() {
       expect(find.text('Level 2'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 600));
     });
+
+    testWidgets(
+        'displays amber dot indicator when staff is visible but abbreviation is missing',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Violin I has name, ensure abbreviation is cleared
+      cubit.updateStaffConfigDetails(
+        cubit.allStaves.first.uid,
+        abbreviation: () => null,
+        visible: true,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tooltip for amber indicator must be present in the tree
+      expect(
+        find.byTooltip(
+          'Missing abbreviation (subsequent systems will fall back to full name)',
+        ),
+        findsAtLeastNWidgets(1),
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets(
+        'displays resolved label badge when inner staff receives Model B numbering',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      // Group Violin 1 & 2 under 'Violins' with Arabic numbering
+      cubit.groupTwoStavesTogether(
+        cubit.allStaves[0].uid,
+        cubit.allStaves[1].uid,
+      );
+      // Find the group
+      final group = cubit.state.config.systemLayout.rootGroup.allGroups.first;
+      cubit.updateGroupDetails(
+        groupHash: group.hashCode,
+        label: 'Violins',
+        numberingStyle: core.GroupNumberingStyle.arabic,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Staves 1 and 2 receive auto-numbering '1' and '2', distinct from their full names
+      expect(find.text('Label: 1'), findsOneWidget);
+      expect(find.text('Label: 2'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 600));
+    });
   });
 }

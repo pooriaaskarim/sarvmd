@@ -140,6 +140,33 @@ enum DescriptorPlacement {
       };
 }
 
+/// Controls lifecycle visibility for section headers positioned above staves (Model C).
+enum GroupHeaderVisibility {
+  /// Shown only on the first system of the score (Gould / MOLA default).
+  firstSystemOnly,
+
+  /// Shown on the first system of each page (Bärenreiter / classical house style).
+  firstSystemOfPage,
+
+  /// Shown on every system.
+  always;
+
+  String get label => switch (this) {
+        GroupHeaderVisibility.firstSystemOnly => 'First System Only',
+        GroupHeaderVisibility.firstSystemOfPage => 'Top of Each Page',
+        GroupHeaderVisibility.always => 'Every System',
+      };
+
+  String get description => switch (this) {
+        GroupHeaderVisibility.firstSystemOnly =>
+          'Renders section header once at the start of the score (Gould/MOLA standard).',
+        GroupHeaderVisibility.firstSystemOfPage =>
+          'Renders section header at the top of every page (Bärenreiter standard).',
+        GroupHeaderVisibility.always =>
+          'Renders section header above staves on all systems.',
+      };
+}
+
 /// Sealed base class representing a node in the staff layout hierarchy tree.
 sealed class StaffNode {
   const StaffNode();
@@ -289,6 +316,7 @@ class StaffDefinition extends StaffNode {
   String get labelFontFamily => labelStyle.fontFamily;
   double get labelFontSize => labelStyle.fontSizePt;
   bool get labelItalic => labelStyle.isItalic;
+  bool get labelBold => labelStyle.isBold;
 
   StaffDefinition copyWith({
     String? uid,
@@ -304,18 +332,21 @@ class StaffDefinition extends StaffNode {
     String? labelFontFamily,
     double? labelFontSize,
     bool? labelItalic,
+    bool? labelBold,
     BarlineStyle? barlineStyle,
   }) {
     var effectiveStyle = labelStyle ?? this.labelStyle;
     if (labelFontFamily != null ||
         labelFontSize != null ||
         labelItalic != null ||
+        labelBold != null ||
         labelHorizontalOffset != null ||
         labelVerticalOffset != null) {
       effectiveStyle = effectiveStyle.copyWith(
         fontFamily: labelFontFamily,
         fontSizePt: labelFontSize,
         isItalic: labelItalic,
+        isBold: labelBold,
         horizontalOffsetMm: labelHorizontalOffset,
         verticalOffsetMm: labelVerticalOffset,
       );
@@ -435,6 +466,7 @@ class StaffNodeGroup extends StaffNode {
     this.labelPlacement = GroupLabelPlacement.margin,
     this.numberingStyle = GroupNumberingStyle.none,
     this.descriptorPlacement = DescriptorPlacement.enclosedByConnector,
+    this.headerVisibility = GroupHeaderVisibility.firstSystemOnly,
   });
 
   final SystemConnector connector;
@@ -450,6 +482,9 @@ class StaffNodeGroup extends StaffNode {
   final GroupNumberingStyle numberingStyle;
   final DescriptorPlacement descriptorPlacement;
 
+  /// Lifecycle visibility control for above-staff headers (Model C).
+  final GroupHeaderVisibility headerVisibility;
+
   StaffNodeGroup copyWith({
     SystemConnector? connector,
     List<StaffNode>? children,
@@ -461,6 +496,7 @@ class StaffNodeGroup extends StaffNode {
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
     DescriptorPlacement? descriptorPlacement,
+    GroupHeaderVisibility? headerVisibility,
   }) =>
       StaffNodeGroup(
         connector: connector ?? this.connector,
@@ -473,6 +509,7 @@ class StaffNodeGroup extends StaffNode {
         labelPlacement: labelPlacement ?? this.labelPlacement,
         numberingStyle: numberingStyle ?? this.numberingStyle,
         descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
+        headerVisibility: headerVisibility ?? this.headerVisibility,
       );
 
   @override
@@ -495,6 +532,7 @@ class StaffNodeGroup extends StaffNode {
         'labelPlacement': labelPlacement.name,
         'numberingStyle': numberingStyle.name,
         'descriptorPlacement': descriptorPlacement.name,
+        'headerVisibility': headerVisibility.name,
       };
 
   factory StaffNodeGroup.fromJson(Map<String, dynamic> json) {
@@ -524,6 +562,10 @@ class StaffNodeGroup extends StaffNode {
           ? DescriptorPlacement.values
               .byName(data['descriptorPlacement'] as String)
           : DescriptorPlacement.enclosedByConnector,
+      headerVisibility: data['headerVisibility'] != null
+          ? GroupHeaderVisibility.values
+              .byName(data['headerVisibility'] as String)
+          : GroupHeaderVisibility.firstSystemOnly,
     );
   }
 
@@ -541,6 +583,7 @@ class StaffNodeGroup extends StaffNode {
         labelPlacement != other.labelPlacement ||
         numberingStyle != other.numberingStyle ||
         descriptorPlacement != other.descriptorPlacement ||
+        headerVisibility != other.headerVisibility ||
         children.length != other.children.length) {
       return false;
     }
@@ -562,6 +605,7 @@ class StaffNodeGroup extends StaffNode {
         labelPlacement,
         numberingStyle,
         descriptorPlacement,
+        headerVisibility,
       );
 }
 
@@ -618,6 +662,7 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
     DescriptorPlacement? descriptorPlacement,
+    GroupHeaderVisibility? headerVisibility,
   }) {
     if (identical(this, targetGroup) || hashCode == targetGroup.hashCode) {
       return copyWith(
@@ -629,6 +674,7 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
         labelPlacement: labelPlacement ?? this.labelPlacement,
         numberingStyle: numberingStyle ?? this.numberingStyle,
         descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
+        headerVisibility: headerVisibility ?? this.headerVisibility,
       );
     }
     return copyWith(
@@ -644,6 +690,7 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
             labelPlacement: labelPlacement,
             numberingStyle: numberingStyle,
             descriptorPlacement: descriptorPlacement,
+            headerVisibility: headerVisibility,
           );
         }
         return child;

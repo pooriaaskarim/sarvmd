@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **GroupHeaderVisibility Lifecycle Control (`sarvmd_core` & `sarvmd_ui`)**:
+  - Added `GroupHeaderVisibility` enum (`firstSystemOnly`, `firstSystemOfPage`, `always`) to `StaffNodeGroup` and `GroupPlacement`, controlling section header lifecycle across systems and pages for Model C above-staff labels.
+  - Decoupled score-start from page-start via optional `pageIndex` in `computeLayout`, accommodating classical European publishing traditions (Bärenreiter/Breitkopf section headers re-printed at the top of each page) while defaulting to Gould/MOLA first-system suppression.
+  - Unified cross-engine parity across all 4 emitters (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`) by consuming precomputed `group.isAboveStaffVisible`.
+  - Added responsive `SegmentedButton` controls in `_QuickLabelingCard` (`advanced_builder_panel.dart`) with dynamic description tooltips.
+- **Engraving Label UI Maturation & Feedback (`sarvmd_ui`)**:
+  - **Missing Abbreviation Amber Indicator**: Added an amber dot indicator in `_StaffRow` for staves with visible labels but missing abbreviations, alerting the engraver that subsequent systems will fall back to full instrument names.
+  - **Resolved Label Preview Chip**: Added a dynamic preview chip badge (`[Label: $resolved]`) in `_StaffRow` displaying the actual hierarchical engraving label when it differs from the user-entered display name (e.g., when Model B auto-numbering assigns *1, 2* or *I, II*).
+  - **Quick Typography Styling Bar**: Embedded an inline styling bar directly in `_QuickLabelingCard` for staves, supporting instant bold/italic toggles, Serif/Sans switching, and font size adjustments without leaving the panel.
+  - **Staff Bold Typography Support**: Added `labelBold` support to `LiveStaffPreview`, `FineTuningTab`, and `StaffConfigDialog` with full English and Persian localization (`boldLabelHeader`, `boldLabelDesc`).
 - **DescriptorPlacement (Continental vs. Anglo-American Placement Styles) (`sarvmd_core` & `sarvmd_ui`)**:
   - Added `DescriptorPlacement` enum (`enclosedByConnector`, `outsideConnector`) allowing users to choose between Anglo-American style (inner descriptors enclosed between bracket and staves) and Continental style (bracket flush against initial barline with descriptors placed outside).
   - Implemented the Universal Classical Brace Rule in `layout.dart`: braces (`{`) are universally placed flush at the starting barline (`DescriptorPlacement.outsideConnector`), preserving historical engraving invariants.

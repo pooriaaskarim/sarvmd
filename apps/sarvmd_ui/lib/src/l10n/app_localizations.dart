@@ -1382,6 +1382,18 @@ abstract class AppLocalizations {
   /// **'Use standard italics for score titles'**
   String get italicizeLabelDesc;
 
+  /// No description provided for @boldLabelHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold Label'**
+  String get boldLabelHeader;
+
+  /// No description provided for @boldLabelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use heavy weight for prominent score titles'**
+  String get boldLabelDesc;
+
   /// No description provided for @alignmentOffsetsHeader.
   ///
   /// In en, this message translates to:
