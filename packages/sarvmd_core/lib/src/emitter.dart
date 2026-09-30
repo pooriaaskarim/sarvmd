@@ -259,12 +259,13 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
                     : def.instrumentName));
 
         if (label != null && label.trim().isNotEmpty) {
+          final style = staff.resolvedLabelStyle ?? def.labelStyle;
           final double labelX;
           if (innerStaffIndices.contains(sIdx)) {
             // Inner staff label: sits right-aligned between connector and starting barline
             labelX = staffLeftMm -
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                def.labelHorizontalOffset;
+                style.horizontalOffsetMm;
           } else {
             // Standalone / Single-Tier staff: sits to the left of its connector
             double maxConnectorOffset = 0.0;
@@ -279,17 +280,17 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
             labelX = staffLeftMm -
                 maxConnectorOffset -
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                def.labelHorizontalOffset;
+                style.horizontalOffsetMm;
           }
 
           final labelY =
-              staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
+              staff.topY + (staff.height / 2.0) + style.verticalOffsetMm;
 
           final styledText = _formatLatexLabel(
             label,
-            isBold: false,
-            isItalic: def.labelItalic,
-            fontPt: def.labelFontSize,
+            isBold: style.isBold,
+            isItalic: style.isItalic,
+            fontPt: style.fontSizePt,
           );
 
           textBuf.writeln(

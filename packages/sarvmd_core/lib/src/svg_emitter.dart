@@ -276,12 +276,13 @@ void _drawStaffLabels(
                     : def.instrumentName));
 
         if (label != null && label.trim().isNotEmpty) {
+          final style = staff.resolvedLabelStyle ?? def.labelStyle;
           final double labelX;
           if (innerStaffIndices.contains(sIdx)) {
             // Inner staff label: sits right-aligned between connector and starting barline
             labelX = leftX -
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                def.labelHorizontalOffset;
+                style.horizontalOffsetMm;
           } else {
             // Standalone / Single-Tier staff: sits to the left of its connector
             double maxConnectorOffset = 0.0;
@@ -296,16 +297,16 @@ void _drawStaffLabels(
             labelX = leftX -
                 maxConnectorOffset -
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                def.labelHorizontalOffset;
+                style.horizontalOffsetMm;
           }
 
           final staffMidY =
-              staff.topY + (staff.height / 2.0) + def.labelVerticalOffset;
+              staff.topY + (staff.height / 2.0) + style.verticalOffsetMm;
           final fontFamily =
-              def.labelFontFamily.isNotEmpty ? def.labelFontFamily : 'serif';
+              style.fontFamily.isNotEmpty ? style.fontFamily : 'serif';
           // Convert labelFontSize in points (pt) to unitless viewBox mm (1 pt = 25.4 / 72 mm).
           // Must remain UNITLESS so SVG viewBox scaling matrix does not double-scale physical units!
-          final fontSizeMm = def.labelFontSize * (25.4 / 72.0);
+          final fontSizeMm = style.fontSizePt * (25.4 / 72.0);
 
           _writeRightAlignedText(
             buf: buf,
@@ -314,7 +315,8 @@ void _drawStaffLabels(
             centerYMm: staffMidY,
             fontSizeMm: fontSizeMm,
             fontFamily: fontFamily,
-            isItalic: def.labelItalic,
+            isBold: style.isBold,
+            isItalic: style.isItalic,
           );
         }
       }

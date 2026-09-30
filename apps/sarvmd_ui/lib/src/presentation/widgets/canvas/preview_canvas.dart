@@ -263,20 +263,21 @@ class _ManuscriptPainter extends CustomPainter {
           if (name != null && name.isNotEmpty) {
             final double ptScale =
                 scale / (96 / 25.4); // Points conversion scale
-            final double fontSize =
-                (staff.definition?.labelFontSize ?? 11.0) * ptScale;
-            final bool italic = staff.definition?.labelItalic ?? true;
+            final style = staff.resolvedLabelStyle ??
+                staff.definition?.labelStyle ??
+                const core.StaffLabelStyle();
+            final double fontSize = style.fontSizePt * ptScale;
+            final bool italic = style.isItalic;
+            final bool bold = style.isBold;
             final String fontFamily =
-                staff.definition?.labelFontFamily == 'serif'
-                    ? 'Noto Serif'
-                    : 'Roboto';
+                style.fontFamily == 'serif' ? 'Noto Serif' : 'Roboto';
 
             final namePainter = TextPainter(
               text: TextSpan(
                 text: name,
                 style: TextStyle(
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w600,
                   color: inkColor.withValues(alpha: 0.8),
                   fontFamily: fontFamily,
                   fontStyle: italic ? FontStyle.italic : FontStyle.normal,
@@ -319,10 +320,8 @@ class _ManuscriptPainter extends CustomPainter {
             }
 
             // Apply custom offsets
-            final double hOffset =
-                (staff.definition?.labelHorizontalOffset ?? 0.0) * ptScale;
-            final double vOffset =
-                (staff.definition?.labelVerticalOffset ?? 0.0) * ptScale;
+            final double hOffset = style.horizontalOffsetMm * ptScale;
+            final double vOffset = style.verticalOffsetMm * ptScale;
 
             final nameY = staffMidY - namePainter.height / 2;
             namePainter.paint(canvas, Offset(nameX + hOffset, nameY + vOffset));

@@ -115,7 +115,12 @@
         [x] Fixed multi-system above-staff vertical headroom in `computeLayout` (`layout.dart`), distributing reserved headroom into inter-system gap so systems never collide or overflow bottom page margins.
         [x] Fixed subsequent-system header re-rendering: strictly suppressed above-staff headers (Model C) on systems 2+ across `layout.dart` and all 4 rendering backends (`svg_emitter.dart`, `pdf_emitter.dart`, `emitter.dart`, and `preview_canvas.dart`) per Gould and MOLA guidelines.
         [x] Added unit tests in `hierarchical_labeling_test.dart` and verified with all 90 core tests and 247 UI tests passing.
-    [ ] Phase 2: StaffLabelStyle Value Object Extraction
+    [x] Phase 2: StaffLabelStyle Value Object Extraction:
+        [x] Extracted `StaffLabelStyle` value object (`fontFamily`, `fontSizePt`, `isItalic`, `isBold`, `horizontalOffsetMm`, `verticalOffsetMm`) with presets `defaultStaff` and `boldUpright`.
+        [x] Refactored `StaffDefinition` to use `labelStyle` with seamless backward-and-forward JSON serialization (reads new `labelStyle` map, losslessly parses legacy 5-field files, and outputs both).
+        [x] Added `resolvedLabelStyle` to `StaffPosition` in `layout.dart` and propagated style from definitions.
+        [x] Upgraded SVG, PDF, LaTeX, and Interactive Canvas emitters to consume `StaffLabelStyle` (enabling bold/italic font styling and micrometer offsets).
+        [x] Added unit tests for serialization, legacy backward compatibility, and emitter font style propagation (91 core tests and 247 UI tests passing).
     [ ] Phase 3: DescriptorPlacement Enum (Continental Flush vs Anglo-American Enclosed)
     [ ] Phase 4: GroupHeaderVisibility Enum (Model C Lifecycle Control)
     [ ] Phase 5: UI Maturation (Abbreviation Indicators & Resolved Label Previews)

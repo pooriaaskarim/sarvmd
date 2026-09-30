@@ -769,6 +769,35 @@ void main() {
       expect(texMatches, equals(1),
           reason: 'LaTeX above-staff header must only appear on System 1');
     });
+
+    test('StaffLabelStyle bold and upright styling propagates to emitters', () {
+      final soloVln = StaffDefinition(
+        uid: 'solo',
+        instrumentName: 'Solo Violin',
+        labelStyle: StaffLabelStyle.boldUpright,
+      );
+      final config = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [soloVln]),
+        ),
+      );
+      final layout = computeLayout(config);
+
+      // Verify resolvedLabelStyle propagated to StaffPosition
+      expect(layout.systems.first.staves.first.resolvedLabelStyle,
+          equals(StaffLabelStyle.boldUpright));
+
+      // SVG emitter: must output font-weight="bold" without font-style="italic"
+      final svg = ScoreCompiler.compileToSvg(config, layout);
+      expect(svg, contains('Solo Violin'));
+      expect(svg, contains('font-weight="bold"'));
+      expect(svg, isNot(contains('font-style="italic"')));
+
+      // LaTeX emitter: must wrap text with \textbf without \textit
+      final tex = ScoreCompiler.compileToTex(config, layout);
+      expect(tex, contains(r'\textbf{Solo Violin}'));
+      expect(tex, isNot(contains(r'\textit{Solo Violin}')));
+    });
   });
 }
 

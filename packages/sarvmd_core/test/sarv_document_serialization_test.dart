@@ -107,10 +107,12 @@ void main() {
                   instrumentName: 'Flute',
                   instrumentAbbreviation: 'Fl.',
                   scale: 0.95,
-                  labelHorizontalOffset: -2.5,
-                  labelVerticalOffset: 1.0,
-                  labelFontSize: 12.0,
-                  labelItalic: false,
+                  labelStyle: StaffLabelStyle(
+                    horizontalOffsetMm: -2.5,
+                    verticalOffsetMm: 1.0,
+                    fontSizePt: 12.0,
+                    isItalic: false,
+                  ),
                   barlineStyle: BarlineStyle.standard,
                 ),
                 StaffNodeGroup(

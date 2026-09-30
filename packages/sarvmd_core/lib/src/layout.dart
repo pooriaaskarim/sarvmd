@@ -11,6 +11,7 @@ class StaffPosition {
     this.scale = 1.0,
     this.definition,
     this.resolvedLabel,
+    this.resolvedLabelStyle,
   });
 
   /// The original definition this position was generated from.
@@ -19,6 +20,9 @@ class StaffPosition {
   /// The dynamically resolved label for this staff in the system
   /// (considering Gould hierarchical rules and group numbering style).
   final String? resolvedLabel;
+
+  /// The resolved typographic and positional style for this staff label.
+  final StaffLabelStyle? resolvedLabelStyle;
 
   /// Y-coordinate of the topmost line of this staff, measured from page top
   /// edge in mm.
@@ -43,6 +47,7 @@ class StaffPosition {
     double? scale,
     StaffDefinition? definition,
     String? resolvedLabel,
+    StaffLabelStyle? resolvedLabelStyle,
   }) {
     return StaffPosition(
       topY: topY ?? this.topY,
@@ -51,6 +56,7 @@ class StaffPosition {
       scale: scale ?? this.scale,
       definition: definition ?? this.definition,
       resolvedLabel: resolvedLabel ?? this.resolvedLabel,
+      resolvedLabelStyle: resolvedLabelStyle ?? this.resolvedLabelStyle,
     );
   }
 }
@@ -389,6 +395,7 @@ PageLayout computeLayout(PageConfig config) {
               lineGapMm: lineGap,
               scale: def.scale,
               definition: def,
+              resolvedLabelStyle: def.labelStyle,
             );
             staves.add(sStaff);
             currentTopY += sStaff.height + config.staffConfig.interStaffGapMm;
@@ -438,7 +445,10 @@ PageLayout computeLayout(PageConfig config) {
           groupPlacements: placements,
           isFirstSystem: isFirstSystem,
         );
-        staves[s] = staves[s].copyWith(resolvedLabel: resolved);
+        staves[s] = staves[s].copyWith(
+          resolvedLabel: resolved,
+          resolvedLabelStyle: def.labelStyle,
+        );
       }
     }
 

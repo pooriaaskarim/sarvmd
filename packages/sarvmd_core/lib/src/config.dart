@@ -144,6 +144,103 @@ sealed class StaffNode {
   }
 }
 
+/// Typographic and positional styling for staff instrument labels.
+class StaffLabelStyle {
+  const StaffLabelStyle({
+    this.fontFamily = 'serif',
+    this.fontSizePt = 11.0,
+    this.isItalic = true,
+    this.isBold = false,
+    this.horizontalOffsetMm = 0.0,
+    this.verticalOffsetMm = 0.0,
+  });
+
+  /// Font family (e.g. 'serif', 'Noto Serif', 'Roboto').
+  final String fontFamily;
+
+  /// Font size in typographic points (pt).
+  final double fontSizePt;
+
+  /// Whether text is styled in italics (classical Gould standard for instrument names).
+  final bool isItalic;
+
+  /// Whether text is styled in boldface (e.g. soloist or principal callouts).
+  final bool isBold;
+
+  /// Fine-tuning horizontal offset in mm (positive moves right, negative moves left).
+  final double horizontalOffsetMm;
+
+  /// Fine-tuning vertical offset in mm (positive moves down, negative moves up).
+  final double verticalOffsetMm;
+
+  /// Default classical engraving style (italic serif, 11pt, zero offset).
+  static const StaffLabelStyle defaultStaff = StaffLabelStyle();
+
+  /// Upright bold style for featured callouts or auxiliary sections.
+  static const StaffLabelStyle boldUpright =
+      StaffLabelStyle(isItalic: false, isBold: true);
+
+  StaffLabelStyle copyWith({
+    String? fontFamily,
+    double? fontSizePt,
+    bool? isItalic,
+    bool? isBold,
+    double? horizontalOffsetMm,
+    double? verticalOffsetMm,
+  }) =>
+      StaffLabelStyle(
+        fontFamily: fontFamily ?? this.fontFamily,
+        fontSizePt: fontSizePt ?? this.fontSizePt,
+        isItalic: isItalic ?? this.isItalic,
+        isBold: isBold ?? this.isBold,
+        horizontalOffsetMm: horizontalOffsetMm ?? this.horizontalOffsetMm,
+        verticalOffsetMm: verticalOffsetMm ?? this.verticalOffsetMm,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'fontFamily': fontFamily,
+        'fontSizePt': fontSizePt,
+        'isItalic': isItalic,
+        'isBold': isBold,
+        'horizontalOffsetMm': horizontalOffsetMm,
+        'verticalOffsetMm': verticalOffsetMm,
+      };
+
+  factory StaffLabelStyle.fromJson(Map<String, dynamic> json) =>
+      StaffLabelStyle(
+        fontFamily: json['fontFamily'] as String? ?? 'serif',
+        fontSizePt: (json['fontSizePt'] as num?)?.toDouble() ?? 11.0,
+        isItalic: json['isItalic'] as bool? ?? true,
+        isBold: json['isBold'] as bool? ?? false,
+        horizontalOffsetMm:
+            (json['horizontalOffsetMm'] as num?)?.toDouble() ?? 0.0,
+        verticalOffsetMm:
+            (json['verticalOffsetMm'] as num?)?.toDouble() ?? 0.0,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StaffLabelStyle &&
+          runtimeType == other.runtimeType &&
+          fontFamily == other.fontFamily &&
+          fontSizePt == other.fontSizePt &&
+          isItalic == other.isItalic &&
+          isBold == other.isBold &&
+          horizontalOffsetMm == other.horizontalOffsetMm &&
+          verticalOffsetMm == other.verticalOffsetMm;
+
+  @override
+  int get hashCode => Object.hash(
+        fontFamily,
+        fontSizePt,
+        isItalic,
+        isBold,
+        horizontalOffsetMm,
+        verticalOffsetMm,
+      );
+}
+
 /// Represents a single physical staff leaf node on the page.
 class StaffDefinition extends StaffNode {
   const StaffDefinition({
@@ -154,11 +251,7 @@ class StaffDefinition extends StaffNode {
     this.instrumentName,
     this.instrumentAbbreviation,
     this.labelVisible = true,
-    this.labelHorizontalOffset = 0.0,
-    this.labelVerticalOffset = 0.0,
-    this.labelFontFamily = 'serif',
-    this.labelFontSize = 11.0,
-    this.labelItalic = true,
+    this.labelStyle = StaffLabelStyle.defaultStaff,
     this.barlineStyle = BarlineStyle.standard,
   });
 
@@ -169,12 +262,15 @@ class StaffDefinition extends StaffNode {
   final String? instrumentName;
   final String? instrumentAbbreviation;
   final bool labelVisible;
-  final double labelHorizontalOffset;
-  final double labelVerticalOffset;
-  final String labelFontFamily;
-  final double labelFontSize;
-  final bool labelItalic;
+  final StaffLabelStyle labelStyle;
   final BarlineStyle barlineStyle;
+
+  /// Backward-compatible accessors delegating to [labelStyle]:
+  double get labelHorizontalOffset => labelStyle.horizontalOffsetMm;
+  double get labelVerticalOffset => labelStyle.verticalOffsetMm;
+  String get labelFontFamily => labelStyle.fontFamily;
+  double get labelFontSize => labelStyle.fontSizePt;
+  bool get labelItalic => labelStyle.isItalic;
 
   StaffDefinition copyWith({
     String? uid,
@@ -184,32 +280,43 @@ class StaffDefinition extends StaffNode {
     String? Function()? instrumentName,
     String? Function()? instrumentAbbreviation,
     bool? labelVisible,
+    StaffLabelStyle? labelStyle,
     double? labelHorizontalOffset,
     double? labelVerticalOffset,
     String? labelFontFamily,
     double? labelFontSize,
     bool? labelItalic,
     BarlineStyle? barlineStyle,
-  }) =>
-      StaffDefinition(
-        uid: uid ?? this.uid,
-        lines: lines ?? this.lines,
-        clef: clef != null ? clef() : this.clef,
-        scale: scale ?? this.scale,
-        instrumentName:
-            instrumentName != null ? instrumentName() : this.instrumentName,
-        instrumentAbbreviation: instrumentAbbreviation != null
-            ? instrumentAbbreviation()
-            : this.instrumentAbbreviation,
-        labelVisible: labelVisible ?? this.labelVisible,
-        labelHorizontalOffset:
-            labelHorizontalOffset ?? this.labelHorizontalOffset,
-        labelVerticalOffset: labelVerticalOffset ?? this.labelVerticalOffset,
-        labelFontFamily: labelFontFamily ?? this.labelFontFamily,
-        labelFontSize: labelFontSize ?? this.labelFontSize,
-        labelItalic: labelItalic ?? this.labelItalic,
-        barlineStyle: barlineStyle ?? this.barlineStyle,
+  }) {
+    var effectiveStyle = labelStyle ?? this.labelStyle;
+    if (labelFontFamily != null ||
+        labelFontSize != null ||
+        labelItalic != null ||
+        labelHorizontalOffset != null ||
+        labelVerticalOffset != null) {
+      effectiveStyle = effectiveStyle.copyWith(
+        fontFamily: labelFontFamily,
+        fontSizePt: labelFontSize,
+        isItalic: labelItalic,
+        horizontalOffsetMm: labelHorizontalOffset,
+        verticalOffsetMm: labelVerticalOffset,
       );
+    }
+    return StaffDefinition(
+      uid: uid ?? this.uid,
+      lines: lines ?? this.lines,
+      clef: clef != null ? clef() : this.clef,
+      scale: scale ?? this.scale,
+      instrumentName:
+          instrumentName != null ? instrumentName() : this.instrumentName,
+      instrumentAbbreviation: instrumentAbbreviation != null
+          ? instrumentAbbreviation()
+          : this.instrumentAbbreviation,
+      labelVisible: labelVisible ?? this.labelVisible,
+      labelStyle: effectiveStyle,
+      barlineStyle: barlineStyle ?? this.barlineStyle,
+    );
+  }
 
   @override
   Map<String, dynamic> toJson() => {
@@ -220,11 +327,12 @@ class StaffDefinition extends StaffNode {
         'instrumentName': instrumentName,
         'instrumentAbbreviation': instrumentAbbreviation,
         'labelVisible': labelVisible,
-        'labelHorizontalOffset': labelHorizontalOffset,
-        'labelVerticalOffset': labelVerticalOffset,
-        'labelFontFamily': labelFontFamily,
-        'labelFontSize': labelFontSize,
-        'labelItalic': labelItalic,
+        'labelStyle': labelStyle.toJson(),
+        'labelHorizontalOffset': labelStyle.horizontalOffsetMm,
+        'labelVerticalOffset': labelStyle.verticalOffsetMm,
+        'labelFontFamily': labelStyle.fontFamily,
+        'labelFontSize': labelStyle.fontSizePt,
+        'labelItalic': labelStyle.isItalic,
         'barlineStyle': barlineStyle.name,
       };
 
@@ -232,6 +340,23 @@ class StaffDefinition extends StaffNode {
     final map = json.containsKey('data') && json['data'] is Map<String, dynamic>
         ? json['data'] as Map<String, dynamic>
         : json;
+
+    final StaffLabelStyle style;
+    if (map['labelStyle'] != null && map['labelStyle'] is Map<String, dynamic>) {
+      style =
+          StaffLabelStyle.fromJson(map['labelStyle'] as Map<String, dynamic>);
+    } else {
+      style = StaffLabelStyle(
+        fontFamily: map['labelFontFamily'] as String? ?? 'serif',
+        fontSizePt: (map['labelFontSize'] as num?)?.toDouble() ?? 11.0,
+        isItalic: map['labelItalic'] as bool? ?? true,
+        horizontalOffsetMm:
+            (map['labelHorizontalOffset'] as num?)?.toDouble() ?? 0.0,
+        verticalOffsetMm:
+            (map['labelVerticalOffset'] as num?)?.toDouble() ?? 0.0,
+      );
+    }
+
     return StaffDefinition(
       uid: map['uid'] as String? ??
           DateTime.now().microsecondsSinceEpoch.toString(),
@@ -243,13 +368,7 @@ class StaffDefinition extends StaffNode {
       instrumentName: map['instrumentName'] as String?,
       instrumentAbbreviation: map['instrumentAbbreviation'] as String?,
       labelVisible: map['labelVisible'] as bool? ?? true,
-      labelHorizontalOffset:
-          (map['labelHorizontalOffset'] as num?)?.toDouble() ?? 0.0,
-      labelVerticalOffset:
-          (map['labelVerticalOffset'] as num?)?.toDouble() ?? 0.0,
-      labelFontFamily: map['labelFontFamily'] as String? ?? 'serif',
-      labelFontSize: (map['labelFontSize'] as num?)?.toDouble() ?? 11.0,
-      labelItalic: map['labelItalic'] as bool? ?? true,
+      labelStyle: style,
       barlineStyle: map['barlineStyle'] != null
           ? BarlineStyle.values.byName(map['barlineStyle'] as String)
           : BarlineStyle.standard,
@@ -261,34 +380,28 @@ class StaffDefinition extends StaffNode {
       identical(this, other) ||
       other is StaffDefinition &&
           runtimeType == other.runtimeType &&
+          uid == other.uid &&
           lines == other.lines &&
           clef == other.clef &&
           scale == other.scale &&
           instrumentName == other.instrumentName &&
           instrumentAbbreviation == other.instrumentAbbreviation &&
           labelVisible == other.labelVisible &&
-          labelHorizontalOffset == other.labelHorizontalOffset &&
-          labelVerticalOffset == other.labelVerticalOffset &&
-          labelFontFamily == other.labelFontFamily &&
-          labelFontSize == other.labelFontSize &&
-          labelItalic == other.labelItalic &&
+          labelStyle == other.labelStyle &&
           barlineStyle == other.barlineStyle;
 
   @override
-  int get hashCode =>
-      uid.hashCode ^
-      lines.hashCode ^
-      clef.hashCode ^
-      scale.hashCode ^
-      instrumentName.hashCode ^
-      instrumentAbbreviation.hashCode ^
-      labelVisible.hashCode ^
-      labelHorizontalOffset.hashCode ^
-      labelVerticalOffset.hashCode ^
-      labelFontFamily.hashCode ^
-      labelFontSize.hashCode ^
-      labelItalic.hashCode ^
-      barlineStyle.hashCode;
+  int get hashCode => Object.hash(
+        uid,
+        lines,
+        clef,
+        scale,
+        instrumentName,
+        instrumentAbbreviation,
+        labelVisible,
+        labelStyle,
+        barlineStyle,
+      );
 }
 
 /// A hierarchical grouping of staves in a system layout tree.

@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **StaffLabelStyle Value Object Extraction (`sarvmd_core` & `sarvmd_ui`)**:
+  - Extracted centralized `StaffLabelStyle` value object (`fontFamily`, `fontSizePt`, `isItalic`, `isBold`, `horizontalOffsetMm`, `verticalOffsetMm`) with presets `defaultStaff` and `boldUpright`.
+  - Refactored `StaffDefinition` to use `labelStyle` with seamless backward-and-forward JSON serialization compatibility (reading new `'labelStyle'` maps while losslessly migrating legacy 5-field files, and serializing both).
+  - Propagated resolved style to layout through `StaffPosition.resolvedLabelStyle`.
+  - Upgraded all 4 rendering backends (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`) to consume `StaffLabelStyle`, adding bold/italic font styling and micrometer offset parity.
 - **Advanced Sub-Group Labeling Modes: Model B & Model C (`sarvmd_core` & `sarvmd_ui`)**:
   - **Model B (Centered Group Label + Inner Arabic/Roman Numerals)**: Added `StaffNodeGroup.numberingStyle` (`GroupNumberingStyle.none`, `.arabic`, `.roman`) with intelligent numeral formatting (`formatGroupStaffNumber`, `toRomanNumeral`). Dynamically replaces generic child staff names (e.g. *Horn 1*, *Flute*, *1*) with compact Arabic (*1, 2*) or Roman (*I, II*) numerals while safely preserving auxiliary instruments (e.g. *Piccolo*, *English Horn*, *Bass Clarinet*). Scopes inner staff descriptor clearance to ~2.6mm, pulling sub-brackets flush to staves.
   - **Model C (Section Headers Above Staves)**: Added `StaffNodeGroup.labelPlacement` (`GroupLabelPlacement.margin`, `.aboveStaff`). Automatically renders section titles (e.g. *WOODWINDS*, *BRASS*) above the topmost staff of the group at `topY - 2.5mm`, completely bypassing horizontal margin space (`groupLabelWidthMm = 0.0`, `labelOffsetMm = 0.0`) and eliminating 25mm–35mm of wasted left margin per system.
