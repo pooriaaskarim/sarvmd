@@ -108,7 +108,7 @@
     [x] Vector Emitters & Canvas Cross-Engine Parity: Full typographic parity across Interactive Canvas (`preview_canvas.dart`), Direct Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`), including musical accidentals sanitization for Latin-1 PDF export.
     [x] UI Integration: Exposed responsive `SegmentedButton` controls in `AdvancedBuilderPanel` (`_QuickLabelingCard`) for Group Label Placement (*Margin* vs *Above Staff*) and Child Staff Numbering (*None*, *Arabic 1, 2*, *Roman I, II*) with transactional command execution (`UpdateGroupDetailsCommand`) in `DocumentCubit`.
     [x] Visual QA Gallery & Test Suites: Added Model B and Model C scenarios to automated 34-scenario visual gallery (`generate_qa_gallery.dart`) and comprehensive unit/widget tests (88 core tests and 247 UI tests passing).
-19. Standard Music Engraving Labeling System Maturation (Gould/MOLA/Bärenreiter Standards):
+19. [x] Standard Music Engraving Labeling System Maturation (Gould/MOLA/Bärenreiter Standards):
     [x] Conducted comprehensive engraving research and gap analysis ([.agents/research/labeling_system_maturation_plan.md](.agents/research/labeling_system_maturation_plan.md)) across 5 master engraving laws and created 5-phase maturation plan.
     [x] Phase 1: Critical Bug Fixes (Headroom + Header Suppression):
         [x] Centralized engraving metrics constants (`GroupPlacementMetrics.aboveStaffHeaderClearanceMm = 5.5`, `GroupPlacementMetrics.aboveStaffHeaderOffsetMm = 2.5`) and recursive `allGroups` hierarchy traversal getter on `StaffNodeGroup`.
@@ -140,3 +140,9 @@
         [x] Added Quick Typography Styling Bar directly in `_QuickLabelingCard` (inline bold/italic toggles, Serif/Sans switcher, and font size adjustment) allowing immediate styling tweaks without opening the modal dialog.
         [x] Added `bold` font weight support (`FontWeight.w800`) to `LiveStaffPreview`, `FineTuningTab`, and `StaffConfigDialog` with full English and Persian localization (`boldLabelHeader`, `boldLabelDesc`).
         [x] Added comprehensive regression tests in `advanced_builder_panel_test.dart` validating amber dot indicators and resolved label badges.
+    [x] Phase 6: Hierarchy Panel Modularization, Dual-Tier Progressive Disclosure & Overflow Handling:
+        [x] Modularized monolithic `advanced_builder_panel.dart` (~3.7k lines) into modular hierarchy components under `lib/src/presentation/widgets/panels/hierarchy/` and aligned entrypoint with `SettingsSection.systemHierarchy` (`SystemHierarchyPanel`).
+        [x] Adopted Paradigm A (Dual-Tier Progressive Disclosure): streamlined inline `QuickLabelingCard` (~80px height) and delegated deep engraving controls (Model C placement, Header Lifecycle across systems, Continental vs. Anglo-American styles, Model B numbering) to a dedicated 560px modal dialog (`GroupEngravingDialog`).
+        [x] Implemented double-tap to rename directly on staff instrument labels and replaced group headers in-place during label editing.
+        [x] Standardized 6-point layout framework eliminating `RenderFlex` overflows in narrow sidebars (< 280px): bounded `LayoutBuilder` inspection, `PopupMenuButton` action compaction, flow-based `Wrap` layout, adaptive segment labels, and text ellipsis.
+        [x] Authored architectural research document `labeling_and_hierarchy_panel_ux_maturation.md` and added unit/widget tests in `hierarchy_tree_utils_test.dart` and `system_hierarchy_panel_test.dart` (all 97 core tests and 254 UI tests passing).
