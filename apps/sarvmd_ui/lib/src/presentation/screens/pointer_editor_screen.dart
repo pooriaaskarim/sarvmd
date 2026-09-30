@@ -636,7 +636,8 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                         scrollController: _sidebarScrollController,
                         onJumpToSection: (section) =>
                             viewCubit.jumpToSection(section),
-                        activeSection: viewState.jumpTargetSection,
+                        activeSection: viewState.activeTouchSection,
+                        jumpTargetSection: viewState.jumpTargetSection,
                         onActiveSectionChanged: (section) =>
                             viewCubit.setActiveSection(section),
                       ),
