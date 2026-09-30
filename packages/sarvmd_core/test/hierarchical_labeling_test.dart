@@ -798,6 +798,130 @@ void main() {
       expect(tex, contains(r'\textbf{Solo Violin}'));
       expect(tex, isNot(contains(r'\textit{Solo Violin}')));
     });
+
+    test(
+        'DescriptorPlacement: Anglo-American (enclosed) vs Continental (outside/flush)',
+        () {
+      final s1 = StaffDefinition(
+        uid: 'fl-1',
+        instrumentName: 'Flute 1',
+        instrumentAbbreviation: '1',
+      );
+      final s2 = StaffDefinition(
+        uid: 'fl-2',
+        instrumentName: 'Flute 2',
+        instrumentAbbreviation: '2',
+      );
+
+      // 1. Anglo-American: enclosedByConnector (Gould / Boosey & Hawkes)
+      final angloGroup = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Flutes',
+        descriptorPlacement: DescriptorPlacement.enclosedByConnector,
+        children: [s1, s2],
+      );
+      final angloConfig = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [angloGroup]),
+        ),
+      );
+      final angloLayout = computeLayout(angloConfig);
+      final angloSystem = angloLayout.systems.first;
+      final angloPlacement = angloSystem.groupPlacements.firstWhere(
+        (g) => g.connector == SystemConnector.bracket,
+      );
+
+      expect(angloPlacement.descriptorPlacement,
+          equals(DescriptorPlacement.enclosedByConnector));
+      // Bracket is displaced outward to enclose descriptors
+      expect(angloPlacement.connectorOffsetMm, greaterThan(0.0));
+      expect(angloPlacement.innerStaffLabelWidthMm, greaterThan(0.0));
+      expect(angloPlacement.outerDescriptorWidthMm, equals(0.0));
+      expect(angloSystem.innerStaffIndices, containsAll([0, 1]));
+
+      // 2. Continental European: outsideConnector (Bärenreiter / Breitkopf / Henle)
+      final continentalGroup = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Flöten',
+        descriptorPlacement: DescriptorPlacement.outsideConnector,
+        children: [s1, s2],
+      );
+      final continentalConfig = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [continentalGroup]),
+        ),
+      );
+      final continentalLayout = computeLayout(continentalConfig);
+      final continentalSystem = continentalLayout.systems.first;
+      final continentalPlacement = continentalSystem.groupPlacements.firstWhere(
+        (g) => g.connector == SystemConnector.bracket,
+      );
+
+      expect(continentalPlacement.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+      // Bracket is flush at barline
+      expect(continentalPlacement.connectorOffsetMm, equals(0.0));
+      expect(continentalPlacement.innerStaffLabelWidthMm, equals(0.0));
+      expect(continentalPlacement.outerDescriptorWidthMm, greaterThan(0.0));
+      // Staves are NOT inner (they sit to the left of the flush connector)
+      expect(continentalSystem.innerStaffIndices, isEmpty);
+
+      // Group label "Flöten" sits outside the descriptors
+      expect(
+        continentalPlacement.labelOffsetMm,
+        greaterThanOrEqualTo(
+          continentalPlacement.outerDescriptorWidthMm +
+              GroupPlacementMetrics.staffLabelClearanceMm,
+        ),
+      );
+      // System left indent accommodates both descriptors and group label
+      expect(
+        continentalSystem.leftIndentMm,
+        greaterThanOrEqualTo(
+          continentalPlacement.labelOffsetMm +
+              continentalPlacement.groupLabelWidthMm,
+        ),
+      );
+    });
+
+    test(
+        'Universal Brace Rule: SystemConnector.brace always forces DescriptorPlacement.outsideConnector',
+        () {
+      final s1 = StaffDefinition(
+        uid: 'pno-rh',
+        instrumentName: 'Piano',
+        instrumentAbbreviation: 'Pno.',
+      );
+      final s2 = StaffDefinition(
+        uid: 'pno-lh',
+        instrumentName: 'Piano',
+        instrumentAbbreviation: 'Pno.',
+      );
+
+      // Even if enclosedByConnector is explicitly configured, brace forces outsideConnector
+      final pianoGroup = StaffNodeGroup(
+        connector: SystemConnector.brace,
+        label: 'Piano',
+        descriptorPlacement: DescriptorPlacement.enclosedByConnector,
+        children: [s1, s2],
+      );
+      final config = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [pianoGroup]),
+        ),
+      );
+      final layout = computeLayout(config);
+      final system = layout.systems.first;
+      final bracePlacement = system.groupPlacements.firstWhere(
+        (g) => g.connector == SystemConnector.brace,
+      );
+
+      expect(bracePlacement.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+      expect(bracePlacement.connectorOffsetMm, equals(0.0));
+      expect(bracePlacement.innerStaffLabelWidthMm, equals(0.0));
+      expect(system.innerStaffIndices, isEmpty);
+    });
   });
 }
 

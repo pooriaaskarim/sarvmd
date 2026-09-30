@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **DescriptorPlacement (Continental vs. Anglo-American Placement Styles) (`sarvmd_core` & `sarvmd_ui`)**:
+  - Added `DescriptorPlacement` enum (`enclosedByConnector`, `outsideConnector`) allowing users to choose between Anglo-American style (inner descriptors enclosed between bracket and staves) and Continental style (bracket flush against initial barline with descriptors placed outside).
+  - Implemented the Universal Classical Brace Rule in `layout.dart`: braces (`{`) are universally placed flush at the starting barline (`DescriptorPlacement.outsideConnector`), preserving historical engraving invariants.
+  - Eliminated architectural gaps L3 and E2: promoted `innerStaffIndices` to a precalculated `Set<int>` property on `StaffSystem`, unifying layout calculation with all 4 emitters (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`).
+  - Added responsive UI controls in `_QuickLabelingCard` (`advanced_builder_panel.dart`) with `SegmentedButton` and descriptive guide cards.
+  - Added 35th visual test scenario (`hierarchical_continental_outside`) to the QA Visual Gallery.
 - **StaffLabelStyle Value Object Extraction (`sarvmd_core` & `sarvmd_ui`)**:
   - Extracted centralized `StaffLabelStyle` value object (`fontFamily`, `fontSizePt`, `isItalic`, `isBold`, `horizontalOffsetMm`, `verticalOffsetMm`) with presets `defaultStaff` and `boldUpright`.
   - Refactored `StaffDefinition` to use `labelStyle` with seamless backward-and-forward JSON serialization compatibility (reading new `'labelStyle'` maps while losslessly migrating legacy 5-field files, and serializing both).

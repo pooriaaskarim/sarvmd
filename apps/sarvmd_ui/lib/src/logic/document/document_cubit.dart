@@ -554,6 +554,7 @@ class DocumentCubit extends Cubit<DocumentState> {
     bool? labelVisible,
     core.GroupLabelPlacement? labelPlacement,
     core.GroupNumberingStyle? numberingStyle,
+    core.DescriptorPlacement? descriptorPlacement,
   }) {
     execute(core.UpdateGroupDetailsCommand(
       groupHash: groupHash,
@@ -562,6 +563,7 @@ class DocumentCubit extends Cubit<DocumentState> {
       labelVisible: labelVisible,
       labelPlacement: labelPlacement,
       numberingStyle: numberingStyle,
+      descriptorPlacement: descriptorPlacement,
     ));
   }
 

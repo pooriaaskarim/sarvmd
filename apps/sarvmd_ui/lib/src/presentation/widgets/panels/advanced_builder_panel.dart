@@ -892,13 +892,14 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                     initialAbbreviation: widget.group.abbreviation,
                     initialLabelPlacement: widget.group.labelPlacement,
                     initialNumberingStyle: widget.group.numberingStyle,
+                    initialDescriptorPlacement: widget.group.descriptorPlacement,
                     childStaves: widget.group.allStaves,
                     onAutoNumberChildStaves: () {
                       final childUids =
                           widget.group.allStaves.map((s) => s.uid).toList();
                       widget.notifier.batchRenumberStaves(childUids);
                     },
-                    onSaveGroup: (name, abbrev, placement, numberingStyle) {
+                    onSaveGroup: (name, abbrev, placement, numberingStyle, descriptorPlacement) {
                       setState(() {
                         _isEditingName = false;
                       });
@@ -908,6 +909,7 @@ class _StaffGroupWidgetState extends State<_StaffGroupWidget> {
                         abbreviation: abbrev,
                         labelPlacement: placement,
                         numberingStyle: numberingStyle,
+                        descriptorPlacement: descriptorPlacement,
                       );
                     },
                     onSave: (name, abbrev) {
@@ -2655,6 +2657,7 @@ class _QuickLabelingCard extends StatefulWidget {
     this.onAutoNumberChildStaves,
     this.initialLabelPlacement,
     this.initialNumberingStyle,
+    this.initialDescriptorPlacement,
     this.onSaveGroup,
   });
 
@@ -2667,11 +2670,13 @@ class _QuickLabelingCard extends StatefulWidget {
   final VoidCallback? onAutoNumberChildStaves;
   final core.GroupLabelPlacement? initialLabelPlacement;
   final core.GroupNumberingStyle? initialNumberingStyle;
+  final core.DescriptorPlacement? initialDescriptorPlacement;
   final void Function(
     String name,
     String abbreviation,
     core.GroupLabelPlacement labelPlacement,
     core.GroupNumberingStyle numberingStyle,
+    core.DescriptorPlacement descriptorPlacement,
   )? onSaveGroup;
 
   @override
@@ -2685,6 +2690,7 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
   late FocusNode _abbrevFocusNode;
   late core.GroupLabelPlacement _labelPlacement;
   late core.GroupNumberingStyle _numberingStyle;
+  late core.DescriptorPlacement _descriptorPlacement;
   String _suggestedAbbrev = '';
   bool _submitted = false;
   bool _hasAutoNumbered = false;
@@ -2700,6 +2706,8 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
         widget.initialLabelPlacement ?? core.GroupLabelPlacement.margin;
     _numberingStyle =
         widget.initialNumberingStyle ?? core.GroupNumberingStyle.none;
+    _descriptorPlacement = widget.initialDescriptorPlacement ??
+        core.DescriptorPlacement.enclosedByConnector;
 
     _updateSuggestion(_nameController.text);
 
@@ -2747,7 +2755,13 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
       abbrev = _suggestedAbbrev;
     }
     if (widget.onSaveGroup != null) {
-      widget.onSaveGroup!(name, abbrev, _labelPlacement, _numberingStyle);
+      widget.onSaveGroup!(
+        name,
+        abbrev,
+        _labelPlacement,
+        _numberingStyle,
+        _descriptorPlacement,
+      );
     } else {
       widget.onSave(name, abbrev);
     }
@@ -3216,6 +3230,113 @@ class _QuickLabelingCardState extends State<_QuickLabelingCard> {
                           ),
                         ),
                       ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Descriptor Placement Control (Continental vs Anglo-American)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.space_bar_rounded,
+                              size: 13, color: cs.primary),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Descriptor Placement',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<core.DescriptorPlacement>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment(
+                              value:
+                                  core.DescriptorPlacement.enclosedByConnector,
+                              label: Text('Enclosed (Anglo-American)',
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                            ButtonSegment(
+                              value:
+                                  core.DescriptorPlacement.outsideConnector,
+                              label: Text('Outside (Continental)',
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                          selected: {_descriptorPlacement},
+                          onSelectionChanged: (set) {
+                            setState(() {
+                              _descriptorPlacement = set.first;
+                            });
+                          },
+                          style: SegmentedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _descriptorPlacement ==
+                                  core.DescriptorPlacement.outsideConnector
+                              ? cs.tertiaryContainer.withValues(alpha: 0.4)
+                              : cs.surfaceContainerHighest
+                                  .withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _descriptorPlacement ==
+                                    core.DescriptorPlacement.outsideConnector
+                                ? cs.tertiary.withValues(alpha: 0.25)
+                                : cs.outlineVariant.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _descriptorPlacement ==
+                                      core.DescriptorPlacement.outsideConnector
+                                  ? Icons.euro_rounded
+                                  : Icons.view_sidebar_rounded,
+                              size: 12,
+                              color: _descriptorPlacement ==
+                                      core.DescriptorPlacement.outsideConnector
+                                  ? cs.tertiary
+                                  : cs.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                _descriptorPlacement ==
+                                        core.DescriptorPlacement.outsideConnector
+                                    ? 'Continental (Bärenreiter): Connector flush at barline; descriptors placed to the left in outer column.'
+                                    : 'Anglo-American (Gould): Connector displaced outward; descriptors enclosed between connector and barline.',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  color: _descriptorPlacement ==
+                                          core.DescriptorPlacement.outsideConnector
+                                      ? cs.onTertiaryContainer
+                                      : cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ],

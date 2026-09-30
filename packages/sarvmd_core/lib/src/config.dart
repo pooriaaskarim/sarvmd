@@ -122,6 +122,24 @@ String toRomanNumeral(int number) {
   return result;
 }
 
+/// Placement of inner staff descriptors relative to the group's system connector.
+enum DescriptorPlacement {
+  /// Anglo-American style (Gould/Boosey & Hawkes):
+  /// Connector displaced outward; descriptors sit between connector and barline.
+  enclosedByConnector,
+
+  /// Continental European style (Bärenreiter/Breitkopf/Henle):
+  /// Connector flush at barline; descriptors sit left of connector (outer zone).
+  outsideConnector;
+
+  String get label => switch (this) {
+        DescriptorPlacement.enclosedByConnector =>
+          'Enclosed by Connector (Anglo-American)',
+        DescriptorPlacement.outsideConnector =>
+          'Outside Connector (Continental)',
+      };
+}
+
 /// Sealed base class representing a node in the staff layout hierarchy tree.
 sealed class StaffNode {
   const StaffNode();
@@ -416,6 +434,7 @@ class StaffNodeGroup extends StaffNode {
     this.labelVisible = true,
     this.labelPlacement = GroupLabelPlacement.margin,
     this.numberingStyle = GroupNumberingStyle.none,
+    this.descriptorPlacement = DescriptorPlacement.enclosedByConnector,
   });
 
   final SystemConnector connector;
@@ -429,6 +448,7 @@ class StaffNodeGroup extends StaffNode {
   final bool labelVisible;
   final GroupLabelPlacement labelPlacement;
   final GroupNumberingStyle numberingStyle;
+  final DescriptorPlacement descriptorPlacement;
 
   StaffNodeGroup copyWith({
     SystemConnector? connector,
@@ -440,6 +460,7 @@ class StaffNodeGroup extends StaffNode {
     bool? labelVisible,
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
+    DescriptorPlacement? descriptorPlacement,
   }) =>
       StaffNodeGroup(
         connector: connector ?? this.connector,
@@ -451,6 +472,7 @@ class StaffNodeGroup extends StaffNode {
         labelVisible: labelVisible ?? this.labelVisible,
         labelPlacement: labelPlacement ?? this.labelPlacement,
         numberingStyle: numberingStyle ?? this.numberingStyle,
+        descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
       );
 
   @override
@@ -472,6 +494,7 @@ class StaffNodeGroup extends StaffNode {
         'labelVisible': labelVisible,
         'labelPlacement': labelPlacement.name,
         'numberingStyle': numberingStyle.name,
+        'descriptorPlacement': descriptorPlacement.name,
       };
 
   factory StaffNodeGroup.fromJson(Map<String, dynamic> json) {
@@ -497,6 +520,10 @@ class StaffNodeGroup extends StaffNode {
           ? GroupNumberingStyle.values
               .byName(data['numberingStyle'] as String)
           : GroupNumberingStyle.none,
+      descriptorPlacement: data['descriptorPlacement'] != null
+          ? DescriptorPlacement.values
+              .byName(data['descriptorPlacement'] as String)
+          : DescriptorPlacement.enclosedByConnector,
     );
   }
 
@@ -513,6 +540,7 @@ class StaffNodeGroup extends StaffNode {
         labelVisible != other.labelVisible ||
         labelPlacement != other.labelPlacement ||
         numberingStyle != other.numberingStyle ||
+        descriptorPlacement != other.descriptorPlacement ||
         children.length != other.children.length) {
       return false;
     }
@@ -533,6 +561,7 @@ class StaffNodeGroup extends StaffNode {
         labelVisible,
         labelPlacement,
         numberingStyle,
+        descriptorPlacement,
       );
 }
 
@@ -588,6 +617,7 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     bool? labelVisible,
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
+    DescriptorPlacement? descriptorPlacement,
   }) {
     if (identical(this, targetGroup) || hashCode == targetGroup.hashCode) {
       return copyWith(
@@ -598,6 +628,7 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
         labelVisible: labelVisible ?? this.labelVisible,
         labelPlacement: labelPlacement ?? this.labelPlacement,
         numberingStyle: numberingStyle ?? this.numberingStyle,
+        descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
       );
     }
     return copyWith(
@@ -612,6 +643,7 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
             labelVisible: labelVisible,
             labelPlacement: labelPlacement,
             numberingStyle: numberingStyle,
+            descriptorPlacement: descriptorPlacement,
           );
         }
         return child;

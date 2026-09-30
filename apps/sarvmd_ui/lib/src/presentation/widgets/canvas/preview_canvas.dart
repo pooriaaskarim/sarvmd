@@ -191,15 +191,7 @@ class _ManuscriptPainter extends CustomPainter {
       final bool isFirstSystem = sysIdx == 0;
 
       // Identify which staves sit inside a displaced connector (offset > 0)
-      final Set<int> innerStaffIndices = {};
-      for (final group in system.groupPlacements) {
-        if (group.connector != core.SystemConnector.none &&
-            group.innerStaffLabelWidthMm > 0.0) {
-          for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
-            innerStaffIndices.add(s);
-          }
-        }
-      }
+      final Set<int> innerStaffIndices = system.innerStaffIndices;
 
       for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
         final staff = system.staves[sIdx];
@@ -379,6 +371,10 @@ class _ManuscriptPainter extends CustomPainter {
             final double labelOffsetMm = group.labelOffsetMm > 0.0
                 ? group.labelOffsetMm
                 : group.connectorOffsetMm +
+                    (group.outerDescriptorWidthMm > 0.0
+                        ? group.outerDescriptorWidthMm +
+                            core.GroupPlacementMetrics.staffLabelClearanceMm
+                        : 0.0) +
                     core.GroupPlacementMetrics.groupLabelClearanceMm;
             final double rightAnchorX =
                 systemLeftPx - (labelOffsetMm * scale);

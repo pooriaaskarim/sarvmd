@@ -75,7 +75,9 @@ class GroupPlacement {
     this.labelVisible = true,
     this.labelPlacement = GroupLabelPlacement.margin,
     this.numberingStyle = GroupNumberingStyle.none,
+    this.descriptorPlacement = DescriptorPlacement.enclosedByConnector,
     this.innerStaffLabelWidthMm = 0.0,
+    this.outerDescriptorWidthMm = 0.0,
     this.groupLabelWidthMm = 0.0,
     this.connectorOffsetMm = 0.0,
     this.labelOffsetMm = 0.0,
@@ -114,8 +116,14 @@ class GroupPlacement {
   /// Automatic numbering scheme for child staves.
   final GroupNumberingStyle numberingStyle;
 
+  /// Placement of inner staff descriptors relative to the connector.
+  final DescriptorPlacement descriptorPlacement;
+
   /// Maximum width of inner staff labels within this group (in mm).
   final double innerStaffLabelWidthMm;
+
+  /// Maximum width of outer staff descriptors sitting to the left of the connector (in mm).
+  final double outerDescriptorWidthMm;
 
   /// Formatted width of this group label (in mm).
   final double groupLabelWidthMm;
@@ -139,7 +147,9 @@ class GroupPlacement {
     bool? labelVisible,
     GroupLabelPlacement? labelPlacement,
     GroupNumberingStyle? numberingStyle,
+    DescriptorPlacement? descriptorPlacement,
     double? innerStaffLabelWidthMm,
+    double? outerDescriptorWidthMm,
     double? groupLabelWidthMm,
     double? connectorOffsetMm,
     double? labelOffsetMm,
@@ -156,8 +166,11 @@ class GroupPlacement {
       labelVisible: labelVisible ?? this.labelVisible,
       labelPlacement: labelPlacement ?? this.labelPlacement,
       numberingStyle: numberingStyle ?? this.numberingStyle,
+      descriptorPlacement: descriptorPlacement ?? this.descriptorPlacement,
       innerStaffLabelWidthMm:
           innerStaffLabelWidthMm ?? this.innerStaffLabelWidthMm,
+      outerDescriptorWidthMm:
+          outerDescriptorWidthMm ?? this.outerDescriptorWidthMm,
       groupLabelWidthMm: groupLabelWidthMm ?? this.groupLabelWidthMm,
       connectorOffsetMm: connectorOffsetMm ?? this.connectorOffsetMm,
       labelOffsetMm: labelOffsetMm ?? this.labelOffsetMm,
@@ -172,6 +185,7 @@ class StaffSystem {
     this.groupPlacements = const [],
     this.leftIndentMm = 0.0,
     this.maxInnerLabelWidthMm = 0.0,
+    this.innerStaffIndices = const {},
   });
 
   /// The physical positioning of all staves in this system.
@@ -185,6 +199,9 @@ class StaffSystem {
 
   /// Maximum width among all inner staff labels across labeled groups in this system (in mm).
   final double maxInnerLabelWidthMm;
+
+  /// Staves whose labels sit inside an outward-displaced connector (Anglo-American style).
+  final Set<int> innerStaffIndices;
 
   /// Y of the topmost line of the topmost staff.
   double get topY => staves.first.topY;
@@ -414,6 +431,10 @@ PageLayout computeLayout(PageConfig config) {
           }
         }
 
+        final effectivePlacement = (group.connector == SystemConnector.brace)
+            ? DescriptorPlacement.outsideConnector
+            : group.descriptorPlacement;
+
         placements.add(GroupPlacement(
           startStaffIdx: startIdx,
           endStaffIdx: endIdx,
@@ -426,6 +447,7 @@ PageLayout computeLayout(PageConfig config) {
           labelVisible: group.labelVisible,
           labelPlacement: group.labelPlacement,
           numberingStyle: group.numberingStyle,
+          descriptorPlacement: effectivePlacement,
         ));
       }
     }
@@ -466,7 +488,7 @@ PageLayout computeLayout(PageConfig config) {
     }
 
 
-    // 3. Compute inner descriptor width and group label width per GroupPlacement locally
+    // 3. Compute inner descriptor width, outer descriptor width, and group label width per GroupPlacement locally
     final initialGroupData = <GroupPlacement>[];
     double systemMaxInnerWidthMm = 0.0;
 
@@ -493,9 +515,10 @@ PageLayout computeLayout(PageConfig config) {
           resolveGroupLabel(p).isNotEmpty);
 
       double groupInnerWidthMm = 0.0;
-      if (hasConnector &&
-          !hasChildConnectors &&
-          (hasGroupLabel || hasEnclosingGroupLabel)) {
+      double groupOuterDescWidthMm = 0.0;
+
+      if (hasConnector && (hasGroupLabel || hasEnclosingGroupLabel)) {
+        double maxStaffLabelWidthMm = 0.0;
         for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
           if (s < staves.length) {
             final def = staves[s].definition;
@@ -510,12 +533,22 @@ PageLayout computeLayout(PageConfig config) {
               if (sLabel.trim().isNotEmpty) {
                 final w = estimateLabelWidthMm(sLabel,
                     fontSizePt: def.labelFontSize);
-                if (w > groupInnerWidthMm) {
-                  groupInnerWidthMm = w;
+                if (w > maxStaffLabelWidthMm) {
+                  maxStaffLabelWidthMm = w;
                 }
               }
             }
           }
+        }
+
+        if (group.descriptorPlacement ==
+            DescriptorPlacement.enclosedByConnector) {
+          if (!hasChildConnectors) {
+            groupInnerWidthMm = maxStaffLabelWidthMm;
+          }
+        } else {
+          // Continental style / brace: descriptors sit outside the connector
+          groupOuterDescWidthMm = maxStaffLabelWidthMm;
         }
       }
 
@@ -525,6 +558,7 @@ PageLayout computeLayout(PageConfig config) {
 
       initialGroupData.add(group.copyWith(
         innerStaffLabelWidthMm: groupInnerWidthMm,
+        outerDescriptorWidthMm: groupOuterDescWidthMm,
         groupLabelWidthMm: gWidthMm,
       ));
     }
@@ -604,9 +638,28 @@ PageLayout computeLayout(PageConfig config) {
         }
       }
 
-      final double baseLabelOffset = maxCoveringConnectorOffset > 0.0
-          ? maxCoveringConnectorOffset + GroupPlacementMetrics.groupLabelClearanceMm
-          : GroupPlacementMetrics.groupLabelClearanceMm;
+      // If this group or any enclosed group has outside descriptors,
+      // the group label must sit to the left of those descriptors.
+      double maxCoveringOuterDescWidth = 0.0;
+      for (final other in updatedPlacements) {
+        if (other.startStaffIdx <= g.endStaffIdx &&
+            other.endStaffIdx >= g.startStaffIdx &&
+            other.outerDescriptorWidthMm > maxCoveringOuterDescWidth) {
+          maxCoveringOuterDescWidth = other.outerDescriptorWidthMm;
+        }
+      }
+
+      final double outerDescGap = maxCoveringOuterDescWidth > 0.0
+          ? maxCoveringOuterDescWidth +
+              GroupPlacementMetrics.staffLabelClearanceMm
+          : 0.0;
+
+      final double baseLabelOffset =
+          (maxCoveringConnectorOffset > 0.0 || outerDescGap > 0.0)
+              ? maxCoveringConnectorOffset +
+                  outerDescGap +
+                  GroupPlacementMetrics.groupLabelClearanceMm
+              : GroupPlacementMetrics.groupLabelClearanceMm;
 
       // Check if any child groups enclosed within g have active group labels
       double maxChildLabelExtent = 0.0;
@@ -637,6 +690,8 @@ PageLayout computeLayout(PageConfig config) {
     final Set<int> innerStaffIndices = {};
     for (final group in updatedPlacements) {
       if (group.connector != SystemConnector.none &&
+          group.descriptorPlacement ==
+              DescriptorPlacement.enclosedByConnector &&
           group.innerStaffLabelWidthMm > 0.0) {
         for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
           innerStaffIndices.add(s);
@@ -705,6 +760,7 @@ PageLayout computeLayout(PageConfig config) {
       groupPlacements: updatedPlacements,
       leftIndentMm: leftIndentMm,
       maxInnerLabelWidthMm: systemMaxInnerWidthMm,
+      innerStaffIndices: innerStaffIndices,
     ));
   }
 

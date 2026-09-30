@@ -235,6 +235,10 @@ void _drawStaffLabels(
         final double labelOffset = group.labelOffsetMm > 0.0
             ? group.labelOffsetMm
             : group.connectorOffsetMm +
+                (group.outerDescriptorWidthMm > 0.0
+                    ? group.outerDescriptorWidthMm +
+                        GroupPlacementMetrics.staffLabelClearanceMm
+                    : 0.0) +
                 GroupPlacementMetrics.groupLabelClearanceMm;
         final double labelX = leftX - labelOffset;
         final fontSizeMm = 11.0 * (25.4 / 72.0);
@@ -252,15 +256,7 @@ void _drawStaffLabels(
     }
 
     // 2. Identify which staves sit inside a displaced connector (offset > 0)
-    final Set<int> innerStaffIndices = {};
-    for (final group in system.groupPlacements) {
-      if (group.connector != SystemConnector.none &&
-          group.innerStaffLabelWidthMm > 0.0) {
-        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
-          innerStaffIndices.add(s);
-        }
-      }
-    }
+    final Set<int> innerStaffIndices = system.innerStaffIndices;
 
     // 3. Staff labels (Inner tier when grouped; outer tier when standalone)
     for (int sIdx = 0; sIdx < system.staves.length; sIdx++) {

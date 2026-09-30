@@ -121,6 +121,12 @@
         [x] Added `resolvedLabelStyle` to `StaffPosition` in `layout.dart` and propagated style from definitions.
         [x] Upgraded SVG, PDF, LaTeX, and Interactive Canvas emitters to consume `StaffLabelStyle` (enabling bold/italic font styling and micrometer offsets).
         [x] Added unit tests for serialization, legacy backward compatibility, and emitter font style propagation (91 core tests and 247 UI tests passing).
-    [ ] Phase 3: DescriptorPlacement Enum (Continental Flush vs Anglo-American Enclosed)
+    [x] Phase 3: DescriptorPlacement Enum (Continental Flush vs Anglo-American Enclosed):
+        [x] Added `DescriptorPlacement` enum (`enclosedByConnector`, `outsideConnector`) with localized descriptions.
+        [x] Added `descriptorPlacement` field to `StaffNodeGroup` and updated `UpdateGroupDetailsCommand` with full backward compatibility.
+        [x] Implemented Universal Brace Rule in `layout.dart` (`brace` is always `outsideConnector`) and Continental layout calculations (`connectorOffsetMm = 0.0` or only displaced by child connectors).
+        [x] Promoted `innerStaffIndices` to `StaffSystem` property, resolving architectural gaps L3 and E2 across layout and all 4 emitters.
+        [x] Added responsive UI controls in `AdvancedBuilderPanel` (`_QuickLabelingCard`) with visual helper cards.
+        [x] Added unit tests, serialization tests, and 35th QA gallery scenario (`hierarchical_continental_outside`). All 95 core tests and 247 UI tests passing.
     [ ] Phase 4: GroupHeaderVisibility Enum (Model C Lifecycle Control)
     [ ] Phase 5: UI Maturation (Abbreviation Indicators & Resolved Label Previews)

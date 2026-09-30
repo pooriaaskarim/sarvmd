@@ -147,5 +147,25 @@ void main() {
       expect(restored.labelHorizontalOffset, equals(-3.0));
       expect(restored.labelFontSize, equals(12.0));
     });
+
+    test('StaffNodeGroup serialization preserves DescriptorPlacement', () {
+      final group = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Woodwinds',
+        descriptorPlacement: DescriptorPlacement.outsideConnector,
+      );
+
+      final json = group.toJson();
+      expect(json['descriptorPlacement'], equals('outsideConnector'));
+
+      final restored = StaffNodeGroup.fromJson(json);
+      expect(restored.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+
+      // Defaults to enclosedByConnector when key is absent
+      final defaultRestored = StaffNodeGroup.fromJson({});
+      expect(defaultRestored.descriptorPlacement,
+          equals(DescriptorPlacement.enclosedByConnector));
+    });
   });
 }
