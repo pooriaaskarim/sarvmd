@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Calibrated Gould/SMuFL Clearances (`GroupPlacementMetrics`)**: Tightened connector level spacing to 3.0mm, bracket tick length to 1.8mm, staff label clearance to 2.0mm, and connector inner clearance to 1.5mm.
   - **Unified Cross-Emitter Parity**: Identical geometry and alignment verified across Flutter Canvas (`preview_canvas.dart`), Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`).
 
+### Fixed
+- **Sidebar Collapsible Sections & Scrollbar State Synchronization (`ViewCubit` & `SectionSpine`)**:
+  - Fixed an issue where collapsing all sidebar sections in pointer mode caused them to randomly expand during scrolling or when selecting sections from the custom scrollbar.
+  - Decoupled viewport scroll detection (`ViewCubit.setActiveSection`) from section expansion mutations: scrolling now only tracks the active touch section for custom scrollbar handle alignment without expanding collapsed cards or overriding `jumpTargetSection`.
+  - Configured custom scrollbar bead selection (`ViewCubit.jumpToSection`) to explicitly expand the clicked section if collapsed, persist expansion state to `SharedPreferences`, and smoothly scroll into position while preserving the collapsed state of all other sections.
+  - Added dedicated unit tests in `view_cubit_panel_state_test.dart` verifying that scrolling preserves collapsed states and bead clicks expand only the targeted section.
+
 ## [0.11.0] - 2026-09-30
 
 ### Added
