@@ -22,7 +22,7 @@ import '../widgets/canvas/preview_canvas.dart';
 import '../widgets/panels/view_panel.dart';
 import '../widgets/canvas/ruler_box.dart';
 import '../widgets/common/integrated_scale_control.dart';
-import '../widgets/panels/advanced_builder_panel.dart';
+import '../widgets/panels/system_hierarchy_panel.dart';
 import '../widgets/panels/collapsible_section_card.dart';
 import '../widgets/panels/section_spine.dart';
 import '../../logic/document/document_cubit.dart';

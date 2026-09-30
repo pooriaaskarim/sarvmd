@@ -10,21 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Group Engraving Modal & Dual-Tier Progressive Disclosure (`sarvmd_ui`)**:
+  - Implemented **Paradigm A: Dual-Tier Progressive Disclosure**: simplified the inline `QuickLabelingCard` for fast renaming (~80px height) while delegating deep score-level engraving controls (Model C placement, Header Lifecycle across systems, Continental vs. Anglo-American descriptor placement, Model B child staff numbering) to a dedicated 560px modal dialog (`GroupEngravingDialog`) opened via `showSarvAdaptiveModal`.
+  - Added direct action button and popup menu item to `StaffGroupWidget` to open the engraving modal.
+  - Added double-tap to rename directly on staff instrument labels in `StaffItemWidget`.
 - **GroupHeaderVisibility Lifecycle Control (`sarvmd_core` & `sarvmd_ui`)**:
   - Added `GroupHeaderVisibility` enum (`firstSystemOnly`, `firstSystemOfPage`, `always`) to `StaffNodeGroup` and `GroupPlacement`, controlling section header lifecycle across systems and pages for Model C above-staff labels.
   - Decoupled score-start from page-start via optional `pageIndex` in `computeLayout`, accommodating classical European publishing traditions (Bärenreiter/Breitkopf section headers re-printed at the top of each page) while defaulting to Gould/MOLA first-system suppression.
   - Unified cross-engine parity across all 4 emitters (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`) by consuming precomputed `group.isAboveStaffVisible`.
-  - Added responsive `SegmentedButton` controls in `_QuickLabelingCard` (`advanced_builder_panel.dart`) with dynamic description tooltips.
+  - Added responsive `SegmentedButton` controls in `QuickLabelingCard` with dynamic description tooltips.
 - **Engraving Label UI Maturation & Feedback (`sarvmd_ui`)**:
-  - **Missing Abbreviation Amber Indicator**: Added an amber dot indicator in `_StaffRow` for staves with visible labels but missing abbreviations, alerting the engraver that subsequent systems will fall back to full instrument names.
-  - **Resolved Label Preview Chip**: Added a dynamic preview chip badge (`[Label: $resolved]`) in `_StaffRow` displaying the actual hierarchical engraving label when it differs from the user-entered display name (e.g., when Model B auto-numbering assigns *1, 2* or *I, II*).
-  - **Quick Typography Styling Bar**: Embedded an inline styling bar directly in `_QuickLabelingCard` for staves, supporting instant bold/italic toggles, Serif/Sans switching, and font size adjustments without leaving the panel.
+  - **Missing Abbreviation Amber Indicator**: Added an amber dot indicator in `StaffItemWidget` for staves with visible labels but missing abbreviations, alerting the engraver that subsequent systems will fall back to full instrument names.
+  - **Resolved Label Preview Chip**: Added a dynamic preview chip badge (`[Label: $resolved]`) in `StaffItemWidget` displaying the actual hierarchical engraving label when it differs from the user-entered display name (e.g., when Model B auto-numbering assigns *1, 2* or *I, II*).
+  - **Quick Typography Styling Bar**: Embedded an inline styling bar directly in `QuickLabelingCard` for staves, supporting instant bold/italic toggles, Serif/Sans switching, and font size adjustments without leaving the panel.
   - **Staff Bold Typography Support**: Added `labelBold` support to `LiveStaffPreview`, `FineTuningTab`, and `StaffConfigDialog` with full English and Persian localization (`boldLabelHeader`, `boldLabelDesc`).
 - **DescriptorPlacement (Continental vs. Anglo-American Placement Styles) (`sarvmd_core` & `sarvmd_ui`)**:
   - Added `DescriptorPlacement` enum (`enclosedByConnector`, `outsideConnector`) allowing users to choose between Anglo-American style (inner descriptors enclosed between bracket and staves) and Continental style (bracket flush against initial barline with descriptors placed outside).
   - Implemented the Universal Classical Brace Rule in `layout.dart`: braces (`{`) are universally placed flush at the starting barline (`DescriptorPlacement.outsideConnector`), preserving historical engraving invariants.
   - Eliminated architectural gaps L3 and E2: promoted `innerStaffIndices` to a precalculated `Set<int>` property on `StaffSystem`, unifying layout calculation with all 4 emitters (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`).
-  - Added responsive UI controls in `_QuickLabelingCard` (`advanced_builder_panel.dart`) with `SegmentedButton` and descriptive guide cards.
+  - Added responsive UI controls in `QuickLabelingCard` with `SegmentedButton` and descriptive guide cards.
   - Added 35th visual test scenario (`hierarchical_continental_outside`) to the QA Visual Gallery.
 - **StaffLabelStyle Value Object Extraction (`sarvmd_core` & `sarvmd_ui`)**:
   - Extracted centralized `StaffLabelStyle` value object (`fontFamily`, `fontSizePt`, `isItalic`, `isBold`, `horizontalOffsetMm`, `verticalOffsetMm`) with presets `defaultStaff` and `boldUpright`.
@@ -51,6 +55,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Built an automated 32-scenario QA visual validation test generator (`tool/generate_qa_gallery.dart`) outputting side-by-side SVG, PDF, TeX, and an interactive HTML comparison gallery (`export_gallery.html`) covering all 14 presets, paper sizes (A3, A4, A5, Letter), orientations, layering modes, and complex hierarchical groupings.
 
 ### Changed
+- **System Hierarchy Panel Modularization & Architecture Modernization (`sarvmd_ui`)**:
+  - Decomposed the monolithic ~3,770-line `advanced_builder_panel.dart` into a modular, clean hierarchy component architecture under `apps/sarvmd_ui/lib/src/presentation/widgets/panels/hierarchy/`:
+    - `system_hierarchy_panel.dart`: Top-level orchestrator and contextual action bar (CAB).
+    - `staff_group_widget.dart`: Recursive group node container, drop targets, and drag-and-drop orchestration.
+    - `staff_item_widget.dart`: Staff row presentation, quick clef picker, selection controls, and drag handle.
+    - `quick_labeling_card.dart`: Inline label editing container (`typedef InlineLabelEditor = QuickLabelingCard`).
+    - `labeling/label_typography_cluster.dart`: Isolated typography controls with responsive layout.
+    - `labeling/group_numbering_section.dart`: Gould non-redundancy, Model B, and Model C auto-numbering configuration.
+    - `connector_picker_widgets.dart`: Connector picker menu and segmented selector.
+    - `hierarchy_tree_utils.dart` & `hierarchy_types.dart`: Pure tree algorithms and immutable drag payload records.
+    - `hierarchy_feedback.dart`: Drag ghost badges and selection chips.
+  - Aligned panel naming to match `SettingsSection.systemHierarchy` (`SystemHierarchyPanel` in `panels/system_hierarchy_panel.dart`), removing the legacy `advanced_builder_panel.dart` file.
 - **Gouldian Space-Efficient Hierarchical Labeling Architecture (`sarvmd_core` & `sarvmd_ui`)**:
   - **Local Inner Descriptor Scoping**: Scoped inner staff descriptor widths strictly to their immediate group branch, eliminating system-wide margin bloat where long instrument names (e.g. *Double Bass*) previously displaced unrelated sub-brackets (e.g. *Flutes 1 & 2*) by dozens of millimeters.
   - **Single-Tier vs Two-Tier Differentiation**: Single-tier groups without group labels (e.g. Piano grand staff, String Quartet) place connectors flush against the initial barline (`connectorOffsetMm = 0.0`) with staff names positioned outside, saving 6–10mm of margin width. Two-tier groups with outer labels properly enclose inner descriptors between the connector and staves.
@@ -60,6 +76,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Unified Cross-Emitter Parity**: Identical geometry and alignment verified across Flutter Canvas (`preview_canvas.dart`), Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`).
 
 ### Fixed
+- **Standardized RenderFlex Overflow Handling in Narrow Hierarchy Panels (`sarvmd_ui`)**:
+  - Implemented the 6-point layout framework across hierarchy components to eliminate `RenderFlex` overflows when sidebars are resized down to 200–280px:
+    - Bounded `LayoutBuilder` width inspection for `StaffItemWidget`, dynamically collapsing secondary buttons into a compact `PopupMenuButton` when row width is constrained (< 280px), preserving instrument name visibility and preventing horizontal overflows.
+    - Adaptive segmented button labels in `GroupNumberingSection` based on width breakpoints (`isNarrow < 270px`).
+    - Flow-based `Wrap` layout with dynamic wrapping for metadata badges, clef chips, and font adjustment handles (`LabelTypographyCluster`).
+    - `Expanded` containers paired with `TextOverflow.ellipsis` on all flexible text elements.
+- **Group Label Editing In-Place Replacement (`StaffGroupWidget`)**:
+  - Fixed non-standard UI behavior where group header cards persisted alongside the label editor during editing mode; group headers are now replaced in-place by `QuickLabelingCard` / `InlineLabelEditor` until dismissed or saved.
 - **Above-Staff Section Header Vertical Headroom Reservation (`layout.dart`)**:
   - Fixed an active visual collision bug on multi-system pages where section headers placed above staves (`GroupLabelPlacement.aboveStaff`) collided with the bottom staff of the preceding system.
   - Automatically reserves `GroupPlacementMetrics.aboveStaffHeaderClearanceMm` (5.5mm) in inter-system gap distribution when above-staff headers are present, preventing systems from overflowing into bottom page margins.

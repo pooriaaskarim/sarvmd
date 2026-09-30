@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
 import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/panels/advanced_builder_panel.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/panels/system_hierarchy_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -842,5 +842,95 @@ void main() {
       expect(find.text('Label: 2'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 600));
     });
+
+    testWidgets(
+        'renders quick labeling card without overflow in narrow panel (< 240px)',
+        (tester) async {
+      tester.view.physicalSize = const Size(220, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: SizedBox(
+                width: 220,
+                child: BlocProvider<DocumentCubit>.value(
+                  value: cubit,
+                  child: SystemHierarchyPanel(notifier: cubit),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap edit on the first staff
+      final editButton = find.byTooltip('Edit Instrument Name').first;
+      await tester.ensureVisible(editButton);
+      await tester.tap(editButton);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Card should be rendered with Style and font size stepper without any RenderFlex overflow
+      expect(find.text('Style'), findsOneWidget);
+      expect(find.textContaining('pt'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets(
+        'group label editing mode replaces group header in-place with QuickLabelingCard',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the group header edit button
+      final groupEditBtn = find.byTooltip('Edit Group Label');
+      expect(groupEditBtn, findsOneWidget);
+
+      // Tap edit group label
+      await tester.tap(groupEditBtn);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Group header is replaced: edit button is no longer visible while editing
+      expect(find.byTooltip('Edit Group Label'), findsNothing);
+      expect(find.text('Edit Group Label'), findsOneWidget);
+
+      // Tap the cancel/close button on the QuickLabelingCard
+      final closeBtn = find.byTooltip('Cancel (Esc)');
+      expect(closeBtn, findsOneWidget);
+      await tester.tap(closeBtn);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Group header is restored
+      expect(find.byTooltip('Edit Group Label'), findsOneWidget);
+    });
   });
 }
+
