@@ -562,6 +562,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                                 onVerticalChanged:
                                     documentCubit.updateVerticalMargins,
                                 onReset: documentCubit.resetMargins,
+                                onLinkChanged: documentCubit.setMarginsLinked,
                                 onScrubStart: (side) => context
                                     .read<ViewCubit>()
                                     .setActiveScrubbingMargin(side),

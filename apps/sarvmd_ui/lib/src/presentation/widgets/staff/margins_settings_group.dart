@@ -23,6 +23,7 @@ class MarginsSettingsGroup extends StatefulWidget {
     required this.onReset,
     required this.onScrubStart,
     required this.onScrubEnd,
+    this.onLinkChanged,
   });
 
   final core.Margins margins;
@@ -35,13 +36,37 @@ class MarginsSettingsGroup extends StatefulWidget {
   final VoidCallback onReset;
   final ValueChanged<String> onScrubStart;
   final VoidCallback onScrubEnd;
+  final ValueChanged<bool>? onLinkChanged;
 
   @override
   State<MarginsSettingsGroup> createState() => _MarginsSettingsGroupState();
 }
 
 class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
-  bool _isLinked = true;
+  late bool _isLinked;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLinked = _computeEffectiveLinked();
+  }
+
+  @override
+  void didUpdateWidget(MarginsSettingsGroup oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.margins.isLinked != oldWidget.margins.isLinked) {
+      _isLinked = widget.margins.isLinked;
+    } else if (!widget.margins.isSymmetric) {
+      _isLinked = false;
+    }
+  }
+
+  bool _computeEffectiveLinked() {
+    if (!widget.margins.isSymmetric) {
+      return false;
+    }
+    return widget.margins.isLinked;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,14 +84,16 @@ class _MarginsSettingsGroupState extends State<MarginsSettingsGroup> {
           ? AppLocalizations.of(context)!.marginsLinked
           : AppLocalizations.of(context)!.marginsIndependent,
       onPressed: () {
+        final nextLinked = !_isLinked;
         setState(() {
-          _isLinked = !_isLinked;
+          _isLinked = nextLinked;
           if (_isLinked) {
             // Sync values on link (sync Top/Bottom and Left/Right)
             widget.onHorizontalChanged(widget.margins.left);
             widget.onVerticalChanged(widget.margins.top);
           }
         });
+        widget.onLinkChanged?.call(nextLinked);
       },
       style: IconButton.styleFrom(
         padding: const EdgeInsets.all(4),

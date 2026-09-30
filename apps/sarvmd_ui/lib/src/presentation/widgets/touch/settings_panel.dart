@@ -335,6 +335,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           onHorizontalChanged: cubit.updateHorizontalMargins,
           onVerticalChanged: cubit.updateVerticalMargins,
           onReset: cubit.resetMargins,
+          onLinkChanged: cubit.setMarginsLinked,
           onScrubStart: (side) => context
               .read<ViewCubit>()
               .setActiveScrubbingMargin(side),
