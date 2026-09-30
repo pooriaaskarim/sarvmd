@@ -931,6 +931,44 @@ void main() {
       // Group header is restored
       expect(find.byTooltip('Edit Group Label'), findsOneWidget);
     });
+
+    testWidgets('gracefully handles staves with empty or duplicate UIDs without duplicate key crash',
+        (tester) async {
+      // Construct a layout manually with empty UIDs and duplicate UIDs to simulate legacy/corrupted state
+      const corruptedGroup = core.StaffNodeGroup(
+        connector: core.SystemConnector.bracket,
+        children: const [
+          core.StaffDefinition(lines: 5, uid: ''),
+          core.StaffDefinition(lines: 5, uid: ''),
+          core.StaffDefinition(lines: 5, uid: 'dup_uid'),
+          core.StaffDefinition(lines: 5, uid: 'dup_uid'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: StaffGroupWidget(
+                  group: corruptedGroup,
+                  isRoot: true,
+                  notifier: cubit,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // All 4 staves should render without any Flutter duplicate key framework error
+      expect(tester.takeException(), isNull);
+      expect(find.byType(StaffItemWidget), findsNWidgets(4));
+    });
   });
 }
 

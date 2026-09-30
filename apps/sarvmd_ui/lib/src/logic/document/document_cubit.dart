@@ -54,6 +54,9 @@ class DocumentCubit extends Cubit<DocumentState> {
           redoStack: history.redoStack,
           lastSavedDocument: history.document.ensureUniqueUids(),
         )) {
+    if (_history.document != state.document) {
+      _history.setDocument(state.document, clearHistory: true);
+    }
     if (autoLoadFromPrefs) {
       _loadFromPrefs();
     }
