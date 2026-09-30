@@ -97,4 +97,8 @@
     [x] Constrained mobile modal bottom sheets and dialogs in `showSarvAdaptiveModal` using `(screenHeight - viewInsets.bottom)` with bottom padding so modals float cleanly above the keyboard
     [x] Added centralized `AppSpacing.keyboardScrollPadding` (64px bottom headroom) across numeric scrubbers, margins, staff spacing, precision sliders, export dialogs, and hierarchy inline labeling fields
     [x] Added comprehensive regression tests in `mobile_keyboard_inset_test.dart` validating focused input bounds and drawer shrinkage under soft keyboard view insets
-17. [ ] Research: is there a way to determince SCREEN DPI on the web, as well?
+17. [x] Research: is there a way to determince SCREEN DPI on the web, as well?
+    [x] Conducted comprehensive browser specification and web platform research ([.agents/research/web_screen_dpi_detection_research.md](.agents/research/web_screen_dpi_detection_research.md))
+    [x] Documented why raw physical DPI extraction is prohibited by W3C CSS specifications (1in = 96 CSS px fixed mathematical identity) and browser anti-fingerprinting privacy protections
+    [x] Evaluated modern Web APIs (Window Management API, CSS media queries, WebXR, DPR) confirming no deterministic hardware monitor dimension API exists on the open web
+    [x] Validated SarvMD's state-of-the-art two-tier hybrid architecture: automated Tier 1 DPR baseline heuristic (`ppi_detector_web.dart`) combined with interactive Tier 2 physical reference calibration (`CalibrationDialog` using standard ISO/IEC 7810 ID-1 credit card / ruler dimensions) and persistent SharedPreferences storage
