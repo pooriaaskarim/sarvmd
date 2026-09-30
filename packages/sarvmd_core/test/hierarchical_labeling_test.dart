@@ -701,6 +701,74 @@ void main() {
       expect(pdfBytes, isNotEmpty);
       expect(pdfBytes.length, greaterThan(1000));
     });
+
+    test('StaffNodeGroup.allGroups flattens hierarchy in traversal order', () {
+      final s1 = StaffDefinition(uid: 's1');
+      final s2 = StaffDefinition(uid: 's2');
+      final sub = StaffNodeGroup(label: 'Sub', children: [s1]);
+      final root = StaffNodeGroup(label: 'Root', children: [sub, s2]);
+
+      final all = root.allGroups;
+      expect(all.length, equals(2));
+      expect(all[0].label, equals('Root'));
+      expect(all[1].label, equals('Sub'));
+    });
+
+    test('Model C reserves vertical headroom and suppresses headers on subsequent systems', () {
+      final s1 = StaffDefinition(uid: 's1', instrumentName: 'Violin 1', instrumentAbbreviation: 'Vln. 1');
+      final s2 = StaffDefinition(uid: 's2', instrumentName: 'Violin 2', instrumentAbbreviation: 'Vln. 2');
+
+      final standardGroup = StaffNodeGroup(
+        label: 'STRINGS',
+        abbreviation: 'Str.',
+        labelPlacement: GroupLabelPlacement.margin,
+        children: [s1, s2],
+      );
+      final aboveGroup = StaffNodeGroup(
+        label: 'STRINGS',
+        abbreviation: 'Str.',
+        labelPlacement: GroupLabelPlacement.aboveStaff,
+        children: [s1, s2],
+      );
+
+      final standardConfig = PageConfig(
+        systemLayout: SystemLayout(rootGroup: standardGroup),
+        pageSize: PageSize.a4,
+        orientation: PageOrientation.portrait,
+      );
+      final aboveConfig = PageConfig(
+        systemLayout: SystemLayout(rootGroup: aboveGroup),
+        pageSize: PageSize.a4,
+        orientation: PageOrientation.portrait,
+      );
+
+      final standardLayout = computeLayout(standardConfig);
+      final aboveLayout = computeLayout(aboveConfig);
+
+      expect(aboveLayout.systems.length, greaterThan(1),
+          reason: 'A4 portrait with 2-staff system fits multiple systems');
+
+      // The distance between consecutive systems in aboveLayout must include aboveStaffHeaderClearanceMm
+      final standardSysGap = standardLayout.systems[1].staves.first.topY -
+          (standardLayout.systems[0].staves.last.topY + standardLayout.systems[0].staves.last.height);
+      final aboveSysGap = aboveLayout.systems[1].staves.first.topY -
+          (aboveLayout.systems[0].staves.last.topY + aboveLayout.systems[0].staves.last.height);
+
+      expect(aboveSysGap, greaterThanOrEqualTo(standardSysGap + GroupPlacementMetrics.aboveStaffHeaderClearanceMm - 0.01));
+
+      // Group label resolution in layout: empty on system 2+
+      // In SVG: "STRINGS" text must only appear once (on System 1), NOT twice
+      final svg = ScoreCompiler.compileToSvg(aboveConfig, aboveLayout);
+      final stringsMatches = RegExp(r'>STRINGS<').allMatches(svg).length;
+      expect(stringsMatches, equals(1),
+          reason: 'Above-staff header must only appear on System 1, suppressed on System 2+');
+
+      // In LaTeX: \textbf{STRINGS} must only appear once
+      final tex = ScoreCompiler.compileToTex(aboveConfig, aboveLayout);
+      final texMatches = RegExp(r'\\textbf\{STRINGS\}').allMatches(tex).length;
+      expect(texMatches, equals(1),
+          reason: 'LaTeX above-staff header must only appear on System 1');
+    });
   });
 }
 

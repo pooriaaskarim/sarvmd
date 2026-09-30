@@ -145,9 +145,11 @@ void _drawStaffLabels(
     // 1. Group labels (Outer tier or section header above staff)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
-      final String label = isFirstSystem
-          ? group.label.trim()
-          : group.abbreviation.trim();
+      final String label = group.labelPlacement == GroupLabelPlacement.aboveStaff
+          ? (isFirstSystem ? group.label.trim() : '')
+          : (isFirstSystem
+              ? group.label.trim()
+              : group.abbreviation.trim());
       if (label.isEmpty) continue;
 
       final groupStaves =
@@ -160,7 +162,8 @@ void _drawStaffLabels(
 
       if (group.labelPlacement == GroupLabelPlacement.aboveStaff) {
         const fontPt = 10.0;
-        final headerYMm = topY - 2.5;
+        final headerYMm =
+            topY - GroupPlacementMetrics.aboveStaffHeaderOffsetMm;
         final headerXPt = leftX * _mmToPt;
         final headerYPt = hPt - (headerYMm * _mmToPt);
 

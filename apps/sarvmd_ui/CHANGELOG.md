@@ -39,6 +39,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Unified Cross-Emitter Parity**: Identical geometry and alignment verified across Flutter Canvas (`preview_canvas.dart`), Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`).
 
 ### Fixed
+- **Above-Staff Section Header Vertical Headroom Reservation (`layout.dart`)**:
+  - Fixed an active visual collision bug on multi-system pages where section headers placed above staves (`GroupLabelPlacement.aboveStaff`) collided with the bottom staff of the preceding system.
+  - Automatically reserves `GroupPlacementMetrics.aboveStaffHeaderClearanceMm` (5.5mm) in inter-system gap distribution when above-staff headers are present, preventing systems from overflowing into bottom page margins.
+- **Above-Staff Section Header Subsequent System Suppression (`layout.dart` & all 4 emitters)**:
+  - Fixed a defect where section headers placed above staves (Model C) re-rendered on system 2+ using their abbreviation or label.
+  - Aligned with Gould (*Behind Bars*, p. 515) and MOLA engraving guidelines by strictly suppressing above-staff headers on subsequent systems across the layout engine and all 4 rendering backends (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`).
+- **Engraving Metrics Standardization (`GroupPlacementMetrics`)**:
+  - Extracted centralized engraving constants `aboveStaffHeaderClearanceMm = 5.5` and `aboveStaffHeaderOffsetMm = 2.5` into `GroupPlacementMetrics` in `config.dart`, replacing ad-hoc magic numbers across all vector emitters.
+  - Added recursive `allGroups` hierarchy traversal getter to `StaffNodeGroup`.
 - **Sidebar Collapsible Sections & Scrollbar State Synchronization (`ViewCubit` & `SectionSpine`)**:
   - Fixed an issue where collapsing all sidebar sections in pointer mode caused them to randomly expand during scrolling or when selecting sections from the custom scrollbar.
   - Decoupled viewport scroll detection (`ViewCubit.setActiveSection`) from section expansion mutations: scrolling now only tracks the active touch section for custom scrollbar handle alignment without expanding collapsed cards or overriding `jumpTargetSection`.

@@ -333,9 +333,12 @@ class _ManuscriptPainter extends CustomPainter {
       // ── Draw Group Labels ────────────────────────────────
       for (final group in system.groupPlacements) {
         if (!group.labelVisible) continue;
-        final String label = isFirstSystem
-            ? group.label.trim()
-            : group.abbreviation.trim();
+        final String label =
+            group.labelPlacement == core.GroupLabelPlacement.aboveStaff
+                ? (isFirstSystem ? group.label.trim() : '')
+                : (isFirstSystem
+                    ? group.label.trim()
+                    : group.abbreviation.trim());
 
         if (label.isNotEmpty) {
           final staves =
@@ -367,8 +370,11 @@ class _ManuscriptPainter extends CustomPainter {
             )..layout();
 
             final double headerX = systemLeftPx;
-            final double headerY =
-                (topY - (2.5 * scale) - headerPainter.height).roundToDouble();
+            final double headerY = (topY -
+                    (core.GroupPlacementMetrics.aboveStaffHeaderOffsetMm *
+                        scale) -
+                    headerPainter.height)
+                .roundToDouble();
             headerPainter.paint(canvas, Offset(headerX, headerY));
           } else {
             final double labelOffsetMm = group.labelOffsetMm > 0.0

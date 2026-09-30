@@ -328,19 +328,27 @@ PageLayout computeLayout(PageConfig config) {
   final usableH = config.usableHeight;
   final gap = config.staffConfig.systemGapMm;
 
+  final bool hasAboveStaffGroups = config.systemLayout.rootGroup.allGroups
+      .any((g) => g.labelPlacement == GroupLabelPlacement.aboveStaff);
+  final double aboveStaffHeadroom = hasAboveStaffGroups
+      ? GroupPlacementMetrics.aboveStaffHeaderClearanceMm
+      : 0.0;
+  final effectiveGap = gap + aboveStaffHeadroom;
+
   // How many systems fit?
   final count = usableH < systemH
       ? 0
-      : 1 + ((usableH - systemH) / (systemH + gap)).floor();
+      : 1 + ((usableH - systemH) / (systemH + effectiveGap)).floor();
 
   if (count == 0) {
     return PageLayout(config: config, systems: []);
   }
 
   // Distribute leftover space evenly between systems.
-  final totalUsed = count * systemH + (count - 1) * gap;
+  final totalUsed = count * systemH + (count - 1) * effectiveGap;
   final leftover = usableH - totalUsed;
-  final adjustedGap = count > 1 ? gap + leftover / (count - 1) : gap;
+  final adjustedGap =
+      count > 1 ? effectiveGap + leftover / (count - 1) : effectiveGap;
 
   final systems = <StaffSystem>[];
   final lineGap = config.staffConfig.lineGapMm;
@@ -437,8 +445,12 @@ PageLayout computeLayout(PageConfig config) {
     // 1. Resolve effective group labels per system
     // Gould (p. 515): Top-level / family names (e.g. Woodwinds, Strings) appear only on System 1.
     // On subsequent systems, if an explicit abbreviation exists, use it; otherwise omit family name.
+    // Above-staff headers (Model C) appear only on System 1 (Gould / MOLA standards).
     String resolveGroupLabel(GroupPlacement g) {
       if (!g.labelVisible) return '';
+      if (g.labelPlacement == GroupLabelPlacement.aboveStaff) {
+        return isFirstSystem ? g.label.trim() : '';
+      }
       if (isFirstSystem) return g.label.trim();
       return g.abbreviation.trim();
     }

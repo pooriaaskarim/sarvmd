@@ -188,9 +188,11 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
     // 1. Group labels (Outer tier or section header above staff)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
-      final String label = isFirstSystem
-          ? group.label.trim()
-          : group.abbreviation.trim();
+      final String label = group.labelPlacement == GroupLabelPlacement.aboveStaff
+          ? (isFirstSystem ? group.label.trim() : '')
+          : (isFirstSystem
+              ? group.label.trim()
+              : group.abbreviation.trim());
       if (label.isEmpty) continue;
 
       final groupStaves =
@@ -210,7 +212,7 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
         );
 
         textBuf.writeln(
-          '  \\put(${_f(staffLeftMm)}, -${_f(topY - 2.5)}){\\makebox(0,0)[bl]{$styledText}}%',
+          '  \\put(${_f(staffLeftMm)}, -${_f(topY - GroupPlacementMetrics.aboveStaffHeaderOffsetMm)}){\\makebox(0,0)[bl]{$styledText}}%',
         );
       } else {
         final double labelOffset = group.labelOffsetMm > 0.0

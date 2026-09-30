@@ -624,6 +624,15 @@ extension StaffNodeGroupTreeX on StaffNodeGroup {
     }
     return result;
   }
+
+  /// All descendant groups (including self) flattened across this group and sub-groups.
+  List<StaffNodeGroup> get allGroups {
+    final result = <StaffNodeGroup>[this];
+    for (final child in children) {
+      if (child is StaffNodeGroup) result.addAll(child.allGroups);
+    }
+    return result;
+  }
 }
 
 /// Centralized engraving constants for system connectors and barlines.
@@ -669,6 +678,13 @@ abstract final class GroupPlacementMetrics {
   /// Horizontal clearance between group label and connector in mm.
   /// (Gould p. 513: 2.0 mm)
   static const double groupLabelClearanceMm = 2.0;
+
+  /// Vertical offset in mm between the topmost staff line and the baseline of an above-staff section header.
+  static const double aboveStaffHeaderOffsetMm = 2.5;
+
+  /// Gould and MOLA standard headroom clearance reserved between systems
+  /// when section headers (e.g. choir or brass group labels) are placed above staff.
+  static const double aboveStaffHeaderClearanceMm = 5.5;
 }
 
 /// The type of clef symbol.
