@@ -296,13 +296,21 @@ class ViewCubit extends Cubit<ViewState> {
     );
   }
 
-  void jumpToSection(SettingsSection section) {
+  void jumpToSection(SettingsSection section) async {
+    final newExpanded =
+        Set<SettingsSection>.from(state.expandedPointerSections)..add(section);
     emit(state.copyWith(
+      expandedPointerSections: newExpanded,
       jumpTargetSection: section,
       activeTouchSection: section != SettingsSection.mainMenu && section != SettingsSection.export
           ? section
           : state.activeTouchSection,
     ));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _keyExpandedPointerSections,
+      newExpanded.map((s) => s.name).toList(),
+    );
   }
 
   void clearJumpTarget() {

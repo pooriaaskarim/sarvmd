@@ -22,7 +22,7 @@ export 'spine/section_spine_metrics.dart';
 /// - Handle bulking: Only the handle bulks up (to 22px width with tactile 3-line ribbed grip and grab cursor).
 /// - Section synchronization: Piecewise-linear position mapping ensures the handle is physically aligned
 ///   with the section bead corresponding to what is at the top of the viewport.
-/// - Section jump: Clicking any bead smoothly scrolls it to the top without force-expanding collapsed sections.
+/// - Section jump: Clicking any bead expands the section (if folded) and smoothly scrolls it to the top.
 class SectionSpine extends StatefulWidget {
   const SectionSpine({
     super.key,
@@ -445,6 +445,13 @@ class _SectionSpineState extends State<SectionSpine> {
     widget.onJumpToSection(entry.section);
     _scrollTimer?.cancel();
     _scrollToEntry(entry, index);
+
+    if (!entry.isExpanded) {
+      _scrollTimer = Timer(const Duration(milliseconds: 220), () {
+        if (!mounted) return;
+        _scrollToEntry(entry, index);
+      });
+    }
   }
 
   @override
