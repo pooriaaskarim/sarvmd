@@ -167,9 +167,26 @@ enum GroupHeaderVisibility {
       };
 }
 
+/// Monotonically increasing counter ensuring distinct fallback UIDs in single-microsecond executions.
+int _uidSequenceCounter = 0;
+
 /// Sealed base class representing a node in the staff layout hierarchy tree.
 sealed class StaffNode {
   const StaffNode();
+
+  /// Stamps every [StaffDefinition] in this subtree with a unique UID.
+  StaffNode assignUids({int Function()? counter});
+
+  /// Ensures every [StaffDefinition] in this subtree has a unique non-empty UID,
+  /// preserving existing valid unique UIDs and only generating fresh ones for empty or duplicate entries.
+  StaffNode ensureUniqueUids({Set<String>? seenUids, int Function()? counter});
+
+  /// Returns true if this node structurally matches [other], ignoring transient identifiers like [uid].
+  bool matchesStructure(StaffNode other);
+
+  /// Returns true if this node has identical musical and configuration content to [other],
+  /// ignoring transient identifiers like [uid].
+  bool hasSameContent(StaffNode other);
 
   Map<String, dynamic> toJson();
 
@@ -406,9 +423,12 @@ class StaffDefinition extends StaffNode {
       );
     }
 
+    final rawUid = map['uid'] as String?;
+    final uid = rawUid ??
+        '${DateTime.now().microsecondsSinceEpoch}_${++_uidSequenceCounter}';
+
     return StaffDefinition(
-      uid: map['uid'] as String? ??
-          DateTime.now().microsecondsSinceEpoch.toString(),
+      uid: uid,
       lines: map['lines'] as int? ?? 5,
       clef: map['clef'] != null
           ? Clef.fromJson(map['clef'] as Map<String, dynamic>)
@@ -451,6 +471,50 @@ class StaffDefinition extends StaffNode {
         labelStyle,
         barlineStyle,
       );
+
+  @override
+  StaffDefinition assignUids({int Function()? counter}) {
+    final nextId = counter != null
+        ? '${DateTime.now().microsecondsSinceEpoch}_${counter()}'
+        : '${DateTime.now().microsecondsSinceEpoch}_${++_uidSequenceCounter}';
+    return copyWith(uid: nextId);
+  }
+
+  @override
+  StaffDefinition ensureUniqueUids({
+    Set<String>? seenUids,
+    int Function()? counter,
+  }) {
+    final seen = seenUids ?? <String>{};
+    if (uid.isEmpty || seen.contains(uid)) {
+      final nextId = counter != null
+          ? '${DateTime.now().microsecondsSinceEpoch}_${counter()}'
+          : '${DateTime.now().microsecondsSinceEpoch}_${++_uidSequenceCounter}';
+      seen.add(nextId);
+      return copyWith(uid: nextId);
+    }
+    seen.add(uid);
+    return this;
+  }
+
+  @override
+  bool matchesStructure(StaffNode other) {
+    if (other is! StaffDefinition) return false;
+    return lines == other.lines && clef == other.clef && scale == other.scale;
+  }
+
+  @override
+  bool hasSameContent(StaffNode other) {
+    if (other is! StaffDefinition) return false;
+    return lines == other.lines &&
+        clef == other.clef &&
+        scale == other.scale &&
+        instrumentName == other.instrumentName &&
+        instrumentAbbreviation == other.instrumentAbbreviation &&
+        labelVisible == other.labelVisible &&
+        labelStyle == other.labelStyle &&
+        barlineStyle == other.barlineStyle;
+  }
 }
 
 /// A hierarchical grouping of staves in a system layout tree.
@@ -607,6 +671,66 @@ class StaffNodeGroup extends StaffNode {
         descriptorPlacement,
         headerVisibility,
       );
+
+  @override
+  StaffNodeGroup assignUids({int Function()? counter}) {
+    int local = 0;
+    final cnt = counter ?? () => local++;
+    return copyWith(
+      children: children.map((c) => c.assignUids(counter: cnt)).toList(),
+    );
+  }
+
+  @override
+  StaffNodeGroup ensureUniqueUids({
+    Set<String>? seenUids,
+    int Function()? counter,
+  }) {
+    final seen = seenUids ?? <String>{};
+    int local = 0;
+    final cnt = counter ?? () => local++;
+    return copyWith(
+      children: children
+          .map((c) => c.ensureUniqueUids(seenUids: seen, counter: cnt))
+          .toList(),
+    );
+  }
+
+  @override
+  bool matchesStructure(StaffNode other) {
+    if (other is! StaffNodeGroup) return false;
+    if (connector != other.connector ||
+        continuousBarlines != other.continuousBarlines ||
+        children.length != other.children.length) {
+      return false;
+    }
+    for (int i = 0; i < children.length; i++) {
+      if (!children[i].matchesStructure(other.children[i])) return false;
+    }
+    return true;
+  }
+
+  @override
+  bool hasSameContent(StaffNode other) {
+    if (other is! StaffNodeGroup) return false;
+    if (connector != other.connector ||
+        continuousBarlines != other.continuousBarlines ||
+        initialBarline != other.initialBarline ||
+        label != other.label ||
+        abbreviation != other.abbreviation ||
+        labelVisible != other.labelVisible ||
+        labelPlacement != other.labelPlacement ||
+        numberingStyle != other.numberingStyle ||
+        descriptorPlacement != other.descriptorPlacement ||
+        headerVisibility != other.headerVisibility ||
+        children.length != other.children.length) {
+      return false;
+    }
+    for (int i = 0; i < children.length; i++) {
+      if (!children[i].hasSameContent(other.children[i])) return false;
+    }
+    return true;
+  }
 }
 
 /// Legacy alias for [StaffNodeGroup].
@@ -647,6 +771,18 @@ class SystemLayout {
 
   @override
   int get hashCode => rootGroup.hashCode;
+
+  SystemLayout assignUids({int Function()? counter}) =>
+      copyWith(rootGroup: rootGroup.assignUids(counter: counter));
+
+  SystemLayout ensureUniqueUids({int Function()? counter}) =>
+      copyWith(rootGroup: rootGroup.ensureUniqueUids(counter: counter));
+
+  bool matchesStructure(SystemLayout other) =>
+      rootGroup.matchesStructure(other.rootGroup);
+
+  bool hasSameContent(SystemLayout other) =>
+      rootGroup.hasSameContent(other.rootGroup);
 }
 
 /// Extension providing domain tree manipulation methods on [StaffNodeGroup].
@@ -1277,4 +1413,18 @@ class PageConfig {
                 json['systemLayout'] as Map<String, dynamic>)
             : const SystemLayout(),
       );
+
+  PageConfig ensureUniqueUids({int Function()? counter}) =>
+      copyWith(systemLayout: systemLayout.ensureUniqueUids(counter: counter));
+
+  /// Checks whether two configs have identical musical and layout content,
+  /// ignoring volatile runtime staff UIDs.
+  bool hasSameContent(PageConfig other) =>
+      identical(this, other) ||
+      (pageSize == other.pageSize &&
+          orientation == other.orientation &&
+          staffConfig == other.staffConfig &&
+          margins == other.margins &&
+          engraving == other.engraving &&
+          systemLayout.hasSameContent(other.systemLayout));
 }

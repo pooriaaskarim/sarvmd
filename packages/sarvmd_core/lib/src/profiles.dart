@@ -39,10 +39,24 @@ class StaffProfile {
   final StaffUIHints uiHints;
 
   /// Apply this profile to an existing [PageConfig], preserving all spacing
-  /// and margin settings while overriding the layout.
-  PageConfig applyTo(PageConfig config) => config.copyWith(
-        systemLayout: systemLayout,
-      );
+  /// and margin settings while overriding the layout with uniquely stamped UIDs.
+  PageConfig applyTo(PageConfig config) {
+    int counter = 0;
+    final stampedRoot = systemLayout.rootGroup.assignUids(
+      counter: () => counter++,
+    );
+    return config.copyWith(
+      systemLayout: systemLayout.copyWith(rootGroup: stampedRoot),
+    );
+  }
+
+  /// Returns whether this profile structurally matches [config]'s system layout.
+  bool matches(PageConfig config) =>
+      systemLayout.matchesStructure(config.systemLayout);
+
+  /// Returns whether this profile structurally matches [layout].
+  bool matchesLayout(SystemLayout layout) =>
+      systemLayout.matchesStructure(layout);
 }
 
 /// Built-in staff profiles for common manuscript layouts.

@@ -682,24 +682,6 @@ class ReorderGroupChildrenCommand extends PageConfigCommand {
   }
 }
 
-/// Recursively stamps every [StaffDefinition] leaf in [node] with a unique
-/// timestamp-based UID, returning the updated [StaffNode] tree.
-///
-/// This is the single source-of-truth for UID generation when a new layout
-/// tree is materialised from a profile or other source that uses `uid = ''`.
-StaffNode _assignUids(StaffNode node, {required int Function() counter}) {
-  return switch (node) {
-    StaffDefinition def => def.copyWith(
-        uid: '${DateTime.now().microsecondsSinceEpoch}_${counter()}',
-      ),
-    StaffNodeGroup group => group.copyWith(
-        children: group.children
-            .map((c) => _assignUids(c, counter: counter))
-            .toList(),
-      ),
-  };
-}
-
 /// Command to apply an ensemble staff profile preset to the page layout.
 
 class ApplyProfileCommand extends PageConfigCommand {
@@ -711,15 +693,6 @@ class ApplyProfileCommand extends PageConfigCommand {
 
   @override
   PageConfig mutateConfig(PageConfig current) {
-    final newConfig = profile.applyTo(current);
-    int counter = 0;
-    final newRoot = _assignUids(
-      newConfig.systemLayout.rootGroup,
-      counter: () => counter++,
-    ) as StaffNodeGroup;
-
-    return newConfig.copyWith(
-      systemLayout: newConfig.systemLayout.copyWith(rootGroup: newRoot),
-    );
+    return profile.applyTo(current);
   }
 }

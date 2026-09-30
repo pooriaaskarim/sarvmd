@@ -23,7 +23,7 @@ class _ProfilePickerState extends State<ProfilePicker> {
   /// Check if a profile is currently active.
   /// A profile is "active" if the layout type and clefs match.
   bool _isActive(core.StaffProfile profile) {
-    return widget.currentConfig.systemLayout == profile.systemLayout;
+    return profile.matches(widget.currentConfig);
   }
 
   String _getCategoryLabel(
