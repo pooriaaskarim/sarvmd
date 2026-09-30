@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Master Engraving Bracket Cluster Architecture (`layout.dart`)**:
+  - Replaced horizontal multi-column bracket staggering ("Russian-doll tiering") with classical master engraving cluster architecture (Bärenreiter, Breitkopf, Gould): outer brackets cluster tightly adjacent to inner brackets with standard 3.0mm spacing (`connectorLevelSpacingMm`).
+  - Hierarchical outer-column group label positioning: group labels and section titles sit outside all covering connectors in a unified, aligned outer column, eliminating over 41mm of wasted horizontal margin space on nested woodwind/brass scores.
+  - Hierarchical label offset delegation (`GroupPlacement.labelOffsetMm`): accurately tracks child group label widths to position parent family labels (e.g. *Woodwinds*, *Strings*) strictly outside nested sub-group labels without bracket displacement.
+- **LaTeX Vector Emitter Hierarchical Labeling & Connectors (`emitter.dart`)**:
+  - Full structural parity with Flutter Canvas, PDF, and SVG emitters: traverses all `SystemGroupPlacement` nodes in `system.groupPlacements` instead of only the root group.
+  - Generates authentic bracket backbones, sub-brackets (without serif ticks), piano braces, and initial barlines with precise SMuFL offsets.
+  - Integrated standard LaTeX zero-dependency `picture` text environment (`\put(x, -y){\makebox(0,0)[r]{...}}`) placing right-aligned group labels and staff instrument names/abbreviations with exact micrometer coordinates, Helvetica typography, and multi-line (`\shortstack[r]`) support.
+
+### Changed
+- **Gouldian Space-Efficient Hierarchical Labeling Architecture (`sarvmd_core` & `sarvmd_ui`)**:
+  - **Local Inner Descriptor Scoping**: Scoped inner staff descriptor widths strictly to their immediate group branch, eliminating system-wide margin bloat where long instrument names (e.g. *Double Bass*) previously displaced unrelated sub-brackets (e.g. *Flutes 1 & 2*) by dozens of millimeters.
+  - **Single-Tier vs Two-Tier Differentiation**: Single-tier groups without group labels (e.g. Piano grand staff, String Quartet) place connectors flush against the initial barline (`connectorOffsetMm = 0.0`) with staff names positioned outside, saving 6–10mm of margin width. Two-tier groups with outer labels properly enclose inner descriptors between the connector and staves.
+  - **Subsequent System Compaction (Gould p. 515)**: Automatically omits family group labels (e.g. *Strings*, *Woodwinds*) on system 2+ when no explicit abbreviation is specified, reclaiming 20mm–48mm of printable notation width across subsequent systems and pages.
+  - **Row-Aware Vertical Disjointness**: Replaced additive connector level offset accumulation across vertically separated instrument families with row-aware maximum indent calculations.
+  - **Calibrated Gould/SMuFL Clearances (`GroupPlacementMetrics`)**: Tightened connector level spacing to 3.0mm, bracket tick length to 1.8mm, staff label clearance to 2.0mm, and connector inner clearance to 1.5mm.
+  - **Unified Cross-Emitter Parity**: Identical geometry and alignment verified across Flutter Canvas (`preview_canvas.dart`), Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`).
+
 ## [0.11.0] - 2026-09-30
 
 ### Added

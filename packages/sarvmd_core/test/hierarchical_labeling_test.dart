@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sarvmd_core/sarvmd_core.dart';
 import 'package:test/test.dart';
 
@@ -190,7 +192,7 @@ void main() {
 
       // Outer group label sits to the left of the connector and inner label
       expect(flutesX, lessThan(innerX));
-      expect(innerX - flutesX, closeTo(9.63, 0.2));
+      expect(innerX - flutesX, closeTo(7.94, 0.2));
     });
 
     test('Nested sub-group labels do not collide with parent connectors', () {
@@ -233,16 +235,21 @@ void main() {
       // Woodwinds sits at level 1
       expect(woodwindsPlacement.level, equals(1));
 
-      // Woodwinds connector offset MUST be strictly greater than Flutes connector offset + Flutes label width
-      final minWoodwindsOffset = flutesPlacement.connectorOffsetMm +
-          GroupPlacementMetrics.groupLabelClearanceMm +
-          flutesPlacement.groupLabelWidthMm;
+      // Woodwinds connector clusters tightly outside Flutes connector
+      final expectedWoodwindsOffset = flutesPlacement.connectorOffsetMm +
+          GroupPlacementMetrics.connectorLevelSpacingMm;
       expect(woodwindsPlacement.connectorOffsetMm,
-          greaterThanOrEqualTo(minWoodwindsOffset));
+          closeTo(expectedWoodwindsOffset, 0.001));
+
+      // Woodwinds label sits outside Flutes label in the outer column
+      final minWoodwindsLabelOffset = flutesPlacement.labelOffsetMm +
+          flutesPlacement.groupLabelWidthMm +
+          GroupPlacementMetrics.groupLabelClearanceMm;
+      expect(woodwindsPlacement.labelOffsetMm,
+          greaterThanOrEqualTo(minWoodwindsLabelOffset));
 
       // System indent must accommodate Woodwinds label to avoid clipping left page margin
-      final minSystemIndent = woodwindsPlacement.connectorOffsetMm +
-          GroupPlacementMetrics.groupLabelClearanceMm +
+      final minSystemIndent = woodwindsPlacement.labelOffsetMm +
           woodwindsPlacement.groupLabelWidthMm;
       expect(system.leftIndentMm, greaterThan(minSystemIndent));
     });
@@ -401,11 +408,144 @@ void main() {
       expect(clearanceBetweenTickAndLabel,
           greaterThanOrEqualTo(GroupPlacementMetrics.staffLabelConnectorClearanceMm - 0.001));
 
-      // Check outer ensemble connector: must be further out than Gui. label
+      // Check outer ensemble connector: clusters tightly outside guitar connector
       final ensemblePlacement =
           sys1.groupPlacements.firstWhere((g) => g.abbreviation == 'Ens.');
-      expect(ensemblePlacement.connectorOffsetMm,
-          greaterThan(guitarPlacement.connectorOffsetMm + guitarPlacement.groupLabelWidthMm));
+      expect(
+        ensemblePlacement.connectorOffsetMm,
+        closeTo(
+          guitarPlacement.connectorOffsetMm +
+              GroupPlacementMetrics.connectorLevelSpacingMm,
+          0.001,
+        ),
+      );
+      // Ensemble label sits outside guitar label
+      expect(
+        ensemblePlacement.labelOffsetMm,
+        greaterThanOrEqualTo(
+          guitarPlacement.labelOffsetMm + guitarPlacement.groupLabelWidthMm,
+        ),
+      );
+    });
+
+    test('Single-tier connected group (String Quartet) places connector flush at barline with labels outside', () {
+      final vln1 = StaffDefinition(uid: 'v1', instrumentName: 'Violin I');
+      final vln2 = StaffDefinition(uid: 'v2', instrumentName: 'Violin II');
+      final vla = StaffDefinition(uid: 'va', instrumentName: 'Viola');
+      final vc = StaffDefinition(uid: 'vc', instrumentName: 'Violoncello');
+
+      final quartet = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: '', // No group label (Single-tier)
+        children: [vln1, vln2, vla, vc],
+      );
+
+      final config = PageConfig(systemLayout: SystemLayout(rootGroup: quartet));
+      final layout = computeLayout(config);
+
+      final sys = layout.systems.first;
+      expect(sys.groupPlacements, hasLength(1));
+
+      final placement = sys.groupPlacements.first;
+      // Single-tier connector must sit flush against starting barline
+      expect(placement.connectorOffsetMm, equals(0.0));
+
+      // Indent must accommodate longest name (Violoncello ~22mm) + clearance + cushion
+      final vcWidth = estimateLabelWidthMm('Violoncello');
+      final expectedIndent = vcWidth + GroupPlacementMetrics.staffLabelClearanceMm + 0.5;
+      expect(sys.leftIndentMm, closeTo(expectedIndent, 0.1));
+      // Far less than the old 30mm+ bloated indent
+      expect(sys.leftIndentMm, lessThan(26.0));
+    });
+
+    test('Chamber Orchestra Strings ensemble reclaims canvas space and compacts on subsequent systems', () {
+      final v1 = StaffDefinition(uid: 'v1', instrumentName: '1', instrumentAbbreviation: '1');
+      final v2 = StaffDefinition(uid: 'v2', instrumentName: '2', instrumentAbbreviation: '2');
+      final violins = StaffNodeGroup(
+        connector: SystemConnector.subBracket,
+        label: 'Violins',
+        abbreviation: 'Vln.',
+        children: [v1, v2],
+      );
+
+      final va = StaffDefinition(uid: 'va', instrumentName: 'Viola', instrumentAbbreviation: 'Vla.');
+      final vc = StaffDefinition(uid: 'vc', instrumentName: 'Violoncello', instrumentAbbreviation: 'Vc.');
+      final db = StaffDefinition(uid: 'db', instrumentName: 'Double Bass', instrumentAbbreviation: 'D.B.');
+
+      final strings = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Strings',
+        // No abbreviation on strings: Gould p. 515 mandates omitting family name on subsequent systems
+        children: [violins, va, vc, db],
+      );
+
+      final config = PageConfig(systemLayout: SystemLayout(rootGroup: strings));
+      final layout = computeLayout(config);
+      expect(layout.systems.length, greaterThanOrEqualTo(2));
+
+      final sys0 = layout.systems[0];
+      final sys1 = layout.systems[1];
+
+      final vlnPlacement0 = sys0.groupPlacements.firstWhere((g) => g.label == 'Violins');
+      final strPlacement0 = sys0.groupPlacements.firstWhere((g) => g.label == 'Strings');
+
+      // Violins sub-bracket offset must be locally scoped to "1" and "2" (~2.6mm), NOT inflated by Double Bass (24mm)!
+      expect(vlnPlacement0.connectorOffsetMm, lessThan(10.0));
+      expect(vlnPlacement0.innerStaffLabelWidthMm, closeTo(estimateLabelWidthMm('2'), 0.2));
+
+      // Strings bracket clears Violins branch extent (~27mm)
+      expect(strPlacement0.connectorOffsetMm, greaterThan(vlnPlacement0.connectorOffsetMm));
+      expect(strPlacement0.connectorOffsetMm, lessThan(32.0));
+
+      // System 1 indent is well under 46mm (reclaiming 25mm+ from the old 71mm bloat!)
+      expect(sys0.leftIndentMm, lessThan(46.0));
+
+      // System 2+ (subsequent systems): Strings family label is omitted!
+      // System 2 indent drops drastically (under 25mm, reclaiming over 46mm of music notation width!)
+      expect(sys1.leftIndentMm, lessThan(25.0));
+    });
+
+    test('compileToTex emits valid hierarchical connectors and text picture environment', () async {
+      final v1 = StaffDefinition(uid: 'v1', instrumentName: '1', instrumentAbbreviation: '1');
+      final v2 = StaffDefinition(uid: 'v2', instrumentName: '2', instrumentAbbreviation: '2');
+      final violins = StaffNodeGroup(
+        connector: SystemConnector.subBracket,
+        label: 'Violins',
+        children: [v1, v2],
+      );
+
+      final va = StaffDefinition(uid: 'va', instrumentName: 'Viola', instrumentAbbreviation: 'Vla.');
+      final vc = StaffDefinition(uid: 'vc', instrumentName: 'Violoncello', instrumentAbbreviation: 'Vc.');
+
+      final strings = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Strings',
+        children: [violins, va, vc],
+      );
+
+      final config = PageConfig(systemLayout: SystemLayout(rootGroup: strings));
+      final layout = computeLayout(config);
+
+      final tex = ScoreCompiler.compileToTex(config, layout);
+
+      expect(tex, contains(r'\usepackage{helvet}'));
+      expect(tex, contains(r'\begin{picture}(0,0)(0,0)'));
+      expect(tex, contains(r'\put'));
+      expect(tex, contains(r'\textbf{Strings}'));
+      expect(tex, contains(r'\textbf{Violins}'));
+      expect(tex, contains(r'\makebox(0,0)[r]'));
+
+      // If pdflatex is available, verify actual compilation succeeds without syntax errors
+      final tempDir = Directory.systemTemp.createTempSync('sarvmd_tex_test_');
+      try {
+        final texFile = File('${tempDir.path}/test_score.tex');
+        texFile.writeAsStringSync(tex);
+        final pdfPath = await ScoreCompiler.compileTexFileToPdf(texFile.path, outputDir: tempDir.path);
+        expect(File(pdfPath).existsSync(), isTrue);
+        expect(File(pdfPath).lengthSync(), greaterThan(1000));
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
     });
   });
 }

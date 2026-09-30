@@ -537,10 +537,12 @@ abstract final class GroupPlacementMetrics {
   static const int emergencyMaxNestingDepth = 3;
 
   /// Horizontal offset in mm per nesting level for outer system connectors.
-  static const double connectorLevelSpacingMm = 4.0;
+  /// (Gould p. 518 standard nested bracket clearance: 3.0 mm)
+  static const double connectorLevelSpacingMm = 3.0;
 
   /// Length of horizontal end ticks for system brackets in mm.
-  static const double bracketTickLengthMm = 2.0;
+  /// (SMuFL Bravura authentic square bracket tick: 1.8 mm)
+  static const double bracketTickLengthMm = 1.8;
 
   /// System barline stroke thickness multiplier relative to staff line thickness.
   static const double systemBarlineWidthMultiplier = 2.5;
@@ -558,13 +560,16 @@ abstract final class GroupPlacementMetrics {
   static const double braceNativeWidthOffsetMm = 82.0;
 
   /// Horizontal clearance between staff label and starting barline in mm.
-  static const double staffLabelClearanceMm = 3.0;
+  /// (Gould p. 513 standard whitespace buffer: 2.0 mm)
+  static const double staffLabelClearanceMm = 2.0;
 
   /// Horizontal clearance between the tip of a bracket tick (or connector) and inner staff labels in mm.
-  static const double staffLabelConnectorClearanceMm = 2.0;
+  /// (Gould p. 514: 1.5 mm)
+  static const double staffLabelConnectorClearanceMm = 1.5;
 
   /// Horizontal clearance between group label and connector in mm.
-  static const double groupLabelClearanceMm = 3.0;
+  /// (Gould p. 513: 2.0 mm)
+  static const double groupLabelClearanceMm = 2.0;
 }
 
 /// The type of clef symbol.

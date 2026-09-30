@@ -190,17 +190,11 @@ class _ManuscriptPainter extends CustomPainter {
 
       final bool isFirstSystem = sysIdx == 0;
 
-      // Identify which staves belong to an actively labeled group or connected group
+      // Identify which staves sit inside a displaced connector (offset > 0)
       final Set<int> innerStaffIndices = {};
       for (final group in system.groupPlacements) {
-        final String gLabel = isFirstSystem
-            ? group.label
-            : (group.abbreviation.trim().isNotEmpty
-                ? group.abbreviation
-                : group.label);
-        final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
-        final bool hasConnector = group.connector != core.SystemConnector.none;
-        if (hasGroupLabel || hasConnector) {
+        if (group.connector != core.SystemConnector.none &&
+            group.innerStaffLabelWidthMm > 0.0) {
           for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
             innerStaffIndices.add(s);
           }
@@ -304,11 +298,12 @@ class _ManuscriptPainter extends CustomPainter {
               // Inner staff descriptor: sits right-aligned between connector and starting barline
               rightAnchorX = systemLeftPx - marginSpace;
             } else {
-              // Standalone staff: sits to the left of its connector
+              // Standalone / Single-Tier staff: sits to the left of its connector
               double maxConnectorOffsetMm = 0.0;
               for (final g in system.groupPlacements) {
                 if (sIdx >= g.startStaffIdx &&
                     sIdx <= g.endStaffIdx &&
+                    g.connector != core.SystemConnector.none &&
                     g.connectorOffsetMm > maxConnectorOffsetMm) {
                   maxConnectorOffsetMm = g.connectorOffsetMm;
                 }
@@ -338,12 +333,10 @@ class _ManuscriptPainter extends CustomPainter {
       for (final group in system.groupPlacements) {
         if (!group.labelVisible) continue;
         final String label = isFirstSystem
-            ? group.label
-            : (group.abbreviation.trim().isNotEmpty
-                ? group.abbreviation
-                : group.label);
+            ? group.label.trim()
+            : group.abbreviation.trim();
 
-        if (label.trim().isNotEmpty) {
+        if (label.isNotEmpty) {
           final staves =
               system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
           if (staves.isEmpty) continue;
@@ -354,8 +347,12 @@ class _ManuscriptPainter extends CustomPainter {
           final groupMidY = (topY + bottomY) / 2;
 
           final systemLeftPx = (systemLeftMm * scale).roundToDouble();
-          final connectorX =
-              systemLeftPx - (group.connectorOffsetMm * scale);
+          final double labelOffsetMm = group.labelOffsetMm > 0.0
+              ? group.labelOffsetMm
+              : group.connectorOffsetMm +
+                  core.GroupPlacementMetrics.groupLabelClearanceMm;
+          final double rightAnchorX =
+              systemLeftPx - (labelOffsetMm * scale);
 
           final double ptScale = scale / (96 / 25.4);
           final double fontSize = 11.0 * ptScale;
@@ -374,9 +371,7 @@ class _ManuscriptPainter extends CustomPainter {
             textDirection: TextDirection.ltr,
           )..layout();
 
-          final double labelClearance =
-              core.GroupPlacementMetrics.groupLabelClearanceMm * scale;
-          final labelX = connectorX - labelClearance - groupNamePainter.width;
+          final labelX = rightAnchorX - groupNamePainter.width;
           final labelY = groupMidY - (groupNamePainter.height / 2);
 
           groupNamePainter.paint(canvas, Offset(labelX, labelY));

@@ -47,6 +47,7 @@ class GroupPlacement {
     this.innerStaffLabelWidthMm = 0.0,
     this.groupLabelWidthMm = 0.0,
     this.connectorOffsetMm = 0.0,
+    this.labelOffsetMm = 0.0,
   });
 
   /// Index of the first staff in this group (within the system's flat list).
@@ -85,6 +86,9 @@ class GroupPlacement {
   /// Physical distance in mm from the starting barline to this connector.
   final double connectorOffsetMm;
 
+  /// Physical distance in mm from the starting barline to this group's label right anchor.
+  final double labelOffsetMm;
+
   /// Copy with updated parameters.
   GroupPlacement copyWith({
     int? startStaffIdx,
@@ -99,6 +103,7 @@ class GroupPlacement {
     double? innerStaffLabelWidthMm,
     double? groupLabelWidthMm,
     double? connectorOffsetMm,
+    double? labelOffsetMm,
   }) {
     return GroupPlacement(
       startStaffIdx: startStaffIdx ?? this.startStaffIdx,
@@ -114,6 +119,7 @@ class GroupPlacement {
           innerStaffLabelWidthMm ?? this.innerStaffLabelWidthMm,
       groupLabelWidthMm: groupLabelWidthMm ?? this.groupLabelWidthMm,
       connectorOffsetMm: connectorOffsetMm ?? this.connectorOffsetMm,
+      labelOffsetMm: labelOffsetMm ?? this.labelOffsetMm,
     );
   }
 }
@@ -260,64 +266,67 @@ PageLayout computeLayout(PageConfig config) {
     // Implement Gould/MOLA two-tier hierarchical space-aware indentation
     final bool isFirstSystem = i == 0;
 
-    // 1. Determine which staves belong to an actively labeled group or connected group.
-    final Set<int> innerStaffIndices = {};
-    for (final group in placements) {
-      final String gLabel = isFirstSystem
-          ? group.label
-          : (group.abbreviation.trim().isNotEmpty
-              ? group.abbreviation
-              : group.label);
-      final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
-      final bool hasConnector = group.connector != SystemConnector.none;
-      if (hasGroupLabel || hasConnector) {
-        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
-          innerStaffIndices.add(s);
-        }
-      }
+    // 1. Resolve effective group labels per system
+    // Gould (p. 515): Top-level / family names (e.g. Woodwinds, Strings) appear only on System 1.
+    // On subsequent systems, if an explicit abbreviation exists, use it; otherwise omit family name.
+    String resolveGroupLabel(GroupPlacement g) {
+      if (!g.labelVisible) return '';
+      if (isFirstSystem) return g.label.trim();
+      return g.abbreviation.trim();
     }
 
-    // 2. Compute inner and outer dimensions per GroupPlacement
-    double systemMaxInnerWidthMm = 0.0;
+
+    // 3. Compute inner descriptor width and group label width per GroupPlacement locally
     final initialGroupData = <GroupPlacement>[];
+    double systemMaxInnerWidthMm = 0.0;
 
     for (final group in placements) {
-      final String gLabel = isFirstSystem
-          ? group.label
-          : (group.abbreviation.trim().isNotEmpty
-              ? group.abbreviation
-              : group.label);
-      final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
+      final gLabel = resolveGroupLabel(group);
+      final bool hasGroupLabel = gLabel.isNotEmpty;
       final bool hasConnector = group.connector != SystemConnector.none;
       final double gWidthMm = hasGroupLabel
           ? estimateLabelWidthMm(gLabel, fontSizePt: 11.0, isGroup: true)
           : 0.0;
 
-      // Find max inner label width for staves in this group
+      final bool hasChildConnectors = placements.any((c) =>
+          c.level < group.level &&
+          c.startStaffIdx >= group.startStaffIdx &&
+          c.endStaffIdx <= group.endStaffIdx &&
+          c.connector != SystemConnector.none);
+
+      final bool hasEnclosingGroupLabel = placements.any((p) =>
+          p.level > group.level &&
+          p.startStaffIdx <= group.startStaffIdx &&
+          p.endStaffIdx >= group.endStaffIdx &&
+          resolveGroupLabel(p).isNotEmpty);
+
       double groupInnerWidthMm = 0.0;
-      for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
-        if (s < staves.length) {
-          final def = staves[s].definition;
-          if (def != null && def.labelVisible) {
-            final sLabel = isFirstSystem
-                ? (def.instrumentName ?? '')
-                : ((def.instrumentAbbreviation != null &&
-                        def.instrumentAbbreviation!.trim().isNotEmpty)
-                    ? def.instrumentAbbreviation!
-                    : (def.instrumentName ?? ''));
-            if (sLabel.trim().isNotEmpty) {
-              final w = estimateLabelWidthMm(sLabel,
-                  fontSizePt: def.labelFontSize);
-              if (w > groupInnerWidthMm) {
-                groupInnerWidthMm = w;
+      if (hasConnector &&
+          !hasChildConnectors &&
+          (hasGroupLabel || hasEnclosingGroupLabel)) {
+        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
+          if (s < staves.length) {
+            final def = staves[s].definition;
+            if (def != null && def.labelVisible) {
+              final sLabel = isFirstSystem
+                  ? (def.instrumentName ?? '')
+                  : ((def.instrumentAbbreviation != null &&
+                          def.instrumentAbbreviation!.trim().isNotEmpty)
+                      ? def.instrumentAbbreviation!
+                      : (def.instrumentName ?? ''));
+              if (sLabel.trim().isNotEmpty) {
+                final w = estimateLabelWidthMm(sLabel,
+                    fontSizePt: def.labelFontSize);
+                if (w > groupInnerWidthMm) {
+                  groupInnerWidthMm = w;
+                }
               }
             }
           }
         }
       }
 
-      if ((hasGroupLabel || hasConnector) &&
-          groupInnerWidthMm > systemMaxInnerWidthMm) {
+      if (groupInnerWidthMm > systemMaxInnerWidthMm) {
         systemMaxInnerWidthMm = groupInnerWidthMm;
       }
 
@@ -327,93 +336,165 @@ PageLayout computeLayout(PageConfig config) {
       ));
     }
 
-    // 3. Compute cumulative connector offsets per level across the system
-    final int maxLevel = initialGroupData.fold<int>(
-      0,
-      (prev, g) => g.level > prev ? g.level : prev,
-    );
+    // 4. Compute connector offsets per group locally and hierarchically.
+    // Groups are sorted by level ascending so inner/child connectors are resolved first.
+    final updatedPlacements = List<GroupPlacement>.from(initialGroupData);
+    final groupIndicesByLevel =
+        List.generate(updatedPlacements.length, (idx) => idx)
+          ..sort((a, b) =>
+              updatedPlacements[a].level.compareTo(updatedPlacements[b].level));
 
-    final Map<int, double> levelOffsets = {};
-    // Level 0 sits outside inner staff descriptors (if any).
-    // When inner staff descriptors or abbreviations exist, we guarantee
-    // clearance between bracket end ticks and label text so ticks do not intersect abbreviations.
-    levelOffsets[0] = systemMaxInnerWidthMm > 0
-        ? (systemMaxInnerWidthMm +
-            GroupPlacementMetrics.staffLabelClearanceMm +
-            GroupPlacementMetrics.bracketTickLengthMm +
-            GroupPlacementMetrics.staffLabelConnectorClearanceMm)
-        : 0.0;
+    for (final idx in groupIndicesByLevel) {
+      final g = updatedPlacements[idx];
+      final bool hasConnector = g.connector != SystemConnector.none;
+      if (!hasConnector) {
+        updatedPlacements[idx] = g.copyWith(connectorOffsetMm: 0.0);
+        continue;
+      }
 
-    for (int lvl = 0; lvl < maxLevel; lvl++) {
-      double maxLvlGroupLabelExtent = 0.0;
-      for (final g in initialGroupData) {
-        if (g.level == lvl && g.groupLabelWidthMm > 0.0) {
-          final extent =
-              GroupPlacementMetrics.groupLabelClearanceMm + g.groupLabelWidthMm;
-          if (extent > maxLvlGroupLabelExtent) {
-            maxLvlGroupLabelExtent = extent;
+      // Check for child groups enclosed within g that have active connectors.
+      // In classical engraving (Bärenreiter, Gould), outer connectors cluster
+      // immediately outside child connectors, separated only by connectorLevelSpacingMm (3.0mm).
+      double maxChildBranchExtent = 0.0;
+      for (final otherIdx in groupIndicesByLevel) {
+        if (otherIdx == idx) continue;
+        final c = updatedPlacements[otherIdx];
+        if (c.level < g.level &&
+            c.startStaffIdx >= g.startStaffIdx &&
+            c.endStaffIdx <= g.endStaffIdx &&
+            c.connector != SystemConnector.none) {
+          final double cExtent = c.connectorOffsetMm +
+              GroupPlacementMetrics.connectorLevelSpacingMm;
+          if (cExtent > maxChildBranchExtent) {
+            maxChildBranchExtent = cExtent;
           }
         }
       }
-      final double step = maxLvlGroupLabelExtent > 0.0
-          ? (maxLvlGroupLabelExtent +
-              GroupPlacementMetrics.bracketTickLengthMm +
-              GroupPlacementMetrics.connectorLevelSpacingMm)
-          : GroupPlacementMetrics.connectorLevelSpacingMm;
-      levelOffsets[lvl + 1] = (levelOffsets[lvl] ?? 0.0) + step;
+
+      // If g has inner staff labels:
+      // it creates an inner zone between its connector and the staves.
+      double directInnerExtent = 0.0;
+      if (g.innerStaffLabelWidthMm > 0.0) {
+        directInnerExtent = g.innerStaffLabelWidthMm +
+            GroupPlacementMetrics.staffLabelClearanceMm +
+            GroupPlacementMetrics.bracketTickLengthMm +
+            GroupPlacementMetrics.staffLabelConnectorClearanceMm;
+      }
+
+      final double offset = maxChildBranchExtent > directInnerExtent
+          ? maxChildBranchExtent
+          : directInnerExtent;
+
+      updatedPlacements[idx] = g.copyWith(connectorOffsetMm: offset);
     }
 
-    // 4. Update placements with exact physical connectorOffsetMm and calculate required indent
-    double maxSystemRequiredIndentMm = 0.0;
-    final updatedPlacements = <GroupPlacement>[];
+    // 5. Compute label offsets per group hierarchically.
+    // In Gouldian/master engraving, group labels sit in an outer column to the left
+    // of all brackets covering the group's staves. If a parent group also has a label,
+    // its label sits further to the left outside the child group labels.
+    for (final idx in groupIndicesByLevel) {
+      final g = updatedPlacements[idx];
+      if (g.groupLabelWidthMm == 0.0) {
+        updatedPlacements[idx] = g.copyWith(labelOffsetMm: 0.0);
+        continue;
+      }
 
-    for (final group in initialGroupData) {
-      final double connectorOffset = levelOffsets[group.level] ?? 0.0;
-      if (group.groupLabelWidthMm > 0.0) {
-        final double groupRequiredIndent = connectorOffset +
-            GroupPlacementMetrics.groupLabelClearanceMm +
-            group.groupLabelWidthMm;
-        if (groupRequiredIndent > maxSystemRequiredIndentMm) {
-          maxSystemRequiredIndentMm = groupRequiredIndent;
-        }
-      } else if (connectorOffset > 0.0) {
-        if (connectorOffset > maxSystemRequiredIndentMm) {
-          maxSystemRequiredIndentMm = connectorOffset;
+      // Find the outermost connector covering any of this group's staves
+      double maxCoveringConnectorOffset = g.connectorOffsetMm;
+      for (final other in updatedPlacements) {
+        if (other.connector != SystemConnector.none &&
+            other.startStaffIdx <= g.endStaffIdx &&
+            other.endStaffIdx >= g.startStaffIdx &&
+            other.connectorOffsetMm > maxCoveringConnectorOffset) {
+          maxCoveringConnectorOffset = other.connectorOffsetMm;
         }
       }
 
-      updatedPlacements.add(group.copyWith(
-        connectorOffsetMm: connectorOffset,
-      ));
+      final double baseLabelOffset = maxCoveringConnectorOffset > 0.0
+          ? maxCoveringConnectorOffset + GroupPlacementMetrics.groupLabelClearanceMm
+          : GroupPlacementMetrics.groupLabelClearanceMm;
+
+      // Check if any child groups enclosed within g have active group labels
+      double maxChildLabelExtent = 0.0;
+      for (final otherIdx in groupIndicesByLevel) {
+        if (otherIdx == idx) continue;
+        final c = updatedPlacements[otherIdx];
+        if (c.level < g.level &&
+            c.startStaffIdx >= g.startStaffIdx &&
+            c.endStaffIdx <= g.endStaffIdx &&
+            c.groupLabelWidthMm > 0.0) {
+          final extent = c.labelOffsetMm +
+              c.groupLabelWidthMm +
+              GroupPlacementMetrics.groupLabelClearanceMm;
+          if (extent > maxChildLabelExtent) {
+            maxChildLabelExtent = extent;
+          }
+        }
+      }
+
+      final double labelOffset = maxChildLabelExtent > baseLabelOffset
+          ? maxChildLabelExtent
+          : baseLabelOffset;
+
+      updatedPlacements[idx] = g.copyWith(labelOffsetMm: labelOffset);
     }
 
-    // 5. Check standalone / unlabeled staves (staves not in an actively labeled or connected group)
+    // 6. Identify inner staves (staves sitting inside an inner-labeled group)
+    final Set<int> innerStaffIndices = {};
+    for (final group in updatedPlacements) {
+      if (group.connector != SystemConnector.none &&
+          group.innerStaffLabelWidthMm > 0.0) {
+        for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
+          innerStaffIndices.add(s);
+        }
+      }
+    }
+
+    // 7. Compute the required left indent for the system (Row-aware maximum)
+    double maxSystemRequiredIndentMm = 0.0;
+
+    // A. Groups:
+    for (final group in updatedPlacements) {
+      if (group.groupLabelWidthMm > 0.0) {
+        final req = group.labelOffsetMm + group.groupLabelWidthMm;
+        if (req > maxSystemRequiredIndentMm) {
+          maxSystemRequiredIndentMm = req;
+        }
+      } else if (group.connectorOffsetMm > 0.0) {
+        if (group.connectorOffsetMm > maxSystemRequiredIndentMm) {
+          maxSystemRequiredIndentMm = group.connectorOffsetMm;
+        }
+      }
+    }
+
+    // B. Staves:
     for (int s = 0; s < staves.length; s++) {
-      if (!innerStaffIndices.contains(s)) {
-        final def = staves[s].definition;
-        if (def != null && def.labelVisible) {
-          final sLabel = isFirstSystem
-              ? (def.instrumentName ?? '')
-              : ((def.instrumentAbbreviation != null &&
-                      def.instrumentAbbreviation!.trim().isNotEmpty)
-                  ? def.instrumentAbbreviation!
-                  : (def.instrumentName ?? ''));
-          if (sLabel.trim().isNotEmpty) {
-            final w = estimateLabelWidthMm(sLabel,
-                fontSizePt: def.labelFontSize);
-            double maxConnectorOffset = 0.0;
+      final def = staves[s].definition;
+      if (def != null && def.labelVisible) {
+        final sLabel = isFirstSystem
+            ? (def.instrumentName ?? '')
+            : ((def.instrumentAbbreviation != null &&
+                    def.instrumentAbbreviation!.trim().isNotEmpty)
+                ? def.instrumentAbbreviation!
+                : (def.instrumentName ?? ''));
+        if (sLabel.trim().isNotEmpty) {
+          final w = estimateLabelWidthMm(sLabel, fontSizePt: def.labelFontSize);
+          if (!innerStaffIndices.contains(s)) {
+            // Non-inner staff: sits outside the outermost connector covering this staff
+            double maxCoveringConnectorOffset = 0.0;
             for (final g in updatedPlacements) {
               if (s >= g.startStaffIdx &&
                   s <= g.endStaffIdx &&
-                  g.connectorOffsetMm > maxConnectorOffset) {
-                maxConnectorOffset = g.connectorOffsetMm;
+                  g.connector != SystemConnector.none &&
+                  g.connectorOffsetMm > maxCoveringConnectorOffset) {
+                maxCoveringConnectorOffset = g.connectorOffsetMm;
               }
             }
-            final double staffRequiredIndent = w +
+            final staffReq = w +
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                maxConnectorOffset;
-            if (staffRequiredIndent > maxSystemRequiredIndentMm) {
-              maxSystemRequiredIndentMm = staffRequiredIndent;
+                maxCoveringConnectorOffset;
+            if (staffReq > maxSystemRequiredIndentMm) {
+              maxSystemRequiredIndentMm = staffReq;
             }
           }
         }
@@ -421,7 +502,7 @@ PageLayout computeLayout(PageConfig config) {
     }
 
     final double leftIndentMm = maxSystemRequiredIndentMm > 0.0
-        ? maxSystemRequiredIndentMm + 1.0
+        ? maxSystemRequiredIndentMm + 0.5
         : 0.0;
 
     systems.add(StaffSystem(

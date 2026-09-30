@@ -202,11 +202,9 @@ void _drawStaffLabels(
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
       final String label = isFirstSystem
-          ? group.label
-          : (group.abbreviation.trim().isNotEmpty
-              ? group.abbreviation
-              : group.label);
-      if (label.trim().isEmpty) continue;
+          ? group.label.trim()
+          : group.abbreviation.trim();
+      if (label.isEmpty) continue;
 
       final groupStaves =
           system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
@@ -216,8 +214,11 @@ void _drawStaffLabels(
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
       final midY = (topY + bottomY) / 2.0;
 
-      final double connectorX = leftX - group.connectorOffsetMm;
-      final labelX = connectorX - GroupPlacementMetrics.groupLabelClearanceMm;
+      final double labelOffset = group.labelOffsetMm > 0.0
+          ? group.labelOffsetMm
+          : group.connectorOffsetMm +
+              GroupPlacementMetrics.groupLabelClearanceMm;
+      final double labelX = leftX - labelOffset;
 
       const fontFamily = 'serif';
       final fontSizeMm = 11.0 * (25.4 / 72.0);
@@ -233,17 +234,11 @@ void _drawStaffLabels(
       );
     }
 
-    // 2. Identify which staves belong to an actively labeled group or connected group
+    // 2. Identify which staves sit inside a displaced connector (offset > 0)
     final Set<int> innerStaffIndices = {};
     for (final group in system.groupPlacements) {
-      final String gLabel = isFirstSystem
-          ? group.label
-          : (group.abbreviation.trim().isNotEmpty
-              ? group.abbreviation
-              : group.label);
-      final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
-      final bool hasConnector = group.connector != SystemConnector.none;
-      if (hasGroupLabel || hasConnector) {
+      if (group.connector != SystemConnector.none &&
+          group.innerStaffLabelWidthMm > 0.0) {
         for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
           innerStaffIndices.add(s);
         }
@@ -270,11 +265,12 @@ void _drawStaffLabels(
                 GroupPlacementMetrics.staffLabelClearanceMm +
                 def.labelHorizontalOffset;
           } else {
-            // Standalone staff: sits to the left of its connector
+            // Standalone / Single-Tier staff: sits to the left of its connector
             double maxConnectorOffset = 0.0;
             for (final g in system.groupPlacements) {
               if (sIdx >= g.startStaffIdx &&
                   sIdx <= g.endStaffIdx &&
+                  g.connector != SystemConnector.none &&
                   g.connectorOffsetMm > maxConnectorOffset) {
                 maxConnectorOffset = g.connectorOffsetMm;
               }
