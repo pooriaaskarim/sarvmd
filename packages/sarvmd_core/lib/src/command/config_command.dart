@@ -18,7 +18,7 @@ abstract class PageConfigCommand extends DocumentCommand {
   @override
   SarvDocument execute(SarvDocument current) {
     _previousConfig = current.config;
-    final updatedConfig = mutateConfig(current.config);
+    final updatedConfig = mutateConfig(current.config).ensureUniqueUids();
     return current.copyWith(config: updatedConfig);
   }
 

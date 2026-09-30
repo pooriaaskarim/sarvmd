@@ -844,29 +844,42 @@ class _StaffGroupWidgetState extends State<StaffGroupWidget> {
                     ),
                   )
                 else
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (int idx = 0; idx < widget.group.children.length; idx++)
-                        switch (widget.group.children[idx]) {
-                          core.StaffDefinition def => StaffItemWidget(
-                              key: ValueKey('staff_${def.uid}'),
-                              index: idx,
-                              staff: def,
-                              parentGroupHash: widget.group.hashCode,
-                              notifier: widget.notifier,
-                            ),
-                          core.StaffNodeGroup subGroup => StaffGroupWidget(
-                              key: ValueKey('group_${subGroup.hashCode}_$idx'),
-                              group: subGroup,
-                              depth: widget.depth + 1,
-                              index: idx,
-                              parentGroupHash: widget.group.hashCode,
-                              notifier: widget.notifier,
-                            ),
-                        }
-                    ],
+                  Builder(
+                    builder: (context) {
+                      final seenStaffKeys = <String>{};
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (int idx = 0; idx < widget.group.children.length; idx++)
+                            switch (widget.group.children[idx]) {
+                              core.StaffDefinition def => () {
+                                  final rawKey = def.uid.isNotEmpty
+                                      ? def.uid
+                                      : '${widget.group.hashCode}_$idx';
+                                  final uniqueKey = seenStaffKeys.add(rawKey)
+                                      ? rawKey
+                                      : '${rawKey}_$idx';
+                                  return StaffItemWidget(
+                                    key: ValueKey('staff_$uniqueKey'),
+                                    index: idx,
+                                    staff: def,
+                                    parentGroupHash: widget.group.hashCode,
+                                    notifier: widget.notifier,
+                                  );
+                                }(),
+                              core.StaffNodeGroup subGroup => StaffGroupWidget(
+                                  key: ValueKey('group_${subGroup.hashCode}_$idx'),
+                                  group: subGroup,
+                                  depth: widget.depth + 1,
+                                  index: idx,
+                                  parentGroupHash: widget.group.hashCode,
+                                  notifier: widget.notifier,
+                                ),
+                            }
+                        ],
+                      );
+                    },
                   ),
                 if (isBottomZone)
                   Container(
