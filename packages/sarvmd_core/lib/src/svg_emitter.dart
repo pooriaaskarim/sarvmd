@@ -198,7 +198,7 @@ void _drawStaffLabels(
     final leftX = baseLeftX + system.leftIndentMm;
     final bool isFirstSystem = sysIdx == 0;
 
-    // 1. Group labels (Outer tier)
+    // 1. Group labels (Outer tier or section header above staff)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
       final String label = isFirstSystem
@@ -214,24 +214,38 @@ void _drawStaffLabels(
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
       final midY = (topY + bottomY) / 2.0;
 
-      final double labelOffset = group.labelOffsetMm > 0.0
-          ? group.labelOffsetMm
-          : group.connectorOffsetMm +
-              GroupPlacementMetrics.groupLabelClearanceMm;
-      final double labelX = leftX - labelOffset;
-
       const fontFamily = 'serif';
-      final fontSizeMm = 11.0 * (25.4 / 72.0);
 
-      _writeRightAlignedText(
-        buf: buf,
-        text: label,
-        rightAnchorXMm: labelX,
-        centerYMm: midY,
-        fontSizeMm: fontSizeMm,
-        fontFamily: fontFamily,
-        isBold: true,
-      );
+      if (group.labelPlacement == GroupLabelPlacement.aboveStaff) {
+        final fontSizeMm = 10.0 * (25.4 / 72.0);
+        final baselineY = topY - 2.5;
+        _writeLeftAlignedText(
+          buf: buf,
+          text: label,
+          leftAnchorXMm: leftX,
+          baselineYMm: baselineY,
+          fontSizeMm: fontSizeMm,
+          fontFamily: fontFamily,
+          isBold: true,
+        );
+      } else {
+        final double labelOffset = group.labelOffsetMm > 0.0
+            ? group.labelOffsetMm
+            : group.connectorOffsetMm +
+                GroupPlacementMetrics.groupLabelClearanceMm;
+        final double labelX = leftX - labelOffset;
+        final fontSizeMm = 11.0 * (25.4 / 72.0);
+
+        _writeRightAlignedText(
+          buf: buf,
+          text: label,
+          rightAnchorXMm: labelX,
+          centerYMm: midY,
+          fontSizeMm: fontSizeMm,
+          fontFamily: fontFamily,
+          isBold: true,
+        );
+      }
     }
 
     // 2. Identify which staves sit inside a displaced connector (offset > 0)
@@ -250,12 +264,13 @@ void _drawStaffLabels(
       final staff = system.staves[sIdx];
       final def = staff.definition;
       if (def != null && def.labelVisible) {
-        final String? label = isFirstSystem
-            ? def.instrumentName
-            : ((def.instrumentAbbreviation != null &&
-                    def.instrumentAbbreviation!.trim().isNotEmpty)
-                ? def.instrumentAbbreviation
-                : def.instrumentName);
+        final String? label = staff.resolvedLabel ??
+            (isFirstSystem
+                ? def.instrumentName
+                : ((def.instrumentAbbreviation != null &&
+                        def.instrumentAbbreviation!.trim().isNotEmpty)
+                    ? def.instrumentAbbreviation
+                    : def.instrumentName));
 
         if (label != null && label.trim().isNotEmpty) {
           final double labelX;
@@ -301,6 +316,46 @@ void _drawStaffLabels(
         }
       }
     }
+  }
+}
+
+/// Helper method to write left-aligned text (e.g. section headers above staves) in SVG.
+void _writeLeftAlignedText({
+  required StringBuffer buf,
+  required String text,
+  required double leftAnchorXMm,
+  required double baselineYMm,
+  required double fontSizeMm,
+  required String fontFamily,
+  bool isBold = false,
+  bool isItalic = false,
+}) {
+  final boldAttr = isBold ? ' font-weight="bold"' : '';
+  final italicAttr = isItalic ? ' font-style="italic"' : '';
+  final lines = text.split('\n');
+
+  if (lines.length == 1) {
+    buf.writeln(
+      '    <text x="${_f(leftAnchorXMm)}" y="${_f(baselineYMm)}"'
+      ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$boldAttr$italicAttr'
+      ' fill="black" text-anchor="start">'
+      '${_escapeXml(lines.first)}'
+      '</text>',
+    );
+  } else {
+    final lineHeightMm = fontSizeMm * 1.2;
+    buf.writeln(
+      '    <text x="${_f(leftAnchorXMm)}" y="${_f(baselineYMm)}"'
+      ' font-family="$fontFamily" font-size="${_f(fontSizeMm)}"$boldAttr$italicAttr'
+      ' fill="black" text-anchor="start">',
+    );
+    for (var i = 0; i < lines.length; i++) {
+      final dy = i == 0 ? '0' : _f(lineHeightMm);
+      buf.writeln(
+        '      <tspan x="${_f(leftAnchorXMm)}" dy="$dy">${_escapeXml(lines[i])}</tspan>',
+      );
+    }
+    buf.writeln('    </text>');
   }
 }
 

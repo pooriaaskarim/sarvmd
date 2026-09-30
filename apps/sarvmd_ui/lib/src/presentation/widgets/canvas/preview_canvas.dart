@@ -252,12 +252,13 @@ class _ManuscriptPainter extends CustomPainter {
         final isLabelVisible = staff.definition?.labelVisible ?? true;
         if (isLabelVisible) {
           final isFirstSystem = sysIdx == 0;
-          final String? name = isFirstSystem
-              ? staff.definition?.instrumentName
-              : ((staff.definition?.instrumentAbbreviation != null &&
-                      staff.definition!.instrumentAbbreviation!.trim().isNotEmpty)
-                  ? staff.definition!.instrumentAbbreviation
-                  : staff.definition?.instrumentName);
+          final String? name = staff.resolvedLabel ??
+              (isFirstSystem
+                  ? staff.definition?.instrumentName
+                  : ((staff.definition?.instrumentAbbreviation != null &&
+                          staff.definition!.instrumentAbbreviation!.trim().isNotEmpty)
+                      ? staff.definition!.instrumentAbbreviation
+                      : staff.definition?.instrumentName));
 
           if (name != null && name.isNotEmpty) {
             final double ptScale =
@@ -347,34 +348,56 @@ class _ManuscriptPainter extends CustomPainter {
           final groupMidY = (topY + bottomY) / 2;
 
           final systemLeftPx = (systemLeftMm * scale).roundToDouble();
-          final double labelOffsetMm = group.labelOffsetMm > 0.0
-              ? group.labelOffsetMm
-              : group.connectorOffsetMm +
-                  core.GroupPlacementMetrics.groupLabelClearanceMm;
-          final double rightAnchorX =
-              systemLeftPx - (labelOffsetMm * scale);
-
           final double ptScale = scale / (96 / 25.4);
-          final double fontSize = 11.0 * ptScale;
 
-          final groupNamePainter = TextPainter(
-            text: TextSpan(
-              text: label,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: inkColor.withValues(alpha: 0.9),
-                fontFamily: 'Noto Serif',
+          if (group.labelPlacement == core.GroupLabelPlacement.aboveStaff) {
+            final double fontSize = 10.0 * ptScale;
+            final headerPainter = TextPainter(
+              text: TextSpan(
+                text: label,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: inkColor.withValues(alpha: 0.9),
+                  fontFamily: 'Noto Serif',
+                ),
               ),
-            ),
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.ltr,
-          )..layout();
+              textAlign: TextAlign.left,
+              textDirection: TextDirection.ltr,
+            )..layout();
 
-          final labelX = rightAnchorX - groupNamePainter.width;
-          final labelY = groupMidY - (groupNamePainter.height / 2);
+            final double headerX = systemLeftPx;
+            final double headerY =
+                (topY - (2.5 * scale) - headerPainter.height).roundToDouble();
+            headerPainter.paint(canvas, Offset(headerX, headerY));
+          } else {
+            final double labelOffsetMm = group.labelOffsetMm > 0.0
+                ? group.labelOffsetMm
+                : group.connectorOffsetMm +
+                    core.GroupPlacementMetrics.groupLabelClearanceMm;
+            final double rightAnchorX =
+                systemLeftPx - (labelOffsetMm * scale);
+            final double fontSize = 11.0 * ptScale;
 
-          groupNamePainter.paint(canvas, Offset(labelX, labelY));
+            final groupNamePainter = TextPainter(
+              text: TextSpan(
+                text: label,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: inkColor.withValues(alpha: 0.9),
+                  fontFamily: 'Noto Serif',
+                ),
+              ),
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.ltr,
+            )..layout();
+
+            final labelX = rightAnchorX - groupNamePainter.width;
+            final labelY = groupMidY - (groupNamePainter.height / 2);
+
+            groupNamePainter.paint(canvas, Offset(labelX, labelY));
+          }
         }
       }
 

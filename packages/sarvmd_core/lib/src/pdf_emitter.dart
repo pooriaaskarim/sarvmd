@@ -142,7 +142,7 @@ void _drawStaffLabels(
     final leftX = baseLeftX + system.leftIndentMm;
     final bool isFirstSystem = sysIdx == 0;
 
-    // 1. Group labels (Outer tier)
+    // 1. Group labels (Outer tier or section header above staff)
     for (final group in system.groupPlacements) {
       if (!group.labelVisible) continue;
       final String label = isFirstSystem
@@ -158,29 +158,50 @@ void _drawStaffLabels(
       final bottomY = groupStaves.last.topY + groupStaves.last.height;
       final midY = (topY + bottomY) / 2.0;
 
-      final double labelOffset = group.labelOffsetMm > 0.0
-          ? group.labelOffsetMm
-          : group.connectorOffsetMm +
-              GroupPlacementMetrics.groupLabelClearanceMm;
-      final double labelX = leftX - labelOffset;
+      if (group.labelPlacement == GroupLabelPlacement.aboveStaff) {
+        const fontPt = 10.0;
+        final headerYMm = topY - 2.5;
+        final headerXPt = leftX * _mmToPt;
+        final headerYPt = hPt - (headerYMm * _mmToPt);
 
-      final labelXPt = labelX * _mmToPt;
-      final labelYPt = hPt - (midY * _mmToPt);
-      const fontPt = 11.0;
+        canvas.saveContext();
+        final font = pdf.PdfFont.helveticaBold(doc);
+        canvas.setFillColor(pdf.PdfColors.black);
 
-      canvas.saveContext();
-      final font = pdf.PdfFont.helveticaBold(doc);
-      canvas.setFillColor(pdf.PdfColors.black);
+        _drawLeftAlignedText(
+          canvas: canvas,
+          font: font,
+          fontPt: fontPt,
+          text: label,
+          leftAnchorXPt: headerXPt,
+          baselineYPt: headerYPt,
+        );
+        canvas.restoreContext();
+      } else {
+        final double labelOffset = group.labelOffsetMm > 0.0
+            ? group.labelOffsetMm
+            : group.connectorOffsetMm +
+                GroupPlacementMetrics.groupLabelClearanceMm;
+        final double labelX = leftX - labelOffset;
 
-      _drawRightAlignedText(
-        canvas: canvas,
-        font: font,
-        fontPt: fontPt,
-        text: label,
-        rightAnchorXPt: labelXPt,
-        centerYPt: labelYPt,
-      );
-      canvas.restoreContext();
+        final labelXPt = labelX * _mmToPt;
+        final labelYPt = hPt - (midY * _mmToPt);
+        const fontPt = 11.0;
+
+        canvas.saveContext();
+        final font = pdf.PdfFont.helveticaBold(doc);
+        canvas.setFillColor(pdf.PdfColors.black);
+
+        _drawRightAlignedText(
+          canvas: canvas,
+          font: font,
+          fontPt: fontPt,
+          text: label,
+          rightAnchorXPt: labelXPt,
+          centerYPt: labelYPt,
+        );
+        canvas.restoreContext();
+      }
     }
 
     // 2. Identify which staves sit inside a displaced connector (offset > 0)
@@ -199,12 +220,13 @@ void _drawStaffLabels(
       final staff = system.staves[sIdx];
       final def = staff.definition;
       if (def != null && def.labelVisible) {
-        final String? label = isFirstSystem
-            ? def.instrumentName
-            : ((def.instrumentAbbreviation != null &&
-                    def.instrumentAbbreviation!.trim().isNotEmpty)
-                ? def.instrumentAbbreviation
-                : def.instrumentName);
+        final String? label = staff.resolvedLabel ??
+            (isFirstSystem
+                ? def.instrumentName
+                : ((def.instrumentAbbreviation != null &&
+                        def.instrumentAbbreviation!.trim().isNotEmpty)
+                    ? def.instrumentAbbreviation
+                    : def.instrumentName));
 
         if (label != null && label.trim().isNotEmpty) {
           final double labelX;
@@ -257,6 +279,46 @@ void _drawStaffLabels(
   }
 }
 
+/// Sanitizes text for standard Latin-1 PDF font rendering by transliterating
+/// music symbols (such as flats and sharps) and filtering unencodable characters.
+String _sanitizePdfText(String text) {
+  final transliterated = text
+      .replaceAll('♭', 'b')
+      .replaceAll('♯', '#')
+      .replaceAll('♮', '')
+      .replaceAll('𝄫', 'bb')
+      .replaceAll('𝄪', 'x');
+
+  final buffer = StringBuffer();
+  for (final char in transliterated.runes) {
+    if (char <= 255) {
+      buffer.writeCharCode(char);
+    } else {
+      buffer.write('?');
+    }
+  }
+  return buffer.toString();
+}
+
+/// Helper method to draw left-aligned single or multi-line text blocks on PDF.
+void _drawLeftAlignedText({
+  required pdf.PdfGraphics canvas,
+  required pdf.PdfFont font,
+  required double fontPt,
+  required String text,
+  required double leftAnchorXPt,
+  required double baselineYPt,
+}) {
+  final safeText = _sanitizePdfText(text);
+  final lines = safeText.split('\n');
+  final lineHeightPt = fontPt * 1.2;
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final drawYPt = baselineYPt - (i * lineHeightPt);
+    canvas.drawString(font, fontPt, line, leftAnchorXPt, drawYPt);
+  }
+}
+
 /// Helper method to draw right-aligned single or multi-line text blocks on PDF.
 void _drawRightAlignedText({
   required pdf.PdfGraphics canvas,
@@ -266,7 +328,8 @@ void _drawRightAlignedText({
   required double rightAnchorXPt,
   required double centerYPt,
 }) {
-  final lines = text.split('\n');
+  final safeText = _sanitizePdfText(text);
+  final lines = safeText.split('\n');
   final lineHeightPt = fontPt * 1.2;
   final totalBlockHeightPt = (lines.length - 1) * lineHeightPt;
   final startBaselineYPt =

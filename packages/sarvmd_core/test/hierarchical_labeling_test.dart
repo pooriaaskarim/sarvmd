@@ -547,6 +547,160 @@ void main() {
         tempDir.deleteSync(recursive: true);
       }
     });
+
+    test('toRomanNumeral and formatGroupStaffNumber generate accurate Roman and Arabic numbers', () {
+      expect(toRomanNumeral(1), equals('I'));
+      expect(toRomanNumeral(2), equals('II'));
+      expect(toRomanNumeral(3), equals('III'));
+      expect(toRomanNumeral(4), equals('IV'));
+      expect(toRomanNumeral(5), equals('V'));
+      expect(toRomanNumeral(6), equals('VI'));
+      expect(toRomanNumeral(7), equals('VII'));
+      expect(toRomanNumeral(8), equals('VIII'));
+      expect(toRomanNumeral(9), equals('IX'));
+      expect(toRomanNumeral(10), equals('X'));
+      expect(toRomanNumeral(12), equals('XII'));
+
+      expect(formatGroupStaffNumber(0, GroupNumberingStyle.none), equals(''));
+      expect(formatGroupStaffNumber(0, GroupNumberingStyle.arabic), equals('1'));
+      expect(formatGroupStaffNumber(1, GroupNumberingStyle.arabic), equals('2'));
+      expect(formatGroupStaffNumber(0, GroupNumberingStyle.roman), equals('I'));
+      expect(formatGroupStaffNumber(3, GroupNumberingStyle.roman), equals('IV'));
+    });
+
+    test('Model B (GroupNumberingStyle.arabic and .roman) auto-numbers child staves and keeps inner margin minimal', () {
+      final flute1 = StaffDefinition(uid: 'fl1', instrumentName: 'Flute');
+      final flute2 = StaffDefinition(uid: 'fl2', instrumentName: 'Flute');
+
+      final flutesArabic = StaffNodeGroup(
+        connector: SystemConnector.subBracket,
+        label: 'Flutes',
+        abbreviation: 'Fl.',
+        numberingStyle: GroupNumberingStyle.arabic,
+        children: [flute1, flute2],
+      );
+
+      final configArabic = PageConfig(
+        systemLayout: SystemLayout(rootGroup: flutesArabic),
+      );
+
+      final layoutArabic = computeLayout(configArabic);
+      final sysArabic = layoutArabic.systems.first;
+
+      // Both staves must be dynamically resolved as '1' and '2'
+      expect(sysArabic.staves[0].resolvedLabel, equals('1'));
+      expect(sysArabic.staves[1].resolvedLabel, equals('2'));
+
+      // Inner label width must be minimal (~2.6mm for '1' or '2')
+      final placementArabic = sysArabic.groupPlacements.first;
+      expect(placementArabic.innerStaffLabelWidthMm, lessThan(4.0));
+      expect(placementArabic.innerStaffLabelWidthMm, greaterThan(2.0));
+
+      // Test Roman numerals
+      final hornsGroup = StaffNodeGroup(
+        connector: SystemConnector.subBracket,
+        label: 'Horns in F',
+        numberingStyle: GroupNumberingStyle.roman,
+        children: [
+          StaffDefinition(uid: 'h1', instrumentName: 'Horn 1'),
+          StaffDefinition(uid: 'h2', instrumentName: 'Horn 2'),
+          StaffDefinition(uid: 'h3', instrumentName: 'Horn 3'),
+          StaffDefinition(uid: 'h4', instrumentName: 'Horn 4'),
+        ],
+      );
+
+      final configRoman = PageConfig(
+        systemLayout: SystemLayout(rootGroup: hornsGroup),
+      );
+      final layoutRoman = computeLayout(configRoman);
+      final sysRoman = layoutRoman.systems.first;
+
+      expect(sysRoman.staves[0].resolvedLabel, equals('I'));
+      expect(sysRoman.staves[1].resolvedLabel, equals('II'));
+      expect(sysRoman.staves[2].resolvedLabel, equals('III'));
+      expect(sysRoman.staves[3].resolvedLabel, equals('IV'));
+
+      // Auxiliary instrument (e.g. Piccolo) in an Arabic group must preserve its specific name
+      final flutesWithPicc = StaffNodeGroup(
+        connector: SystemConnector.subBracket,
+        label: 'Flutes',
+        numberingStyle: GroupNumberingStyle.arabic,
+        children: [
+          StaffDefinition(uid: 'f1', instrumentName: 'Flute'),
+          StaffDefinition(uid: 'f2', instrumentName: 'Flute'),
+          StaffDefinition(uid: 'picc', instrumentName: 'Piccolo', instrumentAbbreviation: 'Picc.'),
+        ],
+      );
+
+      final configPicc = PageConfig(
+        systemLayout: SystemLayout(rootGroup: flutesWithPicc),
+      );
+      final layoutPicc = computeLayout(configPicc);
+      final sysPicc = layoutPicc.systems.first;
+
+      expect(sysPicc.staves[0].resolvedLabel, equals('1'));
+      expect(sysPicc.staves[1].resolvedLabel, equals('2'));
+      expect(sysPicc.staves[2].resolvedLabel, equals('Piccolo'));
+    });
+
+    test('Model C (GroupLabelPlacement.aboveStaff) eliminates horizontal indent space and emits section header', () async {
+      final ob1 = StaffDefinition(uid: 'ob1', instrumentName: '1', instrumentAbbreviation: '1');
+      final ob2 = StaffDefinition(uid: 'ob2', instrumentName: '2', instrumentAbbreviation: '2');
+      final oboes = StaffNodeGroup(
+        connector: SystemConnector.subBracket,
+        label: 'Oboes',
+        children: [ob1, ob2],
+      );
+
+      // Model A/B standard margin placement
+      final woodwindsMargin = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'WOODWINDS',
+        labelPlacement: GroupLabelPlacement.margin,
+        children: [oboes],
+      );
+
+      final configMargin = PageConfig(systemLayout: SystemLayout(rootGroup: woodwindsMargin));
+      final layoutMargin = computeLayout(configMargin);
+      final sysMargin = layoutMargin.systems.first;
+
+      // Model C: section header above staff
+      final woodwindsAbove = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'WOODWINDS',
+        labelPlacement: GroupLabelPlacement.aboveStaff,
+        children: [oboes],
+      );
+
+      final configAbove = PageConfig(systemLayout: SystemLayout(rootGroup: woodwindsAbove));
+      final layoutAbove = computeLayout(configAbove);
+      final sysAbove = layoutAbove.systems.first;
+
+      // Model C must have zero groupLabelWidthMm in horizontal indent calculations
+      final placementAbove = sysAbove.groupPlacements.firstWhere((p) => p.label == 'WOODWINDS');
+      expect(placementAbove.labelPlacement, equals(GroupLabelPlacement.aboveStaff));
+      expect(placementAbove.groupLabelWidthMm, equals(0.0));
+      expect(placementAbove.labelOffsetMm, equals(0.0));
+
+      // Indent difference: Model C reclaims approximately the entire width of "WOODWINDS" + clearance!
+      final indentSavedMm = sysMargin.leftIndentMm - sysAbove.leftIndentMm;
+      expect(indentSavedMm, greaterThan(25.0));
+
+      // Verify SVG emission
+      final svg = ScoreCompiler.compileToSvg(configAbove, layoutAbove);
+      expect(svg, contains('WOODWINDS'));
+      expect(svg, contains('text-anchor="start"'));
+
+      // Verify LaTeX emission
+      final tex = ScoreCompiler.compileToTex(configAbove, layoutAbove);
+      expect(tex, contains(r'\textbf{WOODWINDS}'));
+      expect(tex, contains(r'\makebox(0,0)[bl]'));
+
+      // Verify PDF emission
+      final pdfBytes = await ScoreCompiler.compileToPdf(configAbove, layoutAbove);
+      expect(pdfBytes, isNotEmpty);
+      expect(pdfBytes.length, greaterThan(1000));
+    });
   });
 }
 

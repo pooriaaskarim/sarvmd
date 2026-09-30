@@ -572,18 +572,22 @@ class UpdateGroupInitialBarlineCommand extends PageConfigCommand {
   }
 }
 
-/// Command to update system group details (label, abbreviation, labelVisible).
+/// Command to update system group details (label, abbreviation, labelVisible, labelPlacement, numberingStyle).
 class UpdateGroupDetailsCommand extends PageConfigCommand {
   final int? groupHash;
   final String? labelText;
   final String? abbreviation;
   final bool? labelVisible;
+  final GroupLabelPlacement? labelPlacement;
+  final GroupNumberingStyle? numberingStyle;
 
   UpdateGroupDetailsCommand({
     this.groupHash,
     this.labelText,
     this.abbreviation,
     this.labelVisible,
+    this.labelPlacement,
+    this.numberingStyle,
   });
 
   @override
@@ -599,6 +603,8 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
             label: labelText ?? root.label,
             abbreviation: abbreviation ?? root.abbreviation,
             labelVisible: labelVisible ?? root.labelVisible,
+            labelPlacement: labelPlacement ?? root.labelPlacement,
+            numberingStyle: numberingStyle ?? root.numberingStyle,
           ),
         ),
       );
@@ -611,6 +617,8 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
             label: labelText ?? node.label,
             abbreviation: abbreviation ?? node.abbreviation,
             labelVisible: labelVisible ?? node.labelVisible,
+            labelPlacement: labelPlacement ?? node.labelPlacement,
+            numberingStyle: numberingStyle ?? node.numberingStyle,
           );
         }
         return node.copyWith(
