@@ -1,6 +1,12 @@
 analyzer:
   errors:
     deprecated_member_use: info
+  exclude:
+    - build/**
+    - android/**
+    - web/**
+    - windows/**
+    - linux/**
 linter:
   rules:
     - prefer_const_constructors
