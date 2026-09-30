@@ -1215,6 +1215,7 @@ class Margins {
     this.bottom = 15.0,
     this.left = 15.0,
     this.right = 15.0,
+    this.isLinked = true,
   });
 
   final double top;
@@ -1222,31 +1223,51 @@ class Margins {
   final double left;
   final double right;
 
+  /// Whether the margins are linked (vertical/horizontal pairs) or unlocked
+  /// to be set independently (top, bottom, left, right separately).
+  final bool isLinked;
+
+  /// Whether horizontal margins (left == right) and vertical margins (top == bottom)
+  /// are currently symmetric.
+  bool get isSymmetric => top == bottom && left == right;
+
   Map<String, dynamic> toJson() => {
         'top': top,
         'bottom': bottom,
         'left': left,
         'right': right,
+        'isLinked': isLinked,
       };
 
-  factory Margins.fromJson(Map<String, dynamic> json) => Margins(
-        top: (json['top'] as num?)?.toDouble() ?? 15.0,
-        bottom: (json['bottom'] as num?)?.toDouble() ?? 15.0,
-        left: (json['left'] as num?)?.toDouble() ?? 15.0,
-        right: (json['right'] as num?)?.toDouble() ?? 15.0,
-      );
+  factory Margins.fromJson(Map<String, dynamic> json) {
+    final top = (json['top'] as num?)?.toDouble() ?? 15.0;
+    final bottom = (json['bottom'] as num?)?.toDouble() ?? 15.0;
+    final left = (json['left'] as num?)?.toDouble() ?? 15.0;
+    final right = (json['right'] as num?)?.toDouble() ?? 15.0;
+    final isLinked = (json['isLinked'] as bool?) ??
+        (top == bottom && left == right);
+    return Margins(
+      top: top,
+      bottom: bottom,
+      left: left,
+      right: right,
+      isLinked: isLinked,
+    );
+  }
 
   Margins copyWith({
     double? top,
     double? bottom,
     double? left,
     double? right,
+    bool? isLinked,
   }) =>
       Margins(
         top: top ?? this.top,
         bottom: bottom ?? this.bottom,
         left: left ?? this.left,
         right: right ?? this.right,
+        isLinked: isLinked ?? this.isLinked,
       );
 
   @override
@@ -1257,10 +1278,11 @@ class Margins {
           top == other.top &&
           bottom == other.bottom &&
           left == other.left &&
-          right == other.right;
+          right == other.right &&
+          isLinked == other.isLinked;
 
   @override
-  int get hashCode => Object.hash(top, bottom, left, right);
+  int get hashCode => Object.hash(top, bottom, left, right, isLinked);
 }
 
 /// Complete page configuration combining size, layout, staff, and margins.

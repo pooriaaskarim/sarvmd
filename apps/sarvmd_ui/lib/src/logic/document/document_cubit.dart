@@ -394,28 +394,41 @@ class DocumentCubit extends Cubit<DocumentState> {
     ));
   }
 
+  void setMarginsLinked(bool isLinked) {
+    if (state.config.margins.isLinked == isLinked) return;
+    if (isLinked) {
+      updateMargins(state.config.margins.copyWith(
+        isLinked: true,
+        bottom: state.config.margins.top,
+        right: state.config.margins.left,
+      ));
+    } else {
+      updateMargins(state.config.margins.copyWith(isLinked: false));
+    }
+  }
+
   void updateVerticalMargins(double mm) {
-    updateMargins(state.config.margins.copyWith(top: mm, bottom: mm));
+    updateMargins(state.config.margins.copyWith(top: mm, bottom: mm, isLinked: true));
   }
 
   void updateHorizontalMargins(double mm) {
-    updateMargins(state.config.margins.copyWith(left: mm, right: mm));
+    updateMargins(state.config.margins.copyWith(left: mm, right: mm, isLinked: true));
   }
 
   void updateLeftMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(left: mm));
+    updateMargins(state.config.margins.copyWith(left: mm, isLinked: false));
   }
 
   void updateRightMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(right: mm));
+    updateMargins(state.config.margins.copyWith(right: mm, isLinked: false));
   }
 
   void updateTopMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(top: mm));
+    updateMargins(state.config.margins.copyWith(top: mm, isLinked: false));
   }
 
   void updateBottomMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(bottom: mm));
+    updateMargins(state.config.margins.copyWith(bottom: mm, isLinked: false));
   }
 
   void resetToDefaults() {
