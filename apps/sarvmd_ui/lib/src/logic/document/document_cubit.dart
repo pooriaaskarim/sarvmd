@@ -512,11 +512,16 @@ class DocumentCubit extends Cubit<DocumentState> {
     updateStaffConfigDetails(uid, name: () => name);
   }
 
-  /// Sequentially renumbers the staves in [uids] ('1', '2', ...) following Gould's non-redundancy principle.
-  void batchRenumberStaves(List<String> uids) {
-    if (uids.isEmpty) return;
-    for (int i = 0; i < uids.length; i++) {
-      updateStaffInstrumentName(uids[i], '${i + 1}');
+  /// Sequentially renumbers the staves in [uids] following Gould's non-redundancy principle.
+  void batchRenumberStaves(
+    Iterable<String> uids, {
+    core.GroupNumberingStyle style = core.GroupNumberingStyle.arabic,
+  }) {
+    final list = uids.toList();
+    if (list.isEmpty) return;
+    for (int i = 0; i < list.length; i++) {
+      final numStr = core.formatGroupStaffNumber(i, style);
+      updateStaffInstrumentName(list[i], numStr);
     }
   }
 
@@ -588,6 +593,30 @@ class DocumentCubit extends Cubit<DocumentState> {
       descriptorPlacement: descriptorPlacement,
       headerVisibility: headerVisibility,
     ));
+  }
+
+  void batchUpdateGroupDetails({
+    Set<int>? targetGroupHashes,
+    core.GroupLabelPlacement? labelPlacement,
+    core.DescriptorPlacement? descriptorPlacement,
+    core.GroupHeaderVisibility? headerVisibility,
+    core.GroupNumberingStyle? numberingStyle,
+    bool? labelVisible,
+    bool preserveBraceOutsideConstraint = true,
+  }) {
+    execute(core.BatchUpdateGroupDetailsCommand(
+      targetGroupHashes: targetGroupHashes,
+      labelPlacement: labelPlacement,
+      descriptorPlacement: descriptorPlacement,
+      headerVisibility: headerVisibility,
+      numberingStyle: numberingStyle,
+      labelVisible: labelVisible,
+      preserveBraceOutsideConstraint: preserveBraceOutsideConstraint,
+    ));
+  }
+
+  void applyEngravingHouseStyle(core.EngravingHouseStyle style) {
+    execute(core.ApplyEngravingHouseStyleCommand(style));
   }
 
   void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {

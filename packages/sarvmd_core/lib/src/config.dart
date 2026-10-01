@@ -65,6 +65,43 @@ enum GroupLabelPlacement {
       };
 }
 
+/// Standard score-wide engraving house styles for labeling and system connectors.
+enum EngravingHouseStyle {
+  /// Classical Gouldian standard (Model A):
+  /// Group labels in the left margin; child descriptors enclosed by brackets.
+  classicalGould,
+
+  /// Contemporary Conductor / MOLA standard (Model C):
+  /// Section headers placed above the top staff of the family (first system only);
+  /// maximizes horizontal score width and eliminates margin indent.
+  modernHeader,
+
+  /// Continental European standard (Bärenreiter / Henle):
+  /// Group labels in left margin; connector sits flush at barline with descriptors outside.
+  continental,
+
+  /// Per-group custom or mixed configuration.
+  custom;
+
+  String get label => switch (this) {
+        EngravingHouseStyle.classicalGould => 'Classical (Margin)',
+        EngravingHouseStyle.modernHeader => 'Modern (Above Staff)',
+        EngravingHouseStyle.continental => 'Continental (Outside)',
+        EngravingHouseStyle.custom => 'Custom',
+      };
+
+  String get description => switch (this) {
+        EngravingHouseStyle.classicalGould =>
+          'Gouldian standard: Margin group labels with enclosed descriptors.',
+        EngravingHouseStyle.modernHeader =>
+          'MOLA standard: Above-staff section headers saving score margin.',
+        EngravingHouseStyle.continental =>
+          'Continental standard: Flush connectors with outer descriptors.',
+        EngravingHouseStyle.custom =>
+          'Mixed or customized group settings.',
+      };
+}
+
 /// Automatic numbering scheme for child staves within a group.
 enum GroupNumberingStyle {
   /// No automatic numbering; uses explicit staff instrument names.
@@ -783,6 +820,45 @@ class SystemLayout {
 
   bool hasSameContent(SystemLayout other) =>
       rootGroup.hasSameContent(other.rootGroup);
+}
+
+/// Extension providing global score-level engraving house style analysis.
+extension SystemLayoutEngravingHouseStyleX on SystemLayout {
+  /// Evaluates the prevailing [EngravingHouseStyle] across the score's layout tree.
+  EngravingHouseStyle get engravingHouseStyle {
+    final all = rootGroup.allGroups;
+    if (all.isEmpty) return EngravingHouseStyle.classicalGould;
+
+    final allAbove =
+        all.every((g) => g.labelPlacement == GroupLabelPlacement.aboveStaff);
+    if (allAbove) return EngravingHouseStyle.modernHeader;
+
+    final allMargin =
+        all.every((g) => g.labelPlacement == GroupLabelPlacement.margin);
+    if (allMargin) {
+      // Prioritize groups with visible connectors if present, or all groups.
+      final connectorGroups =
+          all.where((g) => g.connector != SystemConnector.none).toList();
+      final groupsToEvaluate =
+          connectorGroups.isNotEmpty ? connectorGroups : all;
+
+      // Braces are forced to outsideConnector by layout invariants, so evaluate non-brace groups for style
+      final nonBraceGroups = groupsToEvaluate
+          .where((g) => g.connector != SystemConnector.brace)
+          .toList();
+      if (nonBraceGroups.isEmpty) return EngravingHouseStyle.classicalGould;
+
+      final allOutside = nonBraceGroups.every(
+          (g) => g.descriptorPlacement == DescriptorPlacement.outsideConnector);
+      if (allOutside) return EngravingHouseStyle.continental;
+
+      final allEnclosed = nonBraceGroups.every(
+          (g) => g.descriptorPlacement == DescriptorPlacement.enclosedByConnector);
+      if (allEnclosed) return EngravingHouseStyle.classicalGould;
+    }
+
+    return EngravingHouseStyle.custom;
+  }
 }
 
 /// Extension providing domain tree manipulation methods on [StaffNodeGroup].

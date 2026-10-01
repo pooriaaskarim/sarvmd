@@ -969,6 +969,101 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(StaffItemWidget), findsNWidgets(4));
     });
+
+    testWidgets('renders House Style bar and updates active pill on tap (reactive UI)',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Apply String Quartet (single unlabeled bracket group)
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // House style bar is visible with Classical, Modern Header, Continental pills
+      expect(find.text('House Style:'), findsOneWidget);
+      expect(find.text('Classical'), findsOneWidget);
+      expect(find.text('Modern Header'), findsOneWidget);
+      expect(find.text('Continental'), findsOneWidget);
+
+      // Initially Classical is active (FontWeight.w700)
+      Text classicalText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_classical')),
+        matching: find.text('Classical'),
+      ));
+      expect(classicalText.style!.fontWeight, equals(FontWeight.w700));
+
+      Text modernText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_modern_header')),
+        matching: find.text('Modern Header'),
+      ));
+      expect(modernText.style!.fontWeight, equals(FontWeight.w500));
+
+      // Tap Modern Header pill
+      await tester.tap(find.byKey(const ValueKey('house_style_modern_header')));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.modernHeader));
+
+      // Modern Header is now active (FontWeight.w700) and Classical is inactive (FontWeight.w500)
+      modernText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_modern_header')),
+        matching: find.text('Modern Header'),
+      ));
+      expect(modernText.style!.fontWeight, equals(FontWeight.w700));
+
+      classicalText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_classical')),
+        matching: find.text('Classical'),
+      ));
+      expect(classicalText.style!.fontWeight, equals(FontWeight.w500));
+
+      // Tap Continental pill
+      await tester.tap(find.byKey(const ValueKey('house_style_continental')));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.continental));
+
+      final continentalText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_continental')),
+        matching: find.text('Continental'),
+      ));
+      expect(continentalText.style!.fontWeight, equals(FontWeight.w700));
+
+      // Tap Batch Group Engraving button
+      final batchBtnFinder = find.byTooltip('Batch Group Engraving Options');
+      expect(batchBtnFinder, findsOneWidget);
+      await tester.tap(batchBtnFinder);
+      await tester.pumpAndSettle();
+
+      // Dialog opens
+      expect(find.text('Batch Group Engraving Options'), findsOneWidget);
+      expect(find.text('Apply to All Groups'), findsOneWidget);
+
+      // Close dialog via top close icon
+      await tester.tap(find.byIcon(Icons.close).last);
+      await tester.pumpAndSettle();
+      expect(find.text('Batch Group Engraving Options'), findsNothing);
+    });
   });
 }
+
 

@@ -645,6 +645,103 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
   }
 }
 
+/// Command to batch-update engraving configurations across multiple or all groups in the score.
+class BatchUpdateGroupDetailsCommand extends PageConfigCommand {
+  final Set<int>? targetGroupHashes;
+  final GroupLabelPlacement? labelPlacement;
+  final DescriptorPlacement? descriptorPlacement;
+  final GroupHeaderVisibility? headerVisibility;
+  final GroupNumberingStyle? numberingStyle;
+  final bool? labelVisible;
+  final bool preserveBraceOutsideConstraint;
+
+  BatchUpdateGroupDetailsCommand({
+    this.targetGroupHashes,
+    this.labelPlacement,
+    this.descriptorPlacement,
+    this.headerVisibility,
+    this.numberingStyle,
+    this.labelVisible,
+    this.preserveBraceOutsideConstraint = true,
+  });
+
+  @override
+  String get label => 'Batch Update Group Details';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    StaffNode updateNode(StaffNode node) {
+      if (node is! StaffNodeGroup) return node;
+
+      final bool matches = targetGroupHashes == null ||
+          targetGroupHashes!.contains(node.hashCode);
+
+      final effectiveDescriptorPlacement = (preserveBraceOutsideConstraint &&
+              node.connector == SystemConnector.brace)
+          ? DescriptorPlacement.outsideConnector
+          : (descriptorPlacement ?? node.descriptorPlacement);
+
+      final updatedGroup = matches
+          ? node.copyWith(
+              labelPlacement: labelPlacement ?? node.labelPlacement,
+              descriptorPlacement: effectiveDescriptorPlacement,
+              headerVisibility: headerVisibility ?? node.headerVisibility,
+              numberingStyle: numberingStyle ?? node.numberingStyle,
+              labelVisible: labelVisible ?? node.labelVisible,
+            )
+          : node;
+
+      final newChildren = updatedGroup.children.map(updateNode).toList();
+      return updatedGroup.copyWith(children: newChildren);
+    }
+
+    final newRoot = updateNode(current.systemLayout.rootGroup) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
+/// Command to apply a standardized score-wide [EngravingHouseStyle] to all groups.
+class ApplyEngravingHouseStyleCommand extends PageConfigCommand {
+  final EngravingHouseStyle style;
+
+  ApplyEngravingHouseStyleCommand(this.style);
+
+  @override
+  String get label => 'Apply Engraving House Style: ${style.label}';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    if (style == EngravingHouseStyle.custom) return current;
+
+    final GroupLabelPlacement placement = switch (style) {
+      EngravingHouseStyle.modernHeader => GroupLabelPlacement.aboveStaff,
+      _ => GroupLabelPlacement.margin,
+    };
+
+    final DescriptorPlacement descriptor = switch (style) {
+      EngravingHouseStyle.continental => DescriptorPlacement.outsideConnector,
+      _ => DescriptorPlacement.enclosedByConnector,
+    };
+
+    final headerVisibility = switch (style) {
+      EngravingHouseStyle.modernHeader =>
+        GroupHeaderVisibility.firstSystemOnly,
+      _ => GroupHeaderVisibility.firstSystemOnly,
+    };
+
+    return BatchUpdateGroupDetailsCommand(
+      targetGroupHashes: null,
+      labelPlacement: placement,
+      descriptorPlacement: descriptor,
+      headerVisibility: headerVisibility,
+      preserveBraceOutsideConstraint: true,
+    ).mutateConfig(current);
+  }
+}
+
+
 /// Command to reorder children inside a staff group matching a target hash code.
 class ReorderGroupChildrenCommand extends PageConfigCommand {
   final int groupHash;
