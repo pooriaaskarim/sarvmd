@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/bracket_painter.dart';
 import '../../../core/utils/smufl_glyphs.dart';
 import '../../../core/utils/tab_clef_painter.dart';
 import '../../../core/utils/unit_formatter.dart';
@@ -456,18 +457,16 @@ class _ManuscriptPainter extends CustomPainter {
           case core.SystemConnector.brace when staves.length >= 2:
             _paintBrace(canvas, connectorX, topY, bottomY, scale, inkColor);
           case core.SystemConnector.bracket when staves.length >= 2:
-            final bracketPaint = Paint()
-              ..color = inkColor
-              ..strokeWidth = thicknessPx * 3.0
-              ..style = PaintingStyle.stroke;
-            canvas.drawLine(
-                Offset(connectorX, topY), Offset(connectorX, bottomY), bracketPaint);
-            final endTickX = connectorX +
-                (core.GroupPlacementMetrics.bracketTickLengthMm * scale);
-            canvas.drawLine(Offset(connectorX, topY),
-                Offset(endTickX, topY), bracketPaint);
-            canvas.drawLine(Offset(connectorX, bottomY),
-                Offset(endTickX, bottomY), bracketPaint);
+            final double staffScale = staves.first.scale;
+            paintBracket(
+              canvas,
+              connectorX: connectorX,
+              topY: topY,
+              bottomY: bottomY,
+              lineGapPx: lineGapPx,
+              staffScale: staffScale,
+              color: inkColor,
+            );
           case core.SystemConnector.subBracket when staves.length >= 2:
             // Thinner secondary bracket, no serif ticks.
             final subBracketPaint = Paint()
