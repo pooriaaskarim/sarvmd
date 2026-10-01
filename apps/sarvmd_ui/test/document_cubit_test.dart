@@ -120,7 +120,7 @@ void main() {
     });
 
     test('ungroupSubGroup dissolves sub-group and promotes staves to parent', () {
-      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+      cubit.applyProfile(core.StaffProfiles.stringOrchestra);
       final root = cubit.state.config.systemLayout.rootGroup;
       expect(root.children.first, isA<core.StaffNodeGroup>());
       final subGroup = root.children.first as core.StaffNodeGroup;
@@ -132,7 +132,7 @@ void main() {
     });
 
     test('moveStaffNode moves staff out of sub-group into root group without removing it', () {
-      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+      cubit.applyProfile(core.StaffProfiles.stringOrchestra);
       final initialStaves = cubit.allStaves;
       final initialCount = initialStaves.length;
 
@@ -182,11 +182,15 @@ void main() {
       expect(uids.every((uid) => uid.isNotEmpty), isTrue);
       expect(uids.toSet().length, equals(4), reason: 'All staves must have distinct UIDs');
 
-      // Verify initial standard names
-      expect(staves[0].instrumentName, equals('Violin 1'));
-      expect(staves[1].instrumentName, equals('Violin 2'));
+      // Verify initial standard names and abbreviations
+      expect(staves[0].instrumentName, equals('Violin I'));
+      expect(staves[0].instrumentAbbreviation, equals('Vln. I'));
+      expect(staves[1].instrumentName, equals('Violin II'));
+      expect(staves[1].instrumentAbbreviation, equals('Vln. II'));
       expect(staves[2].instrumentName, equals('Viola'));
+      expect(staves[2].instrumentAbbreviation, equals('Vla.'));
       expect(staves[3].instrumentName, equals('Violoncello'));
+      expect(staves[3].instrumentAbbreviation, equals('Vc.'));
       expect(staves.every((s) => s.labelVisible), isTrue);
 
       // Renaming staff 0 should ONLY affect staff 0
@@ -195,7 +199,7 @@ void main() {
 
       final updatedStaves = cubit.allStaves;
       expect(updatedStaves[0].instrumentName, equals('Violin Solo'));
-      expect(updatedStaves[1].instrumentName, equals('Violin 2'));
+      expect(updatedStaves[1].instrumentName, equals('Violin II'));
       expect(updatedStaves[2].instrumentName, equals('Viola'));
       expect(updatedStaves[3].instrumentName, equals('Violoncello'));
 

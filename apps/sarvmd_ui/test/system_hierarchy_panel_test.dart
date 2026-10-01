@@ -49,11 +49,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Main Ensemble title should be present
-      expect(find.text('Main Ensemble'), findsOneWidget);
+      // String Quartet title should be present
+      expect(find.text('String Quartet (Str. Qt.)'), findsOneWidget);
 
       // Should render instrument name Violin I
-      expect(find.textContaining('Violin I'), findsOneWidget);
+      expect(find.text('Violin I (Vln. I)'), findsOneWidget);
 
       // Tap quick add button on group
       final addButtons = find.byIcon(Icons.add_circle_outline);
@@ -154,7 +154,7 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsNothing);
 
       // Single tap on the staff label
-      final staffCard = find.textContaining('Violin I');
+      final staffCard = find.text('Violin I (Vln. I)');
       expect(staffCard, findsOneWidget);
       await tester.tap(staffCard);
       // Pump past double-tap window so single tap resolves
@@ -198,7 +198,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Double tap on the staff label
-      final staffCard = find.textContaining('Violin I');
+      final staffCard = find.text('Violin I (Vln. I)');
       expect(staffCard, findsOneWidget);
 
       await tester.tap(staffCard);
