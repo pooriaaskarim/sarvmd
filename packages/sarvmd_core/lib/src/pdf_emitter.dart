@@ -44,7 +44,7 @@ Future<List<int>> emitPdf(
               _drawSystemConnectors(canvas, config, layout.systems, hPt);
               _drawStaffLines(canvas, layout.systems, leftX, rightX, gap, strokeMm, hPt);
               _drawClefs(canvas, layout.systems, leftX, gap, config.engraving, hPt);
-              _drawStaffLabels(canvas, layout.systems, leftX, hPt, pdfDoc.document);
+              _drawStaffLabels(canvas, layout.systems, leftX, hPt, pdfDoc.document, gap);
             },
           );
         },
@@ -136,6 +136,7 @@ void _drawStaffLabels(
   double baseLeftX,
   double hPt,
   pdf.PdfDocument doc,
+  double lineGapMm,
 ) {
   for (var sysIdx = 0; sysIdx < systems.length; sysIdx++) {
     final system = systems[sysIdx];
@@ -184,6 +185,10 @@ void _drawStaffLabels(
         final double labelOffset = group.labelOffsetMm > 0.0
             ? group.labelOffsetMm
             : group.connectorOffsetMm +
+                GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  group.connector,
+                  lineGapMm: lineGapMm,
+                ) +
                 (group.outerDescriptorWidthMm > 0.0
                     ? group.outerDescriptorWidthMm +
                         GroupPlacementMetrics.staffLabelClearanceMm
@@ -237,17 +242,24 @@ void _drawStaffLabels(
                 style.horizontalOffsetMm;
           } else {
             // Standalone / Single-Tier staff: sits to the left of its connector
-            double maxConnectorOffset = 0.0;
+            double maxCoveringConnectorVisualExtent = 0.0;
             for (final g in system.groupPlacements) {
               if (sIdx >= g.startStaffIdx &&
                   sIdx <= g.endStaffIdx &&
-                  g.connector != SystemConnector.none &&
-                  g.connectorOffsetMm > maxConnectorOffset) {
-                maxConnectorOffset = g.connectorOffsetMm;
+                  g.connector != SystemConnector.none) {
+                final protrusion =
+                    GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  g.connector,
+                  lineGapMm: lineGapMm,
+                );
+                final extent = g.connectorOffsetMm + protrusion;
+                if (extent > maxCoveringConnectorVisualExtent) {
+                  maxCoveringConnectorVisualExtent = extent;
+                }
               }
             }
             labelX = leftX -
-                maxConnectorOffset -
+                maxCoveringConnectorVisualExtent -
                 GroupPlacementMetrics.staffLabelClearanceMm +
                 style.horizontalOffsetMm;
           }

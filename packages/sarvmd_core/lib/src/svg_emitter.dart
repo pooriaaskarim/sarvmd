@@ -51,7 +51,7 @@ String emitSvg(
     _drawSystemConnectors(buf, config, layout.systems);
     _drawStaffLines(buf, layout.systems, leftX, rightX, gap, strokeMm);
     _drawClefs(buf, layout.systems, leftX, gap, config.engraving);
-    _drawStaffLabels(buf, layout.systems, leftX);
+    _drawStaffLabels(buf, layout.systems, leftX, gap);
     buf.writeln('</svg>');
     return buf.toString();
   }
@@ -76,7 +76,7 @@ String emitSvg(
       _drawSystemConnectors(buf, config, [system]);
       _drawStaffLines(buf, [system], leftX, rightX, gap, strokeMm);
       _drawClefs(buf, [system], leftX, gap, config.engraving);
-      _drawStaffLabels(buf, [system], leftX);
+      _drawStaffLabels(buf, [system], leftX, gap);
       buf.writeln('    </g>');
     }
     buf.writeln('  </g>');
@@ -104,7 +104,7 @@ String emitSvg(
     buf.writeln(
       '  <g id="layer-labels" inkscape:groupmode="layer" inkscape:label="Instrument Labels">',
     );
-    _drawStaffLabels(buf, layout.systems, leftX);
+    _drawStaffLabels(buf, layout.systems, leftX, gap);
     buf.writeln('  </g>');
   }
 
@@ -192,6 +192,7 @@ void _drawStaffLabels(
   StringBuffer buf,
   List<StaffSystem> systems,
   double baseLeftX,
+  double lineGapMm,
 ) {
   for (var sysIdx = 0; sysIdx < systems.length; sysIdx++) {
     final system = systems[sysIdx];
@@ -235,6 +236,10 @@ void _drawStaffLabels(
         final double labelOffset = group.labelOffsetMm > 0.0
             ? group.labelOffsetMm
             : group.connectorOffsetMm +
+                GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  group.connector,
+                  lineGapMm: lineGapMm,
+                ) +
                 (group.outerDescriptorWidthMm > 0.0
                     ? group.outerDescriptorWidthMm +
                         GroupPlacementMetrics.staffLabelClearanceMm
@@ -281,17 +286,24 @@ void _drawStaffLabels(
                 style.horizontalOffsetMm;
           } else {
             // Standalone / Single-Tier staff: sits to the left of its connector
-            double maxConnectorOffset = 0.0;
+            double maxCoveringConnectorVisualExtent = 0.0;
             for (final g in system.groupPlacements) {
               if (sIdx >= g.startStaffIdx &&
                   sIdx <= g.endStaffIdx &&
-                  g.connector != SystemConnector.none &&
-                  g.connectorOffsetMm > maxConnectorOffset) {
-                maxConnectorOffset = g.connectorOffsetMm;
+                  g.connector != SystemConnector.none) {
+                final protrusion =
+                    GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  g.connector,
+                  lineGapMm: lineGapMm,
+                );
+                final extent = g.connectorOffsetMm + protrusion;
+                if (extent > maxCoveringConnectorVisualExtent) {
+                  maxCoveringConnectorVisualExtent = extent;
+                }
               }
             }
             labelX = leftX -
-                maxConnectorOffset -
+                maxCoveringConnectorVisualExtent -
                 GroupPlacementMetrics.staffLabelClearanceMm +
                 style.horizontalOffsetMm;
           }

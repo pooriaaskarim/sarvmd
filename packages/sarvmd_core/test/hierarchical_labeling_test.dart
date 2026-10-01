@@ -195,7 +195,7 @@ void main() {
 
       // Outer group label sits to the left of the connector and inner label
       expect(flutesX, lessThan(innerX));
-      expect(innerX - flutesX, closeTo(6.63, 0.2));
+      expect(innerX - flutesX, closeTo(8.915, 0.2));
     });
 
     test('Nested sub-group labels do not collide with parent connectors', () {
@@ -454,14 +454,20 @@ void main() {
       // Single-tier connector must sit flush against starting barline
       expect(placement.connectorOffsetMm, equals(0.0));
 
-      // Indent must accommodate longest name (Violoncello ~22mm) + clearance, minus smart margin absorption
+      // Indent must accommodate longest name (Violoncello ~22mm) + bracket protrusion + clearance, minus smart margin absorption
       final vcWidth = estimateLabelWidthMm('Violoncello');
-      final expectedRaw = vcWidth + GroupPlacementMetrics.staffLabelClearanceMm;
+      final bracketProtrusion = GroupPlacementMetrics.connectorLeftProtrusionMm(
+        SystemConnector.bracket,
+        lineGapMm: config.staffConfig.lineGapMm,
+      );
+      final expectedRaw = vcWidth +
+          GroupPlacementMetrics.staffLabelClearanceMm +
+          bracketProtrusion;
       expect(sys.rawRequiredIndentMm, closeTo(expectedRaw, 0.1));
       final expectedIndent = expectedRaw - sys.marginAbsorptionMm;
       expect(sys.leftIndentMm, closeTo(expectedIndent, 0.1));
-      // Far less than the old 30mm+ bloated indent (compacted down to ~14mm via absorption)
-      expect(sys.leftIndentMm, lessThan(16.0));
+      // Far less than the old 30mm+ bloated indent (compacted down to ~15.9mm via absorption)
+      expect(sys.leftIndentMm, lessThan(16.5));
     });
 
     test('Chamber Orchestra Strings ensemble reclaims canvas space and compacts on subsequent systems', () {
