@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-01
+
 ### Added
 - **Group Engraving Modal & Dual-Tier Progressive Disclosure (`sarvmd_ui`)**:
   - Implemented **Paradigm A: Dual-Tier Progressive Disclosure**: simplified the inline `QuickLabelingCard` for fast renaming (~80px height) while delegating deep score-level engraving controls (Model C placement, Header Lifecycle across systems, Continental vs. Anglo-American descriptor placement, Model B child staff numbering) to a dedicated 560px modal dialog (`GroupEngravingDialog`) opened via `showSarvAdaptiveModal`.
