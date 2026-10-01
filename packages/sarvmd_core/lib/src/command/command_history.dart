@@ -22,10 +22,10 @@ class CommandHistory {
     this.maxDepth = 100,
     this.coalesceThreshold = const Duration(milliseconds: 600),
     this.onDocumentChanged,
-  }) : _document = initialDocument ??
+  }) : _document = (initialDocument ??
             SarvDocument(
               score: initialScore ?? const Score(title: ''),
-            );
+            )).ensureUniqueUids();
 
   /// Current logical document state.
   SarvDocument get document => _document;

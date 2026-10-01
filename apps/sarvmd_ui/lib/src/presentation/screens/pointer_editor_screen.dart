@@ -22,7 +22,7 @@ import '../widgets/canvas/preview_canvas.dart';
 import '../widgets/panels/view_panel.dart';
 import '../widgets/canvas/ruler_box.dart';
 import '../widgets/common/integrated_scale_control.dart';
-import '../widgets/panels/advanced_builder_panel.dart';
+import '../widgets/panels/system_hierarchy_panel.dart';
 import '../widgets/panels/collapsible_section_card.dart';
 import '../widgets/panels/section_spine.dart';
 import '../../logic/document/document_cubit.dart';
@@ -562,6 +562,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                                 onVerticalChanged:
                                     documentCubit.updateVerticalMargins,
                                 onReset: documentCubit.resetMargins,
+                                onLinkChanged: documentCubit.setMarginsLinked,
                                 onScrubStart: (side) => context
                                     .read<ViewCubit>()
                                     .setActiveScrubbingMargin(side),
@@ -636,7 +637,8 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                         scrollController: _sidebarScrollController,
                         onJumpToSection: (section) =>
                             viewCubit.jumpToSection(section),
-                        activeSection: viewState.jumpTargetSection,
+                        activeSection: viewState.activeTouchSection,
+                        jumpTargetSection: viewState.jumpTargetSection,
                         onActiveSectionChanged: (section) =>
                             viewCubit.setActiveSection(section),
                       ),
@@ -863,31 +865,31 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
 
           return BlocBuilder<ViewCubit, ViewState>(
             builder: (context, viewState) {
-              return Scaffold(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                body: SarvShortcutGateway(
-                  onZoomIn: _zoomIn,
-                  onZoomOut: _zoomOut,
-                  onZoomReset: () => _applyZoomPreset(ZoomPreset.actualSize),
-                  onToggleSidebar: () => _toggleLeftSidebar(canDockLeft, canDockRight),
-                  onToggleViewPanel: () {
-                    setState(() {
-                      _viewPanelCollapsed = !_viewPanelCollapsed;
-                    });
-                  },
-                  onToggleZenMode: () {
-                    setState(() {
-                      final isZen = _sidebarCollapsed && _viewPanelCollapsed;
-                      if (isZen) {
-                        _sidebarCollapsed = false;
-                        _viewPanelCollapsed = false;
-                      } else {
-                        _sidebarCollapsed = true;
-                        _viewPanelCollapsed = true;
-                      }
-                    });
-                  },
-                  child: Column(
+              return SarvShortcutGateway(
+                onZoomIn: _zoomIn,
+                onZoomOut: _zoomOut,
+                onZoomReset: () => _applyZoomPreset(ZoomPreset.actualSize),
+                onToggleSidebar: () => _toggleLeftSidebar(canDockLeft, canDockRight),
+                onToggleViewPanel: () {
+                  setState(() {
+                    _viewPanelCollapsed = !_viewPanelCollapsed;
+                  });
+                },
+                onToggleZenMode: () {
+                  setState(() {
+                    final isZen = _sidebarCollapsed && _viewPanelCollapsed;
+                    if (isZen) {
+                      _sidebarCollapsed = false;
+                      _viewPanelCollapsed = false;
+                    } else {
+                      _sidebarCollapsed = true;
+                      _viewPanelCollapsed = true;
+                    }
+                  });
+                },
+                child: Scaffold(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  body: Column(
                     children: [
                       const PointerTopBar(),
                       const PointerTabBar(),
@@ -928,9 +930,14 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                               ],
                               // Preview Area
                               Expanded(
-                                child: Container(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  child: LayoutBuilder(
+                                child: Listener(
+                                  behavior: HitTestBehavior.translucent,
+                                  onPointerDown: (_) {
+                                    SarvShortcutGateway.requestFocus(context);
+                                  },
+                                  child: Container(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    child: LayoutBuilder(
                                     builder: (context, constraints) {
                                       _lastConstraints = constraints;
                                       if (!_hasCentered) {
@@ -1110,6 +1117,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                                     },
                                   ),
                                 ),
+                              ),
                               ),
                               // Docked Right View Panel
                               if (canDockRight) ...[

@@ -33,9 +33,10 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
     '\\usepackage[paperwidth=${pageW}mm,paperheight=${pageH}mm,'
     'margin=0mm]{geometry}',
   );
+  buf.writeln(r'\usepackage{helvet}');
+  buf.writeln(r'\renewcommand{\familydefault}{\sfdefault}');
   buf.writeln(r'\pagestyle{empty}');
   buf.writeln(r'\begin{document}');
-  buf.writeln(r'\null'); // Ensure the page is shipped out.
 
   final draw = StringBuffer();
   draw.writeln('q'); // Save graphics state.
@@ -50,7 +51,8 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
 
   // Draw each system.
   for (final system in layout.systems) {
-    final staffLeftBp = _mmToBp(config.margins.left + system.leftIndentMm);
+    final staffLeftMm = config.margins.left + system.leftIndentMm;
+    final staffLeftBp = _mmToBp(staffLeftMm);
     for (final staff in system.staves) {
       final topLinePdfY = pageHBp - _mmToBp(staff.topY);
       for (var line = 0; line < staff.lines; line++) {
@@ -61,66 +63,99 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
       }
     }
 
-    // Draw system barline if layout specifies it.
-    final rootGroup = config.systemLayout.rootGroup;
-    if (rootGroup.initialBarline) {
-      draw.writeln('${_f(lineW * 2.5)} w');
-      if (rootGroup.continuousBarlines && system.staves.length > 1) {
-        final sysTopPdfY = pageHBp - _mmToBp(system.staves.first.topY);
-        final sysBottomPdfY = pageHBp -
-            _mmToBp(system.staves.last.topY + system.staves.last.height);
-        draw.writeln(
-          '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
-          '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} l S',
-        );
-      } else {
-        for (final staff in system.staves) {
-          final sTopPdfY = pageHBp - _mmToBp(staff.topY);
-          final sBottomPdfY = pageHBp - _mmToBp(staff.topY + staff.height);
-          draw.writeln(
-            '${_f(staffLeftBp)} ${_f(sTopPdfY)} m '
-            '${_f(staffLeftBp)} ${_f(sBottomPdfY)} l S',
-          );
-        }
+    // Draw initial barlines and connectors for all groups in this system.
+    for (final group in system.groupPlacements) {
+      if (group.startStaffIdx < 0 ||
+          group.endStaffIdx >= system.staves.length ||
+          group.startStaffIdx > group.endStaffIdx) {
+        continue;
       }
-      draw.writeln('$lineW w');
-    }
 
-    final connector = rootGroup.connector;
-    if (connector != SystemConnector.none && system.staves.length > 1) {
-      final sysTopPdfY = pageHBp - _mmToBp(system.staves.first.topY);
-      final sysBottomPdfY = pageHBp -
-          _mmToBp(system.staves.last.topY + system.staves.last.height);
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
 
-      final bool useBrace = connector == SystemConnector.brace;
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
+      final topPdfY = pageHBp - _mmToBp(topY);
+      final bottomPdfY = pageHBp - _mmToBp(bottomY);
 
-      if (useBrace) {
-        // Render the standard piano brace using the Bravura path (U+E000).
-        // The path is defined in a 1000-unit em; yMin=0, yMax=997.
-        // Scale so the glyph height = sysTopPdfY - sysBottomPdfY (in PDF coords
-        // Y increases upward, so topPdfY > bottomPdfY).
-        final double braceH = sysTopPdfY - sysBottomPdfY; // positive value
-        final double scale = braceH / 997.0;
-        // Glyph origin (0,0) maps to sysBottomPdfY; translate left so the glyph
-        // right edge (x≈82 units) aligns with staffLeftBp.
-        final double tx = staffLeftBp - scale * 82.0;
-        final double ty = sysBottomPdfY;
-        draw.writeln('q ${_f(scale)} 0 0 ${_f(scale)} ${_f(tx)} ${_f(ty)} cm');
-        draw.writeln('0 g');
-        draw.writeln('$_bracePdf Q');
-      } else {
-        // Draw bracket "ticks"
+      final double connectorX = staffLeftMm - group.connectorOffsetMm;
+      final double connectorBp = _mmToBp(connectorX);
+
+      // ── Initial barline (at staffLeftBp) ───────────────────────────────
+      if (group.initialBarline) {
         draw.writeln('${_f(lineW * 2.5)} w');
-        final tickLenBp = _mmToBp(2.0);
-        draw.writeln(
-          '${_f(staffLeftBp)} ${_f(sysTopPdfY)} m '
-          '${_f(staffLeftBp + tickLenBp)} ${_f(sysTopPdfY)} l S',
-        );
-        draw.writeln(
-          '${_f(staffLeftBp)} ${_f(sysBottomPdfY)} m '
-          '${_f(staffLeftBp + tickLenBp)} ${_f(sysBottomPdfY)} l S',
-        );
+        if (group.continuousBarlines && groupStaves.length > 1) {
+          draw.writeln(
+            '${_f(staffLeftBp)} ${_f(topPdfY)} m '
+            '${_f(staffLeftBp)} ${_f(bottomPdfY)} l S',
+          );
+        } else {
+          for (final staff in groupStaves) {
+            final sTopPdfY = pageHBp - _mmToBp(staff.topY);
+            final sBottomPdfY = pageHBp - _mmToBp(staff.topY + staff.height);
+            draw.writeln(
+              '${_f(staffLeftBp)} ${_f(sTopPdfY)} m '
+              '${_f(staffLeftBp)} ${_f(sBottomPdfY)} l S',
+            );
+          }
+        }
         draw.writeln('$lineW w');
+      }
+
+      // ── Connector glyph (at connectorBp) ───────────────────────────────
+      switch (group.connector) {
+        case SystemConnector.brace when groupStaves.length >= 2:
+          final double h = topPdfY - bottomPdfY;
+          final double scale = h / 997.0;
+          final double tx = connectorBp - scale * 82.0;
+          final double ty = bottomPdfY;
+          draw.writeln('q ${_f(scale)} 0 0 ${_f(scale)} ${_f(tx)} ${_f(ty)} cm');
+          draw.writeln('0 g');
+          draw.writeln('$_bracePdf Q');
+        case SystemConnector.bracket when groupStaves.length >= 2:
+          final double staffScale = groupStaves.first.scale;
+          // 1 staff space = 250 Bravura font units
+          final double scale = (lineGapBp * staffScale) / 250.0;
+          final double shiftBp =
+              GroupPlacementMetrics.bracketFontUnitShift * scale;
+          final double vProtrusionBp =
+              GroupPlacementMetrics.bracketFontUnitProtrusion * scale;
+          final double bracketBp = connectorBp - shiftBp;
+          final double topBracketBp = topPdfY + vProtrusionBp;
+          final double bottomBracketBp = bottomPdfY - vProtrusionBp;
+          final double spineWidthBp = 125.0 * scale;
+          final double spineHeightBp = topBracketBp - bottomBracketBp;
+
+          // 1. Bracket Top Cap (bracketTop U+E003)
+          draw.writeln(
+              'q ${_f(scale)} 0 0 ${_f(scale)} ${_f(bracketBp)} ${_f(topBracketBp)} cm');
+          draw.writeln('0 g');
+          draw.writeln('$_bracketTopPdf Q');
+
+          // 2. Vertical Spine
+          draw.writeln('0 g');
+          draw.writeln(
+              '${_f(bracketBp)} ${_f(bottomBracketBp)} ${_f(spineWidthBp)} ${_f(spineHeightBp)} re f');
+
+          // 3. Bracket Bottom Cap (bracketBottom U+E004)
+          draw.writeln(
+              'q ${_f(scale)} 0 0 ${_f(scale)} ${_f(bracketBp)} ${_f(bottomBracketBp)} cm');
+          draw.writeln('0 g');
+          draw.writeln('$_bracketBottomPdf Q');
+        case SystemConnector.subBracket when groupStaves.length >= 2:
+          draw.writeln('${_f(lineW * 1.8)} w');
+          draw.writeln(
+            '${_f(connectorBp)} ${_f(topPdfY)} m '
+            '${_f(connectorBp)} ${_f(bottomPdfY)} l S',
+          );
+          draw.writeln('$lineW w');
+        case SystemConnector.none:
+        case SystemConnector.brace:
+        case SystemConnector.bracket:
+        case SystemConnector.subBracket:
+          break;
       }
     }
 
@@ -158,18 +193,197 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
 
   draw.writeln('Q');
 
+  // Text labels (Group labels & Instrument labels)
+  final textBuf = StringBuffer();
+
+  for (var sysIdx = 0; sysIdx < layout.systems.length; sysIdx++) {
+    final system = layout.systems[sysIdx];
+    final staffLeftMm = config.margins.left + system.leftIndentMm;
+    final bool isFirstSystem = sysIdx == 0;
+
+    // 1. Group labels (Outer tier or section header above staff)
+    for (final group in system.groupPlacements) {
+      if (!group.labelVisible) continue;
+      final String label = group.labelPlacement == GroupLabelPlacement.aboveStaff
+          ? (group.isAboveStaffVisible ? group.label.trim() : '')
+          : (isFirstSystem
+              ? group.label.trim()
+              : group.abbreviation.trim());
+      if (label.isEmpty) continue;
+
+      final groupStaves =
+          system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
+      if (groupStaves.isEmpty) continue;
+
+      final topY = groupStaves.first.topY;
+      final bottomY = groupStaves.last.topY + groupStaves.last.height;
+      final midY = (topY + bottomY) / 2.0;
+
+      if (group.labelPlacement == GroupLabelPlacement.aboveStaff) {
+        final styledText = _formatLatexLabel(
+          label,
+          isBold: true,
+          isItalic: false,
+          fontPt: 10.0,
+        );
+
+        textBuf.writeln(
+          '  \\put(${_f(staffLeftMm)}, -${_f(topY - GroupPlacementMetrics.aboveStaffHeaderOffsetMm)}){\\makebox(0,0)[bl]{$styledText}}%',
+        );
+      } else {
+        final double labelOffset = group.labelOffsetMm > 0.0
+            ? group.labelOffsetMm
+            : group.connectorOffsetMm +
+                GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  group.connector,
+                  lineGapMm: config.staffConfig.lineGapMm,
+                ) +
+                (group.outerDescriptorWidthMm > 0.0
+                    ? group.outerDescriptorWidthMm +
+                        GroupPlacementMetrics.staffLabelClearanceMm
+                    : 0.0) +
+                GroupPlacementMetrics.groupLabelClearanceMm;
+        final double labelX = staffLeftMm - labelOffset;
+
+        final styledText = _formatLatexLabel(
+          label,
+          isBold: true,
+          isItalic: false,
+          fontPt: 11.0,
+        );
+
+        textBuf.writeln(
+          '  \\put(${_f(labelX)}, -${_f(midY)}){\\makebox(0,0)[r]{$styledText}}%',
+        );
+      }
+    }
+
+    // 2. Identify which staves sit inside a displaced connector (offset > 0)
+    final Set<int> innerStaffIndices = system.innerStaffIndices;
+
+    // 3. Staff labels (Inner tier when grouped; outer tier when standalone)
+    for (int sIdx = 0; sIdx < system.staves.length; sIdx++) {
+      final staff = system.staves[sIdx];
+      final def = staff.definition;
+      if (def != null && def.labelVisible) {
+        final String? label = staff.resolvedLabel ??
+            (isFirstSystem
+                ? def.instrumentName
+                : ((def.instrumentAbbreviation != null &&
+                        def.instrumentAbbreviation!.trim().isNotEmpty)
+                    ? def.instrumentAbbreviation
+                    : def.instrumentName));
+
+        if (label != null && label.trim().isNotEmpty) {
+          final style = staff.resolvedLabelStyle ?? def.labelStyle;
+          final double labelX;
+          if (innerStaffIndices.contains(sIdx)) {
+            // Inner staff label: sits right-aligned between connector and starting barline
+            labelX = staffLeftMm -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                style.horizontalOffsetMm;
+          } else {
+            // Standalone / Single-Tier staff: sits to the left of its connector
+            double maxCoveringConnectorVisualExtent = 0.0;
+            for (final g in system.groupPlacements) {
+              if (sIdx >= g.startStaffIdx &&
+                  sIdx <= g.endStaffIdx &&
+                  g.connector != SystemConnector.none) {
+                final protrusion =
+                    GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  g.connector,
+                  lineGapMm: config.staffConfig.lineGapMm,
+                );
+                final extent = g.connectorOffsetMm + protrusion;
+                if (extent > maxCoveringConnectorVisualExtent) {
+                  maxCoveringConnectorVisualExtent = extent;
+                }
+              }
+            }
+            labelX = staffLeftMm -
+                maxCoveringConnectorVisualExtent -
+                GroupPlacementMetrics.staffLabelClearanceMm +
+                style.horizontalOffsetMm;
+          }
+
+          final labelY =
+              staff.topY + (staff.height / 2.0) + style.verticalOffsetMm;
+
+          final styledText = _formatLatexLabel(
+            label,
+            isBold: style.isBold,
+            isItalic: style.isItalic,
+            fontPt: style.fontSizePt,
+          );
+
+          textBuf.writeln(
+            '  \\put(${_f(labelX)}, -${_f(labelY)}){\\makebox(0,0)[r]{$styledText}}%',
+          );
+        }
+      }
+    }
+  }
+
   final pageLiteral = '\\pdfliteral direct {${draw.toString()}}';
   final count = pageCount < 1 ? 1 : pageCount;
   for (var i = 0; i < count; i++) {
     if (i > 0) {
       buf.writeln(r'\newpage');
-      buf.writeln(r'\null');
+    }
+    buf.writeln(r'\setlength{\topskip}{0pt}%');
+    buf.writeln(r'\setlength{\parindent}{0pt}%');
+    buf.writeln(r'\setlength{\unitlength}{1mm}%');
+    if (textBuf.isNotEmpty) {
+      buf.writeln(r'\noindent\begin{picture}(0,0)(0,0)%');
+      buf.write(textBuf.toString());
+      buf.writeln(r'\end{picture}%');
+    } else {
+      buf.writeln(r'\null%');
     }
     buf.writeln(pageLiteral);
   }
   buf.writeln(r'\end{document}');
 
   return buf.toString();
+}
+
+String _escapeLatex(String text) {
+  return text
+      .replaceAll(r'\', r'\textbackslash{}')
+      .replaceAll('{', r'\{')
+      .replaceAll('}', r'\}')
+      .replaceAll('&', r'\&')
+      .replaceAll('%', r'\%')
+      .replaceAll(r'$', r'\$')
+      .replaceAll('#', r'\#')
+      .replaceAll('_', r'\_')
+      .replaceAll('~', r'\textasciitilde{}')
+      .replaceAll('^', r'\textasciicircum{}')
+      .replaceAll('♭', r'$\flat$')
+      .replaceAll('♯', r'$\sharp$')
+      .replaceAll('♮', r'$\natural$');
+}
+
+String _formatLatexLabel(
+  String text, {
+  required bool isBold,
+  required bool isItalic,
+  required double fontPt,
+}) {
+  final lines = text.split('\n');
+  final escapedLines = lines.map(_escapeLatex).toList();
+  final lineHeightPt = fontPt * 1.2;
+  final content = escapedLines.length > 1
+      ? '\\shortstack[r]{${escapedLines.join(r'\\')}}'
+      : escapedLines.first;
+  var styled = content;
+  if (isBold) {
+    styled = '\\textbf{$styled}';
+  }
+  if (isItalic) {
+    styled = '\\textit{$styled}';
+  }
+  return '{\\fontsize{${fontPt.toStringAsFixed(1)}pt}{${lineHeightPt.toStringAsFixed(1)}pt}\\selectfont $styled}';
 }
 
 
@@ -197,6 +411,20 @@ const String _bracePdf =
     '44.000 181.000 74.000 275.000 81.000 334.000 c '
     '82.000 339.000 82.000 344.000 82.000 350.000 c '
     '82.000 409.000 49.000 480.000 20.000 498.000 c h f';
+
+// Bravura bracketTop glyph (U+E003), extracted path. em=1000, yMin=0, yMax=295.
+const String _bracketTopPdf =
+    '0.0 0.0 m 125.0 0.0 l 285.0 30.0 428.0 104.0 468.0 271.0 c '
+    '469.0 275.0 469.0 278.0 469.0 281.0 c 469.0 289.0 466.0 293.0 461.0 295.0 c '
+    '452.0 295.0 441.0 288.0 436.0 281.0 c 426.0 270.0 300.0 138.0 109.0 124.0 c '
+    '8.0 124.0 l 2.0 124.0 0.0 123.0 0.0 117.0 c h f';
+
+// Bravura bracketBottom glyph (U+E004), extracted path. em=1000, yMin=-295, yMax=0.
+const String _bracketBottomPdf =
+    '0.0 -117.0 m 0.0 -123.0 2.0 -124.0 8.0 -124.0 c 109.0 -124.0 l '
+    '300.0 -138.0 426.0 -270.0 436.0 -281.0 c 441.0 -288.0 452.0 -295.0 461.0 -295.0 c '
+    '466.0 -293.0 469.0 -289.0 469.0 -281.0 c 469.0 -278.0 469.0 -275.0 468.0 -271.0 c '
+    '428.0 -104.0 285.0 -30.0 125.0 0.0 c 0.0 0.0 l h f';
 
 const String _gClefPdf =
     '376.0 415.0 m 374.0 427.0 376.0 428.0 382.0 434.0 c 490.0 535.0 572.0 662.0 572.0 815.0 c 572.0 902.0 548.0 988.0 507.0 1048.0 c 492.0 1070.0 466.0 1098.0 455.0 1098.0 c 441.0 1098.0 410.0 1072.0 390.0 1050.0 c 316.0 968.0 292.0 843.0 292.0 739.0 c 292.0 681.0 299.0 616.0 306.0 575.0 c 308.0 563.0 309.0 561.0 297.0 551.0 c 153.0 432.0 0.0 289.0 0.0 87.0 c 0.0 -87.0 119.0 -252.0 364.0 -252.0 c 387.0 -252.0 413.0 -250.0 433.0 -246.0 c 444.0 -244.0 446.0 -243.0 448.0 -255.0 c 460.0 -322.0 475.0 -409.0 475.0 -456.0 c 475.0 -604.0 375.0 -622.0 316.0 -622.0 c 262.0 -622.0 236.0 -606.0 236.0 -593.0 c 236.0 -586.0 245.0 -583.0 268.0 -576.0 c 299.0 -567.0 335.0 -540.0 335.0 -482.0 c 335.0 -427.0 300.0 -380.0 239.0 -380.0 c 172.0 -380.0 132.0 -433.0 132.0 -495.0 c 132.0 -560.0 171.0 -658.0 322.0 -658.0 c 389.0 -658.0 519.0 -628.0 519.0 -458.0 c 519.0 -401.0 501.0 -306.0 490.0 -244.0 c 488.0 -232.0 489.0 -233.0 503.0 -227.0 c 604.0 -187.0 671.0 -102.0 671.0 11.0 c 671.0 139.0 577.0 252.0 430.0 252.0 c 404.0 252.0 404.0 252.0 401.0 270.0 c h 470.0 943.0 m 503.0 943.0 530.0 916.0 530.0 861.0 c 530.0 750.0 435.0 660.0 356.0 591.0 c 349.0 585.0 345.0 586.0 343.0 599.0 c 339.0 625.0 337.0 659.0 337.0 691.0 c 337.0 847.0 409.0 943.0 470.0 943.0 c h 361.0 262.0 m 364.0 243.0 364.0 244.0 346.0 238.0 c 258.0 208.0 201.0 129.0 201.0 44.0 c 201.0 -46.0 248.0 -110.0 316.0 -133.0 c 324.0 -136.0 336.0 -139.0 343.0 -139.0 c 351.0 -139.0 355.0 -134.0 355.0 -128.0 c 355.0 -121.0 347.0 -118.0 340.0 -115.0 c 298.0 -97.0 268.0 -54.0 268.0 -8.0 c 268.0 49.0 307.0 92.0 368.0 109.0 c 384.0 113.0 386.0 112.0 388.0 101.0 c 438.0 -197.0 l 440.0 -208.0 439.0 -208.0 424.0 -211.0 c 408.0 -214.0 388.0 -216.0 368.0 -216.0 c 193.0 -216.0 80.0 -119.0 80.0 20.0 c 80.0 79.0 90.0 158.0 173.0 252.0 c 233.0 319.0 279.0 356.0 326.0 394.0 c 336.0 402.0 338.0 401.0 340.0 390.0 c h 430.0 103.0 m 428.0 115.0 429.0 118.0 441.0 117.0 c 522.0 110.0 589.0 42.0 589.0 -46.0 c 589.0 -109.0 551.0 -160.0 495.0 -188.0 c 483.0 -194.0 481.0 -194.0 479.0 -182.0 c h f';

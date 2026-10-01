@@ -102,7 +102,7 @@ class ToggleZenModeIntent extends Intent {
 /// - Tab Navigation (`Ctrl+T`, `Ctrl+W`, `Ctrl+Tab`, `Ctrl+Shift+Tab`)
 /// - Canvas Navigation & Zoom (`Ctrl +`, `Ctrl -`, `Ctrl 0`)
 /// - Panel Visibility (`Ctrl+B`, `Ctrl+\`, `F11`)
-class SarvShortcutGateway extends StatelessWidget {
+class SarvShortcutGateway extends StatefulWidget {
   final Widget child;
   final VoidCallback? onZoomIn;
   final VoidCallback? onZoomOut;
@@ -123,6 +123,42 @@ class SarvShortcutGateway extends StatelessWidget {
     this.onToggleZenMode,
     this.onShowShortcuts,
   });
+
+  /// Requests that primary focus be returned to the nearest [SarvShortcutGateway] focus scope.
+  ///
+  /// This should be invoked whenever modal overlays, desktop menus, or text fields
+  /// relinquish control or when the user clicks the canvas, ensuring application-level
+  /// shortcuts continue to be received by the gateway.
+  static void requestFocus(BuildContext context) {
+    final state = context.findAncestorStateOfType<SarvShortcutGatewayState>();
+    state?.requestGatewayFocus();
+  }
+
+  @override
+  State<SarvShortcutGateway> createState() => SarvShortcutGatewayState();
+}
+
+class SarvShortcutGatewayState extends State<SarvShortcutGateway> {
+  late final FocusScopeNode _focusScopeNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusScopeNode = FocusScopeNode(debugLabel: 'SarvShortcutGatewayScope');
+  }
+
+  @override
+  void dispose() {
+    _focusScopeNode.dispose();
+    super.dispose();
+  }
+
+  /// Restores focus to this gateway's focus scope, taking it back from any
+  /// stray widgets or ancestor scopes.
+  void requestGatewayFocus() {
+    if (!mounted) return;
+    _focusScopeNode.requestFocus();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -188,8 +224,8 @@ class SarvShortcutGateway extends StatelessWidget {
         actions: <Type, Action<Intent>>{
           KeyboardShortcutsHelpIntent: CallbackAction<KeyboardShortcutsHelpIntent>(
             onInvoke: (intent) {
-              if (onShowShortcuts != null) {
-                onShowShortcuts!();
+              if (widget.onShowShortcuts != null) {
+                widget.onShowShortcuts!();
               } else {
                 showKeyboardShortcutsDialog(context);
               }
@@ -198,37 +234,37 @@ class SarvShortcutGateway extends StatelessWidget {
           ),
           ZoomInIntent: CallbackAction<ZoomInIntent>(
             onInvoke: (intent) {
-              onZoomIn?.call();
+              widget.onZoomIn?.call();
               return null;
             },
           ),
           ZoomOutIntent: CallbackAction<ZoomOutIntent>(
             onInvoke: (intent) {
-              onZoomOut?.call();
+              widget.onZoomOut?.call();
               return null;
             },
           ),
           ZoomResetIntent: CallbackAction<ZoomResetIntent>(
             onInvoke: (intent) {
-              onZoomReset?.call();
+              widget.onZoomReset?.call();
               return null;
             },
           ),
           ToggleSidebarIntent: CallbackAction<ToggleSidebarIntent>(
             onInvoke: (intent) {
-              onToggleSidebar?.call();
+              widget.onToggleSidebar?.call();
               return null;
             },
           ),
           ToggleViewPanelIntent: CallbackAction<ToggleViewPanelIntent>(
             onInvoke: (intent) {
-              onToggleViewPanel?.call();
+              widget.onToggleViewPanel?.call();
               return null;
             },
           ),
           ToggleZenModeIntent: CallbackAction<ToggleZenModeIntent>(
             onInvoke: (intent) {
-              onToggleZenMode?.call();
+              widget.onToggleZenMode?.call();
               return null;
             },
           ),
@@ -361,9 +397,10 @@ class SarvShortcutGateway extends StatelessWidget {
             },
           ),
         },
-        child: Focus(
+        child: FocusScope(
+          node: _focusScopeNode,
           autofocus: true,
-          child: child,
+          child: widget.child,
         ),
       ),
     );

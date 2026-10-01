@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
+import '../../../core/utils/bracket_painter.dart';
 import '../../../core/utils/smufl_glyphs.dart';
 import '../../../core/utils/tab_clef_painter.dart';
 import '../../../core/utils/unit_formatter.dart';
@@ -190,22 +191,8 @@ class _ManuscriptPainter extends CustomPainter {
 
       final bool isFirstSystem = sysIdx == 0;
 
-      // Identify which staves belong to an actively labeled group or connected group
-      final Set<int> innerStaffIndices = {};
-      for (final group in system.groupPlacements) {
-        final String gLabel = isFirstSystem
-            ? group.label
-            : (group.abbreviation.trim().isNotEmpty
-                ? group.abbreviation
-                : group.label);
-        final bool hasGroupLabel = group.labelVisible && gLabel.trim().isNotEmpty;
-        final bool hasConnector = group.connector != core.SystemConnector.none;
-        if (hasGroupLabel || hasConnector) {
-          for (int s = group.startStaffIdx; s <= group.endStaffIdx; s++) {
-            innerStaffIndices.add(s);
-          }
-        }
-      }
+      // Identify which staves sit inside a displaced connector (offset > 0)
+      final Set<int> innerStaffIndices = system.innerStaffIndices;
 
       for (var sIdx = 0; sIdx < system.staves.length; sIdx++) {
         final staff = system.staves[sIdx];
@@ -258,30 +245,32 @@ class _ManuscriptPainter extends CustomPainter {
         final isLabelVisible = staff.definition?.labelVisible ?? true;
         if (isLabelVisible) {
           final isFirstSystem = sysIdx == 0;
-          final String? name = isFirstSystem
-              ? staff.definition?.instrumentName
-              : ((staff.definition?.instrumentAbbreviation != null &&
-                      staff.definition!.instrumentAbbreviation!.trim().isNotEmpty)
-                  ? staff.definition!.instrumentAbbreviation
-                  : staff.definition?.instrumentName);
+          final String? name = staff.resolvedLabel ??
+              (isFirstSystem
+                  ? staff.definition?.instrumentName
+                  : ((staff.definition?.instrumentAbbreviation != null &&
+                          staff.definition!.instrumentAbbreviation!.trim().isNotEmpty)
+                      ? staff.definition!.instrumentAbbreviation
+                      : staff.definition?.instrumentName));
 
           if (name != null && name.isNotEmpty) {
             final double ptScale =
                 scale / (96 / 25.4); // Points conversion scale
-            final double fontSize =
-                (staff.definition?.labelFontSize ?? 11.0) * ptScale;
-            final bool italic = staff.definition?.labelItalic ?? true;
+            final style = staff.resolvedLabelStyle ??
+                staff.definition?.labelStyle ??
+                const core.StaffLabelStyle();
+            final double fontSize = style.fontSizePt * ptScale;
+            final bool italic = style.isItalic;
+            final bool bold = style.isBold;
             final String fontFamily =
-                staff.definition?.labelFontFamily == 'serif'
-                    ? 'Noto Serif'
-                    : 'Roboto';
+                style.fontFamily == 'serif' ? 'Noto Serif' : 'Roboto';
 
             final namePainter = TextPainter(
               text: TextSpan(
                 text: name,
                 style: TextStyle(
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w600,
                   color: inkColor.withValues(alpha: 0.8),
                   fontFamily: fontFamily,
                   fontStyle: italic ? FontStyle.italic : FontStyle.normal,
@@ -304,16 +293,24 @@ class _ManuscriptPainter extends CustomPainter {
               // Inner staff descriptor: sits right-aligned between connector and starting barline
               rightAnchorX = systemLeftPx - marginSpace;
             } else {
-              // Standalone staff: sits to the left of its connector
-              double maxConnectorOffsetMm = 0.0;
+              // Standalone / Single-Tier staff: sits to the left of its connector
+              double maxConnectorVisualExtentMm = 0.0;
               for (final g in system.groupPlacements) {
                 if (sIdx >= g.startStaffIdx &&
                     sIdx <= g.endStaffIdx &&
-                    g.connectorOffsetMm > maxConnectorOffsetMm) {
-                  maxConnectorOffsetMm = g.connectorOffsetMm;
+                    g.connector != core.SystemConnector.none) {
+                  final protrusion =
+                      core.GroupPlacementMetrics.connectorLeftProtrusionMm(
+                    g.connector,
+                    lineGapMm: layout.config.staffConfig.lineGapMm,
+                  );
+                  final extent = g.connectorOffsetMm + protrusion;
+                  if (extent > maxConnectorVisualExtentMm) {
+                    maxConnectorVisualExtentMm = extent;
+                  }
                 }
               }
-              final double connectorOffset = maxConnectorOffsetMm * scale;
+              final double connectorOffset = maxConnectorVisualExtentMm * scale;
               rightAnchorX = systemLeftPx - connectorOffset - marginSpace;
             }
 
@@ -323,10 +320,8 @@ class _ManuscriptPainter extends CustomPainter {
             }
 
             // Apply custom offsets
-            final double hOffset =
-                (staff.definition?.labelHorizontalOffset ?? 0.0) * ptScale;
-            final double vOffset =
-                (staff.definition?.labelVerticalOffset ?? 0.0) * ptScale;
+            final double hOffset = style.horizontalOffsetMm * ptScale;
+            final double vOffset = style.verticalOffsetMm * ptScale;
 
             final nameY = staffMidY - namePainter.height / 2;
             namePainter.paint(canvas, Offset(nameX + hOffset, nameY + vOffset));
@@ -337,13 +332,14 @@ class _ManuscriptPainter extends CustomPainter {
       // ── Draw Group Labels ────────────────────────────────
       for (final group in system.groupPlacements) {
         if (!group.labelVisible) continue;
-        final String label = isFirstSystem
-            ? group.label
-            : (group.abbreviation.trim().isNotEmpty
-                ? group.abbreviation
-                : group.label);
+        final String label =
+            group.labelPlacement == core.GroupLabelPlacement.aboveStaff
+                ? (group.isAboveStaffVisible ? group.label.trim() : '')
+                : (isFirstSystem
+                    ? group.label.trim()
+                    : group.abbreviation.trim());
 
-        if (label.trim().isNotEmpty) {
+        if (label.isNotEmpty) {
           final staves =
               system.staves.sublist(group.startStaffIdx, group.endStaffIdx + 1);
           if (staves.isEmpty) continue;
@@ -354,32 +350,67 @@ class _ManuscriptPainter extends CustomPainter {
           final groupMidY = (topY + bottomY) / 2;
 
           final systemLeftPx = (systemLeftMm * scale).roundToDouble();
-          final connectorX =
-              systemLeftPx - (group.connectorOffsetMm * scale);
-
           final double ptScale = scale / (96 / 25.4);
-          final double fontSize = 11.0 * ptScale;
 
-          final groupNamePainter = TextPainter(
-            text: TextSpan(
-              text: label,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: inkColor.withValues(alpha: 0.9),
-                fontFamily: 'Noto Serif',
+          if (group.labelPlacement == core.GroupLabelPlacement.aboveStaff) {
+            final double fontSize = 10.0 * ptScale;
+            final headerPainter = TextPainter(
+              text: TextSpan(
+                text: label,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: inkColor.withValues(alpha: 0.9),
+                  fontFamily: 'Noto Serif',
+                ),
               ),
-            ),
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.ltr,
-          )..layout();
+              textAlign: TextAlign.left,
+              textDirection: TextDirection.ltr,
+            )..layout();
 
-          final double labelClearance =
-              core.GroupPlacementMetrics.groupLabelClearanceMm * scale;
-          final labelX = connectorX - labelClearance - groupNamePainter.width;
-          final labelY = groupMidY - (groupNamePainter.height / 2);
+            final double headerX = systemLeftPx;
+            final double headerY = (topY -
+                    (core.GroupPlacementMetrics.aboveStaffHeaderOffsetMm *
+                        scale) -
+                    headerPainter.height)
+                .roundToDouble();
+            headerPainter.paint(canvas, Offset(headerX, headerY));
+          } else {
+            final double labelOffsetMm = group.labelOffsetMm > 0.0
+                ? group.labelOffsetMm
+                : group.connectorOffsetMm +
+                    core.GroupPlacementMetrics.connectorLeftProtrusionMm(
+                      group.connector,
+                      lineGapMm: layout.config.staffConfig.lineGapMm,
+                    ) +
+                    (group.outerDescriptorWidthMm > 0.0
+                        ? group.outerDescriptorWidthMm +
+                            core.GroupPlacementMetrics.staffLabelClearanceMm
+                        : 0.0) +
+                    core.GroupPlacementMetrics.groupLabelClearanceMm;
+            final double rightAnchorX =
+                systemLeftPx - (labelOffsetMm * scale);
+            final double fontSize = 11.0 * ptScale;
 
-          groupNamePainter.paint(canvas, Offset(labelX, labelY));
+            final groupNamePainter = TextPainter(
+              text: TextSpan(
+                text: label,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: inkColor.withValues(alpha: 0.9),
+                  fontFamily: 'Noto Serif',
+                ),
+              ),
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.ltr,
+            )..layout();
+
+            final labelX = rightAnchorX - groupNamePainter.width;
+            final labelY = groupMidY - (groupNamePainter.height / 2);
+
+            groupNamePainter.paint(canvas, Offset(labelX, labelY));
+          }
         }
       }
 
@@ -437,18 +468,16 @@ class _ManuscriptPainter extends CustomPainter {
           case core.SystemConnector.brace when staves.length >= 2:
             _paintBrace(canvas, connectorX, topY, bottomY, scale, inkColor);
           case core.SystemConnector.bracket when staves.length >= 2:
-            final bracketPaint = Paint()
-              ..color = inkColor
-              ..strokeWidth = thicknessPx * 3.0
-              ..style = PaintingStyle.stroke;
-            canvas.drawLine(
-                Offset(connectorX, topY), Offset(connectorX, bottomY), bracketPaint);
-            final endTickX = connectorX +
-                (core.GroupPlacementMetrics.bracketTickLengthMm * scale);
-            canvas.drawLine(Offset(connectorX, topY),
-                Offset(endTickX, topY), bracketPaint);
-            canvas.drawLine(Offset(connectorX, bottomY),
-                Offset(endTickX, bottomY), bracketPaint);
+            final double staffScale = staves.first.scale;
+            paintBracket(
+              canvas,
+              connectorX: connectorX,
+              topY: topY,
+              bottomY: bottomY,
+              lineGapPx: lineGapPx,
+              staffScale: staffScale,
+              color: inkColor,
+            );
           case core.SystemConnector.subBracket when staves.length >= 2:
             // Thinner secondary bracket, no serif ticks.
             final subBracketPaint = Paint()

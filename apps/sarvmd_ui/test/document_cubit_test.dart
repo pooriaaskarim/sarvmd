@@ -120,7 +120,7 @@ void main() {
     });
 
     test('ungroupSubGroup dissolves sub-group and promotes staves to parent', () {
-      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+      cubit.applyProfile(core.StaffProfiles.stringOrchestra);
       final root = cubit.state.config.systemLayout.rootGroup;
       expect(root.children.first, isA<core.StaffNodeGroup>());
       final subGroup = root.children.first as core.StaffNodeGroup;
@@ -132,7 +132,7 @@ void main() {
     });
 
     test('moveStaffNode moves staff out of sub-group into root group without removing it', () {
-      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+      cubit.applyProfile(core.StaffProfiles.stringOrchestra);
       final initialStaves = cubit.allStaves;
       final initialCount = initialStaves.length;
 
@@ -171,5 +171,73 @@ void main() {
       expect(updatedStaves[1].instrumentName, equals('2'));
       expect(updatedStaves[2].instrumentName, equals('3'));
     });
+
+    test('newDocument with String Quartet stamps distinct UIDs and edits are isolated to single staff', () {
+      cubit.newDocument(core.StaffProfiles.stringQuartet);
+
+      final staves = cubit.allStaves;
+      expect(staves.length, equals(4));
+
+      final uids = staves.map((s) => s.uid).toList();
+      expect(uids.every((uid) => uid.isNotEmpty), isTrue);
+      expect(uids.toSet().length, equals(4), reason: 'All staves must have distinct UIDs');
+
+      // Verify initial standard names and abbreviations
+      expect(staves[0].instrumentName, equals('Violin I'));
+      expect(staves[0].instrumentAbbreviation, equals('Vln. I'));
+      expect(staves[1].instrumentName, equals('Violin II'));
+      expect(staves[1].instrumentAbbreviation, equals('Vln. II'));
+      expect(staves[2].instrumentName, equals('Viola'));
+      expect(staves[2].instrumentAbbreviation, equals('Vla.'));
+      expect(staves[3].instrumentName, equals('Violoncello'));
+      expect(staves[3].instrumentAbbreviation, equals('Vc.'));
+      expect(staves.every((s) => s.labelVisible), isTrue);
+
+      // Renaming staff 0 should ONLY affect staff 0
+      final targetUid = staves[0].uid;
+      cubit.updateStaffInstrumentName(targetUid, 'Violin Solo');
+
+      final updatedStaves = cubit.allStaves;
+      expect(updatedStaves[0].instrumentName, equals('Violin Solo'));
+      expect(updatedStaves[1].instrumentName, equals('Violin II'));
+      expect(updatedStaves[2].instrumentName, equals('Viola'));
+      expect(updatedStaves[3].instrumentName, equals('Violoncello'));
+
+      // Verify activeProfile still accurately matches String Quartet
+      expect(cubit.activeProfile?.id, equals('stringQuartet'));
+    });
+
+    test('batchUpdateGroupDetails and applyEngravingHouseStyle update layout tree', () {
+      final cubit = DocumentCubit();
+      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+
+      // Verify initial house style
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.classicalGould));
+
+      // Apply Modern Header
+      cubit.applyEngravingHouseStyle(core.EngravingHouseStyle.modernHeader);
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.modernHeader));
+
+      final violins = cubit.state.config.systemLayout.rootGroup.allGroups
+          .firstWhere((g) => g.label == 'Violins');
+      expect(violins.labelPlacement, equals(core.GroupLabelPlacement.aboveStaff));
+
+      // Batch update group details directly
+      cubit.batchUpdateGroupDetails(
+        labelPlacement: core.GroupLabelPlacement.margin,
+        descriptorPlacement: core.DescriptorPlacement.outsideConnector,
+      );
+
+      final updatedViolins = cubit.state.config.systemLayout.rootGroup.allGroups
+          .firstWhere((g) => g.label == 'Violins');
+      expect(updatedViolins.labelPlacement, equals(core.GroupLabelPlacement.margin));
+      expect(updatedViolins.descriptorPlacement,
+          equals(core.DescriptorPlacement.outsideConnector));
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.continental));
+    });
   });
 }
+

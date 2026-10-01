@@ -60,10 +60,10 @@ class EmptyWorkspaceView extends StatelessWidget {
       ),
     ];
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SarvShortcutGateway(
-        child: SafeArea(
+    return SarvShortcutGateway(
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: SafeArea(
           bottom: false,
           child: Column(
             children: [

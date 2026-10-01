@@ -30,6 +30,7 @@ class SectionSpine extends StatefulWidget {
     required this.scrollController,
     required this.onJumpToSection,
     this.activeSection,
+    this.jumpTargetSection,
     this.onActiveSectionChanged,
   });
 
@@ -37,6 +38,7 @@ class SectionSpine extends StatefulWidget {
   final ScrollController scrollController;
   final ValueChanged<SettingsSection> onJumpToSection;
   final SettingsSection? activeSection;
+  final SettingsSection? jumpTargetSection;
   final ValueChanged<SettingsSection>? onActiveSectionChanged;
 
   @override
@@ -81,6 +83,14 @@ class _SectionSpineState extends State<SectionSpine> {
           _scrollToActiveSectionIfNeeded();
         }
       });
+    } else if (widget.jumpTargetSection != null) {
+      if (widget.jumpTargetSection != oldWidget.jumpTargetSection) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _scrollToActiveSectionIfNeeded();
+          }
+        });
+      }
     } else if (widget.activeSection != oldWidget.activeSection &&
         widget.activeSection != _detectedSection) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -120,7 +130,7 @@ class _SectionSpineState extends State<SectionSpine> {
   }
 
   void _scrollToActiveSectionIfNeeded() {
-    final active = widget.activeSection;
+    final active = widget.jumpTargetSection ?? widget.activeSection;
     if (active == null ||
         active == SettingsSection.mainMenu ||
         active == SettingsSection.export) {
@@ -391,6 +401,11 @@ class _SectionSpineState extends State<SectionSpine> {
     setState(() {
       _isDragging = false;
     });
+    final active = _detectActiveSection();
+    if (active != null && active != _detectedSection) {
+      _detectedSection = active;
+      widget.onActiveSectionChanged?.call(active);
+    }
   }
 
   void _handleTrackTap(
@@ -426,6 +441,7 @@ class _SectionSpineState extends State<SectionSpine> {
   }
 
   void _handleEntryTap(SectionSpineEntry entry, int index, int count) {
+    _detectedSection = entry.section;
     widget.onJumpToSection(entry.section);
     _scrollTimer?.cancel();
     _scrollToEntry(entry, index);
@@ -582,7 +598,8 @@ class _SectionSpineState extends State<SectionSpine> {
                   ...List.generate(count, (index) {
                     final entry = widget.entries[index];
                     final beadY = _getBeadY(index, count, trackHeight);
-                    final isActive = widget.activeSection == entry.section;
+                    final currentActive = _detectedSection ?? widget.activeSection;
+                    final isActive = currentActive == entry.section;
                     final isItemHovered = _hoveredIndex == index;
 
                     return SectionSpineBead(

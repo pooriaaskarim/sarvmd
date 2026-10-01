@@ -39,10 +39,24 @@ class StaffProfile {
   final StaffUIHints uiHints;
 
   /// Apply this profile to an existing [PageConfig], preserving all spacing
-  /// and margin settings while overriding the layout.
-  PageConfig applyTo(PageConfig config) => config.copyWith(
-        systemLayout: systemLayout,
-      );
+  /// and margin settings while overriding the layout with uniquely stamped UIDs.
+  PageConfig applyTo(PageConfig config) {
+    int counter = 0;
+    final stampedRoot = systemLayout.rootGroup.assignUids(
+      counter: () => counter++,
+    );
+    return config.copyWith(
+      systemLayout: systemLayout.copyWith(rootGroup: stampedRoot),
+    );
+  }
+
+  /// Returns whether this profile structurally matches [config]'s system layout.
+  bool matches(PageConfig config) =>
+      systemLayout.matchesStructure(config.systemLayout);
+
+  /// Returns whether this profile structurally matches [layout].
+  bool matchesLayout(SystemLayout layout) =>
+      systemLayout.matchesStructure(layout);
 }
 
 /// Built-in staff profiles for common manuscript layouts.
@@ -54,9 +68,25 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.brace,
+        label: 'Piano',
+        abbreviation: 'Pno.',
+        labelVisible: false,
+        descriptorPlacement: DescriptorPlacement.outsideConnector,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Treble',
+            instrumentAbbreviation: 'Tr.',
+            labelVisible: false,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Bass',
+            instrumentAbbreviation: 'B.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -71,7 +101,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Treble',
+            instrumentAbbreviation: 'Tr.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -86,7 +122,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Bass',
+            instrumentAbbreviation: 'B.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -101,7 +143,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.alto),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.alto,
+            instrumentName: 'Viola',
+            instrumentAbbreviation: 'Vla.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -115,7 +163,13 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(lines: 6, clef: Clef.tab),
+          StaffDefinition(
+            lines: 6,
+            clef: Clef.tab,
+            instrumentName: 'Guitar TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -133,9 +187,24 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.bracket,
+        label: 'Guitar',
+        abbreviation: 'Gtr.',
+        labelVisible: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 6, clef: Clef.tab),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Guitar',
+            instrumentAbbreviation: 'Gtr.',
+            labelVisible: false,
+          ),
+          StaffDefinition(
+            lines: 6,
+            clef: Clef.tab,
+            instrumentName: 'TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -153,7 +222,13 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(lines: 4, clef: Clef.tab),
+          StaffDefinition(
+            lines: 4,
+            clef: Clef.tab,
+            instrumentName: 'Bass TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -171,7 +246,13 @@ abstract final class StaffProfiles {
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         children: [
-          StaffDefinition(lines: 5, clef: Clef.tab),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.tab,
+            instrumentName: 'Banjo TAB',
+            instrumentAbbreviation: 'TAB',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -190,7 +271,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.percussion),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.percussion,
+            instrumentName: 'Drum Set',
+            instrumentAbbreviation: 'D.S.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -206,7 +293,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 1, clef: Clef.percussion),
+          StaffDefinition(
+            lines: 1,
+            clef: Clef.percussion,
+            instrumentName: 'Percussion',
+            instrumentAbbreviation: 'Perc.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -222,7 +315,13 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 3, clef: Clef.percussion),
+          StaffDefinition(
+            lines: 3,
+            clef: Clef.percussion,
+            instrumentName: 'Percussion',
+            instrumentAbbreviation: 'Perc.',
+            labelVisible: false,
+          ),
         ],
       ),
     ),
@@ -230,52 +329,248 @@ abstract final class StaffProfiles {
     category: ProfileCategory.percussion,
   );
 
-  /// String Quartet (2 Violins, Viola, Cello).
+  /// String Quartet (2 Violins, Viola, Violoncello).
+  ///
+  /// Standard Gould / Gardner Read notation for classical string quartet.
   static const stringQuartet = StaffProfile(
     id: 'stringQuartet',
     label: 'String Quartet',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.bracket,
+        label: 'String Quartet',
+        abbreviation: 'Str. Qt.',
+        labelVisible: false,
         children: [
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 5, clef: Clef.treble),
-          StaffDefinition(lines: 5, clef: Clef.alto),
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Violin I',
+            instrumentAbbreviation: 'Vln. I',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.treble,
+            instrumentName: 'Violin II',
+            instrumentAbbreviation: 'Vln. II',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.alto,
+            instrumentName: 'Viola',
+            instrumentAbbreviation: 'Vla.',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Violoncello',
+            instrumentAbbreviation: 'Vc.',
+            labelVisible: true,
+          ),
         ],
       ),
     ),
-    description: 'Full score for 2 Violins, Viola, and Cello.',
+    description:
+        'Full score for 2 Violins, Viola, and Violoncello (Gould standard).',
     category: ProfileCategory.ensemble,
   );
 
-  /// Chamber Orchestra: outer bracket with inner sub-bracket for violin pair.
+  /// String Orchestra: 5-part string section with violin pair sub-bracket.
   ///
   /// Demonstrates nested grouping — a primary [SystemConnector.bracket] wraps
   /// all strings, while a [SystemConnector.subBracket] marks the identical
   /// violin pair within the section, following MOLA engraving conventions.
+  static const stringOrchestra = StaffProfile(
+    id: 'stringOrchestra',
+    label: 'String Orchestra',
+    systemLayout: SystemLayout(
+      rootGroup: StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Strings',
+        abbreviation: 'Str.',
+        labelVisible: false,
+        children: [
+          // Violin I + II grouped with a sub-bracket
+          StaffNodeGroup(
+            connector: SystemConnector.subBracket,
+            label: 'Violins',
+            abbreviation: 'Vln.',
+            numberingStyle: GroupNumberingStyle.roman,
+            labelVisible: true,
+            children: [
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Violin I',
+                instrumentAbbreviation: 'Vln. I',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Violin II',
+                instrumentAbbreviation: 'Vln. II',
+                labelVisible: true,
+              ),
+            ],
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.alto,
+            instrumentName: 'Viola',
+            instrumentAbbreviation: 'Vla.',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Violoncello',
+            instrumentAbbreviation: 'Vc.',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Double Bass',
+            instrumentAbbreviation: 'D.B.',
+            labelVisible: true,
+          ),
+        ],
+      ),
+    ),
+    description:
+        '5-part string orchestra (Vln I, Vln II, Vla, Vc, Db) with violin sub-bracket — MOLA compliant.',
+    category: ProfileCategory.ensemble,
+  );
+
+  /// Classical Chamber Orchestra (Haydn / Mozart / Beethoven instrumentation).
+  ///
+  /// Features a full standard classical hierarchy:
+  /// - Woodwinds: Flute, Oboe, Clarinet in B♭, Bassoon
+  /// - Brass: Horn in F
+  /// - Strings: Violins I & II (sub-bracketed), Viola, Violoncello, Double Bass
   static const chamberOrchestra = StaffProfile(
     id: 'chamberOrchestra',
     label: 'Chamber Orchestra',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
-        connector: SystemConnector.bracket,
+        connector: SystemConnector.none,
+        continuousBarlines: false,
         children: [
-          // Violin I + II grouped with a sub-bracket
+          // Woodwinds section
           StaffNodeGroup(
-            connector: SystemConnector.subBracket,
+            connector: SystemConnector.bracket,
+            label: 'Woodwinds',
+            abbreviation: 'W.W.',
+            labelVisible: true,
             children: [
-              StaffDefinition(lines: 5, clef: Clef.treble),
-              StaffDefinition(lines: 5, clef: Clef.treble),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Flute',
+                instrumentAbbreviation: 'Fl.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Oboe',
+                instrumentAbbreviation: 'Ob.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Clarinet in B♭',
+                instrumentAbbreviation: 'Cl.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.bass,
+                instrumentName: 'Bassoon',
+                instrumentAbbreviation: 'Bsn.',
+                labelVisible: true,
+              ),
             ],
           ),
-          StaffDefinition(lines: 5, clef: Clef.alto),
-          StaffDefinition(lines: 5, clef: Clef.bass),
+          // Brass section
+          StaffNodeGroup(
+            connector: SystemConnector.bracket,
+            label: 'Brass',
+            abbreviation: 'Br.',
+            labelVisible: true,
+            children: [
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Horn in F',
+                instrumentAbbreviation: 'Hn.',
+                labelVisible: true,
+              ),
+            ],
+          ),
+          // Strings section
+          StaffNodeGroup(
+            connector: SystemConnector.bracket,
+            label: 'Strings',
+            abbreviation: 'Str.',
+            labelVisible: true,
+            children: [
+              StaffNodeGroup(
+                connector: SystemConnector.subBracket,
+                label: 'Violins',
+                abbreviation: 'Vln.',
+                numberingStyle: GroupNumberingStyle.roman,
+                labelVisible: true,
+                children: [
+                  StaffDefinition(
+                    lines: 5,
+                    clef: Clef.treble,
+                    instrumentName: 'Violin I',
+                    instrumentAbbreviation: 'Vln. I',
+                    labelVisible: true,
+                  ),
+                  StaffDefinition(
+                    lines: 5,
+                    clef: Clef.treble,
+                    instrumentName: 'Violin II',
+                    instrumentAbbreviation: 'Vln. II',
+                    labelVisible: true,
+                  ),
+                ],
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.alto,
+                instrumentName: 'Viola',
+                instrumentAbbreviation: 'Vla.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.bass,
+                instrumentName: 'Violoncello',
+                instrumentAbbreviation: 'Vc.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.bass,
+                instrumentName: 'Double Bass',
+                instrumentAbbreviation: 'D.B.',
+                labelVisible: true,
+              ),
+            ],
+          ),
         ],
       ),
     ),
     description:
-        'Strings section with outer bracket and violin sub-bracket — MOLA compliant.',
+        'Classical chamber orchestra with Woodwinds, Horn, and 5-part Strings.',
     category: ProfileCategory.ensemble,
   );
 
@@ -287,7 +582,7 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         initialBarline: false,
         children: [
-          StaffDefinition(lines: 5),
+          StaffDefinition(lines: 5, labelVisible: false),
         ],
       ),
     ),
@@ -306,6 +601,7 @@ abstract final class StaffProfiles {
     banjoTab,
     guitarGrand,
     stringQuartet,
+    stringOrchestra,
     chamberOrchestra,
     drumSet,
     percussion1,

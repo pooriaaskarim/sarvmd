@@ -61,6 +61,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
   late String _fontFamily;
   late double _fontSize;
   late bool _italic;
+  late bool _bold;
   bool? _userToggledPreview;
 
   @override
@@ -82,6 +83,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
     _fontFamily = widget.staff.labelFontFamily;
     _fontSize = widget.staff.labelFontSize;
     _italic = widget.staff.labelItalic;
+    _bold = widget.staff.labelBold;
   }
 
   @override
@@ -122,6 +124,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
       fontFamily: _fontFamily,
       fontSize: _fontSize,
       italic: _italic,
+      bold: _bold,
     );
 
     Navigator.of(context).pop();
@@ -294,6 +297,7 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                 fontFamily: _fontFamily,
                 fontSize: _fontSize,
                 italic: _italic,
+                bold: _bold,
                 onAnchorLineChanged: (newLine) {
                   setState(() {
                     _selectedAnchorLine = newLine;
@@ -337,12 +341,14 @@ class _StaffConfigDialogState extends State<StaffConfigDialog>
                   fontFamily: _fontFamily,
                   fontSize: _fontSize,
                   italic: _italic,
+                  bold: _bold,
                   horizontalOffset: _horizontalOffset,
                   verticalOffset: _verticalOffset,
                   onFontFamilyChanged: (family) =>
                       setState(() => _fontFamily = family),
                   onFontSizeChanged: (val) => setState(() => _fontSize = val),
                   onItalicChanged: (val) => setState(() => _italic = val),
+                  onBoldChanged: (val) => setState(() => _bold = val),
                   onHorizontalOffsetChanged: (val) =>
                       setState(() => _horizontalOffset = val),
                   onVerticalOffsetChanged: (val) =>

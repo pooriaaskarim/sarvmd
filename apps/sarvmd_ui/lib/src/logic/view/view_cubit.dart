@@ -227,30 +227,17 @@ class ViewCubit extends Cubit<ViewState> {
   void setTouchSection(SettingsSection section) {
     if (state.activeTouchSection == section) return;
     _log.debug('Touch section changed', context: {'section': section.name});
-    final newExpanded = section != SettingsSection.mainMenu && section != SettingsSection.export
-        ? (Set<SettingsSection>.from(state.expandedPointerSections)..add(section))
-        : state.expandedPointerSections;
     emit(state.copyWith(
       activeTouchSection: section,
       jumpTargetSection: section != SettingsSection.mainMenu && section != SettingsSection.export
           ? section
           : state.jumpTargetSection,
-      expandedPointerSections: newExpanded,
     ));
   }
 
   void setActiveSection(SettingsSection section) {
-    if (section == SettingsSection.mainMenu) {
-      emit(state.copyWith(activeTouchSection: SettingsSection.mainMenu));
-      return;
-    }
-    final newExpanded =
-        Set<SettingsSection>.from(state.expandedPointerSections)..add(section);
-    emit(state.copyWith(
-      activeTouchSection: section,
-      jumpTargetSection: section,
-      expandedPointerSections: newExpanded,
-    ));
+    if (state.activeTouchSection == section) return;
+    emit(state.copyWith(activeTouchSection: section));
   }
 
   void togglePointerSection(SettingsSection section) async {
@@ -309,7 +296,7 @@ class ViewCubit extends Cubit<ViewState> {
     );
   }
 
-  void jumpToSection(SettingsSection section) {
+  void jumpToSection(SettingsSection section) async {
     final newExpanded =
         Set<SettingsSection>.from(state.expandedPointerSections)..add(section);
     emit(state.copyWith(
@@ -319,6 +306,11 @@ class ViewCubit extends Cubit<ViewState> {
           ? section
           : state.activeTouchSection,
     ));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _keyExpandedPointerSections,
+      newExpanded.map((s) => s.name).toList(),
+    );
   }
 
   void clearJumpTarget() {

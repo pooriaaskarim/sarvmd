@@ -57,6 +57,10 @@ class SarvDocument {
     );
   }
 
+  SarvDocument ensureUniqueUids() => copyWith(
+        config: config.ensureUniqueUids(),
+      );
+
   /// Serializes this document into the standard .sarv schema envelope JSON map.
   Map<String, dynamic> toJson() => {
         r'$schema': schemaUrl,
@@ -151,11 +155,11 @@ class SarvDocument {
   }
 
   /// Checks whether two documents have identical musical and layout content,
-  /// ignoring volatile operational timestamps.
+  /// ignoring volatile operational timestamps and runtime staff UIDs.
   bool hasSameContent(SarvDocument other) =>
       identical(this, other) ||
       (score == other.score &&
-          config == other.config &&
+          config.hasSameContent(other.config) &&
           pageCount == other.pageCount &&
           metadata.hasSameContent(other.metadata));
 

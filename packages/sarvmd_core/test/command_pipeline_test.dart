@@ -181,16 +181,17 @@ void main() {
 
     test('RemoveStaffCommand removes targeted staff from nested group without deleting the whole group', () {
       final configHistory = CommandHistory(
-        initialScore: const Score(title: 'Chamber Score'),
+        initialScore: const Score(title: 'String Orchestra Score'),
       );
-      configHistory.execute(ApplyProfileCommand(StaffProfiles.chamberOrchestra));
+      configHistory.execute(ApplyProfileCommand(StaffProfiles.stringOrchestra));
 
-      // chamberOrchestra has 4 staves total:
+      // stringOrchestra has 5 staves total:
       // index 0: Violin I (in subGroup)
       // index 1: Violin II (in subGroup)
       // index 2: Viola (in rootGroup)
       // index 3: Cello (in rootGroup)
-      expect(configHistory.config.staffCount, equals(4));
+      // index 4: Double Bass (in rootGroup)
+      expect(configHistory.config.staffCount, equals(5));
       final initialRoot = configHistory.config.systemLayout.rootGroup;
       expect(initialRoot.children.first, isA<StaffNodeGroup>());
       final initialSub = initialRoot.children.first as StaffNodeGroup;
@@ -199,7 +200,7 @@ void main() {
       // Remove staff at index 0 (Violin I)
       configHistory.execute(RemoveStaffCommand(0));
 
-      expect(configHistory.config.staffCount, equals(3));
+      expect(configHistory.config.staffCount, equals(4));
       final updatedRoot = configHistory.config.systemLayout.rootGroup;
       // Sub-group must NOT have been deleted! It still contains Violin II.
       expect(updatedRoot.children.first, isA<StaffNodeGroup>());
@@ -207,12 +208,12 @@ void main() {
       expect(updatedSub.children.length, equals(1));
       expect((updatedSub.children.first as StaffDefinition).clef, equals(Clef.treble));
 
-      // Other root children (Viola, Cello) must remain intact
-      expect(updatedRoot.children.length, equals(3)); // subGroup + Viola + Cello
+      // Other root children (Viola, Cello, Double Bass) must remain intact
+      expect(updatedRoot.children.length, equals(4)); // subGroup + Viola + Cello + Double Bass
 
       // Undo restores Violin I back into the sub-group
       configHistory.undo();
-      expect(configHistory.config.staffCount, equals(4));
+      expect(configHistory.config.staffCount, equals(5));
       final revertedSub = configHistory.config.systemLayout.rootGroup.children.first as StaffNodeGroup;
       expect(revertedSub.children.length, equals(2));
     });

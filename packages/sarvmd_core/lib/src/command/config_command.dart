@@ -18,7 +18,7 @@ abstract class PageConfigCommand extends DocumentCommand {
   @override
   SarvDocument execute(SarvDocument current) {
     _previousConfig = current.config;
-    final updatedConfig = mutateConfig(current.config);
+    final updatedConfig = mutateConfig(current.config).ensureUniqueUids();
     return current.copyWith(config: updatedConfig);
   }
 
@@ -572,18 +572,26 @@ class UpdateGroupInitialBarlineCommand extends PageConfigCommand {
   }
 }
 
-/// Command to update system group details (label, abbreviation, labelVisible).
+/// Command to update system group details (label, abbreviation, labelVisible, labelPlacement, numberingStyle, descriptorPlacement, headerVisibility).
 class UpdateGroupDetailsCommand extends PageConfigCommand {
   final int? groupHash;
   final String? labelText;
   final String? abbreviation;
   final bool? labelVisible;
+  final GroupLabelPlacement? labelPlacement;
+  final GroupNumberingStyle? numberingStyle;
+  final DescriptorPlacement? descriptorPlacement;
+  final GroupHeaderVisibility? headerVisibility;
 
   UpdateGroupDetailsCommand({
     this.groupHash,
     this.labelText,
     this.abbreviation,
     this.labelVisible,
+    this.labelPlacement,
+    this.numberingStyle,
+    this.descriptorPlacement,
+    this.headerVisibility,
   });
 
   @override
@@ -599,6 +607,11 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
             label: labelText ?? root.label,
             abbreviation: abbreviation ?? root.abbreviation,
             labelVisible: labelVisible ?? root.labelVisible,
+            labelPlacement: labelPlacement ?? root.labelPlacement,
+            numberingStyle: numberingStyle ?? root.numberingStyle,
+            descriptorPlacement:
+                descriptorPlacement ?? root.descriptorPlacement,
+            headerVisibility: headerVisibility ?? root.headerVisibility,
           ),
         ),
       );
@@ -611,6 +624,11 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
             label: labelText ?? node.label,
             abbreviation: abbreviation ?? node.abbreviation,
             labelVisible: labelVisible ?? node.labelVisible,
+            labelPlacement: labelPlacement ?? node.labelPlacement,
+            numberingStyle: numberingStyle ?? node.numberingStyle,
+            descriptorPlacement:
+                descriptorPlacement ?? node.descriptorPlacement,
+            headerVisibility: headerVisibility ?? node.headerVisibility,
           );
         }
         return node.copyWith(
@@ -626,6 +644,105 @@ class UpdateGroupDetailsCommand extends PageConfigCommand {
     );
   }
 }
+
+/// Command to batch-update engraving configurations across multiple or all groups in the score.
+class BatchUpdateGroupDetailsCommand extends PageConfigCommand {
+  final Set<int>? targetGroupHashes;
+  final GroupLabelPlacement? labelPlacement;
+  final DescriptorPlacement? descriptorPlacement;
+  final GroupHeaderVisibility? headerVisibility;
+  final GroupNumberingStyle? numberingStyle;
+  final bool? labelVisible;
+  final bool preserveBraceOutsideConstraint;
+
+  BatchUpdateGroupDetailsCommand({
+    this.targetGroupHashes,
+    this.labelPlacement,
+    this.descriptorPlacement,
+    this.headerVisibility,
+    this.numberingStyle,
+    this.labelVisible,
+    this.preserveBraceOutsideConstraint = true,
+  });
+
+  @override
+  String get label => 'Batch Update Group Details';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    StaffNode updateNode(StaffNode node) {
+      if (node is! StaffNodeGroup) return node;
+
+      final bool matches = targetGroupHashes == null ||
+          targetGroupHashes!.contains(node.hashCode);
+
+      final effectiveDescriptorPlacement = (preserveBraceOutsideConstraint &&
+              node.connector == SystemConnector.brace)
+          ? DescriptorPlacement.outsideConnector
+          : (descriptorPlacement ?? node.descriptorPlacement);
+
+      final updatedGroup = matches
+          ? node.copyWith(
+              labelPlacement: labelPlacement ?? node.labelPlacement,
+              descriptorPlacement: effectiveDescriptorPlacement,
+              headerVisibility: headerVisibility ?? node.headerVisibility,
+              numberingStyle: numberingStyle ?? node.numberingStyle,
+              labelVisible: labelVisible ?? node.labelVisible,
+            )
+          : node;
+
+      final newChildren = updatedGroup.children.map(updateNode).toList();
+      return updatedGroup.copyWith(children: newChildren);
+    }
+
+    final newRoot = updateNode(current.systemLayout.rootGroup) as StaffNodeGroup;
+    return current.copyWith(
+      systemLayout: current.systemLayout.copyWith(rootGroup: newRoot),
+    );
+  }
+}
+
+/// Command to apply a standardized score-wide [EngravingHouseStyle] to all groups.
+class ApplyEngravingHouseStyleCommand extends PageConfigCommand {
+  final EngravingHouseStyle style;
+
+  ApplyEngravingHouseStyleCommand(this.style);
+
+  @override
+  String get label => 'Apply Engraving House Style: ${style.label}';
+
+  @override
+  PageConfig mutateConfig(PageConfig current) {
+    if (style == EngravingHouseStyle.custom) return current;
+
+    final GroupLabelPlacement placement = switch (style) {
+      EngravingHouseStyle.modernHeader => GroupLabelPlacement.aboveStaff,
+      _ => GroupLabelPlacement.margin,
+    };
+
+    final DescriptorPlacement descriptor = switch (style) {
+      EngravingHouseStyle.continental ||
+      EngravingHouseStyle.modernHeader =>
+        DescriptorPlacement.outsideConnector,
+      _ => DescriptorPlacement.enclosedByConnector,
+    };
+
+    final headerVisibility = switch (style) {
+      EngravingHouseStyle.modernHeader =>
+        GroupHeaderVisibility.firstSystemOnly,
+      _ => GroupHeaderVisibility.firstSystemOnly,
+    };
+
+    return BatchUpdateGroupDetailsCommand(
+      targetGroupHashes: null,
+      labelPlacement: placement,
+      descriptorPlacement: descriptor,
+      headerVisibility: headerVisibility,
+      preserveBraceOutsideConstraint: true,
+    ).mutateConfig(current);
+  }
+}
+
 
 /// Command to reorder children inside a staff group matching a target hash code.
 class ReorderGroupChildrenCommand extends PageConfigCommand {
@@ -664,24 +781,6 @@ class ReorderGroupChildrenCommand extends PageConfigCommand {
   }
 }
 
-/// Recursively stamps every [StaffDefinition] leaf in [node] with a unique
-/// timestamp-based UID, returning the updated [StaffNode] tree.
-///
-/// This is the single source-of-truth for UID generation when a new layout
-/// tree is materialised from a profile or other source that uses `uid = ''`.
-StaffNode _assignUids(StaffNode node, {required int Function() counter}) {
-  return switch (node) {
-    StaffDefinition def => def.copyWith(
-        uid: '${DateTime.now().microsecondsSinceEpoch}_${counter()}',
-      ),
-    StaffNodeGroup group => group.copyWith(
-        children: group.children
-            .map((c) => _assignUids(c, counter: counter))
-            .toList(),
-      ),
-  };
-}
-
 /// Command to apply an ensemble staff profile preset to the page layout.
 
 class ApplyProfileCommand extends PageConfigCommand {
@@ -693,15 +792,6 @@ class ApplyProfileCommand extends PageConfigCommand {
 
   @override
   PageConfig mutateConfig(PageConfig current) {
-    final newConfig = profile.applyTo(current);
-    int counter = 0;
-    final newRoot = _assignUids(
-      newConfig.systemLayout.rootGroup,
-      counter: () => counter++,
-    ) as StaffNodeGroup;
-
-    return newConfig.copyWith(
-      systemLayout: newConfig.systemLayout.copyWith(rootGroup: newRoot),
-    );
+    return profile.applyTo(current);
   }
 }

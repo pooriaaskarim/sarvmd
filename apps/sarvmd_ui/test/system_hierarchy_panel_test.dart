@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:sarvmd_ui/src/l10n/app_localizations.dart';
 import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
-import 'package:sarvmd_ui/src/presentation/widgets/panels/advanced_builder_panel.dart';
+import 'package:sarvmd_ui/src/presentation/widgets/panels/system_hierarchy_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -49,11 +49,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Main Ensemble title should be present
-      expect(find.text('Main Ensemble'), findsOneWidget);
+      // String Quartet title should be present
+      expect(find.text('String Quartet (Str. Qt.)'), findsOneWidget);
 
       // Should render instrument name Violin I
-      expect(find.textContaining('Violin I'), findsOneWidget);
+      expect(find.text('Violin I (Vln. I)'), findsOneWidget);
 
       // Tap quick add button on group
       final addButtons = find.byIcon(Icons.add_circle_outline);
@@ -154,7 +154,7 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsNothing);
 
       // Single tap on the staff label
-      final staffCard = find.textContaining('Violin I');
+      final staffCard = find.text('Violin I (Vln. I)');
       expect(staffCard, findsOneWidget);
       await tester.tap(staffCard);
       // Pump past double-tap window so single tap resolves
@@ -198,7 +198,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Double tap on the staff label
-      final staffCard = find.textContaining('Violin I');
+      final staffCard = find.text('Violin I (Vln. I)');
       expect(staffCard, findsOneWidget);
 
       await tester.tap(staffCard);
@@ -757,5 +757,313 @@ void main() {
       expect(find.text('Level 2'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 600));
     });
+
+    testWidgets(
+        'displays amber dot indicator when staff is visible but abbreviation is missing',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Violin I has name, ensure abbreviation is cleared
+      cubit.updateStaffConfigDetails(
+        cubit.allStaves.first.uid,
+        abbreviation: () => null,
+        visible: true,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tooltip for amber indicator must be present in the tree
+      expect(
+        find.byTooltip(
+          'Missing abbreviation (subsequent systems will fall back to full name)',
+        ),
+        findsAtLeastNWidgets(1),
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets(
+        'displays resolved label badge when inner staff receives Model B numbering',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+      // Group Violin 1 & 2 under 'Violins' with Arabic numbering
+      cubit.groupTwoStavesTogether(
+        cubit.allStaves[0].uid,
+        cubit.allStaves[1].uid,
+      );
+      // Find the group
+      final group = cubit.state.config.systemLayout.rootGroup.allGroups.first;
+      cubit.updateGroupDetails(
+        groupHash: group.hashCode,
+        label: 'Violins',
+        numberingStyle: core.GroupNumberingStyle.arabic,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Staves 1 and 2 receive auto-numbering '1' and '2', distinct from their full names
+      expect(find.text('Label: 1'), findsOneWidget);
+      expect(find.text('Label: 2'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets(
+        'renders quick labeling card without overflow in narrow panel (< 240px)',
+        (tester) async {
+      tester.view.physicalSize = const Size(220, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: SizedBox(
+                width: 220,
+                child: BlocProvider<DocumentCubit>.value(
+                  value: cubit,
+                  child: SystemHierarchyPanel(notifier: cubit),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap edit on the first staff
+      final editButton = find.byTooltip('Edit Instrument Name').first;
+      await tester.ensureVisible(editButton);
+      await tester.tap(editButton);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Card should be rendered with Style and font size stepper without any RenderFlex overflow
+      expect(find.text('Style'), findsOneWidget);
+      expect(find.textContaining('pt'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets(
+        'group label editing mode replaces group header in-place with QuickLabelingCard',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the group header edit button
+      final groupEditBtn = find.byTooltip('Edit Group Label');
+      expect(groupEditBtn, findsOneWidget);
+
+      // Tap edit group label
+      await tester.tap(groupEditBtn);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Group header is replaced: edit button is no longer visible while editing
+      expect(find.byTooltip('Edit Group Label'), findsNothing);
+      expect(find.text('Edit Group Label'), findsOneWidget);
+
+      // Tap the cancel/close button on the QuickLabelingCard
+      final closeBtn = find.byTooltip('Cancel (Esc)');
+      expect(closeBtn, findsOneWidget);
+      await tester.tap(closeBtn);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Group header is restored
+      expect(find.byTooltip('Edit Group Label'), findsOneWidget);
+    });
+
+    testWidgets('gracefully handles staves with empty or duplicate UIDs without duplicate key crash',
+        (tester) async {
+      // Construct a layout manually with empty UIDs and duplicate UIDs to simulate legacy/corrupted state
+      const corruptedGroup = core.StaffNodeGroup(
+        connector: core.SystemConnector.bracket,
+        children: const [
+          core.StaffDefinition(lines: 5, uid: ''),
+          core.StaffDefinition(lines: 5, uid: ''),
+          core.StaffDefinition(lines: 5, uid: 'dup_uid'),
+          core.StaffDefinition(lines: 5, uid: 'dup_uid'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: StaffGroupWidget(
+                  group: corruptedGroup,
+                  isRoot: true,
+                  notifier: cubit,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // All 4 staves should render without any Flutter duplicate key framework error
+      expect(tester.takeException(), isNull);
+      expect(find.byType(StaffItemWidget), findsNWidgets(4));
+    });
+
+    testWidgets('renders House Style bar and updates active pill on tap (reactive UI)',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Apply String Quartet (single unlabeled bracket group)
+      cubit.applyProfile(core.StaffProfiles.stringQuartet);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BlocProvider<DocumentCubit>.value(
+                value: cubit,
+                child: SystemHierarchyPanel(notifier: cubit),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // House style bar is visible with Classical, Modern Header, Continental pills
+      expect(find.text('House Style:'), findsOneWidget);
+      expect(find.text('Classical'), findsOneWidget);
+      expect(find.text('Modern Header'), findsOneWidget);
+      expect(find.text('Continental'), findsOneWidget);
+
+      // Initially Classical is active (FontWeight.w700)
+      Text classicalText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_classical')),
+        matching: find.text('Classical'),
+      ));
+      expect(classicalText.style!.fontWeight, equals(FontWeight.w700));
+
+      Text modernText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_modern_header')),
+        matching: find.text('Modern Header'),
+      ));
+      expect(modernText.style!.fontWeight, equals(FontWeight.w500));
+
+      // Tap Modern Header pill
+      await tester.tap(find.byKey(const ValueKey('house_style_modern_header')));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.modernHeader));
+
+      // Modern Header is now active (FontWeight.w700) and Classical is inactive (FontWeight.w500)
+      modernText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_modern_header')),
+        matching: find.text('Modern Header'),
+      ));
+      expect(modernText.style!.fontWeight, equals(FontWeight.w700));
+
+      classicalText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_classical')),
+        matching: find.text('Classical'),
+      ));
+      expect(classicalText.style!.fontWeight, equals(FontWeight.w500));
+
+      // Tap Continental pill
+      await tester.tap(find.byKey(const ValueKey('house_style_continental')));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.continental));
+
+      final continentalText = tester.widget<Text>(find.descendant(
+        of: find.byKey(const ValueKey('house_style_continental')),
+        matching: find.text('Continental'),
+      ));
+      expect(continentalText.style!.fontWeight, equals(FontWeight.w700));
+
+      // Tap Batch Group Engraving button
+      final batchBtnFinder = find.byTooltip('Batch Group Engraving Options');
+      expect(batchBtnFinder, findsOneWidget);
+      await tester.tap(batchBtnFinder);
+      await tester.pumpAndSettle();
+
+      // Dialog opens
+      expect(find.text('Batch Group Engraving Options'), findsOneWidget);
+      expect(find.text('Apply to All Groups'), findsOneWidget);
+
+      // Close dialog via top close icon
+      await tester.tap(find.byIcon(Icons.close).last);
+      await tester.pumpAndSettle();
+      expect(find.text('Batch Group Engraving Options'), findsNothing);
+    });
   });
 }
+
+

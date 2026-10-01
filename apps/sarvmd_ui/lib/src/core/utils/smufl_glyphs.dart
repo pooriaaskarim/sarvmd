@@ -21,6 +21,15 @@ abstract final class SMuFLGlyphs {
   /// Standard system brace glyph.
   static const String brace = '\u{E000}';
 
+  /// Top terminal cap of a system bracket. SMuFL: `bracketTop` (U+E003).
+  static const String bracketTop = '\u{E003}';
+
+  /// Bottom terminal cap of a system bracket. SMuFL: `bracketBottom` (U+E004).
+  static const String bracketBottom = '\u{E004}';
+
+  /// Pre-composed fixed-height system bracket. SMuFL: `bracket` (U+E002).
+  static const String bracket = '\u{E002}';
+
   /// G-clef (Treble clef) glyph.
   static const String gClef = '\u{E050}';
 

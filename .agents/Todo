@@ -59,7 +59,20 @@
     [x] Gouldian non-redundancy label assistant, auto-renumbering command, and 2-level nesting depth limits in AdvancedBuilderPanel and SystemGroupingDialog
     [x] System Start Line / Initial Barline (closed left edge for standalone TAB and ensembles, open left edge for solo classical staves per Gould p. 230, reactive UI toggle in AdvancedBuilderPanel, and SVG/PDF/LaTeX emitter parity)
 10. [x] In mobile view, the touch coordinates that appear on long-press drag on canvas, cover the ruler a little, which prevents user from reading the ruler when he probably needs it. Also on mobile view, the bottom coordinates are also show, which is redundant and unnecessary.
-11. [ ] labeling, specially when groups and subgroup labels are available, deos not use canvas space efficiently. This needs research on what the standard are and how they suggest these labels are shown alongside connectors and all that.
+11. [x] labeling, specially when groups and subgroup labels are available, deos not use canvas space efficiently. This needs research on what the standard are and how they suggest these labels are shown alongside connectors and all that.
+    [x] Conducted in-depth music engraving research grounded in Elaine Gould (*Behind Bars*, pp. 509–525) and MOLA Guidelines ([.agents/research/efficient_hierarchical_labeling_and_canvas_space.md](.agents/research/efficient_hierarchical_labeling_and_canvas_space.md))
+    [x] Authored comparative study across master publishers (Bärenreiter, Boosey & Hawkes, Henle, Breitkopf, Gould) analyzing Model A (flat inline), Model B (centered section names + inner numbers), and Model C (headers above staves) ([.agents/research/standard_score_examples_and_subgroup_labeling.md](.agents/research/standard_score_examples_and_subgroup_labeling.md))
+    [x] Formulated detailed engineering and verification plan across engine and all emitters ([.agents/research/hierarchical_labeling_implementation_plan.md](.agents/research/hierarchical_labeling_implementation_plan.md))
+    [x] Implemented Master Engraving **Bracket Cluster Architecture** (`layout.dart`): replaced Russian-doll horizontal bracket sprawl with tight 3.0mm bracket clustering (`connectorLevelSpacingMm`), saving up to 41.6mm of printable notation width
+    [x] Added hierarchical outer-column group label positioning via `GroupPlacement.labelOffsetMm`: group labels sit outside all covering connectors in an aligned outer column, accurately tracking child group label extents
+    [x] Scoped inner staff descriptor widths strictly to leaf groups with labels in `computeLayout`, preventing standalone section staves (e.g. *Double Bass*) from bloating outer bracket offsets
+    [x] Calibrated `GroupPlacementMetrics` to SMuFL/Gould clearances (connector spacing 3.0mm, bracket tick 1.8mm, staff clearance 2.0mm, inner clearance 1.5mm)
+    [x] Differentiated Single-Tier layouts (flush connector at 0.0mm, labels outside) vs Two-Tier layouts (displaced connector enclosing inner descriptors)
+    [x] Implemented Gould subsequent-system compaction: automatically omits family group names on systems 2+ when abbreviation is empty, reclaiming 20mm–48mm of printable notation width
+    [x] Replaced additive level accumulation across vertically disjoint families with row-aware maximum indent calculations
+    [x] Unified structural and layout parity across Interactive Canvas (`preview_canvas.dart`), Direct Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`)
+    [x] Upgraded LaTeX emitter (`emitter.dart`) with recursive `system.groupPlacements` support, bracket/subBracket/brace drawing, and standard LaTeX `picture` environment placing right-aligned text at micrometer coordinates
+    [x] Validated with 32-scenario QA visual gallery generation (SVG, PDF, and TeX) and comprehensive test suites (all 85 core tests and 246 UI tests passing)
 12. [x] Text inputs that support darg to set value ( like margins and staff spacing stuff ), cannot defer from draging to set value and selecting text. I'd suggest text selection be removed entirely since it not really needed anymore.
 13. [x] right panel should maintain its state, like scroll position or open section ( in mobile view), when interactions cause it to colapse, or when screen is resized from narrow width to wide width view.
     [x] Implemented canonical `SettingsSection` enum and unified panel navigation model across touch and pointer modes
@@ -67,6 +80,7 @@
     [x] Built "The Section Spine" (`SectionSpine`): unified scroll rail with section anchor beads, slender constant rail with bulked grab handle on hover, translucent hit testing, state-aware height priors for unmounted slivers, and click-to-jump-and-expand navigation
     [x] Wrapped root app layout in `PageStorage` bucket and assigned persistent `PageStorageKey`s to pointer and touch panel scroll views
     [x] Synchronized `SystemHierarchyPanel` group expansion/selection state with `ViewCubit` while retaining standalone fallback
+    [x] Stabilized `SectionSpine` scroll & jump state: decoupled viewport scrolling from section expansion mutations (scrolling preserves collapsed state) while custom scrollbar bead clicks smoothly expand and jump to target section
     [x] Documented architectural guidelines in `.agents/knowledge/ui_state_preservation_and_panel_architecture.md` and added comprehensive unit and widget tests
 14. [x] there is a problem with removing grouped staff lines from the top bar, I tried it once and it caused the entire group to be deleted.
     [x] Replaced root-index removal with UID-targeted staff removal (`removeStaffByUid`) in desktop Edit menu and compact menu
@@ -83,4 +97,52 @@
     [x] Constrained mobile modal bottom sheets and dialogs in `showSarvAdaptiveModal` using `(screenHeight - viewInsets.bottom)` with bottom padding so modals float cleanly above the keyboard
     [x] Added centralized `AppSpacing.keyboardScrollPadding` (64px bottom headroom) across numeric scrubbers, margins, staff spacing, precision sliders, export dialogs, and hierarchy inline labeling fields
     [x] Added comprehensive regression tests in `mobile_keyboard_inset_test.dart` validating focused input bounds and drawer shrinkage under soft keyboard view insets
-17. [ ] Research: is there a way to determince SCREEN DPI on the web, as well?
+17. [x] Research: is there a way to determince SCREEN DPI on the web, as well?
+    [x] Conducted comprehensive browser specification and web platform research ([.agents/research/web_screen_dpi_detection_research.md](.agents/research/web_screen_dpi_detection_research.md))
+    [x] Documented why raw physical DPI extraction is prohibited by W3C CSS specifications (1in = 96 CSS px fixed mathematical identity) and browser anti-fingerprinting privacy protections
+    [x] Evaluated modern Web APIs (Window Management API, CSS media queries, WebXR, DPR) confirming no deterministic hardware monitor dimension API exists on the open web
+    [x] Validated SarvMD's state-of-the-art two-tier hybrid architecture: automated Tier 1 DPR baseline heuristic (`ppi_detector_web.dart`) combined with interactive Tier 2 physical reference calibration (`CalibrationDialog` using standard ISO/IEC 7810 ID-1 credit card / ruler dimensions) and persistent SharedPreferences storage
+18. [x] Advanced Sub-Group Labeling Modes (Model B & Model C):
+    [x] Implemented Model B (Centered Group Label + Inner Arabic/Roman Numerals): `StaffNodeGroup.numberingStyle` (`GroupNumberingStyle.none`, `.arabic`, `.roman`) with intelligent numeral generator (`formatGroupStaffNumber`, `toRomanNumeral`) and smart generic staff detection preserving auxiliary instruments (e.g. Piccolo, English Horn, Bass Clarinet).
+    [x] Implemented Model C (Section Headers Above Staves): `StaffNodeGroup.labelPlacement` (`GroupLabelPlacement.margin`, `.aboveStaff`) placing section titles directly above the topmost staff of the group, bypassing horizontal indent space and eliminating 25mm–35mm of wasted left margin per system.
+    [x] Vector Emitters & Canvas Cross-Engine Parity: Full typographic parity across Interactive Canvas (`preview_canvas.dart`), Direct Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`), including musical accidentals sanitization for Latin-1 PDF export.
+    [x] UI Integration: Exposed responsive `SegmentedButton` controls in `AdvancedBuilderPanel` (`_QuickLabelingCard`) for Group Label Placement (*Margin* vs *Above Staff*) and Child Staff Numbering (*None*, *Arabic 1, 2*, *Roman I, II*) with transactional command execution (`UpdateGroupDetailsCommand`) in `DocumentCubit`.
+    [x] Visual QA Gallery & Test Suites: Added Model B and Model C scenarios to automated 34-scenario visual gallery (`generate_qa_gallery.dart`) and comprehensive unit/widget tests (88 core tests and 247 UI tests passing).
+19. [x] Standard Music Engraving Labeling System Maturation (Gould/MOLA/Bärenreiter Standards):
+    [x] Conducted comprehensive engraving research and gap analysis ([.agents/research/labeling_system_maturation_plan.md](.agents/research/labeling_system_maturation_plan.md)) across 5 master engraving laws and created 5-phase maturation plan.
+    [x] Phase 1: Critical Bug Fixes (Headroom + Header Suppression):
+        [x] Centralized engraving metrics constants (`GroupPlacementMetrics.aboveStaffHeaderClearanceMm = 5.5`, `GroupPlacementMetrics.aboveStaffHeaderOffsetMm = 2.5`) and recursive `allGroups` hierarchy traversal getter on `StaffNodeGroup`.
+        [x] Fixed multi-system above-staff vertical headroom in `computeLayout` (`layout.dart`), distributing reserved headroom into inter-system gap so systems never collide or overflow bottom page margins.
+        [x] Fixed subsequent-system header re-rendering: strictly suppressed above-staff headers (Model C) on systems 2+ across `layout.dart` and all 4 rendering backends (`svg_emitter.dart`, `pdf_emitter.dart`, `emitter.dart`, and `preview_canvas.dart`) per Gould and MOLA guidelines.
+        [x] Added unit tests in `hierarchical_labeling_test.dart` and verified with all 90 core tests and 247 UI tests passing.
+    [x] Phase 2: StaffLabelStyle Value Object Extraction:
+        [x] Extracted `StaffLabelStyle` value object (`fontFamily`, `fontSizePt`, `isItalic`, `isBold`, `horizontalOffsetMm`, `verticalOffsetMm`) with presets `defaultStaff` and `boldUpright`.
+        [x] Refactored `StaffDefinition` to use `labelStyle` with seamless backward-and-forward JSON serialization (reads new `labelStyle` map, losslessly parses legacy 5-field files, and outputs both).
+        [x] Added `resolvedLabelStyle` to `StaffPosition` in `layout.dart` and propagated style from definitions.
+        [x] Upgraded SVG, PDF, LaTeX, and Interactive Canvas emitters to consume `StaffLabelStyle` (enabling bold/italic font styling and micrometer offsets).
+        [x] Added unit tests for serialization, legacy backward compatibility, and emitter font style propagation (91 core tests and 247 UI tests passing).
+    [x] Phase 3: DescriptorPlacement Enum (Continental Flush vs Anglo-American Enclosed):
+        [x] Added `DescriptorPlacement` enum (`enclosedByConnector`, `outsideConnector`) with localized descriptions.
+        [x] Added `descriptorPlacement` field to `StaffNodeGroup` and updated `UpdateGroupDetailsCommand` with full backward compatibility.
+        [x] Implemented Universal Brace Rule in `layout.dart` (`brace` is always `outsideConnector`) and Continental layout calculations (`connectorOffsetMm = 0.0` or only displaced by child connectors).
+        [x] Promoted `innerStaffIndices` to `StaffSystem` property, resolving architectural gaps L3 and E2 across layout and all 4 emitters.
+        [x] Added responsive UI controls in `AdvancedBuilderPanel` (`_QuickLabelingCard`) with visual helper cards.
+        [x] Added unit tests, serialization tests, and 35th QA gallery scenario (`hierarchical_continental_outside`). All 95 core tests and 247 UI tests passing.
+    [x] Phase 4: GroupHeaderVisibility Enum (Model C Lifecycle Control):
+        [x] Added `GroupHeaderVisibility` enum (`firstSystemOnly`, `firstSystemOfPage`, `always`) to `StaffNodeGroup` and `GroupPlacement`.
+        [x] Updated `computeLayout` with optional `pageIndex` parameter, cleanly decoupling score-start from page-start to support classical publishing traditions (Bärenreiter/Breitkopf section headings re-printed at the top of each page) while defaulting to Gould/MOLA first-system suppression.
+        [x] Added precomputed `isAboveStaffVisible` on `GroupPlacement` and unified all 4 emitters (`preview_canvas.dart`, `svg_emitter.dart`, `pdf_emitter.dart`, and `emitter.dart`).
+        [x] Added responsive `SegmentedButton` controls to `_QuickLabelingCard` in `AdvancedBuilderPanel` with real-time description tooltips.
+        [x] Added serialization and multi-system/multi-page lifecycle tests in `config_serialization_test.dart` and `hierarchical_labeling_test.dart`.
+    [x] Phase 5: UI Maturation (Abbreviation Indicators & Resolved Label Previews):
+        [x] Added amber dot indicator with tooltip in `_StaffRow` (`advanced_builder_panel.dart`) for staves with visible labels but missing abbreviations.
+        [x] Added `resolvedLabel` preview chip badge (`[Label: $resolved]`) in `_StaffRow` displaying dynamic hierarchical resolution (e.g. Model B automatic numbering).
+        [x] Added Quick Typography Styling Bar directly in `_QuickLabelingCard` (inline bold/italic toggles, Serif/Sans switcher, and font size adjustment) allowing immediate styling tweaks without opening the modal dialog.
+        [x] Added `bold` font weight support (`FontWeight.w800`) to `LiveStaffPreview`, `FineTuningTab`, and `StaffConfigDialog` with full English and Persian localization (`boldLabelHeader`, `boldLabelDesc`).
+        [x] Added comprehensive regression tests in `advanced_builder_panel_test.dart` validating amber dot indicators and resolved label badges.
+    [x] Phase 6: Hierarchy Panel Modularization, Dual-Tier Progressive Disclosure & Overflow Handling:
+        [x] Modularized monolithic `advanced_builder_panel.dart` (~3.7k lines) into modular hierarchy components under `lib/src/presentation/widgets/panels/hierarchy/` and aligned entrypoint with `SettingsSection.systemHierarchy` (`SystemHierarchyPanel`).
+        [x] Adopted Paradigm A (Dual-Tier Progressive Disclosure): streamlined inline `QuickLabelingCard` (~80px height) and delegated deep engraving controls (Model C placement, Header Lifecycle across systems, Continental vs. Anglo-American styles, Model B numbering) to a dedicated 560px modal dialog (`GroupEngravingDialog`).
+        [x] Implemented double-tap to rename directly on staff instrument labels and replaced group headers in-place during label editing.
+        [x] Standardized 6-point layout framework eliminating `RenderFlex` overflows in narrow sidebars (< 280px): bounded `LayoutBuilder` inspection, `PopupMenuButton` action compaction, flow-based `Wrap` layout, adaptive segment labels, and text ellipsis.
+        [x] Authored architectural research document `labeling_and_hierarchy_panel_ux_maturation.md` and added unit/widget tests in `hierarchy_tree_utils_test.dart` and `system_hierarchy_panel_test.dart` (all 97 core tests and 254 UI tests passing).

@@ -35,7 +35,7 @@ class DocumentCubit extends Cubit<DocumentState> {
                   score: const core.Score(title: ''),
                   config: core.StaffProfiles.treble.applyTo(const core.PageConfig()),
                   metadata: const core.DocumentMetadata(title: ''),
-                ),
+                ).ensureUniqueUids(),
               ),
           fileService ?? SarvFileService(),
           autoLoadFromPrefs: autoLoadFromPrefs,
@@ -49,11 +49,14 @@ class DocumentCubit extends Cubit<DocumentState> {
         _fileService = fileService,
         _enablePersistence = autoLoadFromPrefs,
         super(DocumentState(
-          document: history.document,
+          document: history.document.ensureUniqueUids(),
           undoStack: history.undoStack,
           redoStack: history.redoStack,
-          lastSavedDocument: history.document,
+          lastSavedDocument: history.document.ensureUniqueUids(),
         )) {
+    if (_history.document != state.document) {
+      _history.setDocument(state.document, clearHistory: true);
+    }
     if (autoLoadFromPrefs) {
       _loadFromPrefs();
     }
@@ -68,7 +71,7 @@ class DocumentCubit extends Cubit<DocumentState> {
     if (docJsonStr != null) {
       try {
         final jsonMap = jsonDecode(docJsonStr) as Map<String, dynamic>;
-        final loadedDoc = core.SarvDocument.fromJson(jsonMap);
+        final loadedDoc = core.SarvDocument.fromJson(jsonMap).ensureUniqueUids();
         _history.setDocument(loadedDoc, clearHistory: true);
         emit(DocumentState(
           document: loadedDoc,
@@ -90,7 +93,7 @@ class DocumentCubit extends Cubit<DocumentState> {
     if (jsonStr != null) {
       try {
         final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
-        final loadedConfig = core.PageConfig.fromJson(jsonMap);
+        final loadedConfig = core.PageConfig.fromJson(jsonMap).ensureUniqueUids();
         final restoredDoc = _history.document.copyWith(config: loadedConfig);
         _history.setDocument(restoredDoc, clearHistory: true);
         _syncState();
@@ -136,7 +139,7 @@ class DocumentCubit extends Cubit<DocumentState> {
       score: core.Score(title: initialTitle),
       config: prof.applyTo(const core.PageConfig()),
       metadata: core.DocumentMetadata(title: initialTitle),
-    );
+    ).ensureUniqueUids();
     _history.setDocument(newDoc, clearHistory: true);
     emit(DocumentState(
       document: newDoc,
@@ -162,13 +165,14 @@ class DocumentCubit extends Cubit<DocumentState> {
 
   /// Loads an external [document] into the editor session.
   void loadDocument(core.SarvDocument document, {String? filePath}) {
-    _history.setDocument(document, clearHistory: true);
+    final sanitizedDoc = document.ensureUniqueUids();
+    _history.setDocument(sanitizedDoc, clearHistory: true);
     emit(DocumentState(
-      document: document,
+      document: sanitizedDoc,
       undoStack: const [],
       redoStack: const [],
       filePath: filePath,
-      lastSavedDocument: document,
+      lastSavedDocument: sanitizedDoc,
     ));
     _save();
     SharedPreferences.getInstance().then((p) {
@@ -298,7 +302,7 @@ class DocumentCubit extends Cubit<DocumentState> {
 
   core.StaffProfile? get activeProfile {
     for (final p in core.StaffProfiles.all) {
-      if (p.systemLayout == state.config.systemLayout) {
+      if (p.matches(state.config)) {
         return p;
       }
     }
@@ -390,28 +394,41 @@ class DocumentCubit extends Cubit<DocumentState> {
     ));
   }
 
+  void setMarginsLinked(bool isLinked) {
+    if (state.config.margins.isLinked == isLinked) return;
+    if (isLinked) {
+      updateMargins(state.config.margins.copyWith(
+        isLinked: true,
+        bottom: state.config.margins.top,
+        right: state.config.margins.left,
+      ));
+    } else {
+      updateMargins(state.config.margins.copyWith(isLinked: false));
+    }
+  }
+
   void updateVerticalMargins(double mm) {
-    updateMargins(state.config.margins.copyWith(top: mm, bottom: mm));
+    updateMargins(state.config.margins.copyWith(top: mm, bottom: mm, isLinked: true));
   }
 
   void updateHorizontalMargins(double mm) {
-    updateMargins(state.config.margins.copyWith(left: mm, right: mm));
+    updateMargins(state.config.margins.copyWith(left: mm, right: mm, isLinked: true));
   }
 
   void updateLeftMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(left: mm));
+    updateMargins(state.config.margins.copyWith(left: mm, isLinked: false));
   }
 
   void updateRightMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(right: mm));
+    updateMargins(state.config.margins.copyWith(right: mm, isLinked: false));
   }
 
   void updateTopMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(top: mm));
+    updateMargins(state.config.margins.copyWith(top: mm, isLinked: false));
   }
 
   void updateBottomMargin(double mm) {
-    updateMargins(state.config.margins.copyWith(bottom: mm));
+    updateMargins(state.config.margins.copyWith(bottom: mm, isLinked: false));
   }
 
   void resetToDefaults() {
@@ -495,11 +512,16 @@ class DocumentCubit extends Cubit<DocumentState> {
     updateStaffConfigDetails(uid, name: () => name);
   }
 
-  /// Sequentially renumbers the staves in [uids] ('1', '2', ...) following Gould's non-redundancy principle.
-  void batchRenumberStaves(List<String> uids) {
-    if (uids.isEmpty) return;
-    for (int i = 0; i < uids.length; i++) {
-      updateStaffInstrumentName(uids[i], '${i + 1}');
+  /// Sequentially renumbers the staves in [uids] following Gould's non-redundancy principle.
+  void batchRenumberStaves(
+    Iterable<String> uids, {
+    core.GroupNumberingStyle style = core.GroupNumberingStyle.arabic,
+  }) {
+    final list = uids.toList();
+    if (list.isEmpty) return;
+    for (int i = 0; i < list.length; i++) {
+      final numStr = core.formatGroupStaffNumber(i, style);
+      updateStaffInstrumentName(list[i], numStr);
     }
   }
 
@@ -515,6 +537,8 @@ class DocumentCubit extends Cubit<DocumentState> {
     String? fontFamily,
     double? fontSize,
     bool? italic,
+    bool? bold,
+    core.StaffLabelStyle? labelStyle,
   }) {
     execute(core.UpdateStaffByUidCommand(
       uid,
@@ -524,11 +548,13 @@ class DocumentCubit extends Cubit<DocumentState> {
         labelVisible: visible,
         lines: lines,
         clef: clef,
+        labelStyle: labelStyle,
         labelHorizontalOffset: horizontalOffset,
         labelVerticalOffset: verticalOffset,
         labelFontFamily: fontFamily,
         labelFontSize: fontSize,
         labelItalic: italic,
+        labelBold: bold,
       ),
       'Update Staff Details',
     ));
@@ -552,13 +578,45 @@ class DocumentCubit extends Cubit<DocumentState> {
     String? label,
     String? abbreviation,
     bool? labelVisible,
+    core.GroupLabelPlacement? labelPlacement,
+    core.GroupNumberingStyle? numberingStyle,
+    core.DescriptorPlacement? descriptorPlacement,
+    core.GroupHeaderVisibility? headerVisibility,
   }) {
     execute(core.UpdateGroupDetailsCommand(
       groupHash: groupHash,
       labelText: label,
       abbreviation: abbreviation,
       labelVisible: labelVisible,
+      labelPlacement: labelPlacement,
+      numberingStyle: numberingStyle,
+      descriptorPlacement: descriptorPlacement,
+      headerVisibility: headerVisibility,
     ));
+  }
+
+  void batchUpdateGroupDetails({
+    Set<int>? targetGroupHashes,
+    core.GroupLabelPlacement? labelPlacement,
+    core.DescriptorPlacement? descriptorPlacement,
+    core.GroupHeaderVisibility? headerVisibility,
+    core.GroupNumberingStyle? numberingStyle,
+    bool? labelVisible,
+    bool preserveBraceOutsideConstraint = true,
+  }) {
+    execute(core.BatchUpdateGroupDetailsCommand(
+      targetGroupHashes: targetGroupHashes,
+      labelPlacement: labelPlacement,
+      descriptorPlacement: descriptorPlacement,
+      headerVisibility: headerVisibility,
+      numberingStyle: numberingStyle,
+      labelVisible: labelVisible,
+      preserveBraceOutsideConstraint: preserveBraceOutsideConstraint,
+    ));
+  }
+
+  void applyEngravingHouseStyle(core.EngravingHouseStyle style) {
+    execute(core.ApplyEngravingHouseStyleCommand(style));
   }
 
   void reorderGroupChildren(int groupHash, int oldIndex, int newIndex) {

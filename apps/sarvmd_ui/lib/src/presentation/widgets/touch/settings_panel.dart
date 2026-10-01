@@ -12,7 +12,7 @@ import '../common/integrated_scale_control.dart';
 import '../common/section_header.dart';
 import '../dialogs/about_dialog.dart';
 import '../layout/sarv_reactive_brand_logo.dart';
-import '../panels/advanced_builder_panel.dart';
+import '../panels/system_hierarchy_panel.dart';
 import '../panels/export_panel.dart';
 import '../staff/document_settings_group.dart';
 import '../staff/margins_settings_group.dart';
@@ -335,6 +335,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           onHorizontalChanged: cubit.updateHorizontalMargins,
           onVerticalChanged: cubit.updateVerticalMargins,
           onReset: cubit.resetMargins,
+          onLinkChanged: cubit.setMarginsLinked,
           onScrubStart: (side) => context
               .read<ViewCubit>()
               .setActiveScrubbingMargin(side),

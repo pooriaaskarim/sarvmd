@@ -38,7 +38,7 @@ abstract final class ScoreCompiler {
 
     // Match against predefined staff profiles
     for (final profile in StaffProfiles.all) {
-      if (config.systemLayout == profile.systemLayout) {
+      if (profile.matches(config)) {
         final cleanLabel = profile.label
             .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')
             .replaceAll(RegExp(r'_+'), '_')

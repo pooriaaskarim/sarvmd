@@ -309,10 +309,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     final documentCubit = DocumentCubit();
-    documentCubit.applyProfile(core.StaffProfiles.chamberOrchestra);
-    // chamberOrchestra has 4 staves:
-    // Violin I (in subGroup), Violin II (in subGroup), Viola, Cello
-    expect(documentCubit.state.config.staffCount, equals(4));
+    documentCubit.applyProfile(core.StaffProfiles.stringOrchestra);
+    // stringOrchestra has 5 staves:
+    // Violin I (in subGroup), Violin II (in subGroup), Viola, Violoncello, Double Bass
+    expect(documentCubit.state.config.staffCount, equals(5));
 
     await tester.pumpWidget(
       MultiBlocProvider(
@@ -338,14 +338,14 @@ void main() {
     await tester.tap(find.text('Remove Staff'));
     await tester.pumpAndSettle();
 
-    // Find and tap the first staff item: 1. Staff #1 (5 L)
-    final firstStaffFinder = find.widgetWithText(MenuItemButton, '1. Staff #1 (5 L)');
+    // Find and tap the first staff item: 1. Violin I (5 L)
+    final firstStaffFinder = find.widgetWithText(MenuItemButton, '1. Violin I (5 L)');
     expect(firstStaffFinder, findsOneWidget);
     await tester.tap(firstStaffFinder);
     await tester.pumpAndSettle();
 
-    // Exactly 3 staves must remain (not 2 from deleting the whole violin sub-group)
-    expect(documentCubit.state.config.staffCount, equals(3));
+    // Exactly 4 staves must remain (not 3 from deleting the whole violin sub-group)
+    expect(documentCubit.state.config.staffCount, equals(4));
     final root = documentCubit.state.config.systemLayout.rootGroup;
     expect(root.children.first, isA<core.StaffNodeGroup>());
     final subGroup = root.children.first as core.StaffNodeGroup;

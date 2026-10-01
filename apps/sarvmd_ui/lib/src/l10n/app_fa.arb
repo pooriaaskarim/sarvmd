@@ -220,6 +220,8 @@
   "labelFontSizeLabel": "اندازه فونت نام",
   "italicizeLabelHeader": "مورب‌سازی (ایتالیک) نام",
   "italicizeLabelDesc": "استفاده از حالت ایتالیک استاندارد برای نام ساز",
+  "boldLabelHeader": "برجسته‌سازی (بولد) نام",
+  "boldLabelDesc": "استفاده از وزن ضخیم برای برجسته‌تر کردن نام ساز",
   "alignmentOffsetsHeader": "تراز و جابه‌جایی‌های دقیق",
   "horizontalOffsetLabel": "جابه‌جایی افقی",
   "verticalOffsetLabel": "جابه‌جایی عمودی",

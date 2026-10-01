@@ -92,16 +92,34 @@ void main() {
       cubit.close();
     });
 
-    test('jumpToSection expands target section and sets jumpTargetSection', () {
+    test('jumpToSection expands target section if collapsed and sets jumpTargetSection', () {
       final cubit = ViewCubit();
       cubit.collapseAllPointerSections();
       expect(cubit.state.isPointerSectionExpanded(SettingsSection.margins), isFalse);
+      expect(cubit.state.isPointerSectionExpanded(SettingsSection.staffSpacing), isFalse);
 
       cubit.jumpToSection(SettingsSection.margins);
+      // Target section should be expanded
       expect(cubit.state.isPointerSectionExpanded(SettingsSection.margins), isTrue);
+      // Other sections remain collapsed
+      expect(cubit.state.isPointerSectionExpanded(SettingsSection.staffSpacing), isFalse);
       expect(cubit.state.jumpTargetSection, equals(SettingsSection.margins));
 
       cubit.clearJumpTarget();
+      expect(cubit.state.jumpTargetSection, isNull);
+
+      cubit.close();
+    });
+
+    test('setActiveSection updates activeTouchSection without modifying expanded sections or jumpTargetSection', () {
+      final cubit = ViewCubit();
+      cubit.collapseAllPointerSections();
+      expect(cubit.state.isPointerSectionExpanded(SettingsSection.staffSpacing), isFalse);
+      expect(cubit.state.jumpTargetSection, isNull);
+
+      cubit.setActiveSection(SettingsSection.staffSpacing);
+      expect(cubit.state.activeTouchSection, equals(SettingsSection.staffSpacing));
+      expect(cubit.state.isPointerSectionExpanded(SettingsSection.staffSpacing), isFalse);
       expect(cubit.state.jumpTargetSection, isNull);
 
       cubit.close();
@@ -145,7 +163,7 @@ void main() {
       final cubit = ViewCubit();
       cubit.setInputMode(InputMode.pointer);
       cubit.setActiveSection(SettingsSection.staffSpacing);
-      expect(cubit.state.jumpTargetSection, equals(SettingsSection.staffSpacing));
+      expect(cubit.state.activeTouchSection, equals(SettingsSection.staffSpacing));
 
       // Switch to touch mode: activeTouchSection must become staffSpacing!
       cubit.setInputMode(InputMode.touch);
