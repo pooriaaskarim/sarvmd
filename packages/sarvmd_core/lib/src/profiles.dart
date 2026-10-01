@@ -71,6 +71,7 @@ abstract final class StaffProfiles {
         label: 'Piano',
         abbreviation: 'Pno.',
         labelVisible: false,
+        descriptorPlacement: DescriptorPlacement.outsideConnector,
         children: [
           StaffDefinition(
             lines: 5,
@@ -328,76 +329,32 @@ abstract final class StaffProfiles {
     category: ProfileCategory.percussion,
   );
 
-  /// String Quartet (2 Violins, Viola, Cello).
+  /// String Quartet (2 Violins, Viola, Violoncello).
+  ///
+  /// Standard Gould / Gardner Read notation for classical string quartet.
   static const stringQuartet = StaffProfile(
     id: 'stringQuartet',
     label: 'String Quartet',
     systemLayout: SystemLayout(
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.bracket,
+        label: 'String Quartet',
+        abbreviation: 'Str. Qt.',
+        labelVisible: false,
         children: [
           StaffDefinition(
             lines: 5,
             clef: Clef.treble,
-            instrumentName: 'Violin 1',
+            instrumentName: 'Violin I',
+            instrumentAbbreviation: 'Vln. I',
             labelVisible: true,
           ),
           StaffDefinition(
             lines: 5,
             clef: Clef.treble,
-            instrumentName: 'Violin 2',
+            instrumentName: 'Violin II',
+            instrumentAbbreviation: 'Vln. II',
             labelVisible: true,
-          ),
-          StaffDefinition(
-            lines: 5,
-            clef: Clef.alto,
-            instrumentName: 'Viola',
-            labelVisible: true,
-          ),
-          StaffDefinition(
-            lines: 5,
-            clef: Clef.bass,
-            instrumentName: 'Violoncello',
-            labelVisible: true,
-          ),
-        ],
-      ),
-    ),
-    description: 'Full score for 2 Violins, Viola, and Cello.',
-    category: ProfileCategory.ensemble,
-  );
-
-  /// Chamber Orchestra: outer bracket with inner sub-bracket for violin pair.
-  ///
-  /// Demonstrates nested grouping — a primary [SystemConnector.bracket] wraps
-  /// all strings, while a [SystemConnector.subBracket] marks the identical
-  /// violin pair within the section, following MOLA engraving conventions.
-  static const chamberOrchestra = StaffProfile(
-    id: 'chamberOrchestra',
-    label: 'Chamber Orchestra',
-    systemLayout: SystemLayout(
-      rootGroup: StaffNodeGroup(
-        connector: SystemConnector.bracket,
-        children: [
-          // Violin I + II grouped with a sub-bracket
-          StaffNodeGroup(
-            connector: SystemConnector.subBracket,
-            label: 'Violins',
-            abbreviation: 'Vln.',
-            numberingStyle: GroupNumberingStyle.arabic,
-            labelVisible: true,
-            children: [
-              StaffDefinition(
-                lines: 5,
-                clef: Clef.treble,
-                labelVisible: true,
-              ),
-              StaffDefinition(
-                lines: 5,
-                clef: Clef.treble,
-                labelVisible: true,
-              ),
-            ],
           ),
           StaffDefinition(
             lines: 5,
@@ -417,7 +374,203 @@ abstract final class StaffProfiles {
       ),
     ),
     description:
-        'Strings section with outer bracket and violin sub-bracket — MOLA compliant.',
+        'Full score for 2 Violins, Viola, and Violoncello (Gould standard).',
+    category: ProfileCategory.ensemble,
+  );
+
+  /// String Orchestra: 5-part string section with violin pair sub-bracket.
+  ///
+  /// Demonstrates nested grouping — a primary [SystemConnector.bracket] wraps
+  /// all strings, while a [SystemConnector.subBracket] marks the identical
+  /// violin pair within the section, following MOLA engraving conventions.
+  static const stringOrchestra = StaffProfile(
+    id: 'stringOrchestra',
+    label: 'String Orchestra',
+    systemLayout: SystemLayout(
+      rootGroup: StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Strings',
+        abbreviation: 'Str.',
+        labelVisible: false,
+        children: [
+          // Violin I + II grouped with a sub-bracket
+          StaffNodeGroup(
+            connector: SystemConnector.subBracket,
+            label: 'Violins',
+            abbreviation: 'Vln.',
+            numberingStyle: GroupNumberingStyle.roman,
+            labelVisible: true,
+            children: [
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Violin I',
+                instrumentAbbreviation: 'Vln. I',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Violin II',
+                instrumentAbbreviation: 'Vln. II',
+                labelVisible: true,
+              ),
+            ],
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.alto,
+            instrumentName: 'Viola',
+            instrumentAbbreviation: 'Vla.',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Violoncello',
+            instrumentAbbreviation: 'Vc.',
+            labelVisible: true,
+          ),
+          StaffDefinition(
+            lines: 5,
+            clef: Clef.bass,
+            instrumentName: 'Double Bass',
+            instrumentAbbreviation: 'D.B.',
+            labelVisible: true,
+          ),
+        ],
+      ),
+    ),
+    description:
+        '5-part string orchestra (Vln I, Vln II, Vla, Vc, Db) with violin sub-bracket — MOLA compliant.',
+    category: ProfileCategory.ensemble,
+  );
+
+  /// Classical Chamber Orchestra (Haydn / Mozart / Beethoven instrumentation).
+  ///
+  /// Features a full standard classical hierarchy:
+  /// - Woodwinds: Flute, Oboe, Clarinet in B♭, Bassoon
+  /// - Brass: Horn in F
+  /// - Strings: Violins I & II (sub-bracketed), Viola, Violoncello, Double Bass
+  static const chamberOrchestra = StaffProfile(
+    id: 'chamberOrchestra',
+    label: 'Chamber Orchestra',
+    systemLayout: SystemLayout(
+      rootGroup: StaffNodeGroup(
+        connector: SystemConnector.none,
+        continuousBarlines: false,
+        children: [
+          // Woodwinds section
+          StaffNodeGroup(
+            connector: SystemConnector.bracket,
+            label: 'Woodwinds',
+            abbreviation: 'W.W.',
+            labelVisible: true,
+            children: [
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Flute',
+                instrumentAbbreviation: 'Fl.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Oboe',
+                instrumentAbbreviation: 'Ob.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Clarinet in B♭',
+                instrumentAbbreviation: 'Cl.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.bass,
+                instrumentName: 'Bassoon',
+                instrumentAbbreviation: 'Bsn.',
+                labelVisible: true,
+              ),
+            ],
+          ),
+          // Brass section
+          StaffNodeGroup(
+            connector: SystemConnector.bracket,
+            label: 'Brass',
+            abbreviation: 'Br.',
+            labelVisible: true,
+            children: [
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.treble,
+                instrumentName: 'Horn in F',
+                instrumentAbbreviation: 'Hn.',
+                labelVisible: true,
+              ),
+            ],
+          ),
+          // Strings section
+          StaffNodeGroup(
+            connector: SystemConnector.bracket,
+            label: 'Strings',
+            abbreviation: 'Str.',
+            labelVisible: true,
+            children: [
+              StaffNodeGroup(
+                connector: SystemConnector.subBracket,
+                label: 'Violins',
+                abbreviation: 'Vln.',
+                numberingStyle: GroupNumberingStyle.roman,
+                labelVisible: true,
+                children: [
+                  StaffDefinition(
+                    lines: 5,
+                    clef: Clef.treble,
+                    instrumentName: 'Violin I',
+                    instrumentAbbreviation: 'Vln. I',
+                    labelVisible: true,
+                  ),
+                  StaffDefinition(
+                    lines: 5,
+                    clef: Clef.treble,
+                    instrumentName: 'Violin II',
+                    instrumentAbbreviation: 'Vln. II',
+                    labelVisible: true,
+                  ),
+                ],
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.alto,
+                instrumentName: 'Viola',
+                instrumentAbbreviation: 'Vla.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.bass,
+                instrumentName: 'Violoncello',
+                instrumentAbbreviation: 'Vc.',
+                labelVisible: true,
+              ),
+              StaffDefinition(
+                lines: 5,
+                clef: Clef.bass,
+                instrumentName: 'Double Bass',
+                instrumentAbbreviation: 'D.B.',
+                labelVisible: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+    description:
+        'Classical chamber orchestra with Woodwinds, Horn, and 5-part Strings.',
     category: ProfileCategory.ensemble,
   );
 
@@ -448,6 +601,7 @@ abstract final class StaffProfiles {
     banjoTab,
     guitarGrand,
     stringQuartet,
+    stringOrchestra,
     chamberOrchestra,
     drumSet,
     percussion1,

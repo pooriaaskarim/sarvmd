@@ -7,9 +7,9 @@ import 'package:sarvmd_core/sarvmd_core.dart';
 void main() {
   group('StaffProfile Presets & Application Tests', () {
     test('All built-in profiles are correctly registered in StaffProfiles.all', () {
-      expect(StaffProfiles.all.length, equals(14));
+      expect(StaffProfiles.all.length, equals(15));
       final uniqueIds = StaffProfiles.all.map((p) => p.id).toSet();
-      expect(uniqueIds.length, equals(14), reason: 'Every profile must have a unique ID');
+      expect(uniqueIds.length, equals(15), reason: 'Every profile must have a unique ID');
     });
 
     test('StaffProfile.applyTo applies profile layout while preserving margins & page config', () {
@@ -88,19 +88,36 @@ void main() {
       expect(StaffProfiles.drumSet.systemLayout.rootGroup.allStaves.first.labelVisible, isFalse);
       expect(StaffProfiles.drumSet.systemLayout.rootGroup.allStaves.first.instrumentName, equals('Drum Set'));
 
-      // String Quartet: single-tier group (no outer label), staves visible
-      expect(StaffProfiles.stringQuartet.systemLayout.rootGroup.label.isEmpty, isTrue);
+      // String Quartet: bracket group with standard Gould Roman numerals and abbreviations
+      expect(StaffProfiles.stringQuartet.systemLayout.rootGroup.label, equals('String Quartet'));
+      expect(StaffProfiles.stringQuartet.systemLayout.rootGroup.abbreviation, equals('Str. Qt.'));
+      expect(StaffProfiles.stringQuartet.systemLayout.rootGroup.labelVisible, isFalse);
       final sqStaves = StaffProfiles.stringQuartet.systemLayout.rootGroup.allStaves;
-      expect(sqStaves.map((s) => s.instrumentName).toList(), equals(['Violin 1', 'Violin 2', 'Viola', 'Violoncello']));
+      expect(sqStaves.map((s) => s.instrumentName).toList(), equals(['Violin I', 'Violin II', 'Viola', 'Violoncello']));
+      expect(sqStaves.map((s) => s.instrumentAbbreviation).toList(), equals(['Vln. I', 'Vln. II', 'Vla.', 'Vc.']));
       expect(sqStaves.every((s) => s.labelVisible), isTrue);
 
-      // Chamber Orchestra: single-tier root (no outer label), violins sub-group with Model B Arabic numbering
-      expect(StaffProfiles.chamberOrchestra.systemLayout.rootGroup.label.isEmpty, isTrue);
-      final subGroup = StaffProfiles.chamberOrchestra.systemLayout.rootGroup.children.first as StaffNodeGroup;
-      expect(subGroup.label, equals('Violins'));
-      expect(subGroup.labelVisible, isTrue);
-      expect(subGroup.numberingStyle, equals(GroupNumberingStyle.arabic));
+      // String Orchestra: 5-part strings with sub-bracketed violins
+      expect(StaffProfiles.stringOrchestra.systemLayout.rootGroup.label, equals('Strings'));
+      expect(StaffProfiles.stringOrchestra.systemLayout.rootGroup.abbreviation, equals('Str.'));
+      final soViolins = StaffProfiles.stringOrchestra.systemLayout.rootGroup.children.first as StaffNodeGroup;
+      expect(soViolins.label, equals('Violins'));
+      expect(soViolins.abbreviation, equals('Vln.'));
+      expect(soViolins.numberingStyle, equals(GroupNumberingStyle.roman));
+      final soStaves = StaffProfiles.stringOrchestra.systemLayout.rootGroup.allStaves;
+      expect(soStaves.length, equals(5));
+      expect(soStaves.map((s) => s.instrumentName).toList(),
+          equals(['Violin I', 'Violin II', 'Viola', 'Violoncello', 'Double Bass']));
+      expect(soStaves.map((s) => s.instrumentAbbreviation).toList(),
+          equals(['Vln. I', 'Vln. II', 'Vla.', 'Vc.', 'D.B.']));
+
+      // Chamber Orchestra: Woodwinds, Brass, and Strings sections
+      final coGroups = StaffProfiles.chamberOrchestra.systemLayout.rootGroup.children
+          .whereType<StaffNodeGroup>()
+          .toList();
+      expect(coGroups.map((g) => g.label).toList(), equals(['Woodwinds', 'Brass', 'Strings']));
       final coStaves = StaffProfiles.chamberOrchestra.systemLayout.rootGroup.allStaves;
+      expect(coStaves.length, equals(10));
       expect(coStaves.every((s) => s.labelVisible), isTrue);
     });
   });
