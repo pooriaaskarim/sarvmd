@@ -11,17 +11,17 @@ void main() {
 
       final widthSingle = estimateLabelWidthMm('1');
       expect(widthSingle, greaterThan(0.0));
-      // 0.55 em * 11pt * (25.4/72) + 0.5mm cushion ≈ 2.63 mm
-      expect(widthSingle, closeTo(2.63, 0.2));
+      // 0.55 em * 11pt * (25.4/72) ≈ 2.13 mm (authentic typographic advance without cushion)
+      expect(widthSingle, closeTo(2.13, 0.2));
 
       final widthFlutes = estimateLabelWidthMm('Flutes', isGroup: true);
-      // Character-weighted bold font advance ≈ 12.4 mm
+      // Character-weighted bold font advance ≈ 11.9 mm
       expect(widthFlutes, greaterThan(10.0));
-      expect(widthFlutes, closeTo(12.4, 0.6));
+      expect(widthFlutes, closeTo(11.9, 0.6));
 
       // Multi-word strings budget the full string rather than single words
       final widthBassTrombone = estimateLabelWidthMm('Bass Trombone');
-      expect(widthBassTrombone, greaterThan(25.0));
+      expect(widthBassTrombone, greaterThan(24.0));
 
       // Explicit newlines budget the longest line
       final widthMultiLine = estimateLabelWidthMm('Trumpets\nin C');
@@ -71,7 +71,8 @@ void main() {
           placement.innerStaffLabelWidthMm +
           GroupPlacementMetrics.staffLabelClearanceMm;
 
-      expect(system.leftIndentMm, greaterThan(expectedMinIndent));
+      expect(system.rawRequiredIndentMm, greaterThan(expectedMinIndent));
+      expect(system.leftIndentMm, equals(system.rawRequiredIndentMm - system.marginAbsorptionMm));
     });
 
     test('Single-tier fallback when group label is empty', () {
@@ -103,7 +104,8 @@ void main() {
       expect(system.maxInnerLabelWidthMm, equals(placement.innerStaffLabelWidthMm));
 
       // System indent still accommodates Violin names + bracket offset
-      expect(system.leftIndentMm, greaterThan(15.0));
+      expect(system.rawRequiredIndentMm, greaterThan(15.0));
+      expect(system.leftIndentMm, greaterThan(10.0));
     });
 
     test('Zero indent when all labels are empty or hidden', () {
@@ -157,7 +159,8 @@ void main() {
       expect(system.staves, hasLength(3));
       expect(system.groupPlacements.first.label, equals('Trombones'));
       expect(system.groupPlacements.first.innerStaffLabelWidthMm, greaterThan(0.0));
-      expect(system.leftIndentMm, greaterThan(20.0));
+      expect(system.rawRequiredIndentMm, greaterThan(20.0));
+      expect(system.leftIndentMm, greaterThan(14.0));
     });
 
     test('emitSvg renders two-tier labels and connectors without coordinate collision', () {
@@ -192,7 +195,7 @@ void main() {
 
       // Outer group label sits to the left of the connector and inner label
       expect(flutesX, lessThan(innerX));
-      expect(innerX - flutesX, closeTo(7.94, 0.2));
+      expect(innerX - flutesX, closeTo(6.63, 0.2));
     });
 
     test('Nested sub-group labels do not collide with parent connectors', () {
@@ -251,7 +254,8 @@ void main() {
       // System indent must accommodate Woodwinds label to avoid clipping left page margin
       final minSystemIndent = woodwindsPlacement.labelOffsetMm +
           woodwindsPlacement.groupLabelWidthMm;
-      expect(system.leftIndentMm, greaterThan(minSystemIndent));
+      expect(system.rawRequiredIndentMm, greaterThanOrEqualTo(minSystemIndent));
+      expect(system.leftIndentMm, equals(system.rawRequiredIndentMm - system.marginAbsorptionMm));
     });
 
     test('emitPdf renders two-tier hierarchical labels without error', () async {
@@ -450,12 +454,14 @@ void main() {
       // Single-tier connector must sit flush against starting barline
       expect(placement.connectorOffsetMm, equals(0.0));
 
-      // Indent must accommodate longest name (Violoncello ~22mm) + clearance + cushion
+      // Indent must accommodate longest name (Violoncello ~22mm) + clearance, minus smart margin absorption
       final vcWidth = estimateLabelWidthMm('Violoncello');
-      final expectedIndent = vcWidth + GroupPlacementMetrics.staffLabelClearanceMm + 0.5;
+      final expectedRaw = vcWidth + GroupPlacementMetrics.staffLabelClearanceMm;
+      expect(sys.rawRequiredIndentMm, closeTo(expectedRaw, 0.1));
+      final expectedIndent = expectedRaw - sys.marginAbsorptionMm;
       expect(sys.leftIndentMm, closeTo(expectedIndent, 0.1));
-      // Far less than the old 30mm+ bloated indent
-      expect(sys.leftIndentMm, lessThan(26.0));
+      // Far less than the old 30mm+ bloated indent (compacted down to ~14mm via absorption)
+      expect(sys.leftIndentMm, lessThan(16.0));
     });
 
     test('Chamber Orchestra Strings ensemble reclaims canvas space and compacts on subsequent systems', () {
@@ -930,11 +936,15 @@ void main() {
       );
       // System left indent accommodates both descriptors and group label
       expect(
-        continentalSystem.leftIndentMm,
+        continentalSystem.rawRequiredIndentMm,
         greaterThanOrEqualTo(
           continentalPlacement.labelOffsetMm +
               continentalPlacement.groupLabelWidthMm,
         ),
+      );
+      expect(
+        continentalSystem.leftIndentMm,
+        equals(continentalSystem.rawRequiredIndentMm - continentalSystem.marginAbsorptionMm),
       );
     });
 

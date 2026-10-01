@@ -1080,16 +1080,24 @@ abstract final class GroupPlacementMetrics {
   static const double braceNativeWidthOffsetMm = 82.0;
 
   /// Horizontal clearance between staff label and starting barline in mm.
-  /// (Gould p. 513 standard whitespace buffer: 2.0 mm)
-  static const double staffLabelClearanceMm = 2.0;
+  /// (Gould p. 513 standard whitespace buffer: 1.5 mm)
+  static const double staffLabelClearanceMm = 1.5;
 
   /// Horizontal clearance between the tip of a bracket tick (or connector) and inner staff labels in mm.
-  /// (Gould p. 514: 1.5 mm)
-  static const double staffLabelConnectorClearanceMm = 1.5;
+  /// (Gould p. 514: 1.2 mm)
+  static const double staffLabelConnectorClearanceMm = 1.2;
 
   /// Horizontal clearance between group label and connector in mm.
-  /// (Gould p. 513: 2.0 mm)
-  static const double groupLabelClearanceMm = 2.0;
+  /// (Gould p. 513: 1.5 mm)
+  static const double groupLabelClearanceMm = 1.5;
+
+  /// Minimum physical safety margin from the page trim edge in mm.
+  ///
+  /// Standard music publishers (Bärenreiter, Henle, Gould p. 509) permit
+  /// instrument labels on indented systems to utilize the outer margin buffer
+  /// down to this physical printer gripper/trim threshold (8.0 mm) instead of
+  /// stacking redundantly onto the full page margin.
+  static const double minPageEdgeMarginMm = 8.0;
 
   /// Vertical offset in mm between the topmost staff line and the baseline of an above-staff section header.
   static const double aboveStaffHeaderOffsetMm = 2.5;

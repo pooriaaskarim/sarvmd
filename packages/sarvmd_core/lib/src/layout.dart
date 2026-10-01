@@ -196,6 +196,8 @@ class StaffSystem {
     required this.staves,
     this.groupPlacements = const [],
     this.leftIndentMm = 0.0,
+    this.rawRequiredIndentMm = 0.0,
+    this.marginAbsorptionMm = 0.0,
     this.maxInnerLabelWidthMm = 0.0,
     this.innerStaffIndices = const {},
   });
@@ -207,7 +209,16 @@ class StaffSystem {
   final List<GroupPlacement> groupPlacements;
 
   /// Dynamic horizontal indent applied to the left side of this system (in mm).
+  ///
+  /// Incorporates smart margin absorption so labels utilize the outer page margin
+  /// buffer down to [GroupPlacementMetrics.minPageEdgeMarginMm].
   final double leftIndentMm;
+
+  /// The raw unabsorbed horizontal indent required by labels and connectors (in mm).
+  final double rawRequiredIndentMm;
+
+  /// The amount of the left page margin absorbed to accommodate labels (in mm).
+  final double marginAbsorptionMm;
 
   /// Maximum width among all inner staff labels across labeled groups in this system (in mm).
   final double maxInnerLabelWidthMm;
@@ -783,14 +794,25 @@ PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
       }
     }
 
+    final double availableAbsorptionMm =
+        (config.margins.left > GroupPlacementMetrics.minPageEdgeMarginMm)
+            ? config.margins.left - GroupPlacementMetrics.minPageEdgeMarginMm
+            : 0.0;
+    final double marginAbsorptionMm =
+        maxSystemRequiredIndentMm < availableAbsorptionMm
+            ? maxSystemRequiredIndentMm
+            : availableAbsorptionMm;
+
     final double leftIndentMm = maxSystemRequiredIndentMm > 0.0
-        ? maxSystemRequiredIndentMm + 0.5
+        ? (maxSystemRequiredIndentMm - marginAbsorptionMm)
         : 0.0;
 
     systems.add(StaffSystem(
       staves: staves,
       groupPlacements: updatedPlacements,
       leftIndentMm: leftIndentMm,
+      rawRequiredIndentMm: maxSystemRequiredIndentMm,
+      marginAbsorptionMm: marginAbsorptionMm,
       maxInnerLabelWidthMm: systemMaxInnerWidthMm,
       innerStaffIndices: innerStaffIndices,
     ));
@@ -852,7 +874,7 @@ double estimateLabelWidthMm(
         emSum += 0.52;
       }
     }
-    final widthMm = (emSum * fontFactor * boldMultiplier) + 0.5;
+    final widthMm = emSum * fontFactor * boldMultiplier;
     if (widthMm > maxLineWidthMm) {
       maxLineWidthMm = widthMm;
     }
