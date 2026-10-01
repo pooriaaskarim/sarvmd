@@ -1056,6 +1056,14 @@ abstract final class GroupPlacementMetrics {
   /// (SMuFL Bravura authentic square bracket tick: 1.8 mm)
   static const double bracketTickLengthMm = 1.8;
 
+  /// Horizontal shift of authentic SMuFL bracket relative to system connector barline in font units (em=1000, 250 units = 1 staff space).
+  /// (Gould p. 518 standard: bracket spine sits outside the initial barline with 0.6 sp whitespace gap)
+  static const double bracketFontUnitShift = 275.0;
+
+  /// Vertical protrusion of authentic SMuFL bracket beyond outer staff lines in font units (em=1000, 250 units = 1 staff space).
+  /// (Gould p. 518: bracket wings cup outer staff lines by extending ~1/3 staff space)
+  static const double bracketFontUnitProtrusion = 80.0;
+
   /// System barline stroke thickness multiplier relative to staff line thickness.
   static const double systemBarlineWidthMultiplier = 2.5;
 

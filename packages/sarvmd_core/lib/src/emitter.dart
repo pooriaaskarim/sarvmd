@@ -115,19 +115,35 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
           draw.writeln('0 g');
           draw.writeln('$_bracePdf Q');
         case SystemConnector.bracket when groupStaves.length >= 2:
-          final tickLenBp =
-              _mmToBp(GroupPlacementMetrics.bracketTickLengthMm);
-          final endTickBp = connectorBp + tickLenBp;
-          draw.writeln('${_f(lineW * 3.0)} w');
+          final double staffScale = groupStaves.first.scale;
+          // 1 staff space = 250 Bravura font units
+          final double scale = (lineGapBp * staffScale) / 250.0;
+          final double shiftBp =
+              GroupPlacementMetrics.bracketFontUnitShift * scale;
+          final double vProtrusionBp =
+              GroupPlacementMetrics.bracketFontUnitProtrusion * scale;
+          final double bracketBp = connectorBp - shiftBp;
+          final double topBracketBp = topPdfY + vProtrusionBp;
+          final double bottomBracketBp = bottomPdfY - vProtrusionBp;
+          final double spineWidthBp = 125.0 * scale;
+          final double spineHeightBp = topBracketBp - bottomBracketBp;
+
+          // 1. Bracket Top Cap (bracketTop U+E003)
           draw.writeln(
-            '${_f(connectorBp)} ${_f(topPdfY)} m '
-            '${_f(connectorBp)} ${_f(bottomPdfY)} l '
-            '${_f(connectorBp)} ${_f(topPdfY)} m '
-            '${_f(endTickBp)} ${_f(topPdfY)} l '
-            '${_f(connectorBp)} ${_f(bottomPdfY)} m '
-            '${_f(endTickBp)} ${_f(bottomPdfY)} l S',
-          );
-          draw.writeln('$lineW w');
+              'q ${_f(scale)} 0 0 ${_f(scale)} ${_f(bracketBp)} ${_f(topBracketBp)} cm');
+          draw.writeln('0 g');
+          draw.writeln('$_bracketTopPdf Q');
+
+          // 2. Vertical Spine
+          draw.writeln('0 g');
+          draw.writeln(
+              '${_f(bracketBp)} ${_f(bottomBracketBp)} ${_f(spineWidthBp)} ${_f(spineHeightBp)} re f');
+
+          // 3. Bracket Bottom Cap (bracketBottom U+E004)
+          draw.writeln(
+              'q ${_f(scale)} 0 0 ${_f(scale)} ${_f(bracketBp)} ${_f(bottomBracketBp)} cm');
+          draw.writeln('0 g');
+          draw.writeln('$_bracketBottomPdf Q');
         case SystemConnector.subBracket when groupStaves.length >= 2:
           draw.writeln('${_f(lineW * 1.8)} w');
           draw.writeln(
@@ -384,6 +400,20 @@ const String _bracePdf =
     '44.000 181.000 74.000 275.000 81.000 334.000 c '
     '82.000 339.000 82.000 344.000 82.000 350.000 c '
     '82.000 409.000 49.000 480.000 20.000 498.000 c h f';
+
+// Bravura bracketTop glyph (U+E003), extracted path. em=1000, yMin=0, yMax=295.
+const String _bracketTopPdf =
+    '0.0 0.0 m 125.0 0.0 l 285.0 30.0 428.0 104.0 468.0 271.0 c '
+    '469.0 275.0 469.0 278.0 469.0 281.0 c 469.0 289.0 466.0 293.0 461.0 295.0 c '
+    '452.0 295.0 441.0 288.0 436.0 281.0 c 426.0 270.0 300.0 138.0 109.0 124.0 c '
+    '8.0 124.0 l 2.0 124.0 0.0 123.0 0.0 117.0 c h f';
+
+// Bravura bracketBottom glyph (U+E004), extracted path. em=1000, yMin=-295, yMax=0.
+const String _bracketBottomPdf =
+    '0.0 -117.0 m 0.0 -123.0 2.0 -124.0 8.0 -124.0 c 109.0 -124.0 l '
+    '300.0 -138.0 426.0 -270.0 436.0 -281.0 c 441.0 -288.0 452.0 -295.0 461.0 -295.0 c '
+    '466.0 -293.0 469.0 -289.0 469.0 -281.0 c 469.0 -278.0 469.0 -275.0 468.0 -271.0 c '
+    '428.0 -104.0 285.0 -30.0 125.0 0.0 c 0.0 0.0 l h f';
 
 const String _gClefPdf =
     '376.0 415.0 m 374.0 427.0 376.0 428.0 382.0 434.0 c 490.0 535.0 572.0 662.0 572.0 815.0 c 572.0 902.0 548.0 988.0 507.0 1048.0 c 492.0 1070.0 466.0 1098.0 455.0 1098.0 c 441.0 1098.0 410.0 1072.0 390.0 1050.0 c 316.0 968.0 292.0 843.0 292.0 739.0 c 292.0 681.0 299.0 616.0 306.0 575.0 c 308.0 563.0 309.0 561.0 297.0 551.0 c 153.0 432.0 0.0 289.0 0.0 87.0 c 0.0 -87.0 119.0 -252.0 364.0 -252.0 c 387.0 -252.0 413.0 -250.0 433.0 -246.0 c 444.0 -244.0 446.0 -243.0 448.0 -255.0 c 460.0 -322.0 475.0 -409.0 475.0 -456.0 c 475.0 -604.0 375.0 -622.0 316.0 -622.0 c 262.0 -622.0 236.0 -606.0 236.0 -593.0 c 236.0 -586.0 245.0 -583.0 268.0 -576.0 c 299.0 -567.0 335.0 -540.0 335.0 -482.0 c 335.0 -427.0 300.0 -380.0 239.0 -380.0 c 172.0 -380.0 132.0 -433.0 132.0 -495.0 c 132.0 -560.0 171.0 -658.0 322.0 -658.0 c 389.0 -658.0 519.0 -628.0 519.0 -458.0 c 519.0 -401.0 501.0 -306.0 490.0 -244.0 c 488.0 -232.0 489.0 -233.0 503.0 -227.0 c 604.0 -187.0 671.0 -102.0 671.0 11.0 c 671.0 139.0 577.0 252.0 430.0 252.0 c 404.0 252.0 404.0 252.0 401.0 270.0 c h 470.0 943.0 m 503.0 943.0 530.0 916.0 530.0 861.0 c 530.0 750.0 435.0 660.0 356.0 591.0 c 349.0 585.0 345.0 586.0 343.0 599.0 c 339.0 625.0 337.0 659.0 337.0 691.0 c 337.0 847.0 409.0 943.0 470.0 943.0 c h 361.0 262.0 m 364.0 243.0 364.0 244.0 346.0 238.0 c 258.0 208.0 201.0 129.0 201.0 44.0 c 201.0 -46.0 248.0 -110.0 316.0 -133.0 c 324.0 -136.0 336.0 -139.0 343.0 -139.0 c 351.0 -139.0 355.0 -134.0 355.0 -128.0 c 355.0 -121.0 347.0 -118.0 340.0 -115.0 c 298.0 -97.0 268.0 -54.0 268.0 -8.0 c 268.0 49.0 307.0 92.0 368.0 109.0 c 384.0 113.0 386.0 112.0 388.0 101.0 c 438.0 -197.0 l 440.0 -208.0 439.0 -208.0 424.0 -211.0 c 408.0 -214.0 388.0 -216.0 368.0 -216.0 c 193.0 -216.0 80.0 -119.0 80.0 20.0 c 80.0 79.0 90.0 158.0 173.0 252.0 c 233.0 319.0 279.0 356.0 326.0 394.0 c 336.0 402.0 338.0 401.0 340.0 390.0 c h 430.0 103.0 m 428.0 115.0 429.0 118.0 441.0 117.0 c 522.0 110.0 589.0 42.0 589.0 -46.0 c 589.0 -109.0 551.0 -160.0 495.0 -188.0 c 483.0 -194.0 481.0 -194.0 479.0 -182.0 c h f';
