@@ -230,7 +230,8 @@ void main() {
 
       // Connected group inner width reflects labeled staves enclosed by the connector
       expect(system.maxInnerLabelWidthMm, equals(system.groupPlacements.first.innerStaffLabelWidthMm));
-      expect(system.leftIndentMm, greaterThan(15.0));
+      expect(system.rawRequiredIndentMm, greaterThan(15.0));
+      expect(system.leftIndentMm, greaterThan(10.0));
 
       final svg = emitSvg(config, layout);
       expect(svg, contains('Violin I'));
