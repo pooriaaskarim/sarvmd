@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../common/shortcut_gateway.dart';
+
 /// Shared desktop-style top-bar menu header button.
 ///
 /// Renders a labelled text trigger that opens a [MenuAnchor] on tap/click.
@@ -22,6 +24,9 @@ class TopBarMenuHeader extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return MenuAnchor(
+      onClose: () {
+        SarvShortcutGateway.requestFocus(context);
+      },
       builder: (context, controller, child) {
         return InkWell(
           borderRadius: BorderRadius.circular(4.0),

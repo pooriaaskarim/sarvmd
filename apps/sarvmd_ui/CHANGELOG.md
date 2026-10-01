@@ -76,6 +76,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Unified Cross-Emitter Parity**: Identical geometry and alignment verified across Flutter Canvas (`preview_canvas.dart`), Vector PDF (`pdf_emitter.dart`), Vector SVG (`svg_emitter.dart`), and LaTeX (`emitter.dart`).
 
 ### Fixed
+- **Desktop & Web Keyboard Shortcuts Reliability (`SarvShortcutGateway`)**:
+  - Converted `SarvShortcutGateway` to a `StatefulWidget` establishing a dedicated `FocusScopeNode` (`SarvShortcutGatewayScope`) directly under its `Shortcuts` and `Actions`.
+  - Resolved focus trapping where calling `unfocus()` in sliders or text fields relinquished control to `Scaffold`'s ancestor `FocusScopeNode`, stranding focus outside the shortcut tree and causing shortcuts to silently fail.
+  - Wrapped `Scaffold` inside `SarvShortcutGateway` in both `PointerEditorScreen` and `EmptyWorkspaceView`.
+  - Added translucent pointer-down listener to the manuscript preview canvas in `PointerEditorScreen` to restore shortcut gateway focus whenever the user clicks, drags, or zooms the canvas.
+  - Added `onClose` focus restoration hooks to desktop top bar menus (`TopBarMenuHeader` and `TopBarCompactAppMenu`).
+  - Added comprehensive test suite `shortcut_gateway_test.dart` verifying launch autofocus, post-unfocus shortcut retention, manual recovery, menu dismissal, and canvas tap-to-focus.
 - **Standardized RenderFlex Overflow Handling in Narrow Hierarchy Panels (`sarvmd_ui`)**:
   - Implemented the 6-point layout framework across hierarchy components to eliminate `RenderFlex` overflows when sidebars are resized down to 200–280px:
     - Bounded `LayoutBuilder` width inspection for `StaffItemWidget`, dynamically collapsing secondary buttons into a compact `PopupMenuButton` when row width is constrained (< 280px), preserving instrument name visibility and preventing horizontal overflows.

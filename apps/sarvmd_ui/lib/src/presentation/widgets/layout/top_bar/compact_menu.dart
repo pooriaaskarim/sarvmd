@@ -6,6 +6,7 @@ import 'package:sarvmd_core/sarvmd_core.dart' as core;
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../../logic/document/document_state.dart';
+import '../../common/shortcut_gateway.dart';
 import 'menus/edit_menu.dart';
 import 'menus/file_menu.dart';
 import 'menus/help_menu.dart';
@@ -40,6 +41,9 @@ class TopBarCompactAppMenu extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return MenuAnchor(
+      onClose: () {
+        SarvShortcutGateway.requestFocus(context);
+      },
       builder: (context, controller, child) {
         return IconButton(
           tooltip: l10n.appMenuTooltip,
