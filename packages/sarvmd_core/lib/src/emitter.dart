@@ -234,6 +234,10 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
         final double labelOffset = group.labelOffsetMm > 0.0
             ? group.labelOffsetMm
             : group.connectorOffsetMm +
+                GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  group.connector,
+                  lineGapMm: config.staffConfig.lineGapMm,
+                ) +
                 (group.outerDescriptorWidthMm > 0.0
                     ? group.outerDescriptorWidthMm +
                         GroupPlacementMetrics.staffLabelClearanceMm
@@ -280,17 +284,24 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
                 style.horizontalOffsetMm;
           } else {
             // Standalone / Single-Tier staff: sits to the left of its connector
-            double maxConnectorOffset = 0.0;
+            double maxCoveringConnectorVisualExtent = 0.0;
             for (final g in system.groupPlacements) {
               if (sIdx >= g.startStaffIdx &&
                   sIdx <= g.endStaffIdx &&
-                  g.connector != SystemConnector.none &&
-                  g.connectorOffsetMm > maxConnectorOffset) {
-                maxConnectorOffset = g.connectorOffsetMm;
+                  g.connector != SystemConnector.none) {
+                final protrusion =
+                    GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  g.connector,
+                  lineGapMm: config.staffConfig.lineGapMm,
+                );
+                final extent = g.connectorOffsetMm + protrusion;
+                if (extent > maxCoveringConnectorVisualExtent) {
+                  maxCoveringConnectorVisualExtent = extent;
+                }
               }
             }
             labelX = staffLeftMm -
-                maxConnectorOffset -
+                maxCoveringConnectorVisualExtent -
                 GroupPlacementMetrics.staffLabelClearanceMm +
                 style.horizontalOffsetMm;
           }

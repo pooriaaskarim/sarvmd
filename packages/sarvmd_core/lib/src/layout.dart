@@ -348,7 +348,10 @@ String resolveStaffLabel({
             ? def.instrumentAbbreviation!
             : (def.instrumentName ?? ''));
 
-    if (rawName.isEmpty || isGenericStaffLabel(rawName, numberingGroup.label)) {
+    if (rawName.isEmpty ||
+        isGenericStaffLabel(rawName, numberingGroup.label) ||
+        (numberingGroup.abbreviation.isNotEmpty &&
+            isGenericStaffLabel(rawName, numberingGroup.abbreviation))) {
       return generatedNum;
     }
     // If user provided a specific non-generic name (e.g. "Piccolo"), keep it.
@@ -623,9 +626,14 @@ PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
       }
 
       // Check for child groups enclosed within g that have active connectors.
-      // In classical engraving (Bärenreiter, Gould), outer connectors cluster
-      // immediately outside child connectors, separated only by connectorLevelSpacingMm (3.0mm).
+      // In classical engraving (Bärenreiter, Gould p. 518), outer connectors cluster
+      // immediately outside child connectors, separated by connectorLevelSpacingMm (3.0mm).
       double maxChildBranchExtent = 0.0;
+      final gLeftProtrusion = GroupPlacementMetrics.connectorLeftProtrusionMm(
+        g.connector,
+        lineGapMm: config.staffConfig.lineGapMm,
+      );
+
       for (final otherIdx in groupIndicesByLevel) {
         if (otherIdx == idx) continue;
         final c = updatedPlacements[otherIdx];
@@ -633,10 +641,19 @@ PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
             c.startStaffIdx >= g.startStaffIdx &&
             c.endStaffIdx <= g.endStaffIdx &&
             c.connector != SystemConnector.none) {
+          final cLeftProtrusion =
+              GroupPlacementMetrics.connectorLeftProtrusionMm(
+            c.connector,
+            lineGapMm: config.staffConfig.lineGapMm,
+          );
+          // Maintain a physical 3.0mm clearance between child connector left edge
+          // and parent connector left edge.
           final double cExtent = c.connectorOffsetMm +
-              GroupPlacementMetrics.connectorLevelSpacingMm;
+              cLeftProtrusion +
+              GroupPlacementMetrics.connectorLevelSpacingMm -
+              gLeftProtrusion;
           if (cExtent > maxChildBranchExtent) {
-            maxChildBranchExtent = cExtent;
+            maxChildBranchExtent = cExtent > 0.0 ? cExtent : 0.0;
           }
         }
       }
@@ -645,10 +662,15 @@ PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
       // it creates an inner zone between its connector and the staves.
       double directInnerExtent = 0.0;
       if (g.innerStaffLabelWidthMm > 0.0) {
+        // Sub-brackets have no end ticks; straight lines sit directly at innerLabelConnectorClearanceMm.
+        // For brackets, bracketTickLengthMm ensures ticks cup outer staff lines without crowding inner labels.
+        final tickGap = (g.connector == SystemConnector.bracket)
+            ? GroupPlacementMetrics.bracketTickLengthMm
+            : 0.0;
         directInnerExtent = g.innerStaffLabelWidthMm +
             GroupPlacementMetrics.staffLabelClearanceMm +
-            GroupPlacementMetrics.bracketTickLengthMm +
-            GroupPlacementMetrics.staffLabelConnectorClearanceMm;
+            GroupPlacementMetrics.staffLabelConnectorClearanceMm +
+            tickGap;
       }
 
       final double offset = maxChildBranchExtent > directInnerExtent
@@ -670,14 +692,21 @@ PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
         continue;
       }
 
-      // Find the outermost connector covering any of this group's staves
-      double maxCoveringConnectorOffset = g.connectorOffsetMm;
+      // Find the outermost connector covering any of this group's staves,
+      // including its physical left protrusion (e.g. bracket spine or brace body).
+      double maxCoveringConnectorVisualExtent = 0.0;
       for (final other in updatedPlacements) {
         if (other.connector != SystemConnector.none &&
             other.startStaffIdx <= g.endStaffIdx &&
-            other.endStaffIdx >= g.startStaffIdx &&
-            other.connectorOffsetMm > maxCoveringConnectorOffset) {
-          maxCoveringConnectorOffset = other.connectorOffsetMm;
+            other.endStaffIdx >= g.startStaffIdx) {
+          final protrusion = GroupPlacementMetrics.connectorLeftProtrusionMm(
+            other.connector,
+            lineGapMm: config.staffConfig.lineGapMm,
+          );
+          final extent = other.connectorOffsetMm + protrusion;
+          if (extent > maxCoveringConnectorVisualExtent) {
+            maxCoveringConnectorVisualExtent = extent;
+          }
         }
       }
 
@@ -698,8 +727,8 @@ PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
           : 0.0;
 
       final double baseLabelOffset =
-          (maxCoveringConnectorOffset > 0.0 || outerDescGap > 0.0)
-              ? maxCoveringConnectorOffset +
+          (maxCoveringConnectorVisualExtent > 0.0 || outerDescGap > 0.0)
+              ? maxCoveringConnectorVisualExtent +
                   outerDescGap +
                   GroupPlacementMetrics.groupLabelClearanceMm
               : GroupPlacementMetrics.groupLabelClearanceMm;
@@ -774,18 +803,25 @@ PageLayout computeLayout(PageConfig config, {int pageIndex = 0}) {
           final w = estimateLabelWidthMm(sLabel, fontSizePt: def.labelFontSize);
           if (!innerStaffIndices.contains(s)) {
             // Non-inner staff: sits outside the outermost connector covering this staff
-            double maxCoveringConnectorOffset = 0.0;
+            double maxCoveringConnectorVisualExtent = 0.0;
             for (final g in updatedPlacements) {
               if (s >= g.startStaffIdx &&
                   s <= g.endStaffIdx &&
-                  g.connector != SystemConnector.none &&
-                  g.connectorOffsetMm > maxCoveringConnectorOffset) {
-                maxCoveringConnectorOffset = g.connectorOffsetMm;
+                  g.connector != SystemConnector.none) {
+                final protrusion =
+                    GroupPlacementMetrics.connectorLeftProtrusionMm(
+                  g.connector,
+                  lineGapMm: config.staffConfig.lineGapMm,
+                );
+                final extent = g.connectorOffsetMm + protrusion;
+                if (extent > maxCoveringConnectorVisualExtent) {
+                  maxCoveringConnectorVisualExtent = extent;
+                }
               }
             }
             final staffReq = w +
                 GroupPlacementMetrics.staffLabelClearanceMm +
-                maxCoveringConnectorOffset;
+                maxCoveringConnectorVisualExtent;
             if (staffReq > maxSystemRequiredIndentMm) {
               maxSystemRequiredIndentMm = staffReq;
             }

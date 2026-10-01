@@ -294,16 +294,23 @@ class _ManuscriptPainter extends CustomPainter {
               rightAnchorX = systemLeftPx - marginSpace;
             } else {
               // Standalone / Single-Tier staff: sits to the left of its connector
-              double maxConnectorOffsetMm = 0.0;
+              double maxConnectorVisualExtentMm = 0.0;
               for (final g in system.groupPlacements) {
                 if (sIdx >= g.startStaffIdx &&
                     sIdx <= g.endStaffIdx &&
-                    g.connector != core.SystemConnector.none &&
-                    g.connectorOffsetMm > maxConnectorOffsetMm) {
-                  maxConnectorOffsetMm = g.connectorOffsetMm;
+                    g.connector != core.SystemConnector.none) {
+                  final protrusion =
+                      core.GroupPlacementMetrics.connectorLeftProtrusionMm(
+                    g.connector,
+                    lineGapMm: layout.config.staffConfig.lineGapMm,
+                  );
+                  final extent = g.connectorOffsetMm + protrusion;
+                  if (extent > maxConnectorVisualExtentMm) {
+                    maxConnectorVisualExtentMm = extent;
+                  }
                 }
               }
-              final double connectorOffset = maxConnectorOffsetMm * scale;
+              final double connectorOffset = maxConnectorVisualExtentMm * scale;
               rightAnchorX = systemLeftPx - connectorOffset - marginSpace;
             }
 
@@ -372,6 +379,10 @@ class _ManuscriptPainter extends CustomPainter {
             final double labelOffsetMm = group.labelOffsetMm > 0.0
                 ? group.labelOffsetMm
                 : group.connectorOffsetMm +
+                    core.GroupPlacementMetrics.connectorLeftProtrusionMm(
+                      group.connector,
+                      lineGapMm: layout.config.staffConfig.lineGapMm,
+                    ) +
                     (group.outerDescriptorWidthMm > 0.0
                         ? group.outerDescriptorWidthMm +
                             core.GroupPlacementMetrics.staffLabelClearanceMm

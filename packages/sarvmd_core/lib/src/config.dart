@@ -1088,8 +1088,36 @@ abstract final class GroupPlacementMetrics {
   static const double staffLabelConnectorClearanceMm = 1.2;
 
   /// Horizontal clearance between group label and connector in mm.
-  /// (Gould p. 513: 1.5 mm)
-  static const double groupLabelClearanceMm = 1.5;
+  /// (Gould p. 513: 1.8 mm normalized whitespace to ensure clean breathing room before brackets)
+  static const double groupLabelClearanceMm = 1.8;
+
+  /// Returns the physical leftward protrusion (in mm) that a connector's
+  /// body/spine extends to the left of its connector line anchor.
+  ///
+  /// - For [SystemConnector.bracket]: the curved SMuFL bracket spine sits
+  ///   [bracketFontUnitShift] font units (approx. 1.10 sp / 1.98 mm for standard 1.8mm lineGap)
+  ///   to the left of the anchor.
+  /// - For [SystemConnector.brace]: the SVG curly brace bulges to the left
+  ///   (approx. 2.0 mm for grand staff).
+  /// - For [SystemConnector.subBracket]: straight thin line (0.0 mm).
+  static double connectorLeftProtrusionMm(
+    SystemConnector connector, {
+    double lineGapMm = 1.8,
+    double staffScale = 1.0,
+    double spanHeightMm = 25.0,
+  }) {
+    switch (connector) {
+      case SystemConnector.bracket:
+        final s = (lineGapMm * staffScale) / 250.0;
+        return bracketFontUnitShift * s;
+      case SystemConnector.brace:
+        final scale = spanHeightMm / braceNativeHeightMm;
+        return braceNativeWidthOffsetMm * scale;
+      case SystemConnector.subBracket:
+      case SystemConnector.none:
+        return 0.0;
+    }
+  }
 
   /// Minimum physical safety margin from the page trim edge in mm.
   ///
