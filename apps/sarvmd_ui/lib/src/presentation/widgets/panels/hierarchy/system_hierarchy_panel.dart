@@ -563,7 +563,7 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
     core.EngravingHouseStyle currentStyle,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(8),
@@ -571,76 +571,81 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
           color: cs.outlineVariant.withValues(alpha: 0.4),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_stories_outlined, size: 13, color: cs.primary),
-          const SizedBox(width: 6),
-          Text(
-            'House Style:',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildStylePill(
-                    key: const ValueKey('house_style_classical'),
-                    label: 'Classical',
-                    tooltip:
-                        'Gouldian standard: Margin labels, enclosed bracket descriptors.',
-                    isSelected:
-                        currentStyle == core.EngravingHouseStyle.classicalGould,
-                    cs: cs,
-                    onTap: () => widget.notifier.applyEngravingHouseStyle(
-                        core.EngravingHouseStyle.classicalGould),
-                  ),
-                  const SizedBox(width: 4),
-                  _buildStylePill(
-                    key: const ValueKey('house_style_modern_header'),
-                    label: 'Modern Header',
-                    tooltip:
-                        'MOLA standard: Above-staff section headers saving margin space.',
-                    isSelected:
-                        currentStyle == core.EngravingHouseStyle.modernHeader,
-                    cs: cs,
-                    onTap: () => widget.notifier.applyEngravingHouseStyle(
-                        core.EngravingHouseStyle.modernHeader),
-                  ),
-                  const SizedBox(width: 4),
-                  _buildStylePill(
-                    key: const ValueKey('house_style_continental'),
-                    label: 'Continental',
-                    tooltip:
-                        'Continental standard: Flush connectors with outer descriptors.',
-                    isSelected:
-                        currentStyle == core.EngravingHouseStyle.continental,
-                    cs: cs,
-                    onTap: () => widget.notifier.applyEngravingHouseStyle(
-                        core.EngravingHouseStyle.continental),
-                  ),
-                  if (currentStyle == core.EngravingHouseStyle.custom) ...[
-                    const SizedBox(width: 4),
-                    _buildStylePill(
-                      key: const ValueKey('house_style_custom'),
-                      label: 'Custom',
-                      tooltip: 'Score has mixed or custom group settings.',
-                      isSelected: true,
-                      cs: cs,
-                      onTap: () => showBatchGroupEngravingDialog(
-                        context,
-                        notifier: widget.notifier,
-                      ),
-                    ),
-                  ],
-                ],
+          Row(
+            children: [
+              Icon(Icons.auto_stories_outlined, size: 13, color: cs.primary),
+              const SizedBox(width: 6),
+              Text(
+                'House Style:',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurfaceVariant,
+                ),
               ),
-            ),
+              const Spacer(),
+              if (currentStyle == core.EngravingHouseStyle.custom)
+                _buildStylePill(
+                  key: const ValueKey('house_style_custom'),
+                  label: 'Custom',
+                  tooltip: 'Score has mixed or custom group settings.',
+                  isSelected: true,
+                  cs: cs,
+                  onTap: () => showBatchGroupEngravingDialog(
+                    context,
+                    notifier: widget.notifier,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStylePill(
+                  key: const ValueKey('house_style_classical'),
+                  label: 'Classical',
+                  tooltip:
+                      'Gouldian standard: Margin labels, enclosed bracket descriptors.',
+                  isSelected:
+                      currentStyle == core.EngravingHouseStyle.classicalGould,
+                  cs: cs,
+                  onTap: () => widget.notifier.applyEngravingHouseStyle(
+                      core.EngravingHouseStyle.classicalGould),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildStylePill(
+                  key: const ValueKey('house_style_modern_header'),
+                  label: 'Modern Header',
+                  tooltip:
+                      'MOLA standard: Above-staff section headers saving margin space.',
+                  isSelected:
+                      currentStyle == core.EngravingHouseStyle.modernHeader,
+                  cs: cs,
+                  onTap: () => widget.notifier.applyEngravingHouseStyle(
+                      core.EngravingHouseStyle.modernHeader),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildStylePill(
+                  key: const ValueKey('house_style_continental'),
+                  label: 'Continental',
+                  tooltip:
+                      'Continental standard: Flush connectors with outer descriptors.',
+                  isSelected:
+                      currentStyle == core.EngravingHouseStyle.continental,
+                  cs: cs,
+                  onTap: () => widget.notifier.applyEngravingHouseStyle(
+                      core.EngravingHouseStyle.continental),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -663,7 +668,7 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
         borderRadius: BorderRadius.circular(6),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           decoration: BoxDecoration(
             color: isSelected ? cs.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
@@ -674,12 +679,17 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
               width: 1,
             ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+              ),
             ),
           ),
         ),

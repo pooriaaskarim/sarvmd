@@ -721,7 +721,9 @@ class ApplyEngravingHouseStyleCommand extends PageConfigCommand {
     };
 
     final DescriptorPlacement descriptor = switch (style) {
-      EngravingHouseStyle.continental => DescriptorPlacement.outsideConnector,
+      EngravingHouseStyle.continental ||
+      EngravingHouseStyle.modernHeader =>
+        DescriptorPlacement.outsideConnector,
       _ => DescriptorPlacement.enclosedByConnector,
     };
 
