@@ -14,7 +14,8 @@ void main(List<String> args) async {
   );
 
   final artifactDir = Directory(
-    '/home/ono/.gemini/antigravity-ide/brain/a9a22bb5-6850-4869-88fc-7a909f8d8332/qa_gallery',
+    Platform.environment['SARVMD_ARTIFACT_DIR'] ??
+        '/home/ono/.gemini/antigravity-ide/brain/9e311dd5-58a6-4ba0-a991-391fee243535/qa_gallery',
   );
 
   if (!primaryOutputDir.existsSync()) {
@@ -539,9 +540,166 @@ void main(List<String> args) async {
   }
 
   // =========================================================================
-  // 2. ALL 14 BUILT-IN PRESETS (Blank Manuscript Layouts)
+  // 2. AUTHENTIC SMuFL BRACKET & CONNECTOR GRAPHICS
   // =========================================================================
-  print('\n[2/5] Exporting All 14 Built-In Presets...');
+  print('\n[2/5] Exporting Authentic SMuFL Bracket Graphics & Clef Validation Scenarios...');
+
+  // 2.1 String Quartet with Authentic SMuFL Orchestral Bracket
+  {
+    final v1 = const StaffDefinition(uid: 'v1', instrumentName: 'Violin I', instrumentAbbreviation: 'Vln. I', clef: Clef.treble);
+    final v2 = const StaffDefinition(uid: 'v2', instrumentName: 'Violin II', instrumentAbbreviation: 'Vln. II', clef: Clef.treble);
+    final va = const StaffDefinition(uid: 'va', instrumentName: 'Viola', instrumentAbbreviation: 'Vla.', clef: Clef.alto);
+    final vc = const StaffDefinition(uid: 'vc', instrumentName: 'Violoncello', instrumentAbbreviation: 'Vc.', clef: Clef.bass);
+    final quartet = StaffNodeGroup(
+      connector: SystemConnector.bracket,
+      continuousBarlines: true,
+      label: 'String Quartet',
+      abbreviation: 'Str. 4tet',
+      children: [v1, v2, va, vc],
+    );
+    final config = PageConfig(systemLayout: SystemLayout(rootGroup: quartet));
+    final layout = computeLayout(config);
+    final svg = ScoreCompiler.compileToSvg(config, layout);
+    final pdf = await ScoreCompiler.compileToPdf(config, layout);
+
+    await saveArtifacts(
+      id: 'bracket_orchestral_smufl',
+      title: 'String Quartet (Authentic SMuFL Orchestral Bracket)',
+      category: 'brackets',
+      categoryLabel: 'SMuFL Brackets',
+      description: 'Authentic SMuFL Bravura curved bracket terminals (U+E003 top cap, U+E004 bottom cap) with solid vertical spine. Demonstrates calibrated Gouldian placement: vertical spine sits outside the initial barline with a 0.60 sp whitespace gap, while curved wings cup the outer staff lines with a 0.32 sp protrusion.',
+      standardsNote: 'Gould (p. 518) & SMuFL Bravura standard: Heavy curved bracket groups like instruments; spine is placed outside starting barline with clean whitespace; wings cup outer staff lines without encroaching on clefs.',
+      config: config,
+      layout: layout,
+      svgContent: svg,
+      pdfBytes: pdf,
+    );
+  }
+
+  // 2.2 Dual-Staff Standard Notation & 6-String TAB with Authentic SMuFL Bracket
+  {
+    final trebleStaff = const StaffDefinition(
+      uid: 'std_gtr',
+      instrumentName: 'Guitar',
+      instrumentAbbreviation: 'Gtr.',
+      clef: Clef.treble,
+      lines: 5,
+    );
+    final tabStaff = const StaffDefinition(
+      uid: 'tab_gtr',
+      instrumentName: 'TAB',
+      instrumentAbbreviation: 'TAB',
+      clef: Clef.tab,
+      lines: 6,
+    );
+    final guitarGroup = StaffNodeGroup(
+      connector: SystemConnector.bracket,
+      continuousBarlines: false,
+      label: 'Classical Guitar',
+      abbreviation: 'Gtr.',
+      children: [trebleStaff, tabStaff],
+    );
+    final config = PageConfig(systemLayout: SystemLayout(rootGroup: guitarGroup));
+    final layout = computeLayout(config);
+    final svg = ScoreCompiler.compileToSvg(config, layout);
+    final pdf = await ScoreCompiler.compileToPdf(config, layout);
+
+    await saveArtifacts(
+      id: 'bracket_hybrid_notation_tab',
+      title: 'Guitar Notation + 6-String TAB (SMuFL Bracket & TAB Clef)',
+      category: 'brackets',
+      categoryLabel: 'SMuFL Brackets',
+      description: 'Dual notation/tablature system grouping a 5-line treble staff and a 6-line tablature staff with authentic SMuFL Bravura TAB clef. Validates that the curved bracket wings and outer spine leave clear, balanced whitespace before both the G-clef loop and the TAB glyph.',
+      standardsNote: 'Gould (p. 518, 642) standard: Dual notation/tablature systems grouped by authentic curved bracket with non-colliding clef clearance.',
+      config: config,
+      layout: layout,
+      svgContent: svg,
+      pdfBytes: pdf,
+    );
+  }
+
+  // 2.3 Nested Multi-Tier Woodwinds (SMuFL Family Bracket + Sub-Bracket)
+  {
+    final fl1 = const StaffDefinition(uid: 'fl1', instrumentName: '1', instrumentAbbreviation: '1', clef: Clef.treble);
+    final fl2 = const StaffDefinition(uid: 'fl2', instrumentName: '2', instrumentAbbreviation: '2', clef: Clef.treble);
+    final flutes = StaffNodeGroup(
+      connector: SystemConnector.subBracket,
+      label: 'Flutes',
+      abbreviation: 'Fl.',
+      children: [fl1, fl2],
+    );
+
+    final ob1 = const StaffDefinition(uid: 'ob1', instrumentName: '1', instrumentAbbreviation: '1', clef: Clef.treble);
+    final ob2 = const StaffDefinition(uid: 'ob2', instrumentName: '2', instrumentAbbreviation: '2', clef: Clef.treble);
+    final oboes = StaffNodeGroup(
+      connector: SystemConnector.subBracket,
+      label: 'Oboes',
+      abbreviation: 'Ob.',
+      children: [ob1, ob2],
+    );
+
+    final woodwinds = StaffNodeGroup(
+      connector: SystemConnector.bracket,
+      label: 'Woodwinds',
+      abbreviation: 'W.W.',
+      children: [flutes, oboes],
+    );
+
+    final config = PageConfig(systemLayout: SystemLayout(rootGroup: woodwinds));
+    final layout = computeLayout(config);
+    final svg = ScoreCompiler.compileToSvg(config, layout);
+    final pdf = await ScoreCompiler.compileToPdf(config, layout);
+
+    await saveArtifacts(
+      id: 'bracket_nested_woodwinds_hierarchy',
+      title: 'Woodwinds (Level 1 SMuFL Bracket + Level 2 Sub-Brackets)',
+      category: 'brackets',
+      categoryLabel: 'SMuFL Brackets',
+      description: 'Orchestral woodwinds section demonstrating multi-tier nesting: Level 1 primary SMuFL curved bracket for Woodwinds, with Level 2 secondary sub-brackets grouping Flutes 1 & 2 and Oboes 1 & 2. Demonstrates 3.0mm horizontal level clearance and non-overlapping barlines.',
+      standardsNote: 'Gould (p. 518) & MOLA: Primary family bracket uses heavy curved terminals; sub-groups of like instruments use secondary sub-brackets with 3.0mm nesting clearance.',
+      config: config,
+      layout: layout,
+      svgContent: svg,
+      pdfBytes: pdf,
+    );
+  }
+
+  // 2.4 Continental European Flush Bracket with SMuFL Curvature (Bärenreiter)
+  {
+    final hn1 = const StaffDefinition(uid: 'hn1', instrumentName: '1', instrumentAbbreviation: '1', clef: Clef.treble);
+    final hn2 = const StaffDefinition(uid: 'hn2', instrumentName: '2', instrumentAbbreviation: '2', clef: Clef.treble);
+    final horns = StaffNodeGroup(
+      connector: SystemConnector.bracket,
+      continuousBarlines: true,
+      label: 'Hörner in F',
+      abbreviation: 'Hrn. (F)',
+      descriptorPlacement: DescriptorPlacement.outsideConnector,
+      children: [hn1, hn2],
+    );
+
+    final config = PageConfig(systemLayout: SystemLayout(rootGroup: horns));
+    final layout = computeLayout(config);
+    final svg = ScoreCompiler.compileToSvg(config, layout);
+    final pdf = await ScoreCompiler.compileToPdf(config, layout);
+
+    await saveArtifacts(
+      id: 'bracket_continental_flush_smufl',
+      title: 'Horns in F (Continental European Flush SMuFL Bracket)',
+      category: 'brackets',
+      categoryLabel: 'SMuFL Brackets',
+      description: 'Continental European engraving convention (Bärenreiter / Henle): System bracket sits flush against the initial system barline with descriptors placed outside, while authentic SMuFL Bravura wing terminals cup the outer staff lines with precision.',
+      standardsNote: 'Bärenreiter & Breitkopf standard: Flush bracket placement with outer descriptor alignment and authentic SMuFL wing curvature.',
+      config: config,
+      layout: layout,
+      svgContent: svg,
+      pdfBytes: pdf,
+    );
+  }
+
+  // =========================================================================
+  // 3. ALL 14 BUILT-IN PRESETS (Blank Manuscript Layouts)
+  // =========================================================================
+  print('\n[3/5] Exporting All 14 Built-In Presets...');
 
   for (final profile in StaffProfiles.all) {
     final baseConfig = const PageConfig();
@@ -884,6 +1042,7 @@ String _buildGalleryHtml(List<Map<String, dynamic>> items) {
       border-radius: 6px;
       white-space: nowrap;
     }
+    .badge-brackets { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
     .badge-hierarchical { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
     .badge-presets { background: rgba(96, 165, 250, 0.15); color: var(--accent-blue); border: 1px solid rgba(96, 165, 250, 0.3); }
     .badge-geometry { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
@@ -998,6 +1157,7 @@ String _buildGalleryHtml(List<Map<String, dynamic>> items) {
   buf.writeln('      </div>');
 
   final hCount = items.where((i) => i['category'] == 'hierarchical').length;
+  final bCount = items.where((i) => i['category'] == 'brackets').length;
   final pCount = items.where((i) => i['category'] == 'presets').length;
   final gCount = items.where((i) => i['category'] == 'geometry').length;
   final lCount = items.where((i) => i['category'] == 'layering').length;
@@ -1005,6 +1165,7 @@ String _buildGalleryHtml(List<Map<String, dynamic>> items) {
   buf.writeln('      <div class="controls-row">');
   buf.writeln('        <div class="filter-tabs">');
   buf.writeln('          <button class="tab-btn active" onclick="filterCategory(\'all\', this)">All Scenarios (${items.length})</button>');
+  buf.writeln('          <button class="tab-btn" onclick="filterCategory(\'brackets\', this)">SMuFL Brackets ($bCount)</button>');
   buf.writeln('          <button class="tab-btn" onclick="filterCategory(\'hierarchical\', this)">Hierarchical & Sub-groups ($hCount)</button>');
   buf.writeln('          <button class="tab-btn" onclick="filterCategory(\'presets\', this)">Presets ($pCount)</button>');
   buf.writeln('          <button class="tab-btn" onclick="filterCategory(\'geometry\', this)">Geometries ($gCount)</button>');
