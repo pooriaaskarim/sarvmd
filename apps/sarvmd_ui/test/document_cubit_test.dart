@@ -202,5 +202,38 @@ void main() {
       // Verify activeProfile still accurately matches String Quartet
       expect(cubit.activeProfile?.id, equals('stringQuartet'));
     });
+
+    test('batchUpdateGroupDetails and applyEngravingHouseStyle update layout tree', () {
+      final cubit = DocumentCubit();
+      cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
+
+      // Verify initial house style
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.classicalGould));
+
+      // Apply Modern Header
+      cubit.applyEngravingHouseStyle(core.EngravingHouseStyle.modernHeader);
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.modernHeader));
+
+      final violins = cubit.state.config.systemLayout.rootGroup.allGroups
+          .firstWhere((g) => g.label == 'Violins');
+      expect(violins.labelPlacement, equals(core.GroupLabelPlacement.aboveStaff));
+
+      // Batch update group details directly
+      cubit.batchUpdateGroupDetails(
+        labelPlacement: core.GroupLabelPlacement.margin,
+        descriptorPlacement: core.DescriptorPlacement.outsideConnector,
+      );
+
+      final updatedViolins = cubit.state.config.systemLayout.rootGroup.allGroups
+          .firstWhere((g) => g.label == 'Violins');
+      expect(updatedViolins.labelPlacement, equals(core.GroupLabelPlacement.margin));
+      expect(updatedViolins.descriptorPlacement,
+          equals(core.DescriptorPlacement.outsideConnector));
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.continental));
+    });
   });
 }
+

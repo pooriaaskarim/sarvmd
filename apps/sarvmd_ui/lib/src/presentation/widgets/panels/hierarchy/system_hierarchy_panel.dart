@@ -7,6 +7,7 @@ import '../../../../logic/document/document_cubit.dart';
 import '../../../../logic/document/document_state.dart';
 import '../../../../logic/view/view_cubit.dart';
 import '../../common/ensemble_summary_widget.dart';
+import '../../dialogs/group_engraving_dialog.dart';
 import 'hierarchy_selection_scope.dart';
 import 'staff_group_widget.dart';
 
@@ -122,6 +123,7 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DocumentCubit, DocumentState>(
+      bloc: widget.notifier,
       builder: (context, docState) {
         final cs = Theme.of(context).colorScheme;
         final layout = docState.config.systemLayout;
@@ -172,7 +174,7 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (selectedUids.isEmpty)
+                if (selectedUids.isEmpty) ...[
                   Row(
                     children: [
                       Icon(Icons.account_tree_outlined,
@@ -189,6 +191,17 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
+                      ),
+                      IconButton(
+                        onPressed: () => showBatchGroupEngravingDialog(
+                          context,
+                          notifier: widget.notifier,
+                        ),
+                        icon: const Icon(Icons.style_outlined, size: 16),
+                        tooltip: 'Batch Group Engraving Options',
+                        constraints:
+                            const BoxConstraints(minWidth: 28, minHeight: 28),
+                        padding: const EdgeInsets.all(4),
                       ),
                       IconButton(
                         onPressed: () => setState(() {
@@ -209,7 +222,10 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                         padding: const EdgeInsets.all(4),
                       ),
                     ],
-                  )
+                  ),
+                  const SizedBox(height: 8),
+                  _buildHouseStyleBar(context, cs, layout.engravingHouseStyle),
+                ]
                 else
                   // Top-Docked Contextual Batch Action Bar (CAB)
                   Container(
@@ -360,22 +376,111 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
                                   },
                                 ),
                                 const SizedBox(width: 4),
-                                IconButton(
-                                  onPressed: () {
-                                    widget.notifier.batchToggleVisibility(
-                                        selectedUids, false);
-                                    _clearSelection();
-                                  },
-                                  icon: Icon(Icons.visibility_off_outlined,
+                                PopupMenuButton<String>(
+                                  icon: Icon(Icons.label_outline,
                                       size: 18, color: cs.primary),
-                                  tooltip: 'Batch Hide Labels',
+                                  tooltip: 'Batch Label & Numbering Actions',
+                                  padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(
                                       minWidth: 32, minHeight: 32),
-                                  padding: const EdgeInsets.all(4),
-                                  visualDensity: VisualDensity.compact,
-                                  style: IconButton.styleFrom(
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap),
+                                  onSelected: (val) {
+                                    switch (val) {
+                                      case 'show':
+                                        widget.notifier.batchToggleVisibility(
+                                            selectedUids, true);
+                                        _clearSelection();
+                                        break;
+                                      case 'hide':
+                                        widget.notifier.batchToggleVisibility(
+                                            selectedUids, false);
+                                        _clearSelection();
+                                        break;
+                                      case 'arabic':
+                                        widget.notifier.batchRenumberStaves(
+                                          selectedUids,
+                                          style:
+                                              core.GroupNumberingStyle.arabic,
+                                        );
+                                        _clearSelection();
+                                        break;
+                                      case 'roman':
+                                        widget.notifier.batchRenumberStaves(
+                                          selectedUids,
+                                          style: core.GroupNumberingStyle.roman,
+                                        );
+                                        _clearSelection();
+                                        break;
+                                      case 'engraving':
+                                        showBatchGroupEngravingDialog(
+                                          context,
+                                          notifier: widget.notifier,
+                                        );
+                                        break;
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'show',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.visibility_outlined,
+                                              size: 16),
+                                          SizedBox(width: 8),
+                                          Text('Show Selected Labels',
+                                              style: TextStyle(fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'hide',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.visibility_off_outlined,
+                                              size: 16),
+                                          SizedBox(width: 8),
+                                          Text('Hide Selected Labels',
+                                              style: TextStyle(fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuDivider(),
+                                    const PopupMenuItem(
+                                      value: 'arabic',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.format_list_numbered,
+                                              size: 16),
+                                          SizedBox(width: 8),
+                                          Text('Renumber: Arabic (1, 2)',
+                                              style: TextStyle(fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'roman',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.looks_one_outlined,
+                                              size: 16),
+                                          SizedBox(width: 8),
+                                          Text('Renumber: Roman (I, II)',
+                                              style: TextStyle(fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuDivider(),
+                                    const PopupMenuItem(
+                                      value: 'engraving',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.style_outlined, size: 16),
+                                          SizedBox(width: 8),
+                                          Text('Batch Group Engraving...',
+                                              style: TextStyle(fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
@@ -449,6 +554,136 @@ class _SystemHierarchyPanelState extends State<SystemHierarchyPanel> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHouseStyleBar(
+    BuildContext context,
+    ColorScheme cs,
+    core.EngravingHouseStyle currentStyle,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.auto_stories_outlined, size: 13, color: cs.primary),
+          const SizedBox(width: 6),
+          Text(
+            'House Style:',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildStylePill(
+                    key: const ValueKey('house_style_classical'),
+                    label: 'Classical',
+                    tooltip:
+                        'Gouldian standard: Margin labels, enclosed bracket descriptors.',
+                    isSelected:
+                        currentStyle == core.EngravingHouseStyle.classicalGould,
+                    cs: cs,
+                    onTap: () => widget.notifier.applyEngravingHouseStyle(
+                        core.EngravingHouseStyle.classicalGould),
+                  ),
+                  const SizedBox(width: 4),
+                  _buildStylePill(
+                    key: const ValueKey('house_style_modern_header'),
+                    label: 'Modern Header',
+                    tooltip:
+                        'MOLA standard: Above-staff section headers saving margin space.',
+                    isSelected:
+                        currentStyle == core.EngravingHouseStyle.modernHeader,
+                    cs: cs,
+                    onTap: () => widget.notifier.applyEngravingHouseStyle(
+                        core.EngravingHouseStyle.modernHeader),
+                  ),
+                  const SizedBox(width: 4),
+                  _buildStylePill(
+                    key: const ValueKey('house_style_continental'),
+                    label: 'Continental',
+                    tooltip:
+                        'Continental standard: Flush connectors with outer descriptors.',
+                    isSelected:
+                        currentStyle == core.EngravingHouseStyle.continental,
+                    cs: cs,
+                    onTap: () => widget.notifier.applyEngravingHouseStyle(
+                        core.EngravingHouseStyle.continental),
+                  ),
+                  if (currentStyle == core.EngravingHouseStyle.custom) ...[
+                    const SizedBox(width: 4),
+                    _buildStylePill(
+                      key: const ValueKey('house_style_custom'),
+                      label: 'Custom',
+                      tooltip: 'Score has mixed or custom group settings.',
+                      isSelected: true,
+                      cs: cs,
+                      onTap: () => showBatchGroupEngravingDialog(
+                        context,
+                        notifier: widget.notifier,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStylePill({
+    Key? key,
+    required String label,
+    required String tooltip,
+    required bool isSelected,
+    required ColorScheme cs,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        key: key,
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: isSelected ? cs.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isSelected
+                  ? cs.primary
+                  : cs.outlineVariant.withValues(alpha: 0.6),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

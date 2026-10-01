@@ -976,6 +976,143 @@ void main() {
       expect(bracePlacement.innerStaffLabelWidthMm, equals(0.0));
       expect(system.innerStaffIndices, isEmpty);
     });
+
+    test(
+        'BatchUpdateGroupDetailsCommand updates all groups and respects brace constraint',
+        () {
+      final s1 = StaffDefinition(uid: 'fl1', instrumentName: 'Flute 1');
+      final s2 = StaffDefinition(uid: 'fl2', instrumentName: 'Flute 2');
+      final s3 = StaffDefinition(uid: 'pno-rh', instrumentName: 'Piano RH');
+      final s4 = StaffDefinition(uid: 'pno-lh', instrumentName: 'Piano LH');
+
+      final woodwinds = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Woodwinds',
+        children: [s1, s2],
+      );
+      final keyboard = StaffNodeGroup(
+        connector: SystemConnector.brace,
+        label: 'Piano',
+        children: [s3, s4],
+      );
+
+      final initialConfig = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [woodwinds, keyboard]),
+        ),
+      );
+
+      // Batch set all to aboveStaff and enclosedByConnector
+      final cmd = BatchUpdateGroupDetailsCommand(
+        labelPlacement: GroupLabelPlacement.aboveStaff,
+        descriptorPlacement: DescriptorPlacement.enclosedByConnector,
+        preserveBraceOutsideConstraint: true,
+      );
+
+      final updatedConfig = cmd.mutateConfig(initialConfig);
+      final groups = updatedConfig.systemLayout.rootGroup.allGroups
+          .where((g) => g.label.isNotEmpty)
+          .toList();
+
+      final updatedWw = groups.firstWhere((g) => g.label == 'Woodwinds');
+      final updatedPno = groups.firstWhere((g) => g.label == 'Piano');
+
+      expect(updatedWw.labelPlacement, equals(GroupLabelPlacement.aboveStaff));
+      expect(updatedWw.descriptorPlacement,
+          equals(DescriptorPlacement.enclosedByConnector));
+
+      expect(updatedPno.labelPlacement, equals(GroupLabelPlacement.aboveStaff));
+      // Brace must retain outsideConnector
+      expect(updatedPno.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+    });
+
+    test('ApplyEngravingHouseStyleCommand updates score-wide house style', () {
+      final s1 = StaffDefinition(uid: 'vln1', instrumentName: 'Violin 1');
+      final s2 = StaffDefinition(uid: 'vln2', instrumentName: 'Violin 2');
+      final strings = StaffNodeGroup(
+        connector: SystemConnector.bracket,
+        label: 'Strings',
+        children: [s1, s2],
+      );
+
+      final config = PageConfig(
+        systemLayout: SystemLayout(
+          rootGroup: StaffNodeGroup(children: [strings]),
+        ),
+      );
+
+      expect(config.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.classicalGould));
+
+      // Apply Modern Header
+      final modernConfig =
+          ApplyEngravingHouseStyleCommand(EngravingHouseStyle.modernHeader)
+              .mutateConfig(config);
+      expect(modernConfig.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.modernHeader));
+
+      final modernStrings = modernConfig.systemLayout.rootGroup.allGroups
+          .firstWhere((g) => g.label == 'Strings');
+      expect(modernStrings.labelPlacement,
+          equals(GroupLabelPlacement.aboveStaff));
+
+      // Apply Continental
+      final continentalConfig =
+          ApplyEngravingHouseStyleCommand(EngravingHouseStyle.continental)
+              .mutateConfig(modernConfig);
+      expect(continentalConfig.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.continental));
+
+      final contStrings = continentalConfig.systemLayout.rootGroup.allGroups
+          .firstWhere((g) => g.label == 'Strings');
+      expect(contStrings.labelPlacement, equals(GroupLabelPlacement.margin));
+      expect(contStrings.descriptorPlacement,
+          equals(DescriptorPlacement.outsideConnector));
+    });
+
+    test('engravingHouseStyle evaluates correctly for unlabeled preset (String Quartet)', () {
+      final config = StaffProfiles.stringQuartet.applyTo(const PageConfig());
+      expect(config.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.classicalGould));
+
+      final modernConfig =
+          ApplyEngravingHouseStyleCommand(EngravingHouseStyle.modernHeader)
+              .mutateConfig(config);
+      expect(modernConfig.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.modernHeader));
+
+      final continentalConfig =
+          ApplyEngravingHouseStyleCommand(EngravingHouseStyle.continental)
+              .mutateConfig(modernConfig);
+      expect(continentalConfig.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.continental));
+
+      final classicalConfig =
+          ApplyEngravingHouseStyleCommand(EngravingHouseStyle.classicalGould)
+              .mutateConfig(continentalConfig);
+      expect(classicalConfig.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.classicalGould));
+    });
+
+    test('engravingHouseStyle evaluates correctly for default single-staff PageConfig', () {
+      const config = PageConfig();
+      expect(config.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.classicalGould));
+
+      final modernConfig =
+          ApplyEngravingHouseStyleCommand(EngravingHouseStyle.modernHeader)
+              .mutateConfig(config);
+      expect(modernConfig.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.modernHeader));
+
+      final continentalConfig =
+          ApplyEngravingHouseStyleCommand(EngravingHouseStyle.continental)
+              .mutateConfig(modernConfig);
+      expect(continentalConfig.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.continental));
+    });
   });
 }
+
 
