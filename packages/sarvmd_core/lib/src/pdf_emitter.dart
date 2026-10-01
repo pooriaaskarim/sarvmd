@@ -418,14 +418,47 @@ void _drawSystemConnectors(
             scaleY: scale * _mmToPt,
           );
         case SystemConnector.bracket when groupStaves.length >= 2:
-          final endTickPt = connectorPt +
-              (GroupPlacementMetrics.bracketTickLengthMm * _mmToPt);
-          canvas.setStrokeColor(pdf.PdfColors.black);
-          canvas.setLineWidth(strokeMm * 3.0 * _mmToPt);
-          canvas.drawLine(connectorPt, topYPt, connectorPt, bottomYPt);
-          canvas.drawLine(connectorPt, topYPt, endTickPt, topYPt);
-          canvas.drawLine(connectorPt, bottomYPt, endTickPt, bottomYPt);
-          canvas.strokePath();
+          final double lineGapMm = config.staffConfig.lineGapMm;
+          final double staffScale = groupStaves.first.scale;
+          // 1 staff space = 250 Bravura font units
+          final double scale = (lineGapMm * staffScale) / 250.0;
+          final double shiftPt =
+              GroupPlacementMetrics.bracketFontUnitShift * scale * _mmToPt;
+          final double vProtrusionPt =
+              GroupPlacementMetrics.bracketFontUnitProtrusion * scale * _mmToPt;
+          final double bracketPt = connectorPt - shiftPt;
+          final double topBracketYPt = topYPt + vProtrusionPt;
+          final double bottomBracketYPt = bottomYPt - vProtrusionPt;
+          final double spineWidthPt = 125.0 * scale * _mmToPt;
+          final double spineHeightPt = topBracketYPt - bottomBracketYPt;
+
+          // 1. Bracket Top Cap (bracketTop U+E003)
+          _drawSvgPathOnPdf(
+            canvas,
+            _bracketTopSvg,
+            txPt: bracketPt,
+            tyPt: topBracketYPt,
+            scaleX: scale * _mmToPt,
+            scaleY: scale * _mmToPt,
+          );
+
+          // 2. Vertical Spine
+          canvas.saveContext();
+          canvas.setFillColor(pdf.PdfColors.black);
+          canvas.drawRect(
+              bracketPt, bottomBracketYPt, spineWidthPt, spineHeightPt);
+          canvas.fillPath();
+          canvas.restoreContext();
+
+          // 3. Bracket Bottom Cap (bracketBottom U+E004)
+          _drawSvgPathOnPdf(
+            canvas,
+            _bracketBottomSvg,
+            txPt: bracketPt,
+            tyPt: bottomBracketYPt,
+            scaleX: scale * _mmToPt,
+            scaleY: scale * _mmToPt,
+          );
         case SystemConnector.subBracket when groupStaves.length >= 2:
           // Thinner secondary bracket, no serif ticks.
           canvas.setStrokeColor(pdf.PdfColors.black);
@@ -530,6 +563,14 @@ void _drawSvgPathOnPdf(
 // SMuFL / Bravura Path Glyphs
 const String _braceSvg =
     'M 20.0,498.0 C 49.0,516.0 82.0,587.0 82.0,646.0 C 82.0,651.0 82.0,657.0 81.0,662.0 C 74.0,722.0 44.0,815.0 44.0,869.0 C 44.0,921.0 67.0,971.0 72.0,980.0 C 75.0,986.0 77.0,987.0 77.0,990.0 C 77.0,993.0 74.0,997.0 71.0,997.0 C 69.0,997.0 67.0,995.0 63.0,990.0 C 41.0,963.0 14.0,905.0 14.0,805.0 C 14.0,706.0 49.0,666.0 49.0,603.0 C 49.0,556.0 30.0,530.0 2.0,498.0 C 20.0,478.0 49.0,462.0 49.0,397.0 C 49.0,327.0 14.0,265.0 14.0,192.0 C 14.0,92.0 41.0,34.0 63.0,6.0 C 67.0,1.0 69.0,0.0 71.0,0.0 C 74.0,0.0 77.0,3.0 77.0,6.0 C 77.0,9.0 76.0,11.0 72.0,17.0 C 67.0,25.0 44.0,75.0 44.0,128.0 C 44.0,181.0 74.0,275.0 81.0,334.0 C 82.0,339.0 82.0,344.0 82.0,350.0 C 82.0,409.0 49.0,480.0 20.0,498.0 Z';
+
+// Bravura bracketTop glyph (U+E003), extracted path. em=1000, yMin=0, yMax=295.
+const String _bracketTopSvg =
+    'M 0.0,0.0 L 125.0,0.0 C 285.0,30.0 428.0,104.0 468.0,271.0 C 469.0,275.0 469.0,278.0 469.0,281.0 C 469.0,289.0 466.0,293.0 461.0,295.0 C 452.0,295.0 441.0,288.0 436.0,281.0 C 426.0,270.0 300.0,138.0 109.0,124.0 L 8.0,124.0 C 2.0,124.0 0.0,123.0 0.0,117.0 Z';
+
+// Bravura bracketBottom glyph (U+E004), extracted path. em=1000, yMin=-295, yMax=0.
+const String _bracketBottomSvg =
+    'M 0.0,-117.0 C 0.0,-123.0 2.0,-124.0 8.0,-124.0 L 109.0,-124.0 C 300.0,-138.0 426.0,-270.0 436.0,-281.0 C 441.0,-288.0 452.0,-295.0 461.0,-295.0 C 466.0,-293.0 469.0,-289.0 469.0,-281.0 C 469.0,-278.0 469.0,-275.0 468.0,-271.0 C 428.0,-104.0 285.0,-30.0 125.0,0.0 L 0.0,0.0 Z';
 
 const String _gClefSvg =
     'M 376.0,415.0 C 374.0,427.0 376.0,428.0 382.0,434.0 C 490.0,535.0 572.0,662.0 572.0,815.0 C 572.0,902.0 548.0,988.0 507.0,1048.0 C 492.0,1070.0 466.0,1098.0 455.0,1098.0 C 441.0,1098.0 410.0,1072.0 390.0,1050.0 C 316.0,968.0 292.0,843.0 292.0,739.0 C 292.0,681.0 299.0,616.0 306.0,575.0 C 308.0,563.0 309.0,561.0 297.0,551.0 C 153.0,432.0 0.0,289.0 0.0,87.0 C 0.0,-87.0 119.0,-252.0 364.0,-252.0 C 387.0,-252.0 413.0,-250.0 433.0,-246.0 C 444.0,-244.0 446.0,-243.0 448.0,-255.0 C 460.0,-322.0 475.0,-409.0 475.0,-456.0 C 475.0,-604.0 375.0,-622.0 316.0,-622.0 C 262.0,-622.0 236.0,-606.0 236.0,-593.0 C 236.0,-586.0 245.0,-583.0 268.0,-576.0 C 299.0,-567.0 335.0,-540.0 335.0,-482.0 C 335.0,-427.0 300.0,-380.0 239.0,-380.0 C 172.0,-380.0 132.0,-433.0 132.0,-495.0 C 132.0,-560.0 171.0,-658.0 322.0,-658.0 C 389.0,-658.0 519.0,-628.0 519.0,-458.0 C 519.0,-401.0 501.0,-306.0 490.0,-244.0 C 488.0,-232.0 489.0,-233.0 503.0,-227.0 C 604.0,-187.0 671.0,-102.0 671.0,11.0 C 671.0,139.0 577.0,252.0 430.0,252.0 C 404.0,252.0 404.0,252.0 401.0,270.0 Z M 470.0,943.0 C 503.0,943.0 530.0,916.0 530.0,861.0 C 530.0,750.0 435.0,660.0 356.0,591.0 C 349.0,585.0 345.0,586.0 343.0,599.0 C 339.0,625.0 337.0,659.0 337.0,691.0 C 337.0,847.0 409.0,943.0 470.0,943.0 Z M 361.0,262.0 C 364.0,243.0 364.0,244.0 346.0,238.0 C 258.0,208.0 201.0,129.0 201.0,44.0 C 201.0,-46.0 248.0,-110.0 316.0,-133.0 C 324.0,-136.0 336.0,-139.0 343.0,-139.0 C 351.0,-139.0 355.0,-134.0 355.0,-128.0 C 355.0,-121.0 347.0,-118.0 340.0,-115.0 C 298.0,-97.0 268.0,-54.0 268.0,-8.0 C 268.0,49.0 307.0,92.0 368.0,109.0 C 384.0,113.0 386.0,112.0 388.0,101.0 L 438.0,-197.0 C 440.0,-208.0 439.0,-208.0 424.0,-211.0 C 408.0,-214.0 388.0,-216.0 368.0,-216.0 C 193.0,-216.0 80.0,-119.0 80.0,20.0 C 80.0,79.0 90.0,158.0 173.0,252.0 C 233.0,319.0 279.0,356.0 326.0,394.0 C 336.0,402.0 338.0,401.0 340.0,390.0 Z M 430.0,103.0 C 428.0,115.0 429.0,118.0 441.0,117.0 C 522.0,110.0 589.0,42.0 589.0,-46.0 C 589.0,-109.0 551.0,-160.0 495.0,-188.0 C 483.0,-194.0 481.0,-194.0 479.0,-182.0 Z';

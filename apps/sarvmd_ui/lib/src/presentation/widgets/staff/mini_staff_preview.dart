@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import '../../../core/theme/layout_policy.dart';
+import '../../../core/utils/bracket_painter.dart';
 import '../../../core/utils/smufl_glyphs.dart';
 
 /// A lightweight, premium visual preview of a musical staff layout and clef.
@@ -278,13 +279,18 @@ class _MiniStaffPainter extends CustomPainter {
           final double paintX = 5.0 - tp.width * (82.0 / 84.0);
           final double paintY = currentTopY + totalHeight - baselineOffset;
           tp.paint(canvas, Offset(paintX, paintY));
-        } else {
+        } else if (root.connector == core.SystemConnector.bracket) {
+          paintBracket(
+            canvas,
+            connectorX: 4.0,
+            topY: currentTopY,
+            bottomY: currentTopY + totalHeight,
+            lineGapPx: lineGap,
+            color: color.withValues(alpha: active ? 0.9 : 0.6),
+          );
+        } else if (root.connector == core.SystemConnector.subBracket) {
           canvas.drawLine(Offset(4, currentTopY),
               Offset(4, currentTopY + totalHeight), connectorPaint);
-          canvas.drawLine(
-              Offset(4, currentTopY), Offset(6, currentTopY), connectorPaint);
-          canvas.drawLine(Offset(4, currentTopY + totalHeight),
-              Offset(6, currentTopY + totalHeight), connectorPaint);
         }
       }
 
