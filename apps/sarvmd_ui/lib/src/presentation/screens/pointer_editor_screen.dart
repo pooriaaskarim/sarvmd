@@ -865,31 +865,31 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
 
           return BlocBuilder<ViewCubit, ViewState>(
             builder: (context, viewState) {
-              return Scaffold(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                body: SarvShortcutGateway(
-                  onZoomIn: _zoomIn,
-                  onZoomOut: _zoomOut,
-                  onZoomReset: () => _applyZoomPreset(ZoomPreset.actualSize),
-                  onToggleSidebar: () => _toggleLeftSidebar(canDockLeft, canDockRight),
-                  onToggleViewPanel: () {
-                    setState(() {
-                      _viewPanelCollapsed = !_viewPanelCollapsed;
-                    });
-                  },
-                  onToggleZenMode: () {
-                    setState(() {
-                      final isZen = _sidebarCollapsed && _viewPanelCollapsed;
-                      if (isZen) {
-                        _sidebarCollapsed = false;
-                        _viewPanelCollapsed = false;
-                      } else {
-                        _sidebarCollapsed = true;
-                        _viewPanelCollapsed = true;
-                      }
-                    });
-                  },
-                  child: Column(
+              return SarvShortcutGateway(
+                onZoomIn: _zoomIn,
+                onZoomOut: _zoomOut,
+                onZoomReset: () => _applyZoomPreset(ZoomPreset.actualSize),
+                onToggleSidebar: () => _toggleLeftSidebar(canDockLeft, canDockRight),
+                onToggleViewPanel: () {
+                  setState(() {
+                    _viewPanelCollapsed = !_viewPanelCollapsed;
+                  });
+                },
+                onToggleZenMode: () {
+                  setState(() {
+                    final isZen = _sidebarCollapsed && _viewPanelCollapsed;
+                    if (isZen) {
+                      _sidebarCollapsed = false;
+                      _viewPanelCollapsed = false;
+                    } else {
+                      _sidebarCollapsed = true;
+                      _viewPanelCollapsed = true;
+                    }
+                  });
+                },
+                child: Scaffold(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  body: Column(
                     children: [
                       const PointerTopBar(),
                       const PointerTabBar(),
@@ -930,9 +930,14 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                               ],
                               // Preview Area
                               Expanded(
-                                child: Container(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  child: LayoutBuilder(
+                                child: Listener(
+                                  behavior: HitTestBehavior.translucent,
+                                  onPointerDown: (_) {
+                                    SarvShortcutGateway.requestFocus(context);
+                                  },
+                                  child: Container(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    child: LayoutBuilder(
                                     builder: (context, constraints) {
                                       _lastConstraints = constraints;
                                       if (!_hasCentered) {
@@ -1112,6 +1117,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                                     },
                                   ),
                                 ),
+                              ),
                               ),
                               // Docked Right View Panel
                               if (canDockRight) ...[
