@@ -314,6 +314,8 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
       final rounded = double.parse(newValue.toStringAsFixed(1));
       if (rounded != widget.value) {
         widget.onChanged(rounded);
+        _controller.text =
+            UnitFormatter.formatMm(rounded, includeUnit: false);
       }
     }
   }
@@ -321,6 +323,8 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
   void _onPointerUp(PointerUpEvent event) {
     if (_isDragging) {
       _isDragging = false;
+      _controller.text =
+          UnitFormatter.formatMm(widget.value, includeUnit: false);
       widget.onScrubEnd();
     }
     _dragStartPos = null;
@@ -329,6 +333,8 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
   void _onPointerCancel(PointerCancelEvent event) {
     if (_isDragging) {
       _isDragging = false;
+      _controller.text =
+          UnitFormatter.formatMm(widget.value, includeUnit: false);
       widget.onScrubEnd();
     }
     _dragStartPos = null;
@@ -430,8 +436,10 @@ class _ScrubbableFieldState extends State<_ScrubbableField> {
                     },
                     onSubmitted: _submit,
                     onTapOutside: (_) {
-                      _submit(_controller.text);
-                      FocusManager.instance.primaryFocus?.unfocus();
+                      if (!_isDragging) {
+                        _submit(_controller.text);
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      }
                     },
                   ),
                 ),

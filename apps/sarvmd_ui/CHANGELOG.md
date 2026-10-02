@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Left Panel Slider & Numeric Input Reactivity (`sarvmd_ui`)**:
+  - **Eliminated RenderFlex Layout Overflow in Staff Size Chip**: Fixed a fatal layout exception in `_LiveStatsChip` (`staff_spacing_group.dart`) where an unconstrained stats column widened upon spacing changes, starving the dropdown button below its 42px minimum width and throwing `A RenderFlex overflowed by 7.0 pixels on the right`. This layout exception previously broke Flutter's dirty subtree render scheduling during gestures, causing sliders and inputs in the left sidebar to freeze visually while the canvas updated.
+  - **Proportional Flex & Auto-Scaling Readout**: Rebalanced `_LiveStatsChip` with `Expanded(flex: 5)` for the preset dropdown and `Expanded(flex: 4)` with `FittedBox` scale-down for the stats readout, guaranteeing zero overflow even on narrow viewports or long localized text.
+  - **Scrubbing Desync & Stale Submission Guard**: Synchronized `_controller.text` during pointer movements in `_ScrubbableField` (`margins_settings_group.dart`) and guarded `onTapOutside` submissions with `if (!_isDragging)` in both `_ScrubbableField` and `_AnnotatedSlider`, preventing focus-loss events from reverting in-progress scrub values.
+
 ## [0.12.1] - 2026-10-02
 
 ### Changed
