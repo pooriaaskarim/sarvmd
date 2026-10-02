@@ -211,8 +211,9 @@ class _ManuscriptPainter extends CustomPainter {
 
         // Draw staff lines (Top line snapped, others relative for equal gaps)
         final topSnappedY = topYPx.roundToDouble();
+        final effectiveGap = lineGapPx * staff.scale;
         for (var i = 0; i < staff.lines; i++) {
-          final y = topSnappedY + i * lineGapPx;
+          final y = topSnappedY + i * effectiveGap;
           canvas.drawLine(
             Offset(systemLeftMm * scale, y),
             Offset(rightMm * scale, y),

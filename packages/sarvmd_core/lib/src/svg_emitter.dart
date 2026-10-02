@@ -131,8 +131,9 @@ void _drawStaffLines(
     for (var si = 0; si < system.staves.length; si++) {
       final staff = system.staves[si];
       final topY = staff.topY;
+      final staffGap = gap * staff.scale;
       for (var li = 0; li < staff.lines; li++) {
-        final y = topY + li * gap;
+        final y = topY + li * staffGap;
         buf.writeln(
           '    <line x1="${_f(leftX)}" y1="${_f(y)}"'
           ' x2="${_f(rightX)}" y2="${_f(y)}"/>',
@@ -162,7 +163,7 @@ void _drawClefs(
 
       final baselineY =
           staff.topY + clef.anchorOffsetInSpaces(staff.lines) * gap * staff.scale;
-      final glyphX = leftX + gap * engraving.initialClefClearanceSp;
+      final glyphX = leftX + gap * staff.scale * engraving.initialClefClearanceSp;
 
       final (String path, double glyphHeight, double displayGaps) = switch (clef.symbol) {
         ClefSymbol.g => (_gClefSvg, 1000.0, 4.0 * staff.scale),

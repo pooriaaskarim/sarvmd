@@ -76,8 +76,9 @@ void _drawStaffLines(
 
     for (final staff in system.staves) {
       final topY = staff.topY;
+      final staffGap = gap * staff.scale;
       for (var li = 0; li < staff.lines; li++) {
-        final yMm = topY + li * gap;
+        final yMm = topY + li * staffGap;
         final yPt = hPt - (yMm * _mmToPt);
         canvas.drawLine(leftPt, yPt, rightPt, yPt);
       }
@@ -103,7 +104,7 @@ void _drawClefs(
 
       final baselineY =
           staff.topY + clef.anchorOffsetInSpaces(staff.lines) * gap * staff.scale;
-      final glyphX = leftX + gap * engraving.initialClefClearanceSp;
+      final glyphX = leftX + gap * staff.scale * engraving.initialClefClearanceSp;
 
       final (String path, double glyphHeight, double displayGaps) = switch (clef.symbol) {
         ClefSymbol.g => (_gClefSvg, 1000.0, 4.0 * staff.scale),

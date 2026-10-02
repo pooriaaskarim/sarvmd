@@ -154,6 +154,7 @@ class _LiveStatsChip extends StatelessWidget {
         children: [
           // ── Preset Selector (Dropdown) ─────────────────────────────────
           Expanded(
+            flex: 5,
             child: PopupMenuButton<core.StaffSizePreset>(
               onSelected: onPresetSelected,
               tooltip: AppLocalizations.of(context)!.selectStaffSizePreset,
@@ -187,11 +188,11 @@ class _LiveStatsChip extends StatelessWidget {
                 );
               }).toList(),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Row(
                   children: [
                     _MiniStaffIcon(color: rangeTint.withValues(alpha: 0.6)),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         _getPresetLabel(context, selectedPreset),
@@ -202,7 +203,7 @@ class _LiveStatsChip extends StatelessWidget {
                           letterSpacing: 0.2,
                         ),
                         overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
+                        maxLines: 1,
                       ),
                     ),
                     Icon(Icons.arrow_drop_down,
@@ -215,55 +216,63 @@ class _LiveStatsChip extends StatelessWidget {
 
           // ── Vertical Divider ──────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Container(
               width: 1,
+              height: 24,
               color: cs.outlineVariant.withValues(alpha: 0.5),
             ),
           ),
 
           // ── Stats Readout (Non-interactive) ────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  maxLines: 1,
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontFamily: 'monospace',
-                      color: cs.onSurface.withValues(alpha: 0.8),
-                    ),
-                    children: [
-                      TextSpan(
-                        text: UnitFormatter.formatMm(staffHeightMm, includeUnit: false),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      maxLines: 1,
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontFamily: 'monospace',
+                          color: cs.onSurface.withValues(alpha: 0.8),
+                        ),
+                        children: [
+                          TextSpan(
+                            text: UnitFormatter.formatMm(staffHeightMm, includeUnit: false),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          TextSpan(text: ' ${AppLocalizations.of(context)!.staffHeightReadout}'),
+                        ],
                       ),
-                      TextSpan(text: ' ${AppLocalizations.of(context)!.staffHeightReadout}'),
-                    ],
-                  ),
-                ),
-                RichText(
-                  maxLines: 1,
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontFamily: 'monospace',
-                      color: cs.onSurface.withValues(alpha: 0.5),
                     ),
-                    children: [
-                      TextSpan(
-                        text: UnitFormatter.formatMm(lineGapMm, decimals: 2, includeUnit: false),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                    RichText(
+                      maxLines: 1,
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontFamily: 'monospace',
+                          color: cs.onSurface.withValues(alpha: 0.5),
+                        ),
+                        children: [
+                          TextSpan(
+                            text: UnitFormatter.formatMm(lineGapMm, decimals: 2, includeUnit: false),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          TextSpan(text: ' ${AppLocalizations.of(context)!.lineGapReadout}'),
+                        ],
                       ),
-                      TextSpan(text: ' ${AppLocalizations.of(context)!.lineGapReadout}'),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -630,8 +639,10 @@ class _AnnotatedSliderState extends State<_AnnotatedSlider> {
                     },
                     onSubmitted: _submit,
                     onTapOutside: (_) {
-                      _submit(_controller.text);
-                      FocusManager.instance.primaryFocus?.unfocus();
+                      if (!_isDragging) {
+                        _submit(_controller.text);
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      }
                     },
                   ),
                 ),
