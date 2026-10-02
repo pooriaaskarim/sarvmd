@@ -103,7 +103,8 @@ void main() {
       final soViolins = StaffProfiles.stringOrchestra.systemLayout.rootGroup.children.first as StaffNodeGroup;
       expect(soViolins.label, equals('Violins'));
       expect(soViolins.abbreviation, equals('Vln.'));
-      expect(soViolins.numberingStyle, equals(GroupNumberingStyle.roman));
+      expect(soViolins.numberingStyle, equals(GroupNumberingStyle.none));
+      expect(soViolins.labelVisible, isFalse);
       final soStaves = StaffProfiles.stringOrchestra.systemLayout.rootGroup.allStaves;
       expect(soStaves.length, equals(5));
       expect(soStaves.map((s) => s.instrumentName).toList(),
@@ -119,6 +120,15 @@ void main() {
       final coStaves = StaffProfiles.chamberOrchestra.systemLayout.rootGroup.allStaves;
       expect(coStaves.length, equals(10));
       expect(coStaves.every((s) => s.labelVisible), isTrue);
+      expect(coStaves.every((s) => s.scale == 0.70), isTrue);
+
+      // Verify that Chamber Orchestra defaults to modernHeader (above-staff group headers)
+      expect(StaffProfiles.chamberOrchestra.systemLayout.engravingHouseStyle,
+          equals(EngravingHouseStyle.modernHeader));
+
+      // Verify that Chamber Orchestra fits 2 systems vertically on standard A4
+      final coLayout = computeLayout(StaffProfiles.chamberOrchestra.applyTo(const PageConfig()));
+      expect(coLayout.systems.length, equals(2));
     });
   });
 }

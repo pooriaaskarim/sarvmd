@@ -398,8 +398,8 @@ abstract final class StaffProfiles {
             connector: SystemConnector.subBracket,
             label: 'Violins',
             abbreviation: 'Vln.',
-            numberingStyle: GroupNumberingStyle.roman,
-            labelVisible: true,
+            numberingStyle: GroupNumberingStyle.none,
+            labelVisible: false,
             children: [
               StaffDefinition(
                 lines: 5,
@@ -459,6 +459,8 @@ abstract final class StaffProfiles {
       rootGroup: StaffNodeGroup(
         connector: SystemConnector.none,
         continuousBarlines: false,
+        labelPlacement: GroupLabelPlacement.aboveStaff,
+        descriptorPlacement: DescriptorPlacement.outsideConnector,
         children: [
           // Woodwinds section
           StaffNodeGroup(
@@ -466,10 +468,13 @@ abstract final class StaffProfiles {
             label: 'Woodwinds',
             abbreviation: 'W.W.',
             labelVisible: true,
+            labelPlacement: GroupLabelPlacement.aboveStaff,
+            descriptorPlacement: DescriptorPlacement.outsideConnector,
             children: [
               StaffDefinition(
                 lines: 5,
                 clef: Clef.treble,
+                scale: 0.70,
                 instrumentName: 'Flute',
                 instrumentAbbreviation: 'Fl.',
                 labelVisible: true,
@@ -477,6 +482,7 @@ abstract final class StaffProfiles {
               StaffDefinition(
                 lines: 5,
                 clef: Clef.treble,
+                scale: 0.70,
                 instrumentName: 'Oboe',
                 instrumentAbbreviation: 'Ob.',
                 labelVisible: true,
@@ -484,6 +490,7 @@ abstract final class StaffProfiles {
               StaffDefinition(
                 lines: 5,
                 clef: Clef.treble,
+                scale: 0.70,
                 instrumentName: 'Clarinet in B♭',
                 instrumentAbbreviation: 'Cl.',
                 labelVisible: true,
@@ -491,6 +498,7 @@ abstract final class StaffProfiles {
               StaffDefinition(
                 lines: 5,
                 clef: Clef.bass,
+                scale: 0.70,
                 instrumentName: 'Bassoon',
                 instrumentAbbreviation: 'Bsn.',
                 labelVisible: true,
@@ -503,10 +511,13 @@ abstract final class StaffProfiles {
             label: 'Brass',
             abbreviation: 'Br.',
             labelVisible: true,
+            labelPlacement: GroupLabelPlacement.aboveStaff,
+            descriptorPlacement: DescriptorPlacement.outsideConnector,
             children: [
               StaffDefinition(
                 lines: 5,
                 clef: Clef.treble,
+                scale: 0.70,
                 instrumentName: 'Horn in F',
                 instrumentAbbreviation: 'Hn.',
                 labelVisible: true,
@@ -519,17 +530,22 @@ abstract final class StaffProfiles {
             label: 'Strings',
             abbreviation: 'Str.',
             labelVisible: true,
+            labelPlacement: GroupLabelPlacement.aboveStaff,
+            descriptorPlacement: DescriptorPlacement.outsideConnector,
             children: [
               StaffNodeGroup(
                 connector: SystemConnector.subBracket,
                 label: 'Violins',
                 abbreviation: 'Vln.',
-                numberingStyle: GroupNumberingStyle.roman,
-                labelVisible: true,
+                numberingStyle: GroupNumberingStyle.none,
+                labelVisible: false,
+                labelPlacement: GroupLabelPlacement.aboveStaff,
+                descriptorPlacement: DescriptorPlacement.outsideConnector,
                 children: [
                   StaffDefinition(
                     lines: 5,
                     clef: Clef.treble,
+                    scale: 0.70,
                     instrumentName: 'Violin I',
                     instrumentAbbreviation: 'Vln. I',
                     labelVisible: true,
@@ -537,6 +553,7 @@ abstract final class StaffProfiles {
                   StaffDefinition(
                     lines: 5,
                     clef: Clef.treble,
+                    scale: 0.70,
                     instrumentName: 'Violin II',
                     instrumentAbbreviation: 'Vln. II',
                     labelVisible: true,
@@ -546,6 +563,7 @@ abstract final class StaffProfiles {
               StaffDefinition(
                 lines: 5,
                 clef: Clef.alto,
+                scale: 0.70,
                 instrumentName: 'Viola',
                 instrumentAbbreviation: 'Vla.',
                 labelVisible: true,
@@ -553,6 +571,7 @@ abstract final class StaffProfiles {
               StaffDefinition(
                 lines: 5,
                 clef: Clef.bass,
+                scale: 0.70,
                 instrumentName: 'Violoncello',
                 instrumentAbbreviation: 'Vc.',
                 labelVisible: true,
@@ -560,6 +579,7 @@ abstract final class StaffProfiles {
               StaffDefinition(
                 lines: 5,
                 clef: Clef.bass,
+                scale: 0.70,
                 instrumentName: 'Double Bass',
                 instrumentAbbreviation: 'D.B.',
                 labelVisible: true,

@@ -87,7 +87,41 @@ class _MiniStaffPainter extends CustomPainter {
       ..strokeWidth = 0.6
       ..style = PaintingStyle.stroke;
 
-    const lineGap = 2.5;
+    final root = systemLayout.rootGroup;
+    final allStaves = root.allStaves;
+    if (allStaves.isEmpty) return;
+
+    final List<core.StaffDefinition> stavesToDraw;
+    final double lineGap;
+    final double gap;
+
+    if (allStaves.length == 1) {
+      stavesToDraw = allStaves;
+      lineGap = 2.5;
+      gap = 0.0;
+    } else if (allStaves.length == 2) {
+      stavesToDraw = allStaves;
+      lineGap = 2.5;
+      gap = 8.0;
+    } else if (allStaves.length == 3) {
+      stavesToDraw = allStaves;
+      lineGap = 1.8;
+      gap = 4.0;
+    } else if (allStaves.length == 4) {
+      stavesToDraw = allStaves;
+      lineGap = 1.5;
+      gap = 2.8;
+    } else {
+      // 5+ staves (ensembles like stringOrchestra [5] or chamberOrchestra [10]):
+      // Render 3 representative staves: top, middle, and bottom
+      stavesToDraw = [
+        allStaves.first,
+        allStaves[allStaves.length ~/ 2],
+        allStaves.last,
+      ];
+      lineGap = 1.8;
+      gap = 4.0;
+    }
 
     void drawStaff(double topY, int lines) {
       for (int i = 0; i < lines; i++) {
@@ -99,6 +133,12 @@ class _MiniStaffPainter extends CustomPainter {
     void drawClefProxy(core.ClefSymbol symbol, double topY, int lines) {
       final x = 16.0; // horizontal alignment for clef
       final centerY = topY + ((lines - 1) * lineGap) / 2;
+      final scaleFactor = lineGap / 2.5;
+
+      canvas.save();
+      canvas.translate(x, centerY);
+      canvas.scale(scaleFactor);
+      canvas.translate(-x, -centerY);
 
       final strokePaint = Paint()
         ..color = color.withValues(alpha: active ? 0.95 : 0.7)
@@ -114,42 +154,44 @@ class _MiniStaffPainter extends CustomPainter {
       switch (symbol) {
         case core.ClefSymbol.g: // Treble Clef
           final path = Path();
-          final startY = topY + (lines - 1) * lineGap + 2.5; // below bottom line
+          final startY = topY + (lines - 1) * 2.5 + 2.5; // below bottom line
           // Standard cursive G shape
           path.moveTo(x + 1.5, startY);
           path.cubicTo(x, startY + 1.5, x - 1, startY, x - 1, startY - 1); 
           path.lineTo(x + 1.5, topY - 3.5); 
           path.cubicTo(x + 1.5, topY - 6.5, x - 0.5, topY - 6.5, x - 0.5, topY - 3.5);
-          path.cubicTo(x - 0.5, topY + 3.0, x + 5.0, topY + 3.0, x + 3.5, topY + (lines - 2.5) * lineGap);
-          path.cubicTo(x + 1.5, topY + (lines - 1.5) * lineGap, x + 0.5, topY + (lines - 3) * lineGap, x + 1.8, topY + (lines - 3.2) * lineGap);
+          path.cubicTo(x - 0.5, topY + 3.0, x + 5.0, topY + 3.0, x + 3.5, topY + (lines - 2.5) * 2.5);
+          path.cubicTo(x + 1.5, topY + (lines - 1.5) * 2.5, x + 0.5, topY + (lines - 3) * 2.5, x + 1.8, topY + (lines - 3.2) * 2.5);
           canvas.drawPath(path, strokePaint);
           break;
 
         case core.ClefSymbol.f: // Bass Clef
+          final baseCenterY = topY + ((lines - 1) * 2.5) / 2;
           final bassPath = Path()
-            ..moveTo(x - 1.5, centerY - 2.5)
-            ..cubicTo(x + 2.0, centerY - 4.5, x + 4.0, centerY + 0.5, x + 0.5, centerY + 3.5);
+            ..moveTo(x - 1.5, baseCenterY - 2.5)
+            ..cubicTo(x + 2.0, baseCenterY - 4.5, x + 4.0, baseCenterY + 0.5, x + 0.5, baseCenterY + 3.5);
           canvas.drawPath(bassPath, strokePaint);
-          canvas.drawCircle(Offset(x - 1.5, centerY - 2.5), 1.2, fillPaint); 
-          canvas.drawCircle(Offset(x + 4.5, centerY - 1.2), 0.75, fillPaint); 
-          canvas.drawCircle(Offset(x + 4.5, centerY + 1.2), 0.75, fillPaint); 
+          canvas.drawCircle(Offset(x - 1.5, baseCenterY - 2.5), 1.2, fillPaint); 
+          canvas.drawCircle(Offset(x + 4.5, baseCenterY - 1.2), 0.75, fillPaint); 
+          canvas.drawCircle(Offset(x + 4.5, baseCenterY + 1.2), 0.75, fillPaint); 
           break;
 
         case core.ClefSymbol.c: // Alto/Tenor Clef
+          final baseCenterY = topY + ((lines - 1) * 2.5) / 2;
           // Double vertical bars
-          canvas.drawRect(Rect.fromLTWH(x - 2.5, topY - 1, 1.2, (lines - 1) * lineGap + 2), fillPaint);
-          canvas.drawRect(Rect.fromLTWH(x - 0.5, topY - 1, 0.5, (lines - 1) * lineGap + 2), fillPaint);
+          canvas.drawRect(Rect.fromLTWH(x - 2.5, topY - 1, 1.2, (lines - 1) * 2.5 + 2), fillPaint);
+          canvas.drawRect(Rect.fromLTWH(x - 0.5, topY - 1, 0.5, (lines - 1) * 2.5 + 2), fillPaint);
           // Standard bracket (like 3)
           final cPath = Path()
             ..moveTo(x + 0.5, topY - 0.5)
-            ..cubicTo(x + 2.5, topY - 0.5, x + 3.5, centerY - 2.0, x + 1.5, centerY)
-            ..cubicTo(x + 3.5, centerY + 2.0, x + 2.5, topY + (lines - 1) * lineGap + 0.5, x + 0.5, topY + (lines - 1) * lineGap + 0.5);
+            ..cubicTo(x + 2.5, topY - 0.5, x + 3.5, baseCenterY - 2.0, x + 1.5, baseCenterY)
+            ..cubicTo(x + 3.5, baseCenterY + 2.0, x + 2.5, topY + (lines - 1) * 2.5 + 0.5, x + 0.5, topY + (lines - 1) * 2.5 + 0.5);
           canvas.drawPath(cPath, strokePaint);
           break;
 
         case core.ClefSymbol.tab:
           // Stack T, A, B vertically
-          final double totalHeight = (lines - 1) * lineGap;
+          final double totalHeight = (lines - 1) * 2.5;
           final double step = totalHeight / 2;
 
           final fontStyle = TextStyle(
@@ -179,17 +221,27 @@ class _MiniStaffPainter extends CustomPainter {
           break;
 
         case core.ClefSymbol.percussion:
-          final height = (lines - 1) * lineGap;
+          final height = (lines - 1) * 2.5;
           final rectWidth = 2.5;
           canvas.drawRect(Rect.fromLTWH(x - 1.25, topY, rectWidth, height), strokePaint);
           final fillRect = Rect.fromLTWH(x - 0.75, topY + 0.5, rectWidth - 1.0, height - 1.0);
           canvas.drawRect(fillRect, fillPaint);
           break;
       }
+
+      canvas.restore();
     }
 
     // Faint placeholders notes/melody
     void drawNotes(double topY, int lines) {
+      final centerY = topY + ((lines - 1) * lineGap) / 2;
+      final scaleFactor = lineGap / 2.5;
+
+      canvas.save();
+      canvas.translate(size.width * 0.5, centerY);
+      canvas.scale(scaleFactor);
+      canvas.translate(-size.width * 0.5, -centerY);
+
       if (lines <= 1) {
         // Draw standard single line percussion diamond or note
         final notePaint = Paint()
@@ -197,6 +249,7 @@ class _MiniStaffPainter extends CustomPainter {
           ..style = PaintingStyle.fill;
         canvas.drawCircle(Offset(size.width * 0.5, topY), 2.0, notePaint);
         canvas.drawCircle(Offset(size.width * 0.7, topY), 2.0, notePaint);
+        canvas.restore();
         return;
       }
 
@@ -210,7 +263,7 @@ class _MiniStaffPainter extends CustomPainter {
 
       // Draw two elegant, tiny music notes
       // Note 1: On 2nd line from bottom
-      final y1 = topY + (lines - 2) * lineGap;
+      final y1 = topY + (lines - 2) * 2.5;
       final x1 = size.width * 0.45;
       canvas.save();
       canvas.translate(x1, y1);
@@ -220,7 +273,7 @@ class _MiniStaffPainter extends CustomPainter {
       canvas.drawLine(Offset(x1 + 2.15, y1), Offset(x1 + 2.15, y1 - 8), stemPaint);
 
       // Note 2: On 4th line from bottom
-      final y2 = topY + (lines - 4) * lineGap;
+      final y2 = topY + (lines - 4) * 2.5;
       final x2 = size.width * 0.72;
       canvas.save();
       canvas.translate(x2, y2);
@@ -228,14 +281,12 @@ class _MiniStaffPainter extends CustomPainter {
       canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: 4.5, height: 2.8), notePaint);
       canvas.restore();
       canvas.drawLine(Offset(x2 - 2.15, y2), Offset(x2 - 2.15, y2 + 8), stemPaint);
+
+      canvas.restore();
     }
 
-    final root = systemLayout.rootGroup;
-    final staves = root.children.whereType<core.StaffDefinition>().toList();
-    if (staves.isEmpty) return;
-
-    if (staves.length == 1) {
-      final staff = staves.first;
+    if (stavesToDraw.length == 1) {
+      final staff = stavesToDraw.first;
       final staffTop = (size.height - ((staff.lines - 1) * lineGap)) / 2;
       drawStaff(staffTop, staff.lines);
       if (staff.clef != null) {
@@ -244,23 +295,35 @@ class _MiniStaffPainter extends CustomPainter {
       drawNotes(staffTop, staff.lines);
     } else {
       // Multiple staves
-      const gap = 8.0;
       double totalHeight = 0;
-      for (final staff in staves) {
+      for (final staff in stavesToDraw) {
         totalHeight += (staff.lines > 0 ? staff.lines - 1 : 0) * lineGap;
       }
-      totalHeight += (staves.length - 1) * gap;
+      totalHeight += (stavesToDraw.length - 1) * gap;
 
       double currentTopY = (size.height - totalHeight) / 2;
 
       // Draw brace/bracket proxy if needed
-      if (root.connector != core.SystemConnector.none) {
+      core.SystemConnector connector = root.connector;
+      if (connector == core.SystemConnector.none) {
+        final childConnector = root.allGroups
+            .map((g) => g.connector)
+            .firstWhere((c) => c != core.SystemConnector.none,
+                orElse: () => core.SystemConnector.none);
+        if (childConnector != core.SystemConnector.none) {
+          connector = childConnector;
+        } else if (allStaves.length >= 3) {
+          connector = core.SystemConnector.bracket;
+        }
+      }
+
+      if (connector != core.SystemConnector.none) {
         final connectorPaint = Paint()
           ..color = color.withValues(alpha: active ? 0.9 : 0.6)
           ..strokeWidth = 1.0
           ..style = PaintingStyle.stroke;
 
-        if (root.connector == core.SystemConnector.brace) {
+        if (connector == core.SystemConnector.brace) {
           final double fontSize = totalHeight * (1000.0 / 997.0);
           final tp = TextPainter(
             text: TextSpan(
@@ -279,7 +342,7 @@ class _MiniStaffPainter extends CustomPainter {
           final double paintX = 5.0 - tp.width * (82.0 / 84.0);
           final double paintY = currentTopY + totalHeight - baselineOffset;
           tp.paint(canvas, Offset(paintX, paintY));
-        } else if (root.connector == core.SystemConnector.bracket) {
+        } else if (connector == core.SystemConnector.bracket) {
           paintBracket(
             canvas,
             connectorX: 4.0,
@@ -288,13 +351,13 @@ class _MiniStaffPainter extends CustomPainter {
             lineGapPx: lineGap,
             color: color.withValues(alpha: active ? 0.9 : 0.6),
           );
-        } else if (root.connector == core.SystemConnector.subBracket) {
+        } else if (connector == core.SystemConnector.subBracket) {
           canvas.drawLine(Offset(4, currentTopY),
               Offset(4, currentTopY + totalHeight), connectorPaint);
         }
       }
 
-      for (final staff in staves) {
+      for (final staff in stavesToDraw) {
         drawStaff(currentTopY, staff.lines);
         if (staff.clef != null) {
           drawClefProxy(staff.clef!.symbol, currentTopY, staff.lines);
