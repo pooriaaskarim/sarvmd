@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Scaled Staff Line Gap & Connector Alignment (`sarvmd_core` & `sarvmd_ui`)**:
+  - **Effective Line Gap for Scaled Staves**: Fixed staff line rendering across all 4 emitters (`PreviewCanvas`, `SvgEmitter`, `PdfEmitter`, and LaTeX `Emitter`) to compute line positions using `lineGap * staff.scale`. Previously, the staff lines were drawn with the unscaled global `lineGap` (e.g. 1.8mm = 7.2mm staff height), while clef sizing/anchoring, initial barlines, brackets, braces, and system spacing were already scaled by `staff.scale` (0.70 × 7.2mm = 5.04mm). This created a severe mathematical mismatch where treble clefs anchored for line 2 appeared on line 3, brackets ended short on the bottom staff, and staff lines protruded past barlines into inter-staff gaps.
+  - **Clef Clearance Sizing**: Scaled horizontal clef clearance (`glyphX` / `cx`) by `staff.scale` in PDF and SVG emitters, maintaining proportional visual breathing room across different rastral staff sizes.
 - **Left Panel Slider & Numeric Input Reactivity (`sarvmd_ui`)**:
   - **Eliminated RenderFlex Layout Overflow in Staff Size Chip**: Fixed a fatal layout exception in `_LiveStatsChip` (`staff_spacing_group.dart`) where an unconstrained stats column widened upon spacing changes, starving the dropdown button below its 42px minimum width and throwing `A RenderFlex overflowed by 7.0 pixels on the right`. This layout exception previously broke Flutter's dirty subtree render scheduling during gestures, causing sliders and inputs in the left sidebar to freeze visually while the canvas updated.
   - **Proportional Flex & Auto-Scaling Readout**: Rebalanced `_LiveStatsChip` with `Expanded(flex: 5)` for the preset dropdown and `Expanded(flex: 4)` with `FittedBox` scale-down for the stats readout, guaranteeing zero overflow even on narrow viewports or long localized text.
