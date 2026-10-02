@@ -55,8 +55,9 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
     final staffLeftBp = _mmToBp(staffLeftMm);
     for (final staff in system.staves) {
       final topLinePdfY = pageHBp - _mmToBp(staff.topY);
+      final staffLineGapBp = lineGapBp * staff.scale;
       for (var line = 0; line < staff.lines; line++) {
-        final y = topLinePdfY - line * lineGapBp;
+        final y = topLinePdfY - line * staffLineGapBp;
         draw.writeln(
           '${_f(staffLeftBp)} ${_f(y)} m ${_f(staffRightBp)} ${_f(y)} l S',
         );
@@ -182,7 +183,7 @@ String emit(PageConfig config, PageLayout layout, {int pageCount = 1}) {
         };
 
         final scale = (lineGapBp * displayGaps) / glyphHeight;
-        final cx = staffLeftBp + lineGapBp * config.engraving.initialClefClearanceSp;
+        final cx = staffLeftBp + lineGapBp * staff.scale * config.engraving.initialClefClearanceSp;
         draw.writeln(
             'q ${_f(scale)} 0 0 ${_f(scale)} ${_f(cx)} ${_f(baselinePdfY)} cm');
         draw.writeln('0 g');
