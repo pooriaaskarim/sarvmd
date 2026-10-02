@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-10-02
+
 ### Fixed
 - **Scaled Staff Line Gap & Connector Alignment (`sarvmd_core` & `sarvmd_ui`)**:
   - **Effective Line Gap for Scaled Staves**: Fixed staff line rendering across all 4 emitters (`PreviewCanvas`, `SvgEmitter`, `PdfEmitter`, and LaTeX `Emitter`) to compute line positions using `lineGap * staff.scale`. Previously, the staff lines were drawn with the unscaled global `lineGap` (e.g. 1.8mm = 7.2mm staff height), while clef sizing/anchoring, initial barlines, brackets, braces, and system spacing were already scaled by `staff.scale` (0.70 × 7.2mm = 5.04mm). This created a severe mathematical mismatch where treble clefs anchored for line 2 appeared on line 3, brackets ended short on the bottom staff, and staff lines protruded past barlines into inter-staff gaps.
