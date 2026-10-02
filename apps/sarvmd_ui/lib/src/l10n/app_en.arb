@@ -36,11 +36,11 @@
   "profiles": "Profiles",
   "document": "Document",
   "staffSpacing": "Staff Spacing",
-  "systemsCount": "{count} Systems",
+  "systemsCount": "{count, plural, =1{1 System} other{{count} Systems}}",
   "@systemsCount": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "num"
       }
     }
   },

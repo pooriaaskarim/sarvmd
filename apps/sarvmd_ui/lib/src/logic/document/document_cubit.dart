@@ -121,6 +121,7 @@ class DocumentCubit extends Cubit<DocumentState> {
   }
 
   void _syncState() {
+    if (isClosed) return;
     emit(state.copyWith(
       document: _history.document,
       undoStack: _history.undoStack,
@@ -255,6 +256,7 @@ class DocumentCubit extends Cubit<DocumentState> {
 
   /// Marks the current state as clean / saved.
   void markSaved({String? filePath}) {
+    if (isClosed) return;
     emit(state.copyWith(
       filePath: filePath,
       lastSavedDocument: state.document,
@@ -270,12 +272,17 @@ class DocumentCubit extends Cubit<DocumentState> {
   // --- Transactional Command Execution ---
 
   void execute(core.DocumentCommand command) {
+    if (isClosed) {
+      _log.warning('Attempted to execute command on closed DocumentCubit: ${command.label}');
+      return;
+    }
     _log.debug('Executing command: ${command.runtimeType} (${command.label})');
     _history.execute(command);
     _syncState();
   }
 
   void undo() {
+    if (isClosed) return;
     if (!state.canUndo) {
       _log.warning('undo() called with empty undo stack');
       return;
@@ -286,6 +293,7 @@ class DocumentCubit extends Cubit<DocumentState> {
   }
 
   void redo() {
+    if (isClosed) return;
     if (!state.canRedo) {
       _log.warning('redo() called with empty redo stack');
       return;

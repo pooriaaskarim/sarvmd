@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-02
+
+### Changed
+- **Profile Layout & Spacing Tidying (`sarvmd_core`)**:
+  - **Eliminated Wasted Indentation from Violin Numbering**: Removed redundant inner Roman numbering (`GroupNumberingStyle.none`) and hid sub-group headers (`labelVisible: false`) on Violins in both `String Orchestra` and `Chamber Orchestra` profiles. In classical house style, the sub-bracket now sits flush at the barline, and violin staves (`Violin I`, `Violin II`) align in a clean, unified column alongside Viola, Violoncello, and Double Bass without inflating system indentation.
+  - **Chamber Orchestra Vertical Proportions & Modern Header**: Scaled Chamber Orchestra staves to `scale: 0.70` (rastral size 7, ~5.0mm height per Gould guidelines), enabling 2 full systems to fit comfortably on standard A4 portrait pages instead of wasting vertical space with only a single system. Defaulted all sections (Woodwinds, Brass, Strings) to Modern Header (`GroupLabelPlacement.aboveStaff`), placing section labels cleanly above staves with zero redundant margin indentation.
+
+### Fixed
+- **Chamber Orchestra Mini Staff Preview (`sarvmd_ui`)**:
+  - Resolved missing mini preview card for `Chamber Orchestra` (and multi-group ensembles) by querying `rootGroup.allStaves` rather than direct `StaffDefinition` children.
+  - Added adaptive condensed multi-staff rendering for 3+ staves with scaled line gaps and authentic SMuFL brackets.
+- **Profile Switching & Disposed Cubit Resilience (`sarvmd_ui`)**:
+  - Fixed `Bad state: Cannot emit new states after calling close` when switching profiles after workspace tab initialization or tab switching. [PointerEditorScreen](file:///home/ono/Projects/sarvmd/apps/sarvmd_ui/lib/src/presentation/screens/pointer_editor_screen.dart) now watches `DocumentCubit` to rebind upon session changes, and [ProfilePicker](file:///home/ono/Projects/sarvmd/apps/sarvmd_ui/lib/src/presentation/widgets/staff/profile_picker.dart) evaluates the active cubit directly from the current build context.
+  - Added defensive `isClosed` lifecycle guards to `DocumentCubit._syncState()`, `execute()`, `undo()`, `redo()`, and `markSaved()`.
+- **System Count Grammatical Pluralization (`sarvmd_ui`)**:
+  - Upgraded `systemsCount` in `app_en.arb` to use ICU plural format (`{count, plural, =1{1 System} other{{count} Systems}}`), ensuring the bottom status bar and summary badges correctly display "1 System" instead of "1 Systems".
+
 ## [0.12.0] - 2026-10-01
 
 ### Added

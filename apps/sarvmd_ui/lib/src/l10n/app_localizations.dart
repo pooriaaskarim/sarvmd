@@ -317,8 +317,8 @@ abstract class AppLocalizations {
   /// No description provided for @systemsCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} Systems'**
-  String systemsCount(int count);
+  /// **'{count, plural, =1{1 System} other{{count} Systems}}'**
+  String systemsCount(num count);
 
   /// No description provided for @reset.
   ///

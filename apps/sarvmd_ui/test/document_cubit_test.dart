@@ -211,11 +211,16 @@ void main() {
       final cubit = DocumentCubit();
       cubit.applyProfile(core.StaffProfiles.chamberOrchestra);
 
-      // Verify initial house style
+      // Verify initial house style defaults to Modern Header
+      expect(cubit.state.config.systemLayout.engravingHouseStyle,
+          equals(core.EngravingHouseStyle.modernHeader));
+
+      // Switch to Classical Gould
+      cubit.applyEngravingHouseStyle(core.EngravingHouseStyle.classicalGould);
       expect(cubit.state.config.systemLayout.engravingHouseStyle,
           equals(core.EngravingHouseStyle.classicalGould));
 
-      // Apply Modern Header
+      // Switch back to Modern Header
       cubit.applyEngravingHouseStyle(core.EngravingHouseStyle.modernHeader);
       expect(cubit.state.config.systemLayout.engravingHouseStyle,
           equals(core.EngravingHouseStyle.modernHeader));
@@ -237,6 +242,19 @@ void main() {
           equals(core.DescriptorPlacement.outsideConnector));
       expect(cubit.state.config.systemLayout.engravingHouseStyle,
           equals(core.EngravingHouseStyle.continental));
+    });
+
+    test('Executing commands or applying profiles on closed cubit safely no-ops without throwing', () async {
+      final testCubit = DocumentCubit();
+      await testCubit.close();
+      expect(testCubit.isClosed, isTrue);
+
+      // Should safely return without throwing Bad state: Cannot emit new states after calling close
+      expect(() => testCubit.applyProfile(core.StaffProfiles.stringOrchestra), returnsNormally);
+      expect(() => testCubit.execute(const _TestTitleUpdateCommand('Title', '')), returnsNormally);
+      expect(() => testCubit.undo(), returnsNormally);
+      expect(() => testCubit.redo(), returnsNormally);
+      expect(() => testCubit.markSaved(), returnsNormally);
     });
   });
 }
