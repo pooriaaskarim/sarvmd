@@ -504,7 +504,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
                               child: ProfilePicker(
                                 currentConfig: configState,
                                 onProfileSelected: (p) =>
-                                    documentCubit.applyProfile(p),
+                                    context.read<DocumentCubit>().applyProfile(p),
                               ),
                             ),
                             CollapsibleSectionCard(
@@ -845,7 +845,7 @@ class _PointerEditorScreenState extends State<PointerEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final documentCubit = context.read<DocumentCubit>();
+    final documentCubit = context.watch<DocumentCubit>();
     return BlocListener<DocumentCubit, DocumentState>(
       listenWhen: (previous, current) =>
           previous.config.effectiveWidth != current.config.effectiveWidth ||

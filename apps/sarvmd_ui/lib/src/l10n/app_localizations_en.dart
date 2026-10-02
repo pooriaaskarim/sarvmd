@@ -118,8 +118,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get staffSpacing => 'Staff Spacing';
 
   @override
-  String systemsCount(int count) {
-    return '$count Systems';
+  String systemsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Systems',
+      one: '1 System',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sarvmd_core/sarvmd_core.dart' as core;
 import 'package:sarvmd_ui/src/logic/document/document_cubit.dart';
 import 'package:sarvmd_ui/src/logic/workspace/workspace_cubit.dart';
 import 'package:sarvmd_ui/src/logic/view/view_cubit.dart';

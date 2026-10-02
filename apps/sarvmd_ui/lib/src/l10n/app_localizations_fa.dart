@@ -118,7 +118,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get staffSpacing => 'فاصله خطوط حامل';
 
   @override
-  String systemsCount(int count) {
+  String systemsCount(num count) {
     return '$count سیستم';
   }
 
